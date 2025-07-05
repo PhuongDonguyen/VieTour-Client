@@ -1,14 +1,7 @@
 import './App.css'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
 import { AuthContextProvider } from './context/authContext';
-import Home from './pages/Home';
-
-const router = createBrowserRouter([
-  {
-    element: <Home />,
-    path: '/home',
-  }
-])
+import { router } from './routes';
 
 function App() {
   return (
