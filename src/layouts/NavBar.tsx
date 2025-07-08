@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, Menu, X, ChevronDown } from "lucide-react";
+import { Link } from 'react-router-dom';
 
 interface NavItem {
   id: string;
@@ -348,14 +349,13 @@ export const NavBar = () => {
                   )}
                 </div>
               ) : (
-                <a 
-                  href="/login"
+                <Link to="/login"
                   className={`px-3 py-2 text-sm hover:text-orange-500 transition-colors ${
                     isScrolled ? 'text-gray-700' : 'text-white'
                   }`}
                 >
                   Đăng nhập
-                </a>
+                </Link>
               )}
             </div>
             
@@ -426,12 +426,11 @@ export const NavBar = () => {
                     </div>
                   </div>
                 ) : (
-                  <a 
-                    href="/login"
+                  <Link to="/login"
                     className="block px-3 py-2 text-gray-700 hover:text-orange-500"
                   >
                     Đăng nhập
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>
