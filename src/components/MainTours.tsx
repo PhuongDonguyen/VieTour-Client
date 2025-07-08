@@ -1,12 +1,20 @@
-import React from "react";
+import React, { use, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
+import { tourService } from "../services/tourService";
+import { tourPriceService } from "../services/tourPriceService";
 
 type TourCardProps = {
+  id: number;
   title: string;
   price: string;
   imageUrl: string;
   totalStar: number;
   reviewCount: number;
+};
+
+type TourPrice = {
+  adultPrice: number;
+  tourId: number;
 };
 
 const TourCard: React.FC<TourCardProps> = ({
@@ -48,56 +56,89 @@ const TourCard: React.FC<TourCardProps> = ({
 );
 
 const MainTours: React.FC = () => {
-  const tours = [
-    {
-      title: "TOUR ĐỊA ĐẠO CỦ CHI",
-      price: "350.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&h=300&fit=crop",
-      totalStar: 15,
-      reviewCount: 3,
-    },
-    {
-      title: "TOUR 1 NGÀY MỸ THO - BẾN TRE",
-      price: "480.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1539650116574-75c0c6d73a0e?w=400&h=300&fit=crop",
-      totalStar: 10,
-      reviewCount: 2,
-    },
-    {
-      title: "TOUR 2 NGÀY 1 ĐÊM MỸ THO - BẾN TRE - CẦN THƠ",
-      price: "1.550.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
-      totalStar: 14,
-      reviewCount: 3,
-    },
-    {
-      title: "TOUR CÔN ĐẢO - NGHĨA TRANG HÀNG DƯƠNG",
-      price: "2.300.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
-      totalStar: 20,
-      reviewCount: 4,
-    },
-    {
-      title: "TOUR TÂY NINH - NÚI BÀ ĐEN",
-      price: "750.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
-      totalStar: 18,
-      reviewCount: 4,
-    },
-    {
-      title: "KHÁM PHÁ ĐỊA ĐẠO CỦ CHI (BẢN QUỐC TẾ)",
-      price: "390.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&h=300&fit=crop",
-      totalStar: 15,
-      reviewCount: 3,
-    },
-  ];
+  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
+  const [tours, setTours] = useState<TourCardProps[]>([]);
+  const [pagination, setPagination] = useState<any>({});
+  const [existTourMore, setExistTourMore] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 1. Fetch tour prices trước
+        const tourPriceRes = await tourPriceService.getAllTourPrices();
+        const tourPricesData = tourPriceRes.data;
+        const parsedPrices = tourPricesData.map((price: any) => ({
+          adultPrice: price.adult_price,
+          tourId: price.tour_id,
+        }));
+        setTourPrices(parsedPrices);
+
+        // 2. Sau đó mới fetch tour
+        const tourRes = await tourService.getTours(1, 6);
+        const toursData = tourRes.data;
+        const pagination = tourRes.pagination;
+
+        console.log("Pagination data:", pagination);
+        setPagination(pagination);
+        setTours(
+          toursData.map((tour: any) => ({
+            id: tour.id,
+            title: tour.title,
+            price:
+              getMinAdultPriceByTourId(parsedPrices, tour.id)?.toString() ||
+              "0",
+            imageUrl: tour.poster_url,
+            totalStar: tour.total_star || 0,
+            reviewCount: tour.review_count || 0,
+          }))
+        );
+      } catch (error) {
+        console.error("Lỗi khi load dữ liệu:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const getMinAdultPriceByTourId = (
+    prices: TourPrice[],
+    tourId: number
+  ): number | null => {
+    const filtered = prices.filter((t) => t.tourId === tourId);
+    if (filtered.length === 0) return null;
+
+    return Math.min(...filtered.map((t) => t.adultPrice));
+  };
+
+  const handleMoreTours = async () => {
+    if (pagination.hasNextPage) {
+      try {
+        const nextPage = pagination.currentPage + 1;
+        const tourRes = await tourService.getTours(nextPage, 6);
+        const toursData = tourRes.data;
+        const newPagination = tourRes.pagination;
+
+        setPagination(newPagination);
+        if (newPagination.hasNextPage === false) {
+          setExistTourMore(false);
+        }
+        setTours((prevTours) => [
+          ...prevTours,
+          ...toursData.map((tour: any) => ({
+            id: tour.id,
+            title: tour.title,
+            price:
+              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            imageUrl: tour.poster_url,
+            totalStar: tour.total_star || 0,
+            reviewCount: tour.review_count || 0,
+          })),
+        ]);
+      } catch (error) {
+        console.error("Lỗi khi load thêm tour:", error);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
@@ -113,13 +154,16 @@ const MainTours: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl">
-            Xem thêm tour khác
-          </button>
-        </div>
-      </div>
-    </div>
+        {existTourMore && (
+          <div className="text-center mt-12">
+            <button onClick={handleMoreTours} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl cursor-pointer">
+              Xem thêm tour khác
+            </button>
+          </div>
+        )}
+    //   </div>
+    // </div>
+
   );
 };
 

@@ -3,6 +3,8 @@ import { NavBar } from "../layouts/NavBar";
 import { HeroSection } from "../components/HeroSection";
 import { FloatingCard } from "../components/FloatingCard";
 import MainTours from "../components/MainTours";
+import {Footer} from "../components/Footer"
+
 
 export default function Home() {
   return (
@@ -12,6 +14,7 @@ export default function Home() {
       <HeroSection />
       {/* <FloatingCard /> */}
       <MainTours />
+      <Footer/>
     </div>
   );
 }
