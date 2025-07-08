@@ -5,6 +5,8 @@ import { FloatingCard } from "../components/FloatingCard";
 import MainTours from "../components/MainTours";
 import {Footer} from "../components/Footer"
 
+import FeaturedTours from "../components/FeaturedTours";
+import TourListCarousel from "../components/TourCategoryList";
 
 export default function Home() {
   return (
@@ -13,7 +15,9 @@ export default function Home() {
       <NavBar />
       <HeroSection />
       {/* <FloatingCard /> */}
+      <FeaturedTours />
       <MainTours />
+      <TourListCarousel />
       <Footer/>
     </div>
   );
