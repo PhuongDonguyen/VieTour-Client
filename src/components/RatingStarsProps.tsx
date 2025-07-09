@@ -18,7 +18,7 @@ export const RatingStars: React.FC<RatingStarsProps> = ({
   totalStar,
   reviewCount,
 }) => {
-  const rate = parseFloat((totalStar / reviewCount).toFixed(1));
+  const rate = parseFloat((reviewCount > 0 ? totalStar / reviewCount : 0).toFixed(1));
   const fullStars = Math.floor(rate);
   const decimalPart = rate % 1;
 

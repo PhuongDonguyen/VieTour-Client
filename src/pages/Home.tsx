@@ -3,6 +3,8 @@ import { NavBar } from "../layouts/NavBar";
 import { HeroSection } from "../components/HeroSection";
 import { FloatingCard } from "../components/FloatingCard";
 import MainTours from "../components/MainTours";
+import {Footer} from "../components/Footer"
+
 import FeaturedTours from "../components/FeaturedTours";
 import TourListCarousel from "../components/TourCategoryList";
 
@@ -16,6 +18,7 @@ export default function Home() {
       <FeaturedTours />
       <MainTours />
       <TourListCarousel />
+      <Footer/>
     </div>
   );
 }
