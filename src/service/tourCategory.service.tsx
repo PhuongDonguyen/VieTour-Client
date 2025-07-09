@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { TOUR_CATEGORY_API } from '../api/tourCategory.api';
+import { TOUR_CATEGORY_API } from '../apis/tourCategory.api';
 
 export const fetchActiveTourCategories = async () => {
   const response = await axios.get(TOUR_CATEGORY_API.LIST);

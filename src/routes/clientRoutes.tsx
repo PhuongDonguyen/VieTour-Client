@@ -11,6 +11,8 @@ export const clientRoutes = [
   {
     path: '/tour/:slug',
     element: <TourDetail />,
+  },
+  {
     path: '/login',
     element: <Login />,
   },

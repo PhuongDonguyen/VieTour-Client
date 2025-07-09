@@ -13,7 +13,6 @@ interface TourDetailContentProps {
   days: TourDetailDay[];
 }
 
-// Hàm helper để thêm class cho tất cả <ul> trong HTML string
 function addListClassToHtml(html: string) {
   return html.replace(/<ul(.*?)>/g, '<ul$1 class="list-disc pl-5">');
 }

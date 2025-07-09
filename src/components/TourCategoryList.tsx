@@ -56,11 +56,11 @@ export const TourListCarousel: React.FC = () => {
               <div className="relative rounded-2xl overflow-hidden h-[270px] md:h-[300px] lg:h-[320px] flex flex-col cursor-pointer group bg-blue-100">
                 {/* Nếu có image_url thì hiển thị, không thì dùng màu nền */}
                 {cat.image_url ? (
-                  <img
+                <img
                     src={cat.image_url}
                     alt={cat.name}
                     className="w-full h-full object-cover transition-transform duration-300 scale-105 group-hover:translate-x-2"
-                  />
+                />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-2xl text-blue-700 font-bold">
                     {cat.name.charAt(0)}
