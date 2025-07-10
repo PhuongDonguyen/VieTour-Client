@@ -96,6 +96,8 @@ const TourDetail: React.FC = () => {
         .topbar-detail button:hover {
           background: #ea580c !important;
         }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       <div className="pt-24 px-4">
         {/* Phần trên: tên + giá + nút đặt */}
@@ -115,20 +117,20 @@ const TourDetail: React.FC = () => {
         {/* Nội dung tab */}
         <div>
           {activeTab === 'program' && (
-            <div className="w-full max-w-7xl mx-auto rounded-xl shadow-lg bg-white h-[750px] md:h-[80vh] flex flex-col md:flex-row overflow-hidden">
-              <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 flex flex-col bg-gray-50 items-center justify-center">
-                <TourImage images={images.length > 0 ? images : [{ id: 0, image_url: tour.poster_url, alt_text: tour.title }]} altDefault={tour.title} />
+            <div className="w-full max-w-7xl mx-auto rounded-xl bg-transparent h-[750px] md:h-[80vh] flex flex-col md:flex-row overflow-hidden">
+              <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 pt-4 flex flex-col bg-white hide-scrollbar">
+                <TourImage images={(images.length > 0 ? images.filter(img => img.is_featured) : [{ id: 0, image_url: tour.poster_url, alt_text: tour.title }])} altDefault={tour.title} />
               </div>
-              <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4">
+              <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 hide-scrollbar">
                 <TourDetailContent days={days} />
               </div>
             </div>
           )}
-          {activeTab === 'price' && <TabPrice />}
+          {activeTab === 'price' && <TabPrice tourId={tour.id} />}
           {activeTab === 'info' && <TabInfo />}
           {activeTab === 'overview' && <TabOverview />}
           {activeTab === 'condition' && <TabCondition />}
-          {activeTab === 'gallery' && <TabGallery />}
+          {activeTab === 'gallery' && <TabGallery images={images} />}
         </div>
         {/* Form nhận xét luôn hiển thị dưới tab, ngoài box nội dung */}
         <CommentForm />

@@ -8,7 +8,7 @@ type TourImageProps = {
 const TourImage: React.FC<TourImageProps> = ({ images, altDefault }) => {
   if (!images || images.length === 0) return null;
   return (
-    <div className="flex flex-col gap-4 items-center w-full">
+    <div className="flex flex-col gap-4 w-full">
       {images.map(img => (
         <img
           key={img.id}

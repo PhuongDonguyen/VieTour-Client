@@ -14,7 +14,10 @@ export const tourPriceApi = {
     return response.data;
   },
 
-
+  getByTourId: async (tourId: number) => {
+    const response = await axios.get(`${API_BASE_URL}?tour_id=${tourId}`);
+    return response.data;
+  },
 
   create: async (tourPriceData: any) => {
     const response = await axios.post(API_BASE_URL, tourPriceData);

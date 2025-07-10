@@ -1,6 +1,7 @@
 import { TopBar } from "../layouts/TopBar";
 import { NavBar } from "../layouts/NavBar";
 import TourDetail from "../components/tourDetail";
+import { Footer } from "../components/Footer";
 
 export default function TourDetailPage() {
   return (
@@ -10,6 +11,7 @@ export default function TourDetailPage() {
         <NavBar />
       </div>
       <TourDetail />
+      <Footer />
     </div>
   );
 } 

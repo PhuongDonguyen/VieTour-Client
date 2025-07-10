@@ -8,11 +8,13 @@ import "swiper/css/autoplay";
 // @ts-ignore
 import "swiper/css/navigation";
 import { fetchTopBookedTours } from '../service/tour.service';
+import { useNavigate } from 'react-router-dom';
 
 export const FeaturedTours: React.FC = () => {
   const [tours, setTours] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchTopBookedTours(10)
@@ -66,7 +68,10 @@ export const FeaturedTours: React.FC = () => {
         >
           {tours.map((tour, idx) => (
             <SwiperSlide key={idx} className="px-1">
-              <div className="relative rounded-2xl shadow-lg overflow-hidden h-full flex flex-col group">
+              <div
+                className="relative rounded-2xl shadow-lg overflow-hidden h-full flex flex-col group cursor-pointer"
+                onClick={() => navigate(`/tour/${tour.slug}`)}
+              >
                 <img
                   src={tour.imageUrl}
                   alt={tour.title}
@@ -80,7 +85,10 @@ export const FeaturedTours: React.FC = () => {
                   <div className="text-base font-semibold text-white mb-2 text-center drop-shadow">
                     Giá: {tour.price}
                   </div>
-                  <button className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center">
+                  <button
+                    className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center"
+                    onClick={e => { e.stopPropagation(); navigate(`/tour/${tour.slug}`); }}
+                  >
                     ĐẶT NGAY
                   </button>
                 </div>

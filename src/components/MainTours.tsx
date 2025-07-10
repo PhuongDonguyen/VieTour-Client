@@ -2,6 +2,7 @@ import React, { use, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
 import { tourService } from "../services/tourService";
 import { tourPriceService } from "../services/tourPriceService";
+import { useNavigate } from "react-router-dom";
 
 type TourCardProps = {
   id: number;
@@ -10,6 +11,7 @@ type TourCardProps = {
   imageUrl: string;
   totalStar: number;
   reviewCount: number;
+  slug: string;
 };
 
 type TourPrice = {
@@ -23,37 +25,47 @@ const TourCard: React.FC<TourCardProps> = ({
   imageUrl,
   totalStar,
   reviewCount,
-}) => (
-  <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-    {/* ✅ Hình ảnh với hiệu ứng zoom khi hover */}
-    <div className="relative h-56 overflow-hidden group rounded-t-xl">
-      <img
-        src={imageUrl}
-        alt={title}
-        className="w-full h-full object-cover transform transition-transform duration-300 ease-in-out group-hover:scale-110"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent transition duration-300"></div>
-    </div>
+  slug,
+}) => {
+  const navigate = useNavigate();
+  const handleGoDetail = () => {
+    navigate(`/tour/${slug}`);
+  };
+  return (
+    <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+      {/* ✅ Hình ảnh với hiệu ứng zoom khi hover */}
+      <div className="relative h-56 overflow-hidden group rounded-t-xl cursor-pointer" onClick={handleGoDetail}>
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full object-cover transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent transition duration-300"></div>
+      </div>
 
-    {/* Nội dung card */}
-    <div className="p-4">
-      <h3 className="text-base font-bold text-gray-800 leading-tight mb-2 min-h-[48px] line-clamp-2">
-        {title}
-      </h3>
-      <p className="text-sm text-gray-600 mb-3">
-        Giá gốc:{" "}
-        <span className="text-lg text-red-600 font-bold">{price}VND</span>
-      </p>
-      <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer">
-        ĐẶT TOUR
-      </button>
+      {/* Nội dung card */}
+      <div className="p-4">
+        <h3 className="text-base font-bold text-gray-800 leading-tight mb-2 min-h-[48px] line-clamp-2">
+          {title}
+        </h3>
+        <p className="text-sm text-gray-600 mb-3">
+          Giá gốc: {" "}
+          <span className="text-lg text-red-600 font-bold">{price}VND</span>
+        </p>
+        <button
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
+          onClick={handleGoDetail}
+        >
+          ĐẶT TOUR
+        </button>
+      </div>
+      {/* Footer */}
+      <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
+        <RatingStars totalStar={totalStar} reviewCount={reviewCount} />
+      </div>
     </div>
-    {/* Footer */}
-    <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-      <RatingStars totalStar={totalStar} reviewCount={reviewCount} />
-    </div>
-  </div>
-);
+  );
+};
 
 const MainTours: React.FC = () => {
   const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
@@ -90,6 +102,7 @@ const MainTours: React.FC = () => {
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
+            slug: tour.slug,
           }))
         );
       } catch (error) {
@@ -132,6 +145,7 @@ const MainTours: React.FC = () => {
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
+            slug: tour.slug,
           })),
         ]);
       } catch (error) {
