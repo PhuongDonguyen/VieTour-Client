@@ -32,5 +32,10 @@ export const tourPriceApi = {
   delete: async (id: number) => {
     const response = await axios.delete(`${API_BASE_URL}/${id}`);
     return response.data;
+  },
+
+  getAllSorted: async () => {
+    const response = await axios.get(`${API_BASE_URL}/sorted`);
+    return response.data;
   }
 };

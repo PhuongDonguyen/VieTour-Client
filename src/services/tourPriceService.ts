@@ -17,6 +17,14 @@ export const tourPriceService = {
             return response;
         } catch (error) {
             console.error("Error fetching tour prices by tour_id:", error);
+        }
+    },
+
+    async getAllSortedTourPrices() {
+        try {
+            const response = await tourPriceApi.getAllSorted();
+            return response;
+        } catch (error) {
             throw error;
         }
     }
