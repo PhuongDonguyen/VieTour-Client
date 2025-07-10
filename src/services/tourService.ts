@@ -30,5 +30,14 @@ export const tourService = {
             console.error("Error fetching tours by isActive:", error);
             throw error;
         }
+    }, 
+    async getToursByTourCategoryId(tourCategoryId: number) {
+        try {
+            const response = await tourApi.getByTourCategoryId(tourCategoryId);
+            return response;
+        }
+        catch (error) {
+            throw error;
+        }
     }
 };

@@ -10,6 +10,15 @@ export const tourPriceService = {
             console.error("Error fetching tour prices:", error);
             throw error;
         }
+    },
+
+    async getAllSortedTourPrices() {
+        try {
+            const response = await tourPriceApi.getAllSorted();
+            return response;
+        } catch (error) {
+            throw error;
+        }
     }
 
 };

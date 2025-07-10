@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import { tourPriceService } from '../services/tourPriceService';
 import { tourService } from '../services/tourService';
 type TourPrice = {
@@ -9,9 +9,9 @@ type TourPrice = {
 type Tour = {
   id: number;
   title: string;
+  price: string;
   duration: string;
   transportation: string;
-  price: string;
 }
 
 export const TourPrices = () => {
@@ -217,10 +217,11 @@ export const TourPrices = () => {
   // ];
   const [tours, setTours] = useState<Tour[]>([]);
   const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
+  const positionRef = useRef(0);
   useEffect(() => {
     const fetchTours = async () => {
       try {
-        const tourPriceRes = await tourPriceService.getAllTourPrices();
+        const tourPriceRes = await tourPriceService.getAllSortedTourPrices();
         const tourPricesData = tourPriceRes.data;
         const parsedPrices = tourPricesData.map((price: any) => ({
           adultPrice: price.adult_price,
@@ -232,6 +233,7 @@ export const TourPrices = () => {
         const pagination = tourRes.pagination;
         console.log("Pagination data:", pagination);
         console.log("Fetched tours:", toursData);
+        positionRef.current = 0;
         setTours(
           toursData.map((tour: any) => ({
             id: tour.id,
@@ -251,15 +253,24 @@ export const TourPrices = () => {
     fetchTours();
   }, []);
 
-  
+  useEffect(() => {
+    console.log("Tour:", tours);
+  },[tours]);
+
   const getMinAdultPriceByTourId = (
     prices: TourPrice[],
     tourId: number
   ): number | null => {
-    const filtered = prices.filter((t) => t.tourId === tourId);
-    if (filtered.length === 0) return null;
-
-    return Math.min(...filtered.map((t) => t.adultPrice));
+    for (let i = positionRef.current; i < prices.length; i++) {
+      if (prices[i].tourId > tourId) return 0;
+      if (prices[i].tourId == tourId) {
+        positionRef.current = i + 1;
+        console.log("tour min id: ", prices[i].tourId);
+        console.log("adult: ", prices[i].adultPrice);
+        return prices[i].adultPrice;
+      }
+    }
+    return null;
   };
 
   return (

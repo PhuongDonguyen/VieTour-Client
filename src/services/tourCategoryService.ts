@@ -10,5 +10,14 @@ export const tourCategoryService = {
             console.error("Error fetching tour categories:", error);
             throw error;
         }
+    },
+
+    async getTourCategoryBySlug(slug:string) {
+        try {
+            const response = await tourCategoryAPI.getBySlug(slug);
+            return response;
+        } catch (error) {
+            throw error;
+        }
     }
 };

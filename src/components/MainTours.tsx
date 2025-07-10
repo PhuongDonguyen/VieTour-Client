@@ -1,7 +1,8 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
 import { tourService } from "../services/tourService";
 import { tourPriceService } from "../services/tourPriceService";
+import { TourPrices } from "./TourPrices";
 
 type TourCardProps = {
   id: number;
@@ -60,38 +61,42 @@ const MainTours: React.FC = () => {
   const [tours, setTours] = useState<TourCardProps[]>([]);
   const [pagination, setPagination] = useState<any>({});
   const [existTourMore, setExistTourMore] = useState<boolean>(true);
-
+  const positionRef = useRef(0);
+  const tourPricesRef = useRef<TourPrice[]>([]);
+  const hasFetched = useRef<boolean>(false);
   useEffect(() => {
     const fetchData = async () => {
       try {
         // 1. Fetch tour prices trước
-        const tourPriceRes = await tourPriceService.getAllTourPrices();
+        const tourPriceRes = await tourPriceService.getAllSortedTourPrices();
         const tourPricesData = tourPriceRes.data;
         const parsedPrices = tourPricesData.map((price: any) => ({
           adultPrice: price.adult_price,
           tourId: price.tour_id,
         }));
         setTourPrices(parsedPrices);
+        console.log("Tour price trước khi sài ref:", parsedPrices);
+        tourPricesRef.current = parsedPrices;
 
         // 2. Sau đó mới fetch tour
-        const tourRes = await tourService.getTours(1, 6);
-        const toursData = tourRes.data;
-        const pagination = tourRes.pagination;
-
-        console.log("Pagination data:", pagination);
-        setPagination(pagination);
-        setTours(
-          toursData.map((tour: any) => ({
-            id: tour.id,
-            title: tour.title,
-            price:
-              getMinAdultPriceByTourId(parsedPrices, tour.id)?.toString() ||
-              "0",
-            imageUrl: tour.poster_url,
-            totalStar: tour.total_star || 0,
-            reviewCount: tour.review_count || 0,
-          }))
-        );
+        // const tourRes = await tourService.getTours(1, 6);
+        // const toursData = tourRes.data;
+        // const pagination = tourRes.pagination;
+        // console.log("Pagination data:", pagination);
+        // console.log("Tour price sau khi sài ref:", parsedPrices);
+        // setPagination(pagination);
+        // setTours(
+        //   toursData.map((tour: any) => ({
+        //     id: tour.id,
+        //     title: tour.title,
+        //     price:
+        //       getMinAdultPriceByTourId(tourPricesRef.current, tour.id)?.toString() ||
+        //       "0",
+        //     imageUrl: tour.poster_url,
+        //     totalStar: tour.total_star || 0,
+        //     reviewCount: tour.review_count || 0,
+        //   }))
+        // );
       } catch (error) {
         console.error("Lỗi khi load dữ liệu:", error);
       }
@@ -100,15 +105,46 @@ const MainTours: React.FC = () => {
     fetchData();
   }, []);
 
-  const getMinAdultPriceByTourId = (
-    prices: TourPrice[],
-    tourId: number
-  ): number | null => {
-    const filtered = prices.filter((t) => t.tourId === tourId);
-    if (filtered.length === 0) return null;
+  useEffect(() => {
+    console.log("Tour: ", tours);
+  }, [tours]);
 
-    return Math.min(...filtered.map((t) => t.adultPrice));
-  };
+  useEffect(() => {
+    console.log("Tour sau khi price:", tours);
+  }, [tourPrices]);
+
+  useEffect(() => {
+    if (tourPrices.length == 0) return; // đợi prices có rồi mới chạy
+    if (!tourPrices || hasFetched.current) return;
+
+    hasFetched.current = true;
+    const fetchTours = async () => {
+      try {
+        console.log("prices: ", tourPrices);
+        const tourRes = await tourService.getTours(1, 6);
+        const toursData = tourRes.data;
+        const pagination = tourRes.pagination;
+
+        setPagination(pagination);
+
+        setTours(
+          toursData.map((tour: any) => ({
+            id: tour.id,
+            title: tour.title,
+            price:
+              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            imageUrl: tour.poster_url,
+            totalStar: tour.total_star || 0,
+            reviewCount: tour.review_count || 0,
+          }))
+        );
+      } catch (err) {
+        console.error("Lỗi khi load tours:", err);
+      }
+    };
+
+    fetchTours();
+  }, [tourPrices]);
 
   const handleMoreTours = async () => {
     if (pagination.hasNextPage) {
@@ -122,6 +158,7 @@ const MainTours: React.FC = () => {
         if (newPagination.hasNextPage === false) {
           setExistTourMore(false);
         }
+        console.log("Tour Price: ", tourPrices);
         setTours((prevTours) => [
           ...prevTours,
           ...toursData.map((tour: any) => ({
@@ -140,6 +177,22 @@ const MainTours: React.FC = () => {
     }
   };
 
+  const getMinAdultPriceByTourId = (
+    prices: TourPrice[],
+    tourId: number
+  ): number | null => {
+    for (let i = positionRef.current; i < prices.length; i++) {
+      if (prices[i].tourId > tourId) return 0;
+      if (prices[i].tourId == tourId) {
+        positionRef.current = i + 1;
+        console.log("tour min id: ", prices[i].tourId);
+        console.log("adult: ", prices[i].adultPrice);
+        return prices[i].adultPrice;
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
       <div className="max-w-7xl mx-auto">
@@ -156,14 +209,16 @@ const MainTours: React.FC = () => {
 
         {existTourMore && (
           <div className="text-center mt-12">
-            <button onClick={handleMoreTours} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl cursor-pointer">
+            <button
+              onClick={handleMoreTours}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl cursor-pointer"
+            >
               Xem thêm tour khác
             </button>
           </div>
         )}
       </div>
     </div>
-
   );
 };
 
