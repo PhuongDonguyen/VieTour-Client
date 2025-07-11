@@ -262,7 +262,7 @@ export const NavBar = () => {
           const dropdownItems = tourCategories.map((cat: any) => ({
             id: String(cat.id),
             label: cat.name,
-            href: `/tours/${cat.slug || cat.id}`,
+            href: `/tour-category/${cat.slug || cat.id}`,
           }));
           console.log("Fetched tour categories:", dropdownItems);
           return prev.map((item) =>

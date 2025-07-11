@@ -19,7 +19,7 @@ export const clientRoutes = [
     element: <Pricing />,
   },
   {
-    path: '/tours/:slug',
+    path: '/tour-category/:slug',
     element: <TourCategory />,
   },
   {

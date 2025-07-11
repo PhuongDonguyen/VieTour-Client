@@ -17,7 +17,7 @@ interface TourCardProps {
   participants: string;
   totalStar: number;
   reviewCount: number;
-
+  slug: string;
   onBookTour?: (id: string) => void;
 }
 
@@ -153,10 +153,10 @@ export const TourByCategory = () => {
           tourResData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            discountedPrice:
-              getMinAdultPriceByTourId(parsedPrices, tour.id)?.toString() ||
-              "0",
-            originalPrice: 680000,
+            originalPrice: formatVND(
+              getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
+            ),
+            discountedPrice: 680000,
             image: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
@@ -164,6 +164,7 @@ export const TourByCategory = () => {
             comments: "3.8M",
             participants: "45M",
             discount: 23,
+            slug: tour.slug
           }))
         );
       } catch (error) {
@@ -176,6 +177,9 @@ export const TourByCategory = () => {
   useEffect(() => {
     console.log("Tours: ", tours);
   }, [tours]);
+
+  const formatVND = (value: number) =>
+    new Intl.NumberFormat("vi-VN").format(value);
 
   const getMinAdultPriceByTourId = (
     prices: TourPrice[],

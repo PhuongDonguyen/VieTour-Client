@@ -20,6 +20,8 @@ type TourPrice = {
   tourId: number;
 };
 
+
+
 const TourCard: React.FC<TourCardProps> = ({
   title,
   price,
@@ -32,10 +34,15 @@ const TourCard: React.FC<TourCardProps> = ({
   const handleGoDetail = () => {
     navigate(`/tour/${slug}`);
   };
+
+  
   return (
     <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
       {/* ✅ Hình ảnh với hiệu ứng zoom khi hover */}
-      <div className="relative h-56 overflow-hidden group rounded-t-xl cursor-pointer" onClick={handleGoDetail}>
+      <div
+        className="relative h-56 overflow-hidden group rounded-t-xl cursor-pointer"
+        onClick={handleGoDetail}
+      >
         <img
           src={imageUrl}
           alt={title}
@@ -50,7 +57,7 @@ const TourCard: React.FC<TourCardProps> = ({
           {title}
         </h3>
         <p className="text-sm text-gray-600 mb-3">
-          Giá gốc: {" "}
+          Giá gốc:{" "}
           <span className="text-lg text-red-600 font-bold">{price}VND</span>
         </p>
         <button
@@ -76,6 +83,7 @@ const MainTours: React.FC = () => {
   const positionRef = useRef(0);
   const tourPricesRef = useRef<TourPrice[]>([]);
   const hasFetched = useRef<boolean>(false);
+  const hasTourFetched = useRef<boolean>(false);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -101,9 +109,9 @@ const MainTours: React.FC = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price:
-              getMinAdultPriceByTourId(parsedPrices, tour.id)?.toString() ||
-              "0",
+            price: formatVND(
+              getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
+            ),
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
@@ -136,6 +144,9 @@ const MainTours: React.FC = () => {
     fetchData();
   }, []);
 
+  const formatVND = (value: number) =>
+    new Intl.NumberFormat("vi-VN").format(value);
+
   useEffect(() => {
     console.log("Tour: ", tours);
   }, [tours]);
@@ -151,7 +162,9 @@ const MainTours: React.FC = () => {
     hasFetched.current = true;
     const fetchTours = async () => {
       try {
-        console.log("prices: ", tourPrices);
+        if (hasFetched.current) return;
+        hasFetched.current = true;
+        if (tours.length != 0) return;
         const tourRes = await tourService.getTours(1, 6);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;

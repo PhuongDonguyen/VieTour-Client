@@ -1,5 +1,7 @@
 import React from "react";
 import { MapPin, Eye, MessageCircle, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
 
 interface TourCardProps {
   id: string;
@@ -11,6 +13,7 @@ interface TourCardProps {
   views: string;
   comments: string;
   participants: string;
+  slug: string;
   onBookTour?: (id: string) => void;
 }
 
@@ -24,6 +27,7 @@ export const TourCard: React.FC<TourCardProps> = ({
   views,
   comments,
   participants,
+  slug,
   onBookTour,
 }) => {
   const handleBookTour = () => {
@@ -31,7 +35,10 @@ export const TourCard: React.FC<TourCardProps> = ({
       onBookTour(id);
     }
   };
-
+  const navigate = useNavigate();
+  const handleGoDetail = () => {
+    navigate(`/tour/${slug}`);
+  };
 
 
   const formatPrice = (price: number) => {
@@ -41,7 +48,7 @@ export const TourCard: React.FC<TourCardProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden max-w-sm mx-auto">
       {/* Image Section */}
-      <div className="relative overflow-hidden group">
+      <div className="relative overflow-hidden group" onClick={handleGoDetail}>
         <img
           src={image}
           alt={title}
@@ -79,7 +86,7 @@ export const TourCard: React.FC<TourCardProps> = ({
 
         {/* Book Tour Button */}
         <button
-          onClick={handleBookTour}
+          onClick={handleGoDetail}
           className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200 mb-4 cursor-pointer"
         >
           ĐẶT TOUR

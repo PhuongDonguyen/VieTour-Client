@@ -1,6 +1,7 @@
-import {useState, useEffect, useRef} from 'react';
-import { tourPriceService } from '../services/tourPriceService';
-import { tourService } from '../services/tourService';
+import { useState, useEffect, useRef } from "react";
+import { tourPriceService } from "../services/tourPriceService";
+import { tourService } from "../services/tourService";
+import { useNavigate } from "react-router-dom";
 type TourPrice = {
   adultPrice: number;
   tourId: number;
@@ -12,7 +13,8 @@ type Tour = {
   price: string;
   duration: string;
   transportation: string;
-}
+  slug:string;
+};
 
 export const TourPrices = () => {
   // const tourData = [
@@ -218,6 +220,10 @@ export const TourPrices = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
   const positionRef = useRef(0);
+  const navigate = useNavigate();
+  const handleGoDetail = (slug:string) => {
+    navigate(`/tour/${slug}`);
+  };
   useEffect(() => {
     const fetchTours = async () => {
       try {
@@ -238,11 +244,12 @@ export const TourPrices = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price:
-              getMinAdultPriceByTourId(parsedPrices, tour.id)?.toString() ||
-              "0",
+            price: formatVND(
+              getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
+            ),
             transportation: tour.transportation || "Không xác định",
             duration: tour.duration || "Không xác định",
+            slug: tour.slug
           }))
         );
       } catch (error) {
@@ -255,7 +262,10 @@ export const TourPrices = () => {
 
   useEffect(() => {
     console.log("Tour:", tours);
-  },[tours]);
+  }, [tours]);
+
+  const formatVND = (value: number) =>
+    new Intl.NumberFormat("vi-VN").format(value);
 
   const getMinAdultPriceByTourId = (
     prices: TourPrice[],
@@ -284,24 +294,54 @@ export const TourPrices = () => {
         <table className="w-full border-collapse bg-white">
           <thead>
             <tr className="bg-blue-600 text-white">
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Mã</th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">LỊCH TRÌNH TOUR</th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">THỜI GIAN</th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">PHƯƠNG TIỆN</th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">GIÁ TOUR</th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">HÀNH ĐỘNG</th>
+              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                Mã
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                LỊCH TRÌNH TOUR
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                THỜI GIAN
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                PHƯƠNG TIỆN
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                GIÁ TOUR
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                HÀNH ĐỘNG
+              </th>
             </tr>
           </thead>
           <tbody>
             {tours.map((tour, index) => (
-              <tr key={tour.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                <td className="border border-gray-300 px-4 py-3 text-center">{tour.id}</td>
-                <td className="border border-gray-300 px-4 py-3">{tour.title}</td>
-                <td className="border border-gray-300 px-4 py-3 text-center">{tour.duration}</td>
-                <td className="border border-gray-300 px-4 py-3 text-center">{tour.transportation}</td>
-                <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-red-600">{tour.price}</td>
+              <tr
+                key={tour.id}
+                className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+              >
                 <td className="border border-gray-300 px-4 py-3 text-center">
-                  <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer">
+                  {tour.id}
+                </td>
+                <td className="border border-gray-300 px-4 py-3">
+                  {tour.title}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center">
+                  {tour.duration}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center">
+                  {tour.transportation}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-red-600">
+                  {tour.price + "VND"}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center">
+                  <button
+                    onClick={() => {
+                      handleGoDetail(tour.slug);
+                    }}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer"
+                  >
                     XEM TOUR
                   </button>
                 </td>
