@@ -1,6 +1,6 @@
 import { Facebook, Mail, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
-import { resourcesService } from "../service/resources.service";
+import { resourcesService } from "../services/resources.service";
 
 export const Footer = () => {
   const [resources, setResources] = useState<any>({});

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { resourcesService } from "../service/resources.service";
+import { resourcesService } from "../services/resources.service";
 import { TopBar } from "../layouts/TopBar";
 import { NavBar } from "../layouts/NavBar";
 import { Footer } from "../components/Footer";

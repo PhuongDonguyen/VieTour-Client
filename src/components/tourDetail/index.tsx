@@ -9,9 +9,9 @@ import TabInfo from "./TabInfo";
 import TabOverview from "./TabOverview";
 import TabCondition from "./TabCondition";
 import TabGallery from "./TabGallery";
-import { fetchTourBySlug } from '../../service/tour.service';
-import { fetchTourDetail } from '../../service/tourDetail.service';
-import { fetchTourImages } from '../../service/tourImage.service';
+import { fetchTourBySlug } from '../../services/tour.service';
+import { fetchTourDetail } from '../../services/tourDetail.service';
+import { fetchTourImages } from '../../services/tourImage.service';
 
 const TABS = [
   { key: 'program', label: 'Chương trình tour' },

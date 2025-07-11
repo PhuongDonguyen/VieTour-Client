@@ -7,7 +7,7 @@ import "swiper/css";
 import "swiper/css/autoplay";
 // @ts-ignore
 import "swiper/css/navigation";
-import { fetchTopBookedTours } from '../service/tour.service';
+import { fetchTopBookedTours } from '../services/tour.service';
 import { useNavigate } from 'react-router-dom';
 
 export const FeaturedTours: React.FC = () => {

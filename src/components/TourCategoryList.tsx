@@ -5,7 +5,7 @@ import { Autoplay } from "swiper/modules";
 import "swiper/css";
 // @ts-ignore
 import "swiper/css/autoplay";
-import { fetchActiveTourCategories } from '../service/tourCategory.service';
+import { fetchActiveTourCategories } from '../services/tourCategory.service';
 
 export const TourListCarousel: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);

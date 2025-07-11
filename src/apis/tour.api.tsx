@@ -1,6 +1,13 @@
-export const TOUR_API = {
-  GET_BY_SLUG: 'http://localhost:8000/api/tours', // dùng ?slug=...
-  DETAIL: 'http://localhost:8000/api/tour_details', // dùng ?tour_id=...
-  IMAGES: 'http://localhost:8000/api/tour_images', // dùng ?tour_id=...
-  TOP_BOOKED: 'http://localhost:8000/api/tours/top-booked',
-}; 
+import axiosInstance from './axiosInstance';
+
+export const getTourBySlug = (slug: string) =>
+  axiosInstance.get(`/api/tours?slug=${slug}`);
+
+export const getTourDetail = (tour_id: number) =>
+  axiosInstance.get(`/api/tour_details?tour_id=${tour_id}`);
+
+export const getTourImages = (tour_id: number) =>
+  axiosInstance.get(`/api/tour_images?tour_id=${tour_id}`);
+
+export const getTopBookedTours = (limit: number) =>
+  axiosInstance.get(`/api/tours/top-booked?limit=${limit}`); 
