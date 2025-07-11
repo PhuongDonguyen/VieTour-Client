@@ -127,9 +127,17 @@ const TourDetail: React.FC = () => {
             </div>
           )}
           {activeTab === 'price' && <TabPrice tourId={tour.id} />}
-          {activeTab === 'info' && <TabInfo />}
-          {activeTab === 'overview' && <TabOverview />}
-          {activeTab === 'condition' && <TabCondition />}
+          {activeTab === 'info' && (
+            <TabInfo
+              id={tour.id}
+              live_commentary={tour.live_commentary}
+              duration={tour.duration}
+              transportation={tour.transportation}
+              accommodation={tour.accommodation}
+            />
+          )}
+          {activeTab === 'overview' && <TabOverview destination_intro={tour.destination_intro} />}
+          {activeTab === 'condition' && <TabCondition tour_info={tour.tour_info} />}
           {activeTab === 'gallery' && <TabGallery images={images} />}
         </div>
         {/* Form nhận xét luôn hiển thị dưới tab, ngoài box nội dung */}

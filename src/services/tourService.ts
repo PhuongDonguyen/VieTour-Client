@@ -1,4 +1,4 @@
-import {tourApi} from '../api/tourApi';
+import {tourApi} from '../apis/tourApi';
 
 export const tourService = {
     async getAllTours() {

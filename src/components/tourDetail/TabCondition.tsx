@@ -1,7 +1,17 @@
 import React from 'react';
 
-const TabCondition: React.FC = () => (
-  <div className="p-8 text-center text-gray-500">Điều kiện tour sẽ được cập nhật sau.</div>
+type TabConditionProps = {
+  tour_info?: string;
+};
+
+const TabCondition: React.FC<TabConditionProps> = ({ tour_info }) => (
+  <div className="p-6 md:p-8">
+    {tour_info ? (
+      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: tour_info }} />
+    ) : (
+      <div className="text-center text-gray-500">Chưa có điều kiện tour.</div>
+    )}
+  </div>
 );
 
 export default TabCondition; 

@@ -4,6 +4,7 @@ import Pricing from '../pages/Pricing';
 import TourCategory from '../pages/TourCategory';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
+import About from '../pages/About';
 
 export const clientRoutes = [
   {
@@ -29,5 +30,9 @@ export const clientRoutes = [
   {
     path: '/signup',
     element: <Signup />,
+  },
+  {
+    path: '/about',
+    element: <About />,
   },
 ];

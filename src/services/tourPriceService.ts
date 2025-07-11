@@ -1,4 +1,4 @@
-import { tourPriceApi } from "../api/tourPriceApi";
+import { tourPriceApi } from "../apis/tourPriceApi";
 
 export const tourPriceService = {
     async getAllTourPrices() {
@@ -13,7 +13,7 @@ export const tourPriceService = {
     },
     async getTourPricesByTourId(tourId: number) {
         try {
-            const response = await import("../api/tourPriceApi").then(m => m.tourPriceApi.getByTourId(tourId));
+            const response = await import("../apis/tourPriceApi").then(m => m.tourPriceApi.getByTourId(tourId));
             return response;
         } catch (error) {
             console.error("Error fetching tour prices by tour_id:", error);

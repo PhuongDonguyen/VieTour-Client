@@ -1,4 +1,4 @@
-import { tourCategoryAPI } from "../api/tourCategoryApi";
+import { tourCategoryAPI } from "../apis/tourCategoryApi";
 
 export const tourCategoryService = {
     async getAllTourCategories() {
