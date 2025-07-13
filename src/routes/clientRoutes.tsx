@@ -1,6 +1,7 @@
 import Home from '../pages/Home';
-import Login from '../pages/Login';
-import Signup from '../pages/Signup';
+import ForgotPassword from '../pages/ForgotPassword';
+import EnterOtp from '../pages/EnterOtp';
+import LoginSuccess from '../components/LoginSuccess';
 
 export const clientRoutes = [
   {
@@ -8,11 +9,15 @@ export const clientRoutes = [
     element: <Home />,
   },
   {
-    path: '/login',
-    element: <Login />,
+    path: '/reset-password',
+    element: <ForgotPassword />,
   },
   {
-    path: '/signup',
-    element: <Signup />,
+    path: '/verify/email',
+    element: <EnterOtp />,
   },
+  {
+    path: '/login/success',
+    element: <LoginSuccess />
+  }
 ];
