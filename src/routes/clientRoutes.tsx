@@ -5,7 +5,7 @@ import TourCategory from '../pages/TourCategory';
 import About from '../pages/About';
 import ForgotPassword from '../pages/ForgotPassword';
 import EnterOtp from '../pages/EnterOtp';
-import LoginSuccess from '../components/LoginSuccess';
+import LoginSuccess from '../pages/LoginSuccess';
 
 export const clientRoutes = [
   {

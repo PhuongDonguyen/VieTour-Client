@@ -32,6 +32,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, onSwitchForm, onForgotPa
       "_blank",
       "width=500,height=600,left=300,top=300"
     );
+    if (onClose) onClose();
   };
 
   const formik = useFormik({

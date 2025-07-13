@@ -59,8 +59,8 @@ export const NavBar = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center ">
-              <a href="/" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</a>
-              <a href="/about" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</a>
+              <a href="/" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</a>
+              <a href="/about" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</a>
               <div className="relative">
                 <button
                   onClick={() => handleDropdownToggle('tour')}
@@ -84,11 +84,11 @@ export const NavBar = () => {
                   </div>
                 )}
               </div>
-              <a href="/pricing" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</a>
-              <a href="/booking" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>ĐẶT TOUR</a>
-              <a href="/blog" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>BLOG</a>
-              <a href="/gallery" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</a>
-              <a href="/contact" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</a>
+              <a href="/pricing" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</a>
+              <a href="/booking" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>ĐẶT TOUR</a>
+              <a href="/blog" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>BLOG</a>
+              <a href="/gallery" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</a>
+              <a href="/contact" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</a>
             </div>
 
             {/* Search and User Menu */}
@@ -114,8 +114,16 @@ export const NavBar = () => {
                       onMouseEnter={() => setActiveDropdown('user')}
                       className={`px-3 py-2 flex items-center space-x-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}
                     >
-                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                        {user?.first_name?.charAt(0)}
+                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
+                        {user?.avatar ? (
+                          <img 
+                            src={user.avatar} 
+                            alt={`${user.first_name} ${user.last_name}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          user?.first_name?.charAt(0) || 'U'
+                        )}
                       </div>
                       <span className="text-sm">{user?.first_name + " " + user?.last_name || 'Unknown'}</span>
                       <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === 'user' ? 'rotate-180' : ''}`} />
@@ -190,8 +198,16 @@ export const NavBar = () => {
                   {user ? (
                     <div className="px-3 py-2">
                       <div className="flex items-center space-x-2 mb-2">
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                          {user?.first_name?.charAt(0) || user?.avatar}
+                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
+                          {user?.avatar ? (
+                            <img 
+                              src={user.avatar} 
+                              alt={`${user.first_name} ${user.last_name}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            user?.first_name?.charAt(0) || 'U'
+                          )}
                         </div>
                         <span className="text-gray-700 font-medium">{user?.first_name || 'Unknown'}</span>
                       </div>
