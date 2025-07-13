@@ -1,13 +1,26 @@
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
+import { tourService } from "../services/tourService";
+import { tourPriceService } from "../services/tourPriceService";
+import { useNavigate } from "react-router-dom";
+import { TourPrices } from "./TourPrices";
 
 type TourCardProps = {
+  id: number;
   title: string;
   price: string;
   imageUrl: string;
   totalStar: number;
   reviewCount: number;
+  slug: string;
 };
+
+type TourPrice = {
+  adultPrice: number;
+  tourId: number;
+};
+
+
 
 const TourCard: React.FC<TourCardProps> = ({
   title,
@@ -15,89 +28,215 @@ const TourCard: React.FC<TourCardProps> = ({
   imageUrl,
   totalStar,
   reviewCount,
-}) => (
-  <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-    {/* ✅ Hình ảnh với hiệu ứng zoom khi hover */}
-    <div className="relative h-56 overflow-hidden group rounded-t-xl">
-      <img
-        src={imageUrl}
-        alt={title}
-        className="w-full h-full object-cover transform transition-transform duration-300 ease-in-out group-hover:scale-110"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent transition duration-300"></div>
-    </div>
+  slug,
+}) => {
+  const navigate = useNavigate();
+  const handleGoDetail = () => {
+    navigate(`/tour/${slug}`);
+  };
 
-    {/* Nội dung card */}
-    <div className="p-4">
-      <h3 className="text-base font-bold text-gray-800 leading-tight mb-2 min-h-[48px] line-clamp-2">
-        {title}
-      </h3>
-      <p className="text-sm text-gray-600 mb-3">
-        Giá gốc:{" "}
-        <span className="text-lg text-red-600 font-bold">{price}VND</span>
-      </p>
-      <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer">
-        ĐẶT TOUR
-      </button>
+  
+  return (
+    <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+      {/* ✅ Hình ảnh với hiệu ứng zoom khi hover */}
+      <div
+        className="relative h-56 overflow-hidden group rounded-t-xl cursor-pointer"
+        onClick={handleGoDetail}
+      >
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full object-cover transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent transition duration-300"></div>
+      </div>
+
+      {/* Nội dung card */}
+      <div className="p-4">
+        <h3 className="text-base font-bold text-gray-800 leading-tight mb-2 min-h-[48px] line-clamp-2">
+          {title}
+        </h3>
+        <p className="text-sm text-gray-600 mb-3">
+          Giá gốc:{" "}
+          <span className="text-lg text-red-600 font-bold">{price}VND</span>
+        </p>
+        <button
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
+          onClick={handleGoDetail}
+        >
+          ĐẶT TOUR
+        </button>
+      </div>
+      {/* Footer */}
+      <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
+        <RatingStars totalStar={totalStar} reviewCount={reviewCount} />
+      </div>
     </div>
-    {/* Footer */}
-    <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-      <RatingStars totalStar={totalStar} reviewCount={reviewCount} />
-    </div>
-  </div>
-);
+  );
+};
 
 const MainTours: React.FC = () => {
-  const tours = [
-    {
-      title: "TOUR ĐỊA ĐẠO CỦ CHI",
-      price: "350.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&h=300&fit=crop",
-      totalStar: 15,
-      reviewCount: 3,
-    },
-    {
-      title: "TOUR 1 NGÀY MỸ THO - BẾN TRE",
-      price: "480.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1539650116574-75c0c6d73a0e?w=400&h=300&fit=crop",
-      totalStar: 10,
-      reviewCount: 2,
-    },
-    {
-      title: "TOUR 2 NGÀY 1 ĐÊM MỸ THO - BẾN TRE - CẦN THƠ",
-      price: "1.550.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
-      totalStar: 14,
-      reviewCount: 3,
-    },
-    {
-      title: "TOUR CÔN ĐẢO - NGHĨA TRANG HÀNG DƯƠNG",
-      price: "2.300.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
-      totalStar: 20,
-      reviewCount: 4,
-    },
-    {
-      title: "TOUR TÂY NINH - NÚI BÀ ĐEN",
-      price: "750.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
-      totalStar: 18,
-      reviewCount: 4,
-    },
-    {
-      title: "KHÁM PHÁ ĐỊA ĐẠO CỦ CHI (BẢN QUỐC TẾ)",
-      price: "390.000",
-      imageUrl:
-        "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&h=300&fit=crop",
-      totalStar: 15,
-      reviewCount: 3,
-    },
-  ];
+  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
+  const [tours, setTours] = useState<TourCardProps[]>([]);
+  const [pagination, setPagination] = useState<any>({});
+  const [existTourMore, setExistTourMore] = useState<boolean>(true);
+  const positionRef = useRef(0);
+  const tourPricesRef = useRef<TourPrice[]>([]);
+  const hasFetched = useRef<boolean>(false);
+  const hasTourFetched = useRef<boolean>(false);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 1. Fetch tour prices trước
+        const tourPriceRes = await tourPriceService.getAllSortedTourPrices();
+        const tourPricesData = tourPriceRes.data;
+        const parsedPrices = tourPricesData.map((price: any) => ({
+          adultPrice: price.adult_price,
+          tourId: price.tour_id,
+        }));
+        setTourPrices(parsedPrices);
+        console.log("Tour price trước khi sài ref:", parsedPrices);
+        tourPricesRef.current = parsedPrices;
+
+        // 2. Sau đó mới fetch tour
+        const tourRes = await tourService.getTours(1, 6);
+        const toursData = tourRes.data;
+        const pagination = tourRes.pagination;
+
+        console.log("Pagination data:", pagination);
+        setPagination(pagination);
+        setTours(
+          toursData.map((tour: any) => ({
+            id: tour.id,
+            title: tour.title,
+            price: formatVND(
+              getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
+            ),
+            imageUrl: tour.poster_url,
+            totalStar: tour.total_star || 0,
+            reviewCount: tour.review_count || 0,
+            slug: tour.slug,
+          }))
+        );
+        // const tourRes = await tourService.getTours(1, 6);
+        // const toursData = tourRes.data;
+        // const pagination = tourRes.pagination;
+        // console.log("Pagination data:", pagination);
+        // console.log("Tour price sau khi sài ref:", parsedPrices);
+        // setPagination(pagination);
+        // setTours(
+        //   toursData.map((tour: any) => ({
+        //     id: tour.id,
+        //     title: tour.title,
+        //     price:
+        //       getMinAdultPriceByTourId(tourPricesRef.current, tour.id)?.toString() ||
+        //       "0",
+        //     imageUrl: tour.poster_url,
+        //     totalStar: tour.total_star || 0,
+        //     reviewCount: tour.review_count || 0,
+        //   }))
+        // );
+      } catch (error) {
+        console.error("Lỗi khi load dữ liệu:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const formatVND = (value: number) =>
+    new Intl.NumberFormat("vi-VN").format(value);
+
+  useEffect(() => {
+    console.log("Tour: ", tours);
+  }, [tours]);
+
+  useEffect(() => {
+    console.log("Tour sau khi price:", tours);
+  }, [tourPrices]);
+
+  useEffect(() => {
+    if (tourPrices.length == 0) return; // đợi prices có rồi mới chạy
+    if (!tourPrices || hasFetched.current) return;
+
+    hasFetched.current = true;
+    const fetchTours = async () => {
+      try {
+        if (hasFetched.current) return;
+        hasFetched.current = true;
+        if (tours.length != 0) return;
+        const tourRes = await tourService.getTours(1, 6);
+        const toursData = tourRes.data;
+        const pagination = tourRes.pagination;
+
+        setPagination(pagination);
+
+        setTours(
+          toursData.map((tour: any) => ({
+            id: tour.id,
+            title: tour.title,
+            price:
+              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            imageUrl: tour.poster_url,
+            totalStar: tour.total_star || 0,
+            reviewCount: tour.review_count || 0,
+          }))
+        );
+      } catch (err) {
+        console.error("Lỗi khi load tours:", err);
+      }
+    };
+
+    fetchTours();
+  }, [tourPrices]);
+
+  const handleMoreTours = async () => {
+    if (pagination.hasNextPage) {
+      try {
+        const nextPage = pagination.currentPage + 1;
+        const tourRes = await tourService.getTours(nextPage, 6);
+        const toursData = tourRes.data;
+        const newPagination = tourRes.pagination;
+
+        setPagination(newPagination);
+        if (newPagination.hasNextPage === false) {
+          setExistTourMore(false);
+        }
+        console.log("Tour Price: ", tourPrices);
+        setTours((prevTours) => [
+          ...prevTours,
+          ...toursData.map((tour: any) => ({
+            id: tour.id,
+            title: tour.title,
+            price:
+              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            imageUrl: tour.poster_url,
+            totalStar: tour.total_star || 0,
+            reviewCount: tour.review_count || 0,
+            slug: tour.slug,
+          })),
+        ]);
+      } catch (error) {
+        console.error("Lỗi khi load thêm tour:", error);
+      }
+    }
+  };
+
+  const getMinAdultPriceByTourId = (
+    prices: TourPrice[],
+    tourId: number
+  ): number | null => {
+    for (let i = positionRef.current; i < prices.length; i++) {
+      if (prices[i].tourId > tourId) return 0;
+      if (prices[i].tourId == tourId) {
+        positionRef.current = i + 1;
+        console.log("tour min id: ", prices[i].tourId);
+        console.log("adult: ", prices[i].adultPrice);
+        return prices[i].adultPrice;
+      }
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
@@ -113,11 +252,16 @@ const MainTours: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl">
-            Xem thêm tour khác
-          </button>
-        </div>
+        {existTourMore && (
+          <div className="text-center mt-12">
+            <button
+              onClick={handleMoreTours}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl cursor-pointer"
+            >
+              Xem thêm tour khác
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

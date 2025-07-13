@@ -1,138 +1,77 @@
-import React from "react";
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-
-const tours = [
-  {
-    title: "MỸ THO - BẾN TRE",
-    duration: "1 NGÀY",
-    price: "480.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop",
-  },
-  {
-    title: "TOUR TÂY NINH",
-    duration: "1 NGÀY",
-    price: "1.150.000VND",
-    imageUrl:
-      "https://tourbonphuong.com/thumbs/700x800x1/upload/hinhanh/tour-tay-ninh-nui-ba-den-1-ngay-3024.webp",
-  },
-  {
-    title: "TOUR ĐỊA ĐẠO CỦ CHI",
-    duration: "NỬA NGÀY",
-    price: "350.000VND",
-    imageUrl:
-      "https://tourbonphuong.com/thumbs/700x800x1/upload/hinhanh/tour-tay-ninh-nui-ba-den-1-ngay-3024.webp",
-  },
-  {
-    title: "TOUR CẦN GIỜ",
-    duration: "1 NGÀY",
-    price: "750.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop",
-  },
-  {
-    title: "MỸ THO - BẾN TRE - CẦN THƠ",
-    duration: "2 NGÀY 1 ĐÊM",
-    price: "1.550.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1920&h=1080&fit=crop",
-  },
-  {
-    title: "TOUR CÔN ĐẢO",
-    duration: "3 NGÀY 2 ĐÊM",
-    price: "3.200.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1920&h=1080&fit=crop",
-  },
-  {
-    title: "TOUR PHÚ QUỐC",
-    duration: "3 NGÀY 2 ĐÊM",
-    price: "2.900.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1920&h=1080&fit=crop",
-  },
-  {
-    title: "TOUR ĐÀ LẠT",
-    duration: "2 NGÀY 1 ĐÊM",
-    price: "1.800.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop",
-  },
-  {
-    title: "TOUR NHA TRANG",
-    duration: "3 NGÀY 2 ĐÊM",
-    price: "2.500.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1920&h=1080&fit=crop",
-  },
-  {
-    title: "TOUR SAPA",
-    duration: "3 NGÀY 2 ĐÊM",
-    price: "3.400.000VND",
-    imageUrl:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop",
-  },
-];
-
-// Custom arrow components nhỏ gọn, overlay trong card
-const ArrowLeft = (props: any) => (
-  <button
-    {...props}
-    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/95 shadow-lg rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 transition-all"
-    style={{ ...props.style, display: "flex", padding: 0 }}
-    aria-label="Previous"
-  >
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-  </button>
-);
-const ArrowRight = (props: any) => (
-  <button
-    {...props}
-    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/95 shadow-lg rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 transition-all"
-    style={{ ...props.style, display: "flex", padding: 0 }}
-    aria-label="Next"
-  >
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-  </button>
-);
-
-const settings = {
-  infinite: true,
-  speed: 500,
-  slidesToShow: 4,
-  slidesToScroll: 1,
-  arrows: true,
-  nextArrow: <ArrowRight />,
-  prevArrow: <ArrowLeft />,
-  responsive: [
-    {
-      breakpoint: 1024,
-      settings: {
-        slidesToShow: 2,
-      },
-    },
-    {
-      breakpoint: 768,
-      settings: {
-        slidesToShow: 1,
-      },
-    },
-  ],
-};
+import React, { useEffect, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Navigation } from "swiper/modules";
+// @ts-ignore
+import "swiper/css";
+// @ts-ignore
+import "swiper/css/autoplay";
+// @ts-ignore
+import "swiper/css/navigation";
+import { fetchTopBookedTours } from '../services/tour.service';
+import { useNavigate } from 'react-router-dom';
 
 export const FeaturedTours: React.FC = () => {
+  const [tours, setTours] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchTopBookedTours(10)
+      .then((data) => {
+        setTours(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Không thể tải dữ liệu tour nổi bật.');
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full py-8 text-center text-lg text-gray-500">Đang tải tour nổi bật...</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full py-8 text-center text-red-500">{error}</div>
+    );
+  }
+
   return (
     <div className="w-full py-8">
       <h2 className="text-3xl md:text-4xl font-bold text-blue-700 mb-8 text-center">
         TOUR NỔI BẬT TRONG THÁNG
       </h2>
       <div className="relative">
-        <Slider {...settings} className="px-1">
+        <Swiper
+          modules={[Autoplay, Navigation]}
+          spaceBetween={16}
+          slidesPerView={4}
+          loop={true}
+          autoplay={{ delay: 2000, disableOnInteraction: false }}
+          speed={500}
+          navigation={{
+            nextEl: ".featured-next",
+            prevEl: ".featured-prev",
+          }}
+          breakpoints={{
+            1536: { slidesPerView: 4 },
+            1280: { slidesPerView: 3 },
+            1024: { slidesPerView: 3 },
+            768: { slidesPerView: 2 },
+            0: { slidesPerView: 1 },
+          }}
+          threshold={20}
+        >
           {tours.map((tour, idx) => (
-            <div key={idx} className="px-1 group">
-              <div className="relative rounded-2xl shadow-lg overflow-hidden h-full flex flex-col">
+            <SwiperSlide key={idx} className="px-1">
+              <div
+                className="relative rounded-2xl shadow-lg overflow-hidden h-full flex flex-col group cursor-pointer"
+                onClick={() => navigate(`/tour/${tour.slug}`)}
+              >
                 <img
                   src={tour.imageUrl}
                   alt={tour.title}
@@ -146,14 +85,23 @@ export const FeaturedTours: React.FC = () => {
                   <div className="text-base font-semibold text-white mb-2 text-center drop-shadow">
                     Giá: {tour.price}
                   </div>
-                  <button className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center">
+                  <button
+                    className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center"
+                    onClick={e => { e.stopPropagation(); navigate(`/tour/${tour.slug}`); }}
+                  >
                     ĐẶT NGAY
                   </button>
                 </div>
               </div>
-            </div>
+            </SwiperSlide>
           ))}
-        </Slider>
+          <button className="featured-prev absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/95 shadow-lg rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 transition-all" aria-label="Previous">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <button className="featured-next absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/95 shadow-lg rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 transition-all" aria-label="Next">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </Swiper>
       </div>
     </div>
   );

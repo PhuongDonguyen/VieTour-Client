@@ -1,0 +1,3 @@
+export const TOUR_IMAGE_API = {
+  LIST: 'http://localhost:8000/api/tour_images', // ?tour_id=...
+}; 

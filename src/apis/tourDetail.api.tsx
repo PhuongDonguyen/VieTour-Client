@@ -1,0 +1,3 @@
+export const TOUR_DETAIL_API = {
+  LIST: 'http://localhost:8000/api/tour_details', // ?tour_id=...
+}; 
