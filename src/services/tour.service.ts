@@ -32,6 +32,7 @@ export const fetchTopBookedTours = async (limit: number = 10) => {
 
 export const fetchTours = async (page: number, limit: number) => {
   const res = await getTours(page, limit);
-  if (res.data && res.data.success) return res.data.data;
+  if (res.data && res.data.success) return res.data;
   throw new Error("Không lấy được tour");
 };
+
