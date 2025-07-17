@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
-import { tourService } from "../services/tourService";
+import { fetchTours } from "../services/tour.service";
 import { tourPriceService } from "../services/tourPriceService";
 import { useNavigate } from "react-router-dom";
 import { TourPrices } from "./TourPrices";
@@ -87,19 +87,10 @@ const MainTours: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch tour prices trước
-        const tourPriceRes = await tourPriceService.getAllSortedTourPrices();
-        const tourPricesData = tourPriceRes.data;
-        const parsedPrices = tourPricesData.map((price: any) => ({
-          adultPrice: price.adult_price,
-          tourId: price.tour_id,
-        }));
-        setTourPrices(parsedPrices);
-        console.log("Tour price trước khi sài ref:", parsedPrices);
-        tourPricesRef.current = parsedPrices;
+
 
         // 2. Sau đó mới fetch tour
-        const tourRes = await tourService.getTours(1, 6);
+        const tourRes = await fetchTours(1, 6);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
 
@@ -109,33 +100,13 @@ const MainTours: React.FC = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price: formatVND(
-              getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
-            ),
+            price: tour.price,
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
             slug: tour.slug,
           }))
         );
-        // const tourRes = await tourService.getTours(1, 6);
-        // const toursData = tourRes.data;
-        // const pagination = tourRes.pagination;
-        // console.log("Pagination data:", pagination);
-        // console.log("Tour price sau khi sài ref:", parsedPrices);
-        // setPagination(pagination);
-        // setTours(
-        //   toursData.map((tour: any) => ({
-        //     id: tour.id,
-        //     title: tour.title,
-        //     price:
-        //       getMinAdultPriceByTourId(tourPricesRef.current, tour.id)?.toString() ||
-        //       "0",
-        //     imageUrl: tour.poster_url,
-        //     totalStar: tour.total_star || 0,
-        //     reviewCount: tour.review_count || 0,
-        //   }))
-        // );
       } catch (error) {
         console.error("Lỗi khi load dữ liệu:", error);
       }
@@ -156,16 +127,10 @@ const MainTours: React.FC = () => {
   }, [tourPrices]);
 
   useEffect(() => {
-    if (tourPrices.length == 0) return; // đợi prices có rồi mới chạy
-    if (!tourPrices || hasFetched.current) return;
 
-    hasFetched.current = true;
-    const fetchTours = async () => {
+    const loadTours = async () => {
       try {
-        if (hasFetched.current) return;
-        hasFetched.current = true;
-        if (tours.length != 0) return;
-        const tourRes = await tourService.getTours(1, 6);
+        const tourRes = await fetchTours(1, 6);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
 
@@ -175,8 +140,7 @@ const MainTours: React.FC = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price:
-              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            price: tour.price,
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
@@ -187,14 +151,14 @@ const MainTours: React.FC = () => {
       }
     };
 
-    fetchTours();
+    loadTours();
   }, [tourPrices]);
 
   const handleMoreTours = async () => {
     if (pagination.hasNextPage) {
       try {
         const nextPage = pagination.currentPage + 1;
-        const tourRes = await tourService.getTours(nextPage, 6);
+        const tourRes = await fetchTours(nextPage, 6);
         const toursData = tourRes.data;
         const newPagination = tourRes.pagination;
 
@@ -208,8 +172,7 @@ const MainTours: React.FC = () => {
           ...toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price:
-              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            price: tour.price,
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
@@ -220,22 +183,6 @@ const MainTours: React.FC = () => {
         console.error("Lỗi khi load thêm tour:", error);
       }
     }
-  };
-
-  const getMinAdultPriceByTourId = (
-    prices: TourPrice[],
-    tourId: number
-  ): number | null => {
-    for (let i = positionRef.current; i < prices.length; i++) {
-      if (prices[i].tourId > tourId) return 0;
-      if (prices[i].tourId == tourId) {
-        positionRef.current = i + 1;
-        console.log("tour min id: ", prices[i].tourId);
-        console.log("adult: ", prices[i].adultPrice);
-        return prices[i].adultPrice;
-      }
-    }
-    return null;
   };
 
   return (

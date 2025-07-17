@@ -11,3 +11,6 @@ export const getTourImages = (tour_id: number) =>
 
 export const getTopBookedTours = (limit: number) =>
   axiosInstance.get(`/api/tours/top-booked?limit=${limit}`); 
+
+export const getTours = (page: number, limit: number) => 
+  axiosInstance.get(`/api/tours?page=${page}&limit=${limit}&is_active=true`);
