@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { tourCategoryService } from "../services/tourCategoryService";
 import { TourCard } from "../components/TourCard";
-import { tourService } from "../services/tourService";
+// import { tourService } from "../services/tourService";
 import { tourPriceService } from "../services/tourPriceService";
 
 interface TourCardProps {
@@ -131,48 +131,48 @@ export const TourByCategory = () => {
   const [nameTourCategory, setNameTourCategory] = useState<string>("");
   const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
   // const [tours, setTours] = useState
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!slug) return;
-        const tourCategory = await tourCategoryService.getTourCategoryBySlug(
-          slug
-        );
-        setNameTourCategory(tourCategory.data[0].name);
-        const tourPriceRes = await tourPriceService.getAllTourPrices();
-        const tourPricesData = tourPriceRes.data;
-        const parsedPrices = tourPricesData.map((price: any) => ({
-          adultPrice: price.adult_price,
-          tourId: price.tour_id,
-        }));
-        const tourRes = await tourService.getToursByTourCategoryId(
-          tourCategory.data[0].id
-        );
-        const tourResData = tourRes.data;
-        setTours(
-          tourResData.map((tour: any) => ({
-            id: tour.id,
-            title: tour.title,
-            originalPrice: formatVND(
-              getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
-            ),
-            discountedPrice: 680000,
-            image: tour.poster_url,
-            totalStar: tour.total_star || 0,
-            reviewCount: tour.review_count || 0,
-            views: tour.view_count?.toString() || "",
-            comments: "3.8M",
-            participants: "45M",
-            discount: 23,
-            slug: tour.slug
-          }))
-        );
-      } catch (error) {
-        console.error("Lỗi khi load dữ liệu: ", error);
-      }
-    };
-    fetchData();
-  }, [slug]);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       if (!slug) return;
+  //       const tourCategory = await tourCategoryService.getTourCategoryBySlug(
+  //         slug
+  //       );
+  //       setNameTourCategory(tourCategory.data[0].name);
+  //       const tourPriceRes = await tourPriceService.getAllTourPrices();
+  //       const tourPricesData = tourPriceRes.data;
+  //       const parsedPrices = tourPricesData.map((price: any) => ({
+  //         adultPrice: price.adult_price,
+  //         tourId: price.tour_id,
+  //       }));
+  //       const tourRes = await tourService.getToursByTourCategoryId(
+  //         tourCategory.data[0].id
+  //       );
+  //       const tourResData = tourRes.data;
+  //       setTours(
+  //         tourResData.map((tour: any) => ({
+  //           id: tour.id,
+  //           title: tour.title,
+  //           originalPrice: formatVND(
+  //             getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
+  //           ),
+  //           discountedPrice: 680000,
+  //           image: tour.poster_url,
+  //           totalStar: tour.total_star || 0,
+  //           reviewCount: tour.review_count || 0,
+  //           views: tour.view_count?.toString() || "",
+  //           comments: "3.8M",
+  //           participants: "45M",
+  //           discount: 23,
+  //           slug: tour.slug
+  //         }))
+  //       );
+  //     } catch (error) {
+  //       console.error("Lỗi khi load dữ liệu: ", error);
+  //     }
+  //   };
+  //   fetchData();
+  // }, [slug]);
 
   useEffect(() => {
     console.log("Tours: ", tours);

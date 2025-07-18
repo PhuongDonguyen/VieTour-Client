@@ -1,9 +1,10 @@
 import React, { useRef, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
-import { tourService } from "../services/tourService";
+import { fetchTours } from "../services/tour.service";
 import { tourPriceService } from "../services/tourPriceService";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { TourPrices } from "./TourPrices";
+import { Star, MapPin, Clock, Users, Heart } from "lucide-react";
 
 type TourCardProps = {
   id: number;
@@ -15,134 +16,145 @@ type TourCardProps = {
   slug: string;
 };
 
-type TourPrice = {
-  adultPrice: number;
-  tourId: number;
-};
-
-
-
 const TourCard: React.FC<TourCardProps> = ({
-  title,
-  price,
-  imageUrl,
-  totalStar,
-  reviewCount,
+  title = "Khám phá Vịnh Hạ Long - Thiên đường trên mặt nước",
+  price = 500000,
+  imageUrl = "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop",
+  totalStar = 4.5,
+  reviewCount = 128,
   slug,
+  // duration = "3 ngày 2 đêm",
+  // location = "Quảng Ninh",
+  // maxGuests = 20,
+  // discount = 15
 }) => {
+  const [isLiked, setIsLiked] = React.useState(false);
   const navigate = useNavigate();
   const handleGoDetail = () => {
     navigate(`/tour/${slug}`);
+    console.log(`Navigate to: /tour/${slug}`);
   };
 
-  
+  // const originalPrice = Math.round(parseInt(price.replace(/,/g, '')) / (1 - discount / 100));
+
   return (
-    <div className="w-full max-w-sm bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-      {/* ✅ Hình ảnh với hiệu ứng zoom khi hover */}
-      <div
-        className="relative h-56 overflow-hidden group rounded-t-xl cursor-pointer"
-        onClick={handleGoDetail}
+    <div className="group relative w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 cursor-pointer">
+      {/* Discount Badge */}
+      {/* {discount && (
+        <div className="absolute top-4 left-4 z-10 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+          -{discount}%
+        </div>
+      )} */}
+
+      {/* Heart Icon */}
+      {/* <button
+        onClick={handleLike}
+        className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-sm rounded-full p-2 transition-all duration-300 hover:bg-white hover:scale-110"
       >
+        <Heart
+          className={`w-5 h-5 transition-colors duration-300 ${
+            isLiked ? 'text-red-500 fill-current' : 'text-gray-600'
+          }`}
+        />
+      </button> */}
+
+      {/* Image Container */}
+      <div className="relative h-64 overflow-hidden" onClick={handleGoDetail}>
         <img
           src={imageUrl}
           alt={title}
-          className="w-full h-full object-cover transform transition-transform duration-300 ease-in-out group-hover:scale-110"
+          className="w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-125"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent transition duration-300"></div>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+        {/* Floating Info */}
+        {/* <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              <span>{duration}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              <span>Tối đa {maxGuests} khách</span>
+            </div>
+          </div>
+        </div> */}
       </div>
 
-      {/* Nội dung card */}
-      <div className="p-4">
-        <h3 className="text-base font-bold text-gray-800 leading-tight mb-2 min-h-[48px] line-clamp-2">
+      {/* Content */}
+      <div className="p-6 space-y-4">
+        {/* Location */}
+        {/*         
+        <div className="flex items-center gap-1 text-gray-500">
+          <MapPin className="w-4 h-4" />
+          <span className="text-sm">{location}</span>
+        </div> */}
+
+        {/* Title */}
+        <h3 className="text-lg font-bold text-gray-800 leading-tight min-h-[56px] line-clamp-2 group-hover:text-orange-600 transition-colors duration-300">
           {title}
         </h3>
-        <p className="text-sm text-gray-600 mb-3">
-          Giá gốc:{" "}
-          <span className="text-lg text-red-600 font-bold">{price}VND</span>
-        </p>
+
+        {/* Rating */}
+        <div className="flex items-center justify-between">
+          <RatingStars totalStar={totalStar} reviewCount={reviewCount} />
+        </div>
+
+        {/* Price */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {/* {discount && (
+              <span className="text-sm text-gray-500 line-through">
+                {originalPrice.toLocaleString()}₫
+              </span>
+            )} */}
+            <span className="text-2xl font-bold text-orange-600">
+              {price.toLocaleString()}₫
+            </span>
+            <span className="text-sm text-gray-500 line-through">
+              {price.toLocaleString()}₫
+            </span>
+          </div>
+          <p className="text-sm text-gray-600">/ người</p>
+        </div>
+
+        {/* Button */}
         <button
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
+          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
           onClick={handleGoDetail}
         >
-          ĐẶT TOUR
+          <span className="flex items-center justify-center gap-2">
+            ĐẶT TOUR NGAY
+            <svg
+              className="w-4 h-4 transform group-hover:translate-x-1 transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </span>
         </button>
       </div>
-      {/* Footer */}
-      <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-        <RatingStars totalStar={totalStar} reviewCount={reviewCount} />
-      </div>
+
+      {/* Decorative Elements */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500"></div>
+      <div className="absolute -bottom-1 -right-1 w-20 h-20 bg-gradient-to-tl from-orange-100 to-transparent rounded-full opacity-50"></div>
     </div>
   );
 };
 
 const MainTours: React.FC = () => {
-  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
   const [tours, setTours] = useState<TourCardProps[]>([]);
   const [pagination, setPagination] = useState<any>({});
   const [existTourMore, setExistTourMore] = useState<boolean>(true);
-  const positionRef = useRef(0);
-  const tourPricesRef = useRef<TourPrice[]>([]);
-  const hasFetched = useRef<boolean>(false);
-  const hasTourFetched = useRef<boolean>(false);
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // 1. Fetch tour prices trước
-        const tourPriceRes = await tourPriceService.getAllSortedTourPrices();
-        const tourPricesData = tourPriceRes.data;
-        const parsedPrices = tourPricesData.map((price: any) => ({
-          adultPrice: price.adult_price,
-          tourId: price.tour_id,
-        }));
-        setTourPrices(parsedPrices);
-        console.log("Tour price trước khi sài ref:", parsedPrices);
-        tourPricesRef.current = parsedPrices;
-
-        // 2. Sau đó mới fetch tour
-        const tourRes = await tourService.getTours(1, 6);
-        const toursData = tourRes.data;
-        const pagination = tourRes.pagination;
-
-        console.log("Pagination data:", pagination);
-        setPagination(pagination);
-        setTours(
-          toursData.map((tour: any) => ({
-            id: tour.id,
-            title: tour.title,
-            price: formatVND(
-              getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
-            ),
-            imageUrl: tour.poster_url,
-            totalStar: tour.total_star || 0,
-            reviewCount: tour.review_count || 0,
-            slug: tour.slug,
-          }))
-        );
-        // const tourRes = await tourService.getTours(1, 6);
-        // const toursData = tourRes.data;
-        // const pagination = tourRes.pagination;
-        // console.log("Pagination data:", pagination);
-        // console.log("Tour price sau khi sài ref:", parsedPrices);
-        // setPagination(pagination);
-        // setTours(
-        //   toursData.map((tour: any) => ({
-        //     id: tour.id,
-        //     title: tour.title,
-        //     price:
-        //       getMinAdultPriceByTourId(tourPricesRef.current, tour.id)?.toString() ||
-        //       "0",
-        //     imageUrl: tour.poster_url,
-        //     totalStar: tour.total_star || 0,
-        //     reviewCount: tour.review_count || 0,
-        //   }))
-        // );
-      } catch (error) {
-        console.error("Lỗi khi load dữ liệu:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const formatVND = (value: number) =>
     new Intl.NumberFormat("vi-VN").format(value);
@@ -152,20 +164,9 @@ const MainTours: React.FC = () => {
   }, [tours]);
 
   useEffect(() => {
-    console.log("Tour sau khi price:", tours);
-  }, [tourPrices]);
-
-  useEffect(() => {
-    if (tourPrices.length == 0) return; // đợi prices có rồi mới chạy
-    if (!tourPrices || hasFetched.current) return;
-
-    hasFetched.current = true;
-    const fetchTours = async () => {
+    const loadTours = async () => {
       try {
-        if (hasFetched.current) return;
-        hasFetched.current = true;
-        if (tours.length != 0) return;
-        const tourRes = await tourService.getTours(1, 6);
+        const tourRes = await fetchTours(1, 6);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
 
@@ -175,11 +176,11 @@ const MainTours: React.FC = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price:
-              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            price: tour.price,
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
+            slug: tour.slug
           }))
         );
       } catch (err) {
@@ -187,14 +188,14 @@ const MainTours: React.FC = () => {
       }
     };
 
-    fetchTours();
-  }, [tourPrices]);
+    loadTours();
+  }, []);
 
   const handleMoreTours = async () => {
     if (pagination.hasNextPage) {
       try {
         const nextPage = pagination.currentPage + 1;
-        const tourRes = await tourService.getTours(nextPage, 6);
+        const tourRes = await fetchTours(nextPage, 6);
         const toursData = tourRes.data;
         const newPagination = tourRes.pagination;
 
@@ -202,14 +203,13 @@ const MainTours: React.FC = () => {
         if (newPagination.hasNextPage === false) {
           setExistTourMore(false);
         }
-        console.log("Tour Price: ", tourPrices);
+        console.log("tour: ", toursData);
         setTours((prevTours) => [
           ...prevTours,
           ...toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price:
-              getMinAdultPriceByTourId(tourPrices, tour.id)?.toString() || "0",
+            price: tour.price,
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
@@ -220,22 +220,6 @@ const MainTours: React.FC = () => {
         console.error("Lỗi khi load thêm tour:", error);
       }
     }
-  };
-
-  const getMinAdultPriceByTourId = (
-    prices: TourPrice[],
-    tourId: number
-  ): number | null => {
-    for (let i = positionRef.current; i < prices.length; i++) {
-      if (prices[i].tourId > tourId) return 0;
-      if (prices[i].tourId == tourId) {
-        positionRef.current = i + 1;
-        console.log("tour min id: ", prices[i].tourId);
-        console.log("adult: ", prices[i].adultPrice);
-        return prices[i].adultPrice;
-      }
-    }
-    return null;
   };
 
   return (
