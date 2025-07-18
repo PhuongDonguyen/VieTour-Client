@@ -4,7 +4,7 @@ import { MapPin, Calendar, Users } from "lucide-react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 import 'swiper/css';
-import { getCarouselData } from "../apis/carousel.api";
+import { getCarouselData } from "../../apis/carousel.api";
 
 export const HeroSection = () => {
   const [slides, setSlides] = useState<any[]>([]);
@@ -54,7 +54,7 @@ export const HeroSection = () => {
                 <div className="absolute inset-0 bg-black/40"></div>
                 <div className="absolute inset-0 flex items-center">
                   <div className="text-left text-white max-w-5xl px-40 ml-8">
-                    <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                    <h1 className="text-3xl md:text-6xl font-semibold mb-6 leading-tight">
                       {slide.title}
                     </h1>
                     <div className="flex items-center space-x-4 mb-8">
@@ -71,17 +71,17 @@ export const HeroSection = () => {
                         <span>Theo đoàn</span>
                       </div> */}
                     </div>
-                    <div className="text-4xl md:text-5xl font-bold text-orange-500 mb-8">
+                    <div className="text-3xl md:text-3xl font-bold text-orange-500 mb-8">
                       Giá: {slide.price}
                     </div>
                     <p className="text-lg mb-8 text-white/80 max-w-2xl mx-auto">
                       {slide.description}
                     </p>
                     <div className="flex space-x-4">
-                      <span className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold transition-colors duration-300 transform hover:scale-105 inline-block">
+                      {/* <span className="bg-orange-500 hover:bg-orange-600 text-white px-7 py-3 rounded-lg font-semibold transition-colors duration-300 transform hover:scale-105 inline-block">
                         ĐẶT NGAY
-                      </span>
-                      <span className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 rounded-lg font-semibold transition-all duration-300 inline-block">
+                      </span> */}
+                      <span className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-7 py-3 rounded-lg font-semibold transition-all duration-300 inline-block">
                         XEM CHI TIẾT
                       </span>
                     </div>
@@ -120,9 +120,9 @@ export const HeroSection = () => {
                       Giá: {slide.price}
                     </div>
                     <div className="flex space-x-4">
-                      <span className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold transition-colors duration-300 transform hover:scale-105 inline-block">
+                      {/* <span className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold transition-colors duration-300 transform hover:scale-105 inline-block">
                         ĐẶT NGAY
-                      </span>
+                      </span> */}
                       <span className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 rounded-lg font-semibold transition-all duration-300 inline-block">
                         XEM CHI TIẾT
                       </span>
