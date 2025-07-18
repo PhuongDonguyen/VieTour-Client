@@ -6,6 +6,7 @@ import About from '../pages/About';
 import ForgotPassword from '../pages/ForgotPassword';
 import EnterOtp from '../pages/EnterOtp';
 import LoginSuccess from '../pages/LoginSuccess';
+import Profile from '../pages/Profile';
 
 export const clientRoutes = [
   {
@@ -52,8 +53,8 @@ export const clientRoutes = [
     path: '/about',
     element: <About />,
   },
-  // {
-  //   path: 'profile',
-  //   element: <Profile/>
-  // }
+  {
+    path: 'profile',
+    element: <Profile/>
+  }
 ];

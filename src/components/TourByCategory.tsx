@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getTourCategoriesBySlug } from "../services/tourCategory.service";
 import { TourCard } from "../components/TourCard";
 import {fetchToursByCategoryId} from "../services/tour.service"
+import { Loading } from "./Loading";
 
 interface TourCardProps {
   id: string;
@@ -122,12 +123,14 @@ export const TourByCategory = () => {
   ];
   const { slug } = useParams<{ slug: string }>();
   const [tours, setTours] = useState<TourCardProps[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [nameTourCategory, setNameTourCategory] = useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (!slug) return;
+        setLoading(true);
         const tourCategory = await getTourCategoriesBySlug(slug);
         setNameTourCategory(tourCategory.data[0].name);
         const tourRes = await fetchToursByCategoryId(
@@ -153,6 +156,7 @@ export const TourByCategory = () => {
       } catch (error) {
         console.error("Lỗi khi load dữ liệu: ", error);
       }
+      setLoading(false);
     };
     fetchData();
   }, [slug]);
@@ -170,12 +174,12 @@ export const TourByCategory = () => {
           </h2>
           <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
         </div>
-
+        {loading ? <Loading/>: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tours.map((tour, index) => (
             <TourCard key={index} {...tour} />
           ))}
-        </div>
+        </div>)}
       </div>
     </div>
   );

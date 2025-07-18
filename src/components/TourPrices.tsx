@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchTourIsActive, fetchTours } from "../services/tour.service";
 import { useNavigate } from "react-router-dom";
+import {Loading} from "./Loading"
 type Tour = {
   id: number;
   title: string;
@@ -213,12 +214,14 @@ export const TourPrices = () => {
   // ];
   const [tours, setTours] = useState<Tour[]>([]);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const handleGoDetail = (slug:string) => {
     navigate(`/tour/${slug}`);
   };
   useEffect(() => {
     const fetchTours = async () => {
       try {
+        setLoading(true);
         const tourRes = await fetchTourIsActive(true);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
@@ -234,6 +237,7 @@ export const TourPrices = () => {
             slug: tour.slug
           }))
         );
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching tour prices:", error);
       }
@@ -253,7 +257,7 @@ export const TourPrices = () => {
         <h2 className="text-3xl font-bold text-blue-600 mb-2">BẢNG GIÁ</h2>
         <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
       </div>
-
+      {loading ? <Loading/> :(
       <div className="overflow-x-auto shadow-lg rounded-lg">
         <table className="w-full border-collapse bg-white">
           <thead>
@@ -313,7 +317,7 @@ export const TourPrices = () => {
             ))}
           </tbody>
         </table>
-      </div>
+      </div>)}
     </div>
   );
 };
