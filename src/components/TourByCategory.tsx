@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { tourCategoryService } from "../services/tourCategoryService";
+import { getTourCategoriesBySlug } from "../services/tourCategory.service";
 import { TourCard } from "../components/TourCard";
 // import { tourService } from "../services/tourService";
-import { tourPriceService } from "../services/tourPriceService";
-
+import {fetchToursByCategoryId} from "../services/tour.service"
 interface TourCardProps {
   id: string;
   title: string;
@@ -21,10 +20,6 @@ interface TourCardProps {
   onBookTour?: (id: string) => void;
 }
 
-type TourPrice = {
-  adultPrice: number;
-  tourId: number;
-};
 
 export const TourByCategory = () => {
   const tourData = [
@@ -129,67 +124,43 @@ export const TourByCategory = () => {
   const [tourCategories, setTourCategories] = useState<any>(null);
   const [tours, setTours] = useState<TourCardProps[]>([]);
   const [nameTourCategory, setNameTourCategory] = useState<string>("");
-  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
-  // const [tours, setTours] = useState
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       if (!slug) return;
-  //       const tourCategory = await tourCategoryService.getTourCategoryBySlug(
-  //         slug
-  //       );
-  //       setNameTourCategory(tourCategory.data[0].name);
-  //       const tourPriceRes = await tourPriceService.getAllTourPrices();
-  //       const tourPricesData = tourPriceRes.data;
-  //       const parsedPrices = tourPricesData.map((price: any) => ({
-  //         adultPrice: price.adult_price,
-  //         tourId: price.tour_id,
-  //       }));
-  //       const tourRes = await tourService.getToursByTourCategoryId(
-  //         tourCategory.data[0].id
-  //       );
-  //       const tourResData = tourRes.data;
-  //       setTours(
-  //         tourResData.map((tour: any) => ({
-  //           id: tour.id,
-  //           title: tour.title,
-  //           originalPrice: formatVND(
-  //             getMinAdultPriceByTourId(parsedPrices, tour.id) || 0
-  //           ),
-  //           discountedPrice: 680000,
-  //           image: tour.poster_url,
-  //           totalStar: tour.total_star || 0,
-  //           reviewCount: tour.review_count || 0,
-  //           views: tour.view_count?.toString() || "",
-  //           comments: "3.8M",
-  //           participants: "45M",
-  //           discount: 23,
-  //           slug: tour.slug
-  //         }))
-  //       );
-  //     } catch (error) {
-  //       console.error("Lỗi khi load dữ liệu: ", error);
-  //     }
-  //   };
-  //   fetchData();
-  // }, [slug]);
 
   useEffect(() => {
-    console.log("Tours: ", tours);
-  }, [tours]);
+    const fetchData = async () => {
+      try {
+        if (!slug) return;
+        const tourCategory = await getTourCategoriesBySlug(slug);
+        setNameTourCategory(tourCategory.data[0].name);
+        const tourRes = await fetchToursByCategoryId(
+          tourCategory.data[0].id
+        );
+        const tourResData = tourRes.data;
+        setTours(
+          tourResData.map((tour: any) => ({
+            id: tour.id,
+            title: tour.title,
+            originalPrice: tour.price || 0,
+            discountedPrice: 680000,
+            image: tour.poster_url,
+            totalStar: tour.total_star || 0,
+            reviewCount: tour.review_count || 0,
+            views: tour.view_count?.toString() || "",
+            comments: "3.8M",
+            participants: "45M",
+            discount: 23,
+            slug: tour.slug
+          }))
+        );
+      } catch (error) {
+        console.error("Lỗi khi load dữ liệu: ", error);
+      }
+    };
+    fetchData();
+  }, [slug]);
 
-  const formatVND = (value: number) =>
-    new Intl.NumberFormat("vi-VN").format(value);
 
-  const getMinAdultPriceByTourId = (
-    prices: TourPrice[],
-    tourId: number
-  ): number | null => {
-    const filtered = prices.filter((t) => t.tourId === tourId);
-    if (filtered.length === 0) return null;
 
-    return Math.min(...filtered.map((t) => t.adultPrice));
-  };
+
 
   return (
     <div className="min-h-screen mt-10 bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
