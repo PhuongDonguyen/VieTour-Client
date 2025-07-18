@@ -1,3 +1,7 @@
-export const TOUR_IMAGE_API = {
-  LIST: 'http://localhost:8000/api/tour_images', // ?tour_id=...
-}; 
+import axiosInstance from './axiosInstance';
+
+export const getTourImages = () =>
+  axiosInstance.get('/api/tour_images');
+
+export const getTourImagesByTourId = (tour_id: number) =>
+  axiosInstance.get(`/api/tour_images?tour_id=${tour_id}`);

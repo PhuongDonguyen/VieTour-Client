@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { tourCategoryService } from "../services/tourCategoryService";
+import { tourCategoryService } from "../services/tourCategory.service";
 import { TourCard } from "../components/TourCard";
 // import { tourService } from "../services/tourService";
-import { tourPriceService } from "../services/tourPriceService";
+import { tourPriceService } from "../services/tourPrice.service";
 
 interface TourCardProps {
   id: string;

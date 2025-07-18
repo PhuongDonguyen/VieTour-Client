@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { tourPriceService } from "../services/tourPriceService";
+import { tourPriceService } from "../services/tourPrice.service";
 import { fetchTours } from "../services/tour.service";
 import { useNavigate } from "react-router-dom";
 type TourPrice = {

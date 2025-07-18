@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
 import { fetchTours } from "../services/tour.service";
-import { tourPriceService } from "../services/tourPriceService";
+import { tourPriceService } from "../services/tourPrice.service";
 import { Navigate, useNavigate } from "react-router-dom";
 import { TourPrices } from "./TourPrices";
 import { Star, MapPin, Clock, Users, Heart } from "lucide-react";

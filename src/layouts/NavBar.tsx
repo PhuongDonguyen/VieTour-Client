@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Search, Menu, X, ChevronDown } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Modal from '../components/Modal';
 import LoginForm from '../components/LoginForm';
 import SignupForm from '../components/SignupForm';
 import { useAuth } from '../hooks/useAuth';
+import { getTourCategories } from '../apis/tourCategory.api';
 
 export const NavBar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -20,12 +21,22 @@ export const NavBar = () => {
 
   const { logout } = useAuth();
 
+  const [tourCategories, setTourCategories] = useState<any[]>([]);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    getTourCategories().then(res => {
+      if (res.data && res.data.success) {
+        setTourCategories(res.data.data);
+      }
+    });
   }, []);
 
   const handleDropdownToggle = (dropdownName: string) => {
@@ -72,15 +83,18 @@ export const NavBar = () => {
                 </button>
                 {activeDropdown === 'tour' && (
                   <div
-                    className={`absolute top-full left-0 mt-4 w-48 shadow-lg py-2 z-50 backdrop-blur-sm ${isScrolled ? 'bg-white' : 'bg-white/10'}`}
+                    className={`absolute top-full left-0 mt-4 w-56 shadow-lg py-2 z-50 backdrop-blur-sm ${isScrolled ? 'bg-white' : 'bg-white/10'}`}
                     onMouseEnter={() => setActiveDropdown('tour')}
                   >
-                    <a href="/tours/day-tours" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Tour trong ngày</a>
-                    <a href="/tours/mekong" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Tour miền Tây</a>
-                    <a href="/tours/north" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Tour Cao Bắc</a>
-                    <a href="/tours/central" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Tour miền Trung</a>
-                    <a href="/tours/south" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Tour miền Nam</a>
-                    <a href="/tours/international" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Tour quốc tế</a>
+                    {tourCategories.map(cat => (
+                      <Link
+                        key={cat.id}
+                        to={`/tour-category/${cat.slug}`}
+                        className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>
@@ -180,12 +194,15 @@ export const NavBar = () => {
                 <div className="px-3 py-2">
                   <div className="text-gray-700 font-medium mb-2">TOUR</div>
                   <div className="pl-4 space-y-1">
-                    <a href="/tours/day-tours" className="block py-1 text-gray-600 hover:text-orange-500">Tour trong ngày</a>
-                    <a href="/tours/mekong" className="block py-1 text-gray-600 hover:text-orange-500">Tour miền Tây</a>
-                    <a href="/tours/north" className="block py-1 text-gray-600 hover:text-orange-500">Tour Cao Bắc</a>
-                    <a href="/tours/central" className="block py-1 text-gray-600 hover:text-orange-500">Tour miền Trung</a>
-                    <a href="/tours/south" className="block py-1 text-gray-600 hover:text-orange-500">Tour miền Nam</a>
-                    <a href="/tours/international" className="block py-1 text-gray-600 hover:text-orange-500">Tour quốc tế</a>
+                    {tourCategories.map(cat => (
+                      <Link
+                        key={cat.id}
+                        to={`/tour-category/${cat.slug}`}
+                        className="block py-1 text-gray-600 hover:text-orange-500"
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
                   </div>
                 </div>
                 <a href="/pricing" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BẢNG GIÁ</a>

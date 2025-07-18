@@ -1,10 +1,9 @@
-import { tourPriceApi } from "../apis/tourPriceApi";
+import { getTourPrices, getTourPricesByTourId, getAllSortedTourPrices } from "../apis/tourPrice.api";
 
 export const tourPriceService = {
     async getAllTourPrices() {
         try {
-            const response = await tourPriceApi.getAll();
-            console.log("Fetched tour prices service:", response);
+            const response = await getTourPrices();
             return response;
         } catch (error) {
             console.error("Error fetching tour prices:", error);
@@ -13,7 +12,7 @@ export const tourPriceService = {
     },
     async getTourPricesByTourId(tourId: number) {
         try {
-            const response = await import("../apis/tourPriceApi").then(m => m.tourPriceApi.getByTourId(tourId));
+            const response = await getTourPricesByTourId(tourId);
             return response;
         } catch (error) {
             console.error("Error fetching tour prices by tour_id:", error);
@@ -22,7 +21,7 @@ export const tourPriceService = {
 
     async getAllSortedTourPrices() {
         try {
-            const response = await tourPriceApi.getAllSorted();
+            const response = await getAllSortedTourPrices();
             return response;
         } catch (error) {
             throw error;
