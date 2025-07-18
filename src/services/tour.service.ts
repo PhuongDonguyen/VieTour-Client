@@ -4,6 +4,8 @@ import {
   getTourImages,
   getTopBookedTours,
   getTours,
+  getToursByCatId,
+  getToursByIsActive,
 } from "../apis/tour.api";
 
 export const fetchTourBySlug = async (slug: string) => {
@@ -34,5 +36,17 @@ export const fetchTours = async (page: number, limit: number) => {
   const res = await getTours(page, limit);
   if (res.data && res.data.success) return res.data;
   throw new Error("Không lấy được tour");
+};
+
+export const fetchToursByCategoryId = async (categoryId: number) =>{
+  const res = await getToursByCatId(categoryId);
+  if (res.data && res.data.success) return res.data;
+  throw new Error("Không lấy được tour theo category");
+};
+
+export const fetchTourIsActive = async (is_active: boolean) => {
+    const res = await getToursByIsActive(is_active);
+  if (res.data && res.data.success) return res.data;
+  throw new Error("Không lấy được tour theo category");
 };
 

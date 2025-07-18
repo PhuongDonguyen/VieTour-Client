@@ -1,12 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { tourPriceService } from "../services/tourPriceService";
-import { fetchTours } from "../services/tour.service";
+import { fetchTourIsActive, fetchTours } from "../services/tour.service";
 import { useNavigate } from "react-router-dom";
-type TourPrice = {
-  adultPrice: number;
-  tourId: number;
-};
-
+import {Loading} from "./Loading"
 type Tour = {
   id: number;
   title: string;
@@ -218,38 +213,31 @@ export const TourPrices = () => {
   //   }
   // ];
   const [tours, setTours] = useState<Tour[]>([]);
-  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
-  const positionRef = useRef(0);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const handleGoDetail = (slug:string) => {
     navigate(`/tour/${slug}`);
   };
   useEffect(() => {
     const fetchTours = async () => {
       try {
-        const tourPriceRes = await tourPriceService.getAllSortedTourPrices();
-        const tourPricesData = tourPriceRes.data;
-        const parsedPrices = tourPricesData.map((price: any) => ({
-          adultPrice: price.adult_price,
-          tourId: price.tour_id,
-        }));
-        setTourPrices(parsedPrices);
-        const tourRes = await tourService.getToursByIsActive(true);
+        setLoading(true);
+        const tourRes = await fetchTourIsActive(true);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
         console.log("Pagination data:", pagination);
-        console.log("Fetched tours:", toursData);
-        positionRef.current = 0;
+
         setTours(
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price: tour.price,
+            price: tour.price || 0,
             transportation: tour.transportation || "Không xác định",
             duration: tour.duration || "Không xác định",
             slug: tour.slug
           }))
         );
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching tour prices:", error);
       }
@@ -262,24 +250,6 @@ export const TourPrices = () => {
     console.log("Tour:", tours);
   }, [tours]);
 
-  const formatVND = (value: number) =>
-    new Intl.NumberFormat("vi-VN").format(value);
-
-  const getMinAdultPriceByTourId = (
-    prices: TourPrice[],
-    tourId: number
-  ): number | null => {
-    for (let i = positionRef.current; i < prices.length; i++) {
-      if (prices[i].tourId > tourId) return 0;
-      if (prices[i].tourId == tourId) {
-        positionRef.current = i + 1;
-        console.log("tour min id: ", prices[i].tourId);
-        console.log("adult: ", prices[i].adultPrice);
-        return prices[i].adultPrice;
-      }
-    }
-    return null;
-  };
 
   return (
     <div className="max-w-7xl mx-auto mt-20 p-4 bg-white">
@@ -287,7 +257,7 @@ export const TourPrices = () => {
         <h2 className="text-3xl font-bold text-blue-600 mb-2">BẢNG GIÁ</h2>
         <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
       </div>
-
+      {loading ? <Loading/> :(
       <div className="overflow-x-auto shadow-lg rounded-lg">
         <table className="w-full border-collapse bg-white">
           <thead>
@@ -347,7 +317,7 @@ export const TourPrices = () => {
             ))}
           </tbody>
         </table>
-      </div>
+      </div>)}
     </div>
   );
 };

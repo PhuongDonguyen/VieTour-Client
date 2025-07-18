@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { tourPriceService } from '../../services/tourPriceService';
+import { tourPriceService } from '../../services/tourPrice.service';
 
 interface TabPriceProps {
   tourId: number;

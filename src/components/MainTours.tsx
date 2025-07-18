@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
 import { fetchTours } from "../services/tour.service";
-import { tourPriceService } from "../services/tourPriceService";
+import { tourPriceService } from "../services/tourPrice.service";
 import { Navigate, useNavigate } from "react-router-dom";
 import { TourPrices } from "./TourPrices";
-import { Star, MapPin, Clock, Users, Heart } from "lucide-react";
+import { Star, MapPin, Clock, Users, Heart, Eye } from "lucide-react";
 
 type TourCardProps = {
   id: number;
@@ -14,6 +14,9 @@ type TourCardProps = {
   totalStar: number;
   reviewCount: number;
   slug: string;
+  duration: string;
+  capacity: number;
+  view: number;
 };
 
 const TourCard: React.FC<TourCardProps> = ({
@@ -23,7 +26,9 @@ const TourCard: React.FC<TourCardProps> = ({
   totalStar = 4.5,
   reviewCount = 128,
   slug,
-  // duration = "3 ngày 2 đêm",
+  duration = "3 ngày 2 đêm",
+  capacity,
+  view
   // location = "Quảng Ninh",
   // maxGuests = 20,
   // discount = 15
@@ -69,7 +74,7 @@ const TourCard: React.FC<TourCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
         {/* Floating Info */}
-        {/* <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+        <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
@@ -77,10 +82,14 @@ const TourCard: React.FC<TourCardProps> = ({
             </div>
             <div className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              <span>Tối đa {maxGuests} khách</span>
+              <span>Tối đa {capacity} khách</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="w-4 h-4" />
+              <span>{view} view</span>
             </div>
           </div>
-        </div> */}
+        </div>
       </div>
 
       {/* Content */}
@@ -117,7 +126,7 @@ const TourCard: React.FC<TourCardProps> = ({
               {price.toLocaleString()}₫
             </span>
           </div>
-          <p className="text-sm text-gray-600">/ người</p>
+          {/* <p className="text-sm text-gray-600">/ người</p> */}
         </div>
 
         {/* Button */}
@@ -180,7 +189,10 @@ const MainTours: React.FC = () => {
             imageUrl: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
-            slug: tour.slug
+            slug: tour.slug,
+            duration: tour.duration,
+            capacity: tour.capacity,
+            view: tour.view_count
           }))
         );
       } catch (err) {
@@ -214,6 +226,9 @@ const MainTours: React.FC = () => {
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
             slug: tour.slug,
+            duration: tour.duration,
+            capacity: tour.capacity,
+            view: tour.view_count
           })),
         ]);
       } catch (error) {
@@ -223,7 +238,7 @@ const MainTours: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br bg-white py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-blue-700 mb-4">TOUR CHÍNH</h2>
