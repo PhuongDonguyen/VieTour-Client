@@ -5,7 +5,7 @@ type TabConditionProps = {
 };
 
 const TabCondition: React.FC<TabConditionProps> = ({ tour_info }) => (
-  <div className="p-6 md:p-8">
+  <div className="w-full max-w-7xl mx-auto p-6 md:p-8">
     {tour_info ? (
       <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: tour_info }} />
     ) : (

@@ -8,7 +8,7 @@ import "swiper/css/autoplay";
 // @ts-ignore
 import "swiper/css/navigation";
 import { fetchTopBookedTours } from '../services/tour.service';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export const FeaturedTours: React.FC = () => {
   const [tours, setTours] = useState<any[]>([]);
@@ -68,9 +68,9 @@ export const FeaturedTours: React.FC = () => {
         >
           {tours.map((tour, idx) => (
             <SwiperSlide key={idx} className="px-1">
-              <div
+              <Link
+                to={`/tour/${tour.slug}`}
                 className="relative rounded-2xl shadow-lg overflow-hidden h-full flex flex-col group cursor-pointer"
-                onClick={() => navigate(`/tour/${tour.slug}`)}
               >
                 <img
                   src={tour.imageUrl}
@@ -85,14 +85,13 @@ export const FeaturedTours: React.FC = () => {
                   <div className="text-base font-semibold text-white mb-2 text-center drop-shadow">
                     Giá: {tour.price}
                   </div>
-                  <button
+                  <span
                     className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center"
-                    onClick={e => { e.stopPropagation(); navigate(`/tour/${tour.slug}`); }}
                   >
                     ĐẶT NGAY
-                  </button>
+                  </span>
                 </div>
-              </div>
+              </Link>
             </SwiperSlide>
           ))}
           <button className="featured-prev absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/95 shadow-lg rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 transition-all" aria-label="Previous">

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getTourCategoriesBySlug } from "../services/tourCategory.service";
 import { TourCard } from "../components/TourCard";
-// import { tourService } from "../services/tourService";
 import {fetchToursByCategoryId} from "../services/tour.service"
+
 interface TourCardProps {
   id: string;
   title: string;
@@ -121,7 +121,6 @@ export const TourByCategory = () => {
     },
   ];
   const { slug } = useParams<{ slug: string }>();
-  const [tourCategories, setTourCategories] = useState<any>(null);
   const [tours, setTours] = useState<TourCardProps[]>([]);
   const [nameTourCategory, setNameTourCategory] = useState<string>("");
 

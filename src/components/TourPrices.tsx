@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { tourPriceService } from "../services/tourPriceService";
 import { fetchTourIsActive, fetchTours } from "../services/tour.service";
+import { tourPriceService } from "../services/tourPrice.service";
 import { useNavigate } from "react-router-dom";
 type TourPrice = {
   adultPrice: number;

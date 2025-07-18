@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { TOUR_CATEGORY_API, getTourCategoryBySlug } from '../apis/tourCategory.api';
 
+import { getTourCategories} from '../apis/tourCategory.api';
 
 export const fetchActiveTourCategories = async () => {
-  const response = await axios.get(TOUR_CATEGORY_API.LIST);
+  const response = await getTourCategories();
   if (response.data && response.data.success) {
     return response.data.data.filter((cat: any) => cat.is_active);
   }
