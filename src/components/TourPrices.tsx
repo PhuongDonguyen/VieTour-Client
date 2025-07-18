@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { tourPriceService } from "../services/tourPriceService";
-import { fetchTours } from "../services/tour.service";
+import { fetchTourIsActive, fetchTours } from "../services/tour.service";
 import { useNavigate } from "react-router-dom";
 type TourPrice = {
   adultPrice: number;
@@ -234,7 +234,7 @@ export const TourPrices = () => {
           tourId: price.tour_id,
         }));
         setTourPrices(parsedPrices);
-        const tourRes = await tourService.getToursByIsActive(true);
+        const tourRes = await fetchTourIsActive(true);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
         console.log("Pagination data:", pagination);
@@ -244,7 +244,7 @@ export const TourPrices = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price: tour.price,
+            price: tour.price || 0,
             transportation: tour.transportation || "Không xác định",
             duration: tour.duration || "Không xác định",
             slug: tour.slug

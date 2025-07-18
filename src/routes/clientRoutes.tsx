@@ -52,4 +52,8 @@ export const clientRoutes = [
     path: '/about',
     element: <About />,
   },
+  {
+    path: 'profile',
+    element: <Profile/>
+  }
 ];

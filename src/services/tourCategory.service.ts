@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { TOUR_CATEGORY_API } from '../apis/tourCategory.api';
+import { TOUR_CATEGORY_API, getTourCategoryBySlug } from '../apis/tourCategory.api';
+
 
 export const fetchActiveTourCategories = async () => {
   const response = await axios.get(TOUR_CATEGORY_API.LIST);
@@ -8,3 +9,10 @@ export const fetchActiveTourCategories = async () => {
   }
   throw new Error('Failed to fetch tour categories');
 }; 
+
+export const getTourCategoriesBySlug = async (slug: string) => {
+  const res = await getTourCategoryBySlug(slug);
+  if (res.data && res.data.success) return res.data;
+    throw new Error("Không tìm thấy tour categories");
+  
+}
