@@ -69,7 +69,7 @@ export const NavBar = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center ">
+            <div className="hidden md:flex items-center font-medium">
               <a href="/" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</a>
               <a href="/about" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</a>
               <div className="relative">
