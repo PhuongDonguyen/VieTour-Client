@@ -1,12 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchTourIsActive, fetchTours } from "../services/tour.service";
-import { tourPriceService } from "../services/tourPrice.service";
 import { useNavigate } from "react-router-dom";
-type TourPrice = {
-  adultPrice: number;
-  tourId: number;
-};
-
 type Tour = {
   id: number;
   title: string;
@@ -218,8 +212,6 @@ export const TourPrices = () => {
   //   }
   // ];
   const [tours, setTours] = useState<Tour[]>([]);
-  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
-  const positionRef = useRef(0);
   const navigate = useNavigate();
   const handleGoDetail = (slug:string) => {
     navigate(`/tour/${slug}`);
@@ -227,19 +219,11 @@ export const TourPrices = () => {
   useEffect(() => {
     const fetchTours = async () => {
       try {
-        const tourPriceRes = await tourPriceService.getAllSortedTourPrices();
-        const tourPricesData = tourPriceRes.data;
-        const parsedPrices = tourPricesData.map((price: any) => ({
-          adultPrice: price.adult_price,
-          tourId: price.tour_id,
-        }));
-        setTourPrices(parsedPrices);
         const tourRes = await fetchTourIsActive(true);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
         console.log("Pagination data:", pagination);
-        console.log("Fetched tours:", toursData);
-        positionRef.current = 0;
+
         setTours(
           toursData.map((tour: any) => ({
             id: tour.id,
@@ -262,24 +246,6 @@ export const TourPrices = () => {
     console.log("Tour:", tours);
   }, [tours]);
 
-  const formatVND = (value: number) =>
-    new Intl.NumberFormat("vi-VN").format(value);
-
-  const getMinAdultPriceByTourId = (
-    prices: TourPrice[],
-    tourId: number
-  ): number | null => {
-    for (let i = positionRef.current; i < prices.length; i++) {
-      if (prices[i].tourId > tourId) return 0;
-      if (prices[i].tourId == tourId) {
-        positionRef.current = i + 1;
-        console.log("tour min id: ", prices[i].tourId);
-        console.log("adult: ", prices[i].adultPrice);
-        return prices[i].adultPrice;
-      }
-    }
-    return null;
-  };
 
   return (
     <div className="max-w-7xl mx-auto mt-20 p-4 bg-white">
