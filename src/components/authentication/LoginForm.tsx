@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { loginUser } from '../services/account.service';
+import { loginUser } from '../../services/account.service';
 import { useFormik } from 'formik';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 
 interface LoginFormProps {
   onClose?: () => void;
