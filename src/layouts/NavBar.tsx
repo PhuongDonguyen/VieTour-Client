@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Search, Menu, X, ChevronDown } from "lucide-react";
 import { useNavigate, Link } from 'react-router-dom';
 import Modal from '../components/Modal';
-import LoginForm from '../components/LoginForm';
-import SignupForm from '../components/SignupForm';
+import LoginForm from '../components/authentication/LoginForm';
+import SignupForm from '../components/authentication/SignupForm';
 import { useAuth } from '../hooks/useAuth';
 import { getTourCategories } from '../apis/tourCategory.api';
 
@@ -50,7 +50,7 @@ export const NavBar = () => {
   return (
     <>
       <nav
-        className={`fixed w-full z-40 transition-all duration-300 ${isScrolled ? 'bg-white/95 shadow-lg' : 'bg-black/5'
+        className={`fixed w-full z-40 transition-all duration-300 ${isScrolled ? 'bg-white/95 shadow-lg' : 'bg-white/10'
           }`}
         style={{ top: isScrolled ? '0px' : '40px' }}
         onMouseLeave={closeDropdowns}

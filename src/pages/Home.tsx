@@ -1,9 +1,9 @@
 import { TopBar } from "../layouts/TopBar";
 import { NavBar } from "../layouts/NavBar";
-import { HeroSection } from "../components/HeroSection";
+import { HeroSection } from "../components/home/HeroSection";
 import { FloatingCard } from "../components/FloatingCard";
 import MainTours from "../components/MainTours";
-import {Footer} from "../components/Footer"
+import {Footer} from "../layouts/Footer"
 
 import FeaturedTours from "../components/FeaturedTours";
 import TourListCarousel from "../components/TourCategoryList";

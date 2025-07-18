@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { TOUR_CATEGORY_API, getTourCategoryBySlug } from '../apis/tourCategory.api';
+import { getTourCategoryBySlug } from '../apis/tourCategory.api';
 
 import { getTourCategories} from '../apis/tourCategory.api';
 

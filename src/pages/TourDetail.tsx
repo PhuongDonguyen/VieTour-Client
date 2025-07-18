@@ -1,7 +1,7 @@
 import { TopBar } from "../layouts/TopBar";
 import { NavBar } from "../layouts/NavBar";
 import TourDetail from "../components/tourDetail";
-import { Footer } from "../components/Footer";
+import { Footer } from "../layouts/Footer";
 
 export default function TourDetailPage() {
   return (

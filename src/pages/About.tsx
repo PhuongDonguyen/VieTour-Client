@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { resourcesService } from "../services/resources.service";
 import { TopBar } from "../layouts/TopBar";
 import { NavBar } from "../layouts/NavBar";
-import { Footer } from "../components/Footer";
+import { Footer } from "../layouts/Footer";
 
 export default function About() {
   const [introduce, setIntroduce] = useState("");

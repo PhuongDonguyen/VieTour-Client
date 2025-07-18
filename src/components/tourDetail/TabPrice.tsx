@@ -16,7 +16,7 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
     setError(null);
     tourPriceService.getTourPricesByTourId(tourId)
       .then(res => {
-        setPrices(res.data || []);
+        setPrices(res.data?.data || []);
         setLoading(false);
       })
       .catch(err => {
