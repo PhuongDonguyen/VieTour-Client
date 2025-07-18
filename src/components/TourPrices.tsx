@@ -231,7 +231,7 @@ export const TourPrices = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price: tour.price || 0,
+            price: tour.price || "0VND",
             transportation: tour.transportation || "Không xác định",
             duration: tour.duration || "Không xác định",
             slug: tour.slug
@@ -301,7 +301,7 @@ export const TourPrices = () => {
                   {tour.transportation}
                 </td>
                 <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-red-600">
-                  {tour.price + "VND"}
+                  {tour.price }
                 </td>
                 <td className="border border-gray-300 px-4 py-3 text-center">
                   <button

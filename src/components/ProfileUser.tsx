@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { fetchUserProfile, updateUserProfile } from "../services/userProfile.service";
+import axios from "axios";
 // Types
 interface FormData {
-  name: string;
-  email: string;
-  phone: string;
-  birthDate: string;
-  gender: "female" | "male" | "other";
+  firstName: string;
+  lastName: string;
   address: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
 }
 
 interface Passwords {
@@ -26,6 +29,27 @@ interface ButtonStates {
   changePassword: ButtonState;
 }
 
+interface Province {
+  code: number;
+  name: string;
+}
+
+interface District {
+  code: number;
+  name: string;
+}
+
+interface Ward {
+  code: number;
+  name: string;
+}
+
+// interface FormData {
+//   province: string;
+//   district: string;
+//   ward: string;
+// }
+
 interface Tour {
   id: string;
   name: string;
@@ -41,14 +65,7 @@ type PasswordField = keyof Passwords;
 type FormField = keyof FormData;
 
 export const ProfilePage: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    name: "Nguyễn Thị Linh",
-    email: "linh.nguyen@example.com",
-    phone: "+84 123 456 789",
-    birthDate: "1995-05-15",
-    gender: "female",
-    address: "123 Nguyễn Văn Linh, Quận 7, TP.HCM",
-  });
+  const [formData, setFormData] = useState<FormData>();
 
   const [passwords, setPasswords] = useState<Passwords>({
     current: "",
@@ -73,18 +90,122 @@ export const ProfilePage: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [userId, setUserId]  =useState<number>();
+
+  const [selectedProvince, setSelectedProvince] = useState<Province | null>(
+    null
+  );
+  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(
+    null
+  );
+  const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
+
+  const API_HOST = "https://provinces.open-api.vn/api";
+
+  useEffect(() => {
+    axios.get(`${API_HOST}/?depth=1`).then((res) => {
+      setProvinces(res.data);
+    });
+  }, []);
+
+  const handleProvinceChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const code = Number(e.target.value);
+    const province = provinces.find((p) => p.code === code) || null;
+    setFormData((prev) => ({
+      ...prev!,
+      province: province?.name??"",
+      district: "",
+      ward:""
+    }));
+    setSelectedProvince(province);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
+
+    if (province) {
+      const res = await axios.get(`${API_HOST}/p/${province.code}?depth=2`);
+      setDistricts(res.data.districts);
+      setWards([]);
+    }
+  };
+
+  const handleDistrictChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const code = Number(e.target.value);
+    const district = districts.find((d) => d.code === code) || null;
+    setSelectedDistrict(district);
+    setSelectedWard(null);
+    setFormData((prev) => ({
+      ...prev!,
+      district: district?.name??"",
+      ward: ""
+    }));
+    if (district) {
+      const res = await axios.get(`${API_HOST}/d/${district.code}?depth=2`);
+      setWards(res.data.wards);
+    }
+  };
+
+  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = Number(e.target.value);
+    const ward = wards.find((w) => w.code === code) || null;
+    setFormData((prev) => ({
+      ...prev!,
+      ward: ward?.name??"",
+    }));
+    setSelectedWard(ward);
+  };
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetchUserProfile();
+        const data = res.data;
+        console.log("data", data);
+        setUserId(data.id);
+        // setSelectedProvince({
+        //   code: 0,
+        //   name: data.province || ""
+        // });
+        // setSelectedDistrict(data?.district || "");
+        // setSelectedWard(data?.ward || "");
+        setFormData({
+          firstName: data.first_name,
+          lastName: data.last_name,
+          address: data.address,
+          phone: data.phone,
+          province: data.province,
+          district: data.district,
+          ward: data.ward,
+        });
+      } catch (error) {}
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    console.log("province", selectedProvince);
+  },[selectedProvince]);
+
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ): void => {
     const { name, value } = e.target;
     setFormData((prev) => ({
-      ...prev,
+      ...prev!,
       [name as FormField]: value,
     }));
   };
 
   const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
+    console.log(name + "  " + value);
     setPasswords((prev) => ({
       ...prev,
       [name as PasswordField]: value,
@@ -95,6 +216,8 @@ export const ProfilePage: React.FC = () => {
     buttonType: keyof ButtonStates,
     newState: Partial<ButtonState>
   ): void => {
+
+
     setButtonStates((prev) => ({
       ...prev,
       [buttonType]: { ...prev[buttonType], ...newState },
@@ -103,7 +226,12 @@ export const ProfilePage: React.FC = () => {
 
   const handleUpdateInfo = async (): Promise<void> => {
     updateButtonState("updateInfo", { loading: true, success: false });
-
+    try {
+      const res = await updateUserProfile(userId!, formData!);
+      console.log("formData", res);
+    } catch (error) {
+      
+    }
     // Simulate API call
     setTimeout(() => {
       updateButtonState("updateInfo", { loading: false, success: true });
@@ -231,7 +359,7 @@ export const ProfilePage: React.FC = () => {
               />
             </div>
             <h1 className="text-4xl font-light text-white mb-2">
-              {formData.name}
+              {formData?.firstName + " " + formData?.lastName}
             </h1>
             <p className="text-xl text-white/90">Thành viên từ 2022</p>
           </div>
@@ -250,19 +378,19 @@ export const ProfilePage: React.FC = () => {
             </h2>
 
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
                 <div className="space-y-2">
                   <label
-                    htmlFor="name"
+                    htmlFor="firstName"
                     className="block text-sm font-medium text-gray-600 uppercase tracking-wide"
                   >
-                    Họ và tên
+                    Tên
                   </label>
                   <input
-                    id="name"
+                    id="firstName"
                     type="text"
                     name="name"
-                    value={formData.name}
+                    value={formData?.firstName}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
                   />
@@ -270,16 +398,33 @@ export const ProfilePage: React.FC = () => {
 
                 <div className="space-y-2">
                   <label
-                    htmlFor="email"
+                    htmlFor="lastName"
                     className="block text-sm font-medium text-gray-600 uppercase tracking-wide"
                   >
-                    Email
+                    Họ
                   </label>
                   <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    value={formData.email}
+                    id="lastName"
+                    type="text"
+                    name="name"
+                    value={formData?.lastName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="address"
+                    className="block text-sm font-medium text-gray-600 uppercase tracking-wide"
+                  >
+                    Địa chỉ
+                  </label>
+                  <input
+                    id="address"
+                    type="text"
+                    name="address"
+                    value={formData?.address}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
                   />
@@ -296,7 +441,7 @@ export const ProfilePage: React.FC = () => {
                     type="tel"
                     id="tel"
                     name="phone"
-                    value={formData.phone}
+                    value={formData?.phone}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
                   />
@@ -304,57 +449,91 @@ export const ProfilePage: React.FC = () => {
 
                 <div className="space-y-2">
                   <label
-                    htmlFor="birthDate"
+                    htmlFor="province"
                     className="block text-sm font-medium text-gray-600 uppercase tracking-wide"
                   >
-                    Ngày sinh
-                  </label>
-                  <input
-                    id="birthDate"
-                    type="date"
-                    name="birthDate"
-                    value={formData.birthDate}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="gender"
-                    className="block text-sm font-medium text-gray-600 uppercase tracking-wide"
-                  >
-                    Giới tính
+                    Tỉnh, thành phố
                   </label>
                   <select
-                    id="gender"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
+                    id="province"
+                    name="province"
+                    value={selectedProvince?.code || formData?.province}
+                    onChange={handleProvinceChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
                   >
-                    <option value="female">Nữ</option>
-                    <option value="male">Nam</option>
-                    <option value="other">Khác</option>
+                    <option value="">-- Chọn tỉnh / thành phố --</option>
+                    {provinces.map((p) => (
+                      <option key={p.code} value={p.code}>
+                        {p.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="space-y-2">
                   <label
-                    htmlFor="address"
+                    htmlFor="district"
                     className="block text-sm font-medium text-gray-600 uppercase tracking-wide"
                   >
-                    Địa chỉ
+                    Huyện, quận
                   </label>
-                  <input
-                    id="address"
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
+                  <select
+                    id="district"
+                    name="district"
+                    value={selectedDistrict?.code}
+                    onChange={handleDistrictChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                  />
+                    // disabled={!!selectedDistrict}
+                  >
+                    <option value="">-- Chọn huyện / quận --</option>
+                    {districts.map((d) => (
+                      <option key={d.code} value={d.code}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="ward"
+                    className="block text-sm font-medium text-gray-600 uppercase tracking-wide"
+                  >
+                    Xã, thị trấn
+                  </label>
+                  <select
+                    id="ward"
+                    name="ward"
+                    value={selectedWard?.code}
+                    onChange={handleWardChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                    // disabled={!!selectedWard}
+                  >
+                    <option value="">-- Chọn xã / thị trấn --</option>
+                    {wards.map((w) => (
+                      <option key={w.code} value={w.code}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* <div>
+                  <label htmlFor="province">Tỉnh / Thành phố</label>
+                  <select
+                    id="province"
+                    className="w-full border rounded px-3 py-2"
+                    onChange={handleProvinceChange}
+                    value={selectedProvince?.code || ""}
+                  >
+                    <option value="">Chọn tỉnh / thành phố</option>
+                    {provinces.map((province) => (
+                      <option key={province.code} value={province.code}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+                </div> */}
               </div>
 
               <button
