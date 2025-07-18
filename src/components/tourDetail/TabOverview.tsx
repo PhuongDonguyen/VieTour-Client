@@ -5,7 +5,7 @@ type TabOverviewProps = {
 };
 
 const TabOverview: React.FC<TabOverviewProps> = ({ destination_intro }) => (
-  <div className="p-6 md:p-8">
+  <div className="w-full max-w-7xl mx-auto p-6 md:p-8">
     {destination_intro ? (
       <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: destination_intro }} />
     ) : (

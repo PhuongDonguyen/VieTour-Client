@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
+import { Link } from 'react-router-dom';
 // @ts-ignore
 import "swiper/css";
 // @ts-ignore
@@ -53,14 +54,17 @@ export const TourListCarousel: React.FC = () => {
         >
           {categories.map((cat, idx) => (
             <SwiperSlide key={cat.id} className="px-1">
-              <div className="relative rounded-2xl overflow-hidden h-[270px] md:h-[300px] lg:h-[320px] flex flex-col cursor-pointer group bg-blue-100">
+              <Link
+                to={`/tour-category/${cat.slug}`}
+                className="relative rounded-2xl overflow-hidden h-[270px] md:h-[300px] lg:h-[320px] flex flex-col cursor-pointer group bg-blue-100"
+              >
                 {/* Nếu có image_url thì hiển thị, không thì dùng màu nền */}
                 {cat.image_url ? (
-                <img
+                  <img
                     src={cat.image_url}
                     alt={cat.name}
                     className="w-full h-full object-cover transition-transform duration-300 scale-105 group-hover:translate-x-2"
-                />
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-2xl text-blue-700 font-bold">
                     {cat.name.charAt(0)}
@@ -75,7 +79,7 @@ export const TourListCarousel: React.FC = () => {
                     {cat.tour_count} Tour
                   </div>
                 </div>
-              </div>
+              </Link>
             </SwiperSlide>
           ))}
         </Swiper>

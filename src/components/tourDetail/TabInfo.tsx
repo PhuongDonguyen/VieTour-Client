@@ -36,7 +36,7 @@ function renderValue(val?: string | number) {
 
 const TabInfo: React.FC<TabInfoProps> = ({ id, live_commentary, duration, transportation, accommodation }) => {
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto p-6 md:p-8">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 text-center">
         <div>
           <div className="text-sm text-gray-600 mb-1">{LABELS.id}</div>
