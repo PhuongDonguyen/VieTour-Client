@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { fetchUserProfile, updateUserProfile } from "../services/userProfile.service";
+import {
+  fetchUserProfile,
+  updateUserProfile,
+} from "../services/userProfile.service";
 import axios from "axios";
 // Types
 interface FormData {
@@ -22,6 +25,7 @@ interface Passwords {
 interface ButtonState {
   loading: boolean;
   success: boolean;
+  fail: boolean;
 }
 
 interface ButtonStates {
@@ -74,8 +78,8 @@ export const ProfilePage: React.FC = () => {
   });
 
   const [buttonStates, setButtonStates] = useState<ButtonStates>({
-    updateInfo: { loading: false, success: false },
-    changePassword: { loading: false, success: false },
+    updateInfo: { loading: false, success: false, fail: false },
+    changePassword: { loading: false, success: false, fail: false },
   });
 
   const [scrollOffset, setScrollOffset] = useState<number>(0);
@@ -93,7 +97,7 @@ export const ProfilePage: React.FC = () => {
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
-  const [userId, setUserId]  =useState<number>();
+  const [userId, setUserId] = useState<number>();
 
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(
     null
@@ -108,6 +112,7 @@ export const ProfilePage: React.FC = () => {
   useEffect(() => {
     axios.get(`${API_HOST}/?depth=1`).then((res) => {
       setProvinces(res.data);
+      console.log(res.data);
     });
   }, []);
 
@@ -116,11 +121,12 @@ export const ProfilePage: React.FC = () => {
   ) => {
     const code = Number(e.target.value);
     const province = provinces.find((p) => p.code === code) || null;
+    console.log("province: ", province);
     setFormData((prev) => ({
       ...prev!,
-      province: province?.name??"",
+      province: province?.name ?? "",
       district: "",
-      ward:""
+      ward: "",
     }));
     setSelectedProvince(province);
     setSelectedDistrict(null);
@@ -133,6 +139,27 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  // const loadSelectedDistrict = async (provinceName: string) => {
+  //   console.log("province Name:", provinceName);
+  //   const province = provinces.find((p) => p.name == provinceName) || null;
+  //   setSelectedProvince(province);
+  //   console.log("Load province code: ", province?.code);
+  //   if (province) {
+  //     const res = await axios.get(`${API_HOST}/p/${province.code}?depth=2`);
+  //     setDistricts(res.data.districts);
+  //     setWards([]);
+  //   }
+  // };
+
+  // const loadSelectedWard = async (district: District) => {
+  //   const district = districts.find((d) => d.name === districtName) || null;
+  //   console;
+  //   if (district) {
+  //     const res = await axios.get(`${API_HOST}/p/${district.code}?depth=2`);
+  //     setWards(res.data.wards);
+  //   }
+  // };
+
   const handleDistrictChange = async (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -142,11 +169,13 @@ export const ProfilePage: React.FC = () => {
     setSelectedWard(null);
     setFormData((prev) => ({
       ...prev!,
-      district: district?.name??"",
-      ward: ""
+      district: district?.name ?? "",
+      ward: "",
     }));
+    console.log("district: ", district);
     if (district) {
       const res = await axios.get(`${API_HOST}/d/${district.code}?depth=2`);
+      console.log(`${API_HOST}/d/${district.code}?depth=2`);
       setWards(res.data.wards);
     }
   };
@@ -156,25 +185,19 @@ export const ProfilePage: React.FC = () => {
     const ward = wards.find((w) => w.code === code) || null;
     setFormData((prev) => ({
       ...prev!,
-      ward: ward?.name??"",
+      ward: ward?.name ?? "",
     }));
     setSelectedWard(ward);
   };
-
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetchUserProfile();
         const data = res.data;
-        console.log("data", data);
+        console.log("data district: ", data);
         setUserId(data.id);
-        // setSelectedProvince({
-        //   code: 0,
-        //   name: data.province || ""
-        // });
-        // setSelectedDistrict(data?.district || "");
-        // setSelectedWard(data?.ward || "");
+
         setFormData({
           firstName: data.first_name,
           lastName: data.last_name,
@@ -184,14 +207,47 @@ export const ProfilePage: React.FC = () => {
           district: data.district,
           ward: data.ward,
         });
+        if (data.province != "") {
+          const province =
+            provinces.find((p) => p.name == data.province) || null;
+          setSelectedProvince(province);
+          console.log("Load province code: ", province?.code);
+          if (province) {
+            const res = await axios.get(
+              `${API_HOST}/p/${province.code}?depth=2`
+            );
+            setDistricts(res.data.districts);
+            setWards([]);
+          }
+        }
       } catch (error) {}
     };
     fetchData();
-  }, []);
+  }, [provinces]);
 
   useEffect(() => {
-    console.log("province", selectedProvince);
-  },[selectedProvince]);
+    const loadDistrict = async () => {
+      if (formData?.district != "") {
+        const district =
+          districts.find((d) => d.name === formData?.district) || null;
+        setSelectedDistrict(district);
+        console.log("district: ", district);
+        if (district) {
+          const res = await axios.get(`${API_HOST}/d/${district.code}?depth=2`);
+          console.log("wards: ", res.data.wards);
+          setWards(res.data.wards);
+        }
+      }
+    };
+    loadDistrict();
+  }, [districts]);
+
+  useEffect(() => {
+    if (formData?.ward != "") {
+      const ward = wards.find((w) => w.name === formData?.ward) || null;
+      setSelectedWard(ward);
+    }
+  }, [wards]);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -216,8 +272,6 @@ export const ProfilePage: React.FC = () => {
     buttonType: keyof ButtonStates,
     newState: Partial<ButtonState>
   ): void => {
-
-
     setButtonStates((prev) => ({
       ...prev,
       [buttonType]: { ...prev[buttonType], ...newState },
@@ -225,19 +279,34 @@ export const ProfilePage: React.FC = () => {
   };
 
   const handleUpdateInfo = async (): Promise<void> => {
-    updateButtonState("updateInfo", { loading: true, success: false });
+    updateButtonState("updateInfo", {
+      loading: true,
+      success: false,
+      fail: false,
+    });
     try {
       const res = await updateUserProfile(userId!, formData!);
       console.log("formData", res);
+      updateButtonState("updateInfo", {
+        loading: false,
+        success: true,
+        fail: false,
+      });
     } catch (error) {
-      
+      updateButtonState("updateInfo", {
+        loading: false,
+        success: false,
+        fail: true,
+      });
     }
     // Simulate API call
     setTimeout(() => {
-      updateButtonState("updateInfo", { loading: false, success: true });
-
       setTimeout(() => {
-        updateButtonState("updateInfo", { loading: false, success: false });
+        updateButtonState("updateInfo", {
+          loading: false,
+          success: false,
+          fail: false,
+        });
       }, 2000);
     }, 1000);
   };
@@ -311,27 +380,34 @@ export const ProfilePage: React.FC = () => {
     },
   ];
 
-  const getButtonClasses = (
-    buttonState: ButtonState,
-    baseClasses: string
-  ): string => {
-    const stateClasses = buttonState.success
-      ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
-      : "bg-gradient-to-r from-blue-500 to-purple-600 text-white";
+const getButtonClasses = (
+  buttonState: ButtonState,
+  baseClasses: string
+): string => {
+  let stateClasses = "bg-gradient-to-r from-blue-500 to-purple-600 text-white";
 
-    const loadingClasses = buttonState.loading ? "scale-95" : "";
+  if (buttonState.success) {
+    stateClasses = "bg-gradient-to-r from-green-500 to-green-600 text-white";
+  } else if (buttonState.fail) {
+    stateClasses = "bg-gradient-to-r from-red-500 to-red-600 text-white";
+  }
 
-    return `${baseClasses} ${stateClasses} ${loadingClasses}`;
-  };
+  const loadingClasses = buttonState.loading ? "scale-95" : "";
+
+  return `${baseClasses} ${stateClasses} ${loadingClasses}`;
+};
+
 
   const getButtonText = (
     buttonState: ButtonState,
     loadingText: string,
     successText: string,
+    failText: string,
     defaultText: string
   ): string => {
     if (buttonState.loading) return loadingText;
     if (buttonState.success) return successText;
+    if (buttonState.fail) return failText;
     return defaultText;
   };
 
@@ -461,7 +537,9 @@ export const ProfilePage: React.FC = () => {
                     onChange={handleProvinceChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
                   >
-                    <option value="">-- Chọn tỉnh / thành phố --</option>
+                    <option value="">
+                      {formData?.province || "-- Chọn tỉnh / thành phố --"}
+                    </option>
                     {provinces.map((p) => (
                       <option key={p.code} value={p.code}>
                         {p.name}
@@ -485,7 +563,9 @@ export const ProfilePage: React.FC = () => {
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
                     // disabled={!!selectedDistrict}
                   >
-                    <option value="">-- Chọn huyện / quận --</option>
+                    <option value="">
+                      {formData?.district || "-- Chọn huyện / quận --"}
+                    </option>
                     {districts.map((d) => (
                       <option key={d.code} value={d.code}>
                         {d.name}
@@ -509,7 +589,9 @@ export const ProfilePage: React.FC = () => {
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
                     // disabled={!!selectedWard}
                   >
-                    <option value="">-- Chọn xã / thị trấn --</option>
+                    <option value="">
+                      {formData?.ward || "-- Chọn xã / thị trấn --"}
+                    </option>
                     {wards.map((w) => (
                       <option key={w.code} value={w.code}>
                         {w.name}
@@ -548,6 +630,7 @@ export const ProfilePage: React.FC = () => {
                   buttonStates.updateInfo,
                   "Đang cập nhật...",
                   "Cập nhật thành công!",
+                  "Cập Nhật thất bại!",
                   "Cập nhật thông tin"
                 )}
               </button>
