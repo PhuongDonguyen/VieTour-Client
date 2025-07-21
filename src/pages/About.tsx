@@ -19,7 +19,7 @@ export default function About() {
   return (
     <div className="min-h-screen">
       <TopBar />
-      <NavBar />
+      <NavBar textDark={true} />
       <div className="max-w-3xl mx-auto py-16 px-4 min-h-[60vh]">
         {loading ? (
           <div className="text-center text-gray-500">Đang tải...</div>
