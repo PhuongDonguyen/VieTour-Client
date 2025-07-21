@@ -42,7 +42,7 @@ export const FeaturedTours: React.FC = () => {
 
   return (
     <div className="w-full py-8">
-      <h2 className="text-3xl md:text-4xl font-bold text-blue-700 mb-8 text-center">
+      <h2 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
         TOUR NỔI BẬT TRONG THÁNG
       </h2>
       <div className="relative">

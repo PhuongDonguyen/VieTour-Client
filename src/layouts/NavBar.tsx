@@ -6,8 +6,9 @@ import LoginForm from '../components/authentication/LoginForm';
 import SignupForm from '../components/authentication/SignupForm';
 import { useAuth } from '../hooks/useAuth';
 import { getTourCategories } from '../apis/tourCategory.api';
+import { fetchBlogCategories } from '../services/blogCategory.service';
 
-export const NavBar = () => {
+export const NavBar = ({ textDark = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -22,6 +23,7 @@ export const NavBar = () => {
   const { logout } = useAuth();
 
   const [tourCategories, setTourCategories] = useState<any[]>([]);
+  const [blogCategories, setBlogCategories] = useState<any[]>([]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +37,12 @@ export const NavBar = () => {
     getTourCategories().then(res => {
       if (res.data && res.data.success) {
         setTourCategories(res.data.data);
+      }
+    });
+    fetchBlogCategories().then(res => {
+      console.log(res); 
+      if (res && res.success) {
+        setBlogCategories(res.data);
       }
     });
   }, []);
@@ -55,7 +63,7 @@ export const NavBar = () => {
         style={{ top: isScrolled ? '0px' : '40px' }}
         onMouseLeave={closeDropdowns}
       >
-        <div className="container mx-auto px-4 py-4">
+        <div className={`container mx-auto px-4 py-4`}>
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
@@ -70,27 +78,27 @@ export const NavBar = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center font-medium">
-              <a href="/" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</a>
-              <a href="/about" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</a>
+              <a href="/" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</a>
+              <a href="/about" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</a>
               <div className="relative">
                 <button
                   onClick={() => handleDropdownToggle('tour')}
                   onMouseEnter={() => setActiveDropdown('tour')}
-                  className={`px-3 py-2 flex items-center space-x-1 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}
+                  className={`px-3 py-2 flex items-center space-x-1 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
                 >
                   <span>TOUR</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === 'tour' ? 'rotate-180' : ''}`} />
                 </button>
                 {activeDropdown === 'tour' && (
                   <div
-                    className={`absolute top-full left-0 mt-4 w-56 shadow-lg py-2 z-50 backdrop-blur-sm ${isScrolled ? 'bg-white' : 'bg-white/10'}`}
+                    className={`absolute top-full left-0 mt-4 w-56 shadow-md py-2 z-50 backdrop-blur-sm ${isScrolled || textDark ? 'bg-white' : 'bg-white/10'}`}
                     onMouseEnter={() => setActiveDropdown('tour')}
                   >
                     {tourCategories.map(cat => (
                       <Link
                         key={cat.id}
                         to={`/tour-category/${cat.slug}`}
-                        className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}
+                        className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}
                       >
                         {cat.name}
                       </Link>
@@ -98,11 +106,35 @@ export const NavBar = () => {
                   </div>
                 )}
               </div>
-              <a href="/pricing" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</a>
-              <a href="/booking" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>ĐẶT TOUR</a>
-              <a href="/blog" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>BLOG</a>
-              <a href="/gallery" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</a>
-              <a href="/contact" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</a>
+              <div className="relative">
+                <button
+                  onClick={() => handleDropdownToggle('blog')}
+                  onMouseEnter={() => setActiveDropdown('blog')}
+                  className={`px-3 py-2 flex items-center space-x-1 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
+                >
+                  <span>BLOG</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === 'blog' ? 'rotate-180' : ''}`} />
+                </button>
+                {activeDropdown === 'blog' && (
+                  <div
+                    className={`absolute top-full left-0 mt-4 w-56 shadow-md py-2 z-50 backdrop-blur-sm ${isScrolled || textDark ? 'bg-white' : 'bg-white/10'}`}
+                    onMouseEnter={() => setActiveDropdown('blog')}
+                  >
+                    {blogCategories.map(cat => (
+                      <a
+                        key={cat.id}
+                        href={`/blog-category/${cat.id}`}
+                        className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}
+                      >
+                        {cat.title}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <a href="/pricing" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</a>
+              <a href="/gallery" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</a>
+              <a href="/contact" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</a>
             </div>
 
             {/* Search and User Menu */}
@@ -111,12 +143,12 @@ export const NavBar = () => {
                 <input
                   type="text"
                   placeholder="Tìm kiếm tour..."
-                  className={`pl-10 pr-4 py-2 rounded-full border focus:outline-none focus:border-orange-500 ${isScrolled
+                  className={`pl-10 pr-3 py-2 rounded-full border focus:outline-none focus:border-orange-500 ${isScrolled || textDark
                     ? 'border-gray-300 bg-white text-gray-800 placeholder-gray-500'
                     : 'border-white/30 bg-white/10 backdrop-blur-sm text-white placeholder-white/70'
                     }`}
                 />
-                <Search className={`absolute left-3 top-2.5 w-4 h-4 ${isScrolled ? 'text-gray-400' : 'text-white/70'
+                <Search className={`absolute left-3 top-2.5 w-4 h-4 ${isScrolled || textDark ? 'text-gray-400' : 'text-white/70'
                   }`} />
               </div>
               {/* User Menu */}
@@ -126,12 +158,12 @@ export const NavBar = () => {
                     <button
                       onClick={() => handleDropdownToggle('user')}
                       onMouseEnter={() => setActiveDropdown('user')}
-                      className={`px-3 py-2 flex items-center space-x-2 hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}
+                      className={`px-3 py-2 flex items-center space-x-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
                     >
                       <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
                         {user?.avatar ? (
-                          <img 
-                            src={user.avatar} 
+                          <img
+                            src={user.avatar}
                             alt={`${user.first_name} ${user.last_name}`}
                             className="w-full h-full object-cover"
                           />
@@ -145,13 +177,13 @@ export const NavBar = () => {
                     {/* User Dropdown Menu */}
                     {activeDropdown === 'user' && (
                       <div
-                        className={`absolute top-full right-0 mt-4 w-48 shadow-lg py-2 z-50 backdrop-blur-sm ${isScrolled ? 'bg-white' : 'bg-white/10'}`}
+                        className={`absolute top-full right-0 mt-4 w-48 shadow-lg py-2 z-50 backdrop-blur-sm ${isScrolled || textDark ? 'bg-white' : 'bg-white/10'}`}
                         onMouseEnter={() => setActiveDropdown('user')}
                       >
-                        <a href="/profile" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Hồ sơ</a>
-                        <a href="/my-bookings" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đặt tour của tôi</a>
-                        <a href="/favorites" className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Yêu thích</a>
-                        <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className={`block px-4 py-2 transition-colors ${isScrolled ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đăng xuất</a>
+                        <a href="/profile" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Hồ sơ</a>
+                        <a href="/my-bookings" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đặt tour của tôi</a>
+                        <a href="/favorites" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Yêu thích</a>
+                        <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đăng xuất</a>
                       </div>
                     )}
                   </div>
@@ -159,14 +191,14 @@ export const NavBar = () => {
                   <>
                     <button
                       onClick={() => { setShowLoginModal(true); setShowSignupModal(false); }}
-                      className={`px-2 py-2 text-sm hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}
+                      className={`px-2 py-2 text-sm hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
                     >
                       Đăng nhập
                     </button>
-                    <span className={`text-gray-400 select-none ${isScrolled ? 'text-gray-700' : 'text-white'}`}>/</span>
+                    <span className={`text-gray-400 select-none ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>/</span>
                     <button
                       onClick={() => { setShowSignupModal(true); setShowLoginModal(false); }}
-                      className={`px-2 py-2 text-sm hover:text-orange-500 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white'}`}
+                      className={`px-2 py-2 text-sm hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
                     >
                       Đăng ký
                     </button>
@@ -177,7 +209,7 @@ export const NavBar = () => {
               <div className="md:hidden">
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className={`hover:text-orange-500 ${isScrolled ? 'text-gray-700' : 'text-white'}`}
+                  className={`hover:text-orange-500 ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
                 >
                   {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </button>
@@ -205,6 +237,20 @@ export const NavBar = () => {
                     ))}
                   </div>
                 </div>
+                <div className="px-3 py-2">
+                  <div className="text-gray-700 font-medium mb-2">BLOG</div>
+                  <div className="pl-4 space-y-1">
+                    {blogCategories.map(cat => (
+                      <a
+                        key={cat.id}
+                        href={`/blog-category/${cat.id}`}
+                        className="block py-1 text-gray-600 hover:text-orange-500"
+                      >
+                        {cat.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
                 <a href="/pricing" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BẢNG GIÁ</a>
                 <a href="/booking" className="block px-3 py-2 text-gray-700 hover:text-orange-500">ĐẶT TOUR</a>
                 <a href="/blog" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BLOG</a>
@@ -217,8 +263,8 @@ export const NavBar = () => {
                       <div className="flex items-center space-x-2 mb-2">
                         <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
                           {user?.avatar ? (
-                            <img 
-                              src={user.avatar} 
+                            <img
+                              src={user.avatar}
                               alt={`${user.first_name} ${user.last_name}`}
                               className="w-full h-full object-cover"
                             />
