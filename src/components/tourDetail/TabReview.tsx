@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Star, Heart, MessageCircle, Clock } from "lucide-react";
 import { fetchReviewByTourId } from "../../services/review.service";
 import { Loading } from "../Loading";
-import { fetchUserById , fetchUserProfile} from "../../services/userProfile.service";
+import {
+  fetchUserById,
+  fetchUserProfile,
+} from "../../services/userProfile.service";
 import { userLikeReview } from "../../services/like.service";
-
 
 interface Review {
   id: number;
@@ -37,7 +39,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [userCurrent, setUserCurrent] = useState<User|null>(null);
+  const [userCurrent, setUserCurrent] = useState<User | null>(null);
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -56,21 +58,21 @@ export const TabReview: React.FC<ReviewListProps> = ({
   };
 
   useEffect(() => {
-    const loadUserCurrent = async() => {
-        try {
-            const res = await fetchUserProfile();
-            console.log("user cur: " ,res.data);
-            const data = res.data;
-            setUserCurrent({
-                id: data.id,
-                first_name: data.first_name,
-                last_name: data.last_name,
-                avatar: data.avatar
-            })
-        } catch (error) {
-            console.log("Lỗi tải user current");
-        }
-    }   
+    const loadUserCurrent = async () => {
+      try {
+        const res = await fetchUserProfile();
+        console.log("user cur: ", res.data);
+        const data = res.data;
+        setUserCurrent({
+          id: data.id,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          avatar: data.avatar,
+        });
+      } catch (error) {
+        console.log("Lỗi tải user current");
+      }
+    };
     loadUserCurrent();
   }, []);
 
@@ -89,13 +91,11 @@ export const TabReview: React.FC<ReviewListProps> = ({
     );
   };
 
-  const handleLike = async(reviewId: number) => {
+  const handleLike = async (reviewId: number) => {
     if (!userCurrent) return;
     try {
-        const res = await userLikeReview(userCurrent?.id, reviewId)
-    } catch (error) {
-        
-    }
+      const res = await userLikeReview(userCurrent?.id, reviewId);
+    } catch (error) {}
   };
 
   const getAverageRating = () => {
@@ -137,24 +137,44 @@ export const TabReview: React.FC<ReviewListProps> = ({
 
         const reviewsWithUser: Review[] = await Promise.all(
           data.map(async (rv: any): Promise<Review> => {
-            const resData = await fetchUserById(rv.user_id);
-            const userRes = resData.data;
-            const userReview = {
-              id: userRes.id,
-              first_name: userRes.first_name,
-              last_name: userRes.last_name,
-              avatar: userRes.avatar,
-            };
-            return {
-              id: rv.id,
-              user_id: rv.user_id,
-              tour_id: rv.tour_id,
-              tour_star: rv.tour_star,
-              text: rv.text,
-              like_count: rv.like_count,
-              created_at: rv.created_at,
-              user: userReview,
-            };
+            try {
+              const resData = await fetchUserById(rv.user_id);
+              const userRes = resData.data;
+              const userReview = {
+                id: userRes.id,
+                first_name: userRes.first_name,
+                last_name: userRes.last_name,
+                avatar: userRes.avatar,
+              };
+
+              return {
+                id: rv.id,
+                user_id: rv.user_id,
+                tour_id: rv.tour_id,
+                tour_star: rv.tour_star,
+                text: rv.text,
+                like_count: rv.like_count,
+                created_at: rv.created_at,
+                user: userReview,
+              };
+            } catch (err) {
+              console.warn(`Failed to fetch user ${rv.user_id}:`, err);
+              return {
+                id: rv.id,
+                user_id: rv.user_id,
+                tour_id: rv.tour_id,
+                tour_star: rv.tour_star,
+                text: rv.text,
+                like_count: rv.like_count,
+                created_at: rv.created_at,
+                user: {
+                  id: 0,
+                  first_name: "User",
+                  last_name: "",
+                  avatar: "",
+                },
+              };
+            }
           })
         );
 
@@ -166,6 +186,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
 
     loadReviewsWithUsers();
   }, []);
+
   function divideIntegers(a: number, b: number): number {
     if (b === 0) {
       throw new Error("Không thể chia cho 0");
@@ -299,7 +320,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
                           <div className="flex items-center justify-between">
                             <button
                               onClick={() => {
-                                handleLike(review.id)
+                                handleLike(review.id);
                               }}
                               className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-100 to-rose-100 hover:from-pink-200 hover:to-rose-200 rounded-2xl transition-all group-hover:scale-105 border border-pink-200"
                             >
