@@ -17,6 +17,7 @@ interface Review {
   like_count: number;
   created_at: string;
   user: User | null;
+  is_liked: boolean;
 }
 
 interface User {
@@ -167,6 +168,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
                 text: rv.text,
                 like_count: rv.like_count,
                 created_at: rv.created_at,
+                is_liked: false,
                 user: {
                   id: 0,
                   first_name: "User",
@@ -193,6 +195,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
     }
     return Math.floor(a / b); // hoặc Math.trunc(a / b) tùy bạn muốn làm tròn xuống hay về 0
   }
+
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -282,14 +285,20 @@ export const TabReview: React.FC<ReviewListProps> = ({
                     >
                       <div className="flex gap-6">
                         {/* Avatar */}
-                        <div
-                          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${getRandomColor(
-                            review.id
-                          )} flex items-center justify-center shadow-lg flex-shrink-0`}
-                        >
-                          <span className="text-white font-bold text-lg">
-                            {getUserName(review.user_id).charAt(0)}
-                          </span>
+                        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
+                          {review.user?.avatar ? (
+                            <img
+                              src={review.user.avatar}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white font-bold text-sm">
+                              {review.user?.first_name
+                                ?.charAt(0)
+                                .toUpperCase() || "?"}
+                            </span>
+                          )}
                         </div>
 
                         {/* Content */}

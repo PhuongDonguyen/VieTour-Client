@@ -6,6 +6,7 @@ import { Loading } from "./Loading";
 import {
   fetchQuestionByTuorId,
   sendQuestion,
+  delQuestion
 } from "../services/question.service";
 import {
   fetchUserById,
@@ -261,10 +262,8 @@ export const CommentSection = () => {
   };
 
   const renderReplies = (replies: Question[], level = 1) => {
-    if (loading){
-      return (
-        <Loading/>
-      );
+    if (loading) {
+      return <Loading />;
     }
     return (
       <div
@@ -319,6 +318,15 @@ export const CommentSection = () => {
               >
                 Trả lời
               </button>
+
+              {rep.user?.id === user?.id && (
+                <button
+                  onClick={() => handleDeleteQuestion(rep.id)}
+                  className="mt-2 ms-6 text-sm text-orange-600 hover:underline"
+                >
+                  Xóa
+                </button>
+              )}
 
               {/* Form trả lời */}
               {activeReplyId === rep.id && (
@@ -376,6 +384,16 @@ export const CommentSection = () => {
   //   setReplyUsername("");
   //   setActiveReplyId(null);
   // };
+
+  const handleDeleteQuestion = async (questionId: number) => {
+    if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
+    try {
+      await delQuestion(questionId);
+      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+    } catch (error) {
+      console.error("Lỗi khi xóa bình luận:", error);
+    }
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-8 bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-xl border border-gray-100 mt-10">
@@ -491,7 +509,14 @@ export const CommentSection = () => {
                   >
                     Trả lời
                   </button>
-
+                  {q.user?.id === user?.id && (
+                    <button
+                      onClick={() => handleDeleteQuestion(q.id)}
+                      className="mt-2 ms-6 text-sm text-orange-600 hover:underline"
+                    >
+                      Xóa
+                    </button>
+                  )}
                   {/* Ô nhập trả lời */}
                   {activeReplyId === q.id && (
                     <div className="mt-4 space-y-2">

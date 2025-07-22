@@ -5,3 +5,6 @@ export const getQuestionByTourId = (tourId: number)  =>
 
 export const submitQuestion = (tour_id: number, user_id: number, parent_question_id: number| null, text: string, reported: boolean) =>
     axiosInstance.post(`/api/questions`,{user_id, tour_id, parent_question_id, text, reported})
+
+export const deleteQuestion = (id: number) => 
+    axiosInstance.delete(`/api/questions/${id}`)

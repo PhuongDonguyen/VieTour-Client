@@ -1,4 +1,4 @@
-import { getQuestionByTourId , submitQuestion} from "../apis/question.api";
+import { getQuestionByTourId , submitQuestion, deleteQuestion} from "../apis/question.api";
 
 export const fetchQuestionByTuorId = async (tourId: number) => {
   const res = await getQuestionByTourId(tourId);
@@ -17,3 +17,9 @@ export const sendQuestion = async (
   if (res.data && res.data.success) return res.data;
   throw new Error("Không tìm thấy question");
 };
+
+export const delQuestion = async(id: number) => {
+  const res = await deleteQuestion(id);
+    if (res.data && res.data.success) return res.data;
+  throw new Error("Lỗi xóa question");
+}
