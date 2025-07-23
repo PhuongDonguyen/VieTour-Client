@@ -166,7 +166,7 @@ export const TourByCategory = () => {
 
 
   return (
-    <div className="max-h-screen mt-17 bg-gradient-to-br from-blue-50 to-gray-100 py-12 px-4">
+    <div className="max-h-screen mt-17 bg-gradient-to-br bg-white py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-blue-700 mb-4">

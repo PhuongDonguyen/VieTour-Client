@@ -8,6 +8,7 @@ import EnterOtp from '../pages/EnterOtp';
 import LoginSuccess from '../pages/LoginSuccess';
 import Profile from '../pages/Profile';
 import BlogDetail from '../pages/BlogDetail';
+import MyBooking from '../pages/MyBooking'
 
 export const clientRoutes = [
   {
@@ -61,5 +62,10 @@ export const clientRoutes = [
   {
     path: 'profile',
     element: <Profile/>
+  },
+  {
+    path: 'my-bookings',
+    element: <MyBooking/>
   }
+
 ];
