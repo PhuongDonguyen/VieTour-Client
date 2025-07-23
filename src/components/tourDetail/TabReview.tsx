@@ -191,11 +191,10 @@ export const TabReview: React.FC<ReviewListProps> = ({
 
   function divideIntegers(a: number, b: number): number {
     if (b === 0) {
-      throw new Error("Không thể chia cho 0");
+      return 0;
     }
     return Math.floor(a / b); // hoặc Math.trunc(a / b) tùy bạn muốn làm tròn xuống hay về 0
   }
-
 
   return (
     <div className="max-w-6xl mx-auto">

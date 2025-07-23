@@ -5,6 +5,7 @@ import { tourPriceService } from "../services/tourPrice.service";
 import { Navigate, useNavigate } from "react-router-dom";
 import { TourPrices } from "./TourPrices";
 import { Star, MapPin, Clock, Users, Heart, Eye } from "lucide-react";
+import { Loading } from "./Loading";
 
 type TourCardProps = {
   id: number;
@@ -28,7 +29,7 @@ const TourCard: React.FC<TourCardProps> = ({
   slug,
   duration = "3 ngày 2 đêm",
   capacity,
-  view
+  view,
   // location = "Quảng Ninh",
   // maxGuests = 20,
   // discount = 15
@@ -102,7 +103,7 @@ const TourCard: React.FC<TourCardProps> = ({
         </div> */}
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-gray-800 leading-tight min-h-[56px] line-clamp-2 group-hover:text-orange-600 transition-colors duration-300">
+        <h3 className="text-lg font-bold text-gray-800 leading-tight min-h-[70px] line-clamp-2 group-hover:text-orange-600 transition-colors duration-300">
           {title}
         </h3>
 
@@ -164,7 +165,8 @@ const MainTours: React.FC = () => {
   const [tours, setTours] = useState<TourCardProps[]>([]);
   const [pagination, setPagination] = useState<any>({});
   const [existTourMore, setExistTourMore] = useState<boolean>(true);
-
+  const  [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const formatVND = (value: number) =>
     new Intl.NumberFormat("vi-VN").format(value);
 
@@ -175,6 +177,7 @@ const MainTours: React.FC = () => {
   useEffect(() => {
     const loadTours = async () => {
       try {
+        setLoading(true);
         const tourRes = await fetchTours(1, 6);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
@@ -192,11 +195,13 @@ const MainTours: React.FC = () => {
             slug: tour.slug,
             duration: tour.duration,
             capacity: tour.capacity,
-            view: tour.view_count
+            view: tour.view_count,
           }))
         );
+        setLoading(false);
       } catch (err) {
         console.error("Lỗi khi load tours:", err);
+        setLoading(false);
       }
     };
 
@@ -206,6 +211,7 @@ const MainTours: React.FC = () => {
   const handleMoreTours = async () => {
     if (pagination.hasNextPage) {
       try {
+        setLoadingMore(true);
         const nextPage = pagination.currentPage + 1;
         const tourRes = await fetchTours(nextPage, 6);
         const toursData = tourRes.data;
@@ -228,37 +234,42 @@ const MainTours: React.FC = () => {
             slug: tour.slug,
             duration: tour.duration,
             capacity: tour.capacity,
-            view: tour.view_count
+            view: tour.view_count,
           })),
         ]);
+        setLoadingMore(false);
       } catch (error) {
         console.error("Lỗi khi load thêm tour:", error);
+        setLoadingMore(false);
       }
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br bg-white py-12 px-4">
+
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-[#015294] mb-4">TOUR CHÍNH</h2>
           <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
         </div>
-
+      {loading ? <Loading/> :(
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tours.map((tour, index) => (
             <TourCard key={index} {...tour} />
           ))}
-        </div>
+        </div>)}
 
         {existTourMore && (
           <div className="text-center mt-12">
+            {loadingMore ? <Loading/>:(
             <button
               onClick={handleMoreTours}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl cursor-pointer"
+              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
             >
               Xem thêm tour khác
             </button>
+          )}
           </div>
         )}
       </div>
