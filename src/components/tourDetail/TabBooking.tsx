@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { tourScheduleService } from '../../services/tourSchedule.service';
 import { fetchUserProfile } from '../../services/userProfile.service';
 import { bookingService } from '../../services/booking.service';
+import { useAuth } from '../../hooks/useAuth';
+import Modal from '../Modal';
+import LoginForm from '../authentication/LoginForm';
+import SignupForm from '../authentication/SignupForm';
 import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
 
 interface TabBookingProps {
@@ -28,7 +32,10 @@ interface AvailableDate {
 }
 
 export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourCapacity = 25 }) => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupForm, setShowSignupForm] = useState(false);
   const [priceOptions, setPriceOptions] = useState<PriceOption[]>([]);
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -595,7 +602,29 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+    <>
+      {/* Hiển thị form đăng nhập nếu chưa đăng nhập */}
+      {!user ? (
+        <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+          <div className="text-center py-12">
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Đăng nhập để đặt tour
+              </h3>
+              <p className="text-gray-600">
+                Bạn cần đăng nhập để có thể đặt tour và quản lý đặt chỗ
+              </p>
+            </div>
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="px-8 py-3 bg-orange-500 text-white rounded-md font-medium hover:bg-orange-600 transition-colors"
+            >
+              Đăng nhập ngay
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
       {/* Progress indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -669,6 +698,23 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
           </button>
         )}
       </div>
-    </div>
+        </div>
+      )}
+
+      {/* Modal đăng nhập */}
+      <Modal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)}>
+        {showSignupForm ? (
+          <SignupForm
+            onClose={() => setShowLoginModal(false)}
+            onSwitchForm={() => setShowSignupForm(false)}
+          />
+        ) : (
+          <LoginForm
+            onClose={() => setShowLoginModal(false)}
+            onSwitchForm={() => setShowSignupForm(true)}
+          />
+        )}
+      </Modal>
+    </>
   );
 };

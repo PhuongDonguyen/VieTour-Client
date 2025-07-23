@@ -13,6 +13,8 @@ import { fetchTourDetail } from '../../services/tourDetail.service';
 import { fetchTourImages } from '../../services/tourImage.service';
 import {TabReview} from '../tourDetail/TabReview'
 import {TabBooking} from '../tourDetail/TabBooking'
+import { Loading } from '../Loading';
+import {CommentSection} from "../question"
 
 const TABS = [
   { key: 'program', label: 'Chương trình tour' },
@@ -35,6 +37,7 @@ const TourDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('program');
+  const [showCommentSection, setShowCommentSection] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -58,6 +61,11 @@ const TourDetail: React.FC = () => {
         setImages(imgs);
         setLoading(false);
         console.log('Tour data:', tour); // Debug log
+        
+        // Delay hiển thị comment section để mượt mà hơn
+        setTimeout(() => {
+          setShowCommentSection(true);
+        }, 500);
       })
       .catch((err) => {
         setError(err.message || 'Lỗi khi tải dữ liệu tour.');
@@ -65,7 +73,7 @@ const TourDetail: React.FC = () => {
       });
   }, [slug]);
 
-  if (loading) return <div className="text-center py-10 text-lg text-gray-500">Đang tải chi tiết tour...</div>;
+  if (loading) return <Loading />;
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!tour) return null;
 
@@ -155,6 +163,13 @@ const TourDetail: React.FC = () => {
             />
           )}
         </div>
+        
+        {/* Comment Section với delay để mượt mà hơn */}
+        {showCommentSection && (
+          <div className="mt-8">
+            <CommentSection />
+          </div>
+        )}
       </div>
     </>
   );
