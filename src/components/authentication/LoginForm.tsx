@@ -27,12 +27,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, onSwitchForm, onForgotPa
 
   const handleOAuthLogin = (provider: string) => {
     const loginUrl = `${import.meta.env.VITE_API_BASE_URL}/auth/${provider}`;
-    window.open(
-      loginUrl,
-      "_blank",
-      "width=500,height=600,left=300,top=300"
-    );
-    if (onClose) onClose();
+    /* TODO: Tạm thời để lại để test open with popup */
+    // window.open(
+    //   loginUrl,
+    //   "_blank",
+    //   "width=500,height=600,left=300,top=300"
+    // );
+    // if (onClose) onClose();
+    window.location.href = loginUrl;
   };
 
   const formik = useFormik({
