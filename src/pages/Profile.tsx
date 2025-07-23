@@ -6,7 +6,7 @@ export default function Profile() {
     return (
         <div className="min-h-screen">
             <TopBar />
-            <NavBar />
+            <NavBar textDark={true} />
             <ProfilePage/>
         </div>
     );

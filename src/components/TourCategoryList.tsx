@@ -2,10 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import { Link } from 'react-router-dom';
-// @ts-ignore
-import "swiper/css";
-// @ts-ignore
-import "swiper/css/autoplay";
 import { fetchActiveTourCategories } from '../services/tourCategory.service';
 
 export const TourListCarousel: React.FC = () => {
@@ -53,8 +49,9 @@ export const TourListCarousel: React.FC = () => {
           threshold={20}
         >
           {categories.map((cat, idx) => (
-            <SwiperSlide key={cat.id} className="px-1">
+            <SwiperSlide className="px-1">
               <Link
+                key={idx}
                 to={`/tour-category/${cat.slug}`}
                 className="relative rounded-2xl overflow-hidden h-[270px] md:h-[300px] lg:h-[320px] flex flex-col cursor-pointer group bg-blue-100"
               >
@@ -70,7 +67,7 @@ export const TourListCarousel: React.FC = () => {
                     {cat.name.charAt(0)}
                   </div>
                 )}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-35 transition-opacity duration-300 pointer-events-none" style={{background: 'linear-gradient(135deg, #ec4899 0%, #3b82f6 100%)'}} />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-35 transition-opacity duration-300 pointer-events-none" style={{ background: 'linear-gradient(135deg, #ec4899 0%, #3b82f6 100%)' }} />
                 <div className="absolute bottom-4 left-0 w-full px-4 flex flex-col items-start">
                   <h3 className="text-lg font-bold text-white mb-1 drop-shadow-lg truncate uppercase">
                     {cat.name}

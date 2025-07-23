@@ -26,7 +26,7 @@ export const fetchTourImages = async (tour_id: number) => {
   throw new Error("Không tìm thấy ảnh tour");
 };
 
-export const fetchTopBookedTours = async (limit: number = 10) => {
+export const fetchTopBookedTours = async (limit: number = 5) => {
   const res = await getTopBookedTours(limit);
   if (res.data && res.data.success) return res.data.data;
   throw new Error("Không lấy được tour nổi bật");
