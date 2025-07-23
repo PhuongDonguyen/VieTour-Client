@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { tourScheduleService } from '../../services/tourSchedule.service';
+import { fetchUserProfile } from '../../services/userProfile.service';
+import { bookingService } from '../../services/booking.service';
+import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
 
 interface TabBookingProps {
   tourId: number;
   tourTitle: string;
   tourPrice: string;
+  tourCapacity?: number;
 }
 
 interface PriceOption {
@@ -17,32 +22,29 @@ interface PriceOption {
 interface AvailableDate {
   id: number;
   start_date: string;
-  booked_count: number;
+  participant: number;
   status: string;
   tour_id: number;
 }
 
-export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourPrice }) => {
+export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourCapacity = 25 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [priceOptions, setPriceOptions] = useState<PriceOption[]>([]);
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
-  const [tourCapacity, setTourCapacity] = useState(25); // Capacity từ API
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     // Bước 1: Thông tin tour
     startDate: '',
     numDays: '3 ngày 2 đêm',
     selectedPrices: {} as Record<number, { adults: number; children: number }>,
     
-    // Bước 2: Thông tin khách hàng
+    // Bước 3: Thông tin khách hàng
     customerName: '',
-    email: '',
     phone: '',
-    address: '',
     
-    // Bước 3: Yêu cầu đặc biệt
-    specialRequests: '',
-    notes: ''
+    // Bước 4: Ghi chú và yêu cầu đặc biệt
+    specialRequests: ''
   });
 
   // Function to format date to Vietnamese format
@@ -54,53 +56,65 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
     return `${day}/${month}/${year}`;
   };
 
-  // Mock API data - trong thực tế sẽ gọi API
+  // Function to check if date is valid (at least 2 days from today)
+  const isValidBookingDate = (dateString: string) => {
+    const today = new Date();
+    const bookingDate = new Date(dateString);
+    const twoDaysFromNow = new Date(today);
+    twoDaysFromNow.setDate(today.getDate() + 2);
+    
+    return bookingDate >= twoDaysFromNow;
+  };
+
+  // Load tour schedules trước
   useEffect(() => {
-    // Mock price data
+    const loadTourSchedules = async () => {
+      try {
+        console.log('Loading tour schedules for tourId:', tourId);
+        const schedulesData = await tourScheduleService.getTourSchedules(tourId);
+        console.log('Tour schedules data:', schedulesData);
+        
+        if (schedulesData.success) {
+          // Filter chỉ lấy những ngày từ 2 ngày sau ngày hiện tại
+          const validDates = schedulesData.data.filter((date: AvailableDate) => 
+            isValidBookingDate(date.start_date)
+          );
+          setAvailableDates(validDates);
+          console.log('Available dates set (filtered):', validDates);
+        } else {
+          console.log('No success in schedules response');
+          setAvailableDates([]);
+        }
+      } catch (error) {
+        console.error('Error loading tour schedules:', error);
+        setAvailableDates([]);
+      }
+    };
+
+    loadTourSchedules();
+  }, [tourId]);
+
+  // Load demo prices khi component mount
+  useEffect(() => {
+    // Demo price data
     const mockPriceData = [
       {
         id: 1,
         adult_price: 1000000,
         kid_price: 500000,
         note: "người việt nam",
-        tour_id: 1
+        tour_id: tourId
       },
       {
         id: 2,
-        adult_price: 900000,
-        kid_price: 500000,
+        adult_price: 1200000,
+        kid_price: 600000,
         note: "người nước ngoài",
-        tour_id: 1
-      }
-    ];
-
-    // Mock available dates data - filter by current tourId
-    const mockDateData = [
-      {
-        id: 2,
-        start_date: "2025-07-02",
-        booked_count: 0,
-        status: "Booked",
-        tour_id: 1
-      },
-      {
-        id: 8,
-        start_date: "2025-07-02",
-        booked_count: 10,
-        status: "Booked",
-        tour_id: 1
-      },
-      {
-        id: 11,
-        start_date: "2025-07-05",
-        booked_count: 15,
-        status: "Booked",
-        tour_id: 1
+        tour_id: tourId
       }
     ];
 
     setPriceOptions(mockPriceData);
-    setAvailableDates(mockDateData.filter(date => date.tour_id === tourId));
     
     // Initialize selectedPrices với default values
     const initialPrices: Record<number, { adults: number; children: number }> = {};
@@ -110,19 +124,29 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
     setFormData(prev => ({ ...prev, selectedPrices: initialPrices }));
   }, [tourId]);
 
-  // Load giá khi chọn ngày (chuẩn bị cho API call)
+  // Load user profile khi vào bước 3 (thông tin liên hệ)
   useEffect(() => {
-    if (formData.startDate) {
-      console.log('Load giá cho ngày:', formData.startDate);
-      // TODO: Gọi API để load giá theo ngày đã chọn
-      // Có thể có giá đặc biệt cho những ngày nhất định
-      
-      // Ví dụ: 
-      // fetchPricesByDate(tourId, formData.startDate)
-      //   .then(prices => setPriceOptions(prices))
-      //   .catch(err => console.error('Error loading prices:', err));
+    if (currentStep === 3) {
+      const loadUserProfile = async () => {
+        try {
+          const userProfile = await fetchUserProfile();
+          if (userProfile.success) {
+            const { first_name, last_name, phone } = userProfile.data;
+            setFormData(prev => ({
+              ...prev,
+              customerName: `${first_name} ${last_name}`.trim(),
+              phone: phone || ''
+            }));
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+          // Không cần làm gì nếu không load được profile
+        }
+      };
+
+      loadUserProfile();
     }
-  }, [formData.startDate, tourId]);
+  }, [currentStep]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -156,7 +180,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
       const selectedDate = availableDates.find(date => date.start_date === formData.startDate);
       if (selectedDate) {
         const totalSelected = totalPeople.totalAdults + totalPeople.totalChildren;
-        const remainingCapacity = tourCapacity - selectedDate.booked_count;
+        const remainingCapacity = tourCapacity - selectedDate.participant;
         
         if (totalSelected > remainingCapacity) {
           setErrors({ capacity: `Số lượng khách đã chọn (${totalSelected}) vượt quá số vé còn lại (${remainingCapacity})!` });
@@ -171,12 +195,6 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
       
       if (!formData.customerName.trim()) {
         newErrors.customerName = 'Vui lòng nhập họ và tên!';
-      }
-      
-      if (!formData.email.trim()) {
-        newErrors.email = 'Vui lòng nhập email!';
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Email không hợp lệ!';
       }
       
       if (!formData.phone.trim()) {
@@ -202,10 +220,58 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
     }
   };
 
-  const handleSubmit = () => {
-    // Xử lý đặt tour
-    console.log('Đặt tour:', { tourId: 1, ...formData });
-    alert('Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.');
+  const handleSubmit = async () => {
+    if (isSubmitting) return; // Prevent double submission
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Tìm schedule_id từ ngày đã chọn
+      const selectedDate = availableDates.find(date => date.start_date === formData.startDate);
+      if (!selectedDate) {
+        alert('Không tìm thấy lịch trình cho ngày đã chọn!');
+        return;
+      }
+
+      // Tạo booking_details từ selectedPrices
+      const bookingDetails: BookingDetail[] = [];
+      Object.entries(formData.selectedPrices).forEach(([priceId, quantities]) => {
+        const priceOption = priceOptions.find(p => p.id === parseInt(priceId));
+        if (priceOption && (quantities.adults > 0 || quantities.children > 0)) {
+          bookingDetails.push({
+            adult_quanti: quantities.adults,
+            kid_quanti: quantities.children,
+            adult_price: priceOption.adult_price,
+            kid_price: priceOption.kid_price,
+            note: priceOption.note
+          });
+        }
+      });
+
+      // Tạo booking request data
+      const bookingData: BookingRequest = {
+        schedule_id: selectedDate.id,
+        total: calculateTotalPrice(),
+        client_name: formData.customerName,
+        client_phone: formData.phone,
+        note: formData.specialRequests || '',
+        booking_details: bookingDetails
+      };
+
+      console.log('Sending booking data:', bookingData);
+      
+      // Gửi API request
+      const response = await bookingService.createBooking(bookingData);
+      
+      console.log('Booking response:', response);
+      alert('Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.');
+      
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      alert('Có lỗi xảy ra khi đặt tour. Vui lòng thử lại!');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePriceChange = (priceId: number, type: 'adults' | 'children', value: number) => {
@@ -251,8 +317,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
             
             {/* Tour ID hiển thị */}
             <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Tour ID: <span className="font-semibold text-blue-600">1</span></p>
-              <h4 className="text-lg font-bold text-blue-800 my-2">Tour Tây Bắc 3 ngày 2 đêm</h4>
+              <p className="text-sm text-gray-600">Tour ID: <span className="font-semibold text-blue-600">{tourId}</span></p>
+              <h4 className="text-lg font-bold text-blue-800 my-2">{tourTitle}</h4>
               <p className="text-sm text-gray-600">Thời gian: <span className="font-semibold">{formData.numDays}</span></p>
             </div>
 
@@ -261,6 +327,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ngày khởi hành *
                 </label>
+                {/* Debug info */}
+                {/* <div className="text-xs text-gray-500 mb-2">
+                  Debug: Có {availableDates.length} ngày khả dụng, Tour capacity: {tourCapacity}
+                </div> */}
                 <select
                   value={formData.startDate}
                   onChange={(e) => handleInputChange('startDate', e.target.value)}
@@ -269,11 +339,19 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
                   }`}
                 >
                   <option value="">Chọn ngày khởi hành</option>
-                  {availableDates.map(date => (
-                    <option key={date.id} value={date.start_date}>
-                      {formatDateToVietnamese(date.start_date)} (Đã đặt: {date.booked_count}/{tourCapacity})
-                    </option>
-                  ))}
+                  {availableDates.map(date => {
+                    const remainingSlots = tourCapacity - date.participant;
+                    const statusText = remainingSlots > 0 ? `(Còn ${remainingSlots} chỗ)` : '(Hết chỗ)';
+                    return (
+                      <option 
+                        key={date.id} 
+                        value={date.start_date}
+                        disabled={remainingSlots <= 0}
+                      >
+                        {formatDateToVietnamese(date.start_date)} {statusText}
+                      </option>
+                    );
+                  })}
                 </select>
                 {errors.startDate && (
                   <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
@@ -398,7 +476,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">Thông tin liên hệ</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Họ và tên *
@@ -410,28 +488,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                     errors.customerName ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Nhập họ và tên"
+                  placeholder="Họ và tên sẽ được tự động điền từ profile của bạn"
                 />
                 {errors.customerName && (
                   <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Nhập email"
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                 )}
               </div>
               
@@ -446,24 +506,18 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                     errors.phone ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="Nhập số điện thoại"
+                  placeholder="Số điện thoại sẽ được tự động điền từ profile của bạn"
                 />
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Địa chỉ
-                </label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Nhập địa chỉ"
-                />
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Lưu ý:</strong> Thông tin họ tên và số điện thoại sẽ được tự động điền từ profile của bạn. 
+                  Bạn có thể chỉnh sửa nếu cần thiết.
+                </p>
               </div>
             </div>
           </div>
@@ -472,31 +526,18 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
       case 4:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Yêu cầu đặc biệt</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Ghi chú và yêu cầu đặc biệt</h3>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Yêu cầu đặc biệt
+                Ghi chú và yêu cầu đặc biệt
               </label>
               <textarea
                 value={formData.specialRequests}
                 onChange={(e) => handleInputChange('specialRequests', e.target.value)}
-                rows={4}
+                rows={6}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="Nhập yêu cầu đặc biệt (nếu có)"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ghi chú thêm
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="Ghi chú thêm (nếu có)"
+                placeholder="Nhập ghi chú và yêu cầu đặc biệt (nếu có)..."
               />
             </div>
           </div>
@@ -509,7 +550,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
             
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
               <h4 className="font-semibold text-gray-800">Thông tin tour:</h4>
-              <p><span className="font-medium">Tour ID:</span> 1</p>
+              <p><span className="font-medium">Tour ID:</span> {tourId}</p>
               <p><span className="font-medium">Tour:</span> {tourTitle}</p>
               <p><span className="font-medium">Ngày khởi hành:</span> {formData.startDate}</p>
               <p><span className="font-medium">Thời gian:</span> {formData.numDays}</p>
@@ -536,16 +577,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
               <h4 className="font-semibold text-gray-800">Thông tin liên hệ:</h4>
               <p><span className="font-medium">Họ tên:</span> {formData.customerName}</p>
-              <p><span className="font-medium">Email:</span> {formData.email}</p>
               <p><span className="font-medium">Số điện thoại:</span> {formData.phone}</p>
-              <p><span className="font-medium">Địa chỉ:</span> {formData.address}</p>
             </div>
             
-            {(formData.specialRequests || formData.notes) && (
+            {formData.specialRequests && (
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <h4 className="font-semibold text-gray-800">Yêu cầu đặc biệt:</h4>
-                {formData.specialRequests && <p>{formData.specialRequests}</p>}
-                {formData.notes && <p><span className="font-medium">Ghi chú:</span> {formData.notes}</p>}
+                <h4 className="font-semibold text-gray-800">Ghi chú và yêu cầu đặc biệt:</h4>
+                <p>{formData.specialRequests}</p>
               </div>
             )}
           </div>
@@ -620,9 +658,14 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourP
         ) : (
           <button
             onClick={handleSubmit}
-            className="px-6 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors"
+            disabled={isSubmitting}
+            className={`px-6 py-2 rounded-md font-medium transition-colors ${
+              isSubmitting
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
           >
-            Đặt tour ngay
+            {isSubmitting ? 'Đang xử lý...' : 'Đặt tour ngay'}
           </button>
         )}
       </div>
