@@ -6,7 +6,7 @@ import { Loading } from "./Loading";
 import {
   fetchQuestionByTuorId,
   sendQuestion,
-  delQuestion
+  delQuestion,
 } from "../services/question.service";
 import {
   fetchUserById,
@@ -223,7 +223,7 @@ export const CommentSection = () => {
         user: user,
         replies: [],
       };
-      addReplyToTree(questions, parrent_id, newQuestion);
+      handleAddReply(parrent_id, newQuestion);
       setReplyText("");
       console.log("Gửi câu hỏi thành công:");
       setActiveReplyId(null);
@@ -231,8 +231,14 @@ export const CommentSection = () => {
       return res;
     } catch (error) {
       console.error("Lỗi khi gửi câu hỏi:", error);
+      setLoading(false);
       return null;
     }
+  };
+
+  const handleAddReply = (parentId: number, reply: Question) => {
+    const updatedQuestions = addReplyToTree(questions, parentId, reply);
+    setQuestions(updatedQuestions); // ✅ Trigger rerender
   };
 
   const addReplyToTree = (
@@ -262,13 +268,10 @@ export const CommentSection = () => {
   };
 
   const renderReplies = (replies: Question[], level = 1) => {
-    if (loading) {
-      return <Loading />;
-    }
     return (
       <div
         className={`mt-4 pl-${
-          level * 4
+          4
         } border-l-2 border-orange-200 space-y-4`}
       >
         {replies.map((rep) => (
@@ -331,20 +334,38 @@ export const CommentSection = () => {
               {/* Form trả lời */}
               {activeReplyId === rep.id && (
                 <div className="mt-2 space-y-2">
-                  <textarea
-                    rows={2}
-                    placeholder="Trả lời..."
-                    value={replyText}
-                    disabled={loading}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg border-gray-300 resize-none"
-                  />
-                  <button
-                    onClick={() => handleReplySubmit(rep.id)}
-                    className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
-                  >
-                    Gửi trả lời
-                  </button>
+                  {loading ? (
+                    <Loading />
+                  ) : (
+                    <div>
+                      <textarea
+                        rows={2}
+                        placeholder="Trả lời..."
+                        value={replyText}
+                        disabled={loading}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault(); // chặn xuống dòng
+                            handleReplySubmit(rep.id);
+                          }
+                        }}
+                        className="w-full px-4 py-2 border rounded-lg border-gray-300 resize-none"
+                      />
+                      <button
+                        onClick={() => handleReplySubmit(rep.id)}
+                        className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
+                      >
+                        Gửi trả lời
+                      </button>
+                      <button
+                        onClick={() => setActiveReplyId(null)}
+                        className="px-4 ms-2 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
+                      >
+                        Thoát
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -539,6 +560,12 @@ export const CommentSection = () => {
                         className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
                       >
                         Gửi trả lời
+                      </button>
+                      <button
+                        onClick={() => setActiveReplyId(null)}
+                        className="px-4 ms-2 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
+                      >
+                        Thoát
                       </button>
                     </div>
                   )}

@@ -481,7 +481,7 @@ export const ProfilePage: React.FC = () => {
                     Số điện thoại
                   </label>
                   <input
-                    type="tel"
+                    type="number"
                     id="tel"
                     name="phone"
                     value={formData?.phone}
