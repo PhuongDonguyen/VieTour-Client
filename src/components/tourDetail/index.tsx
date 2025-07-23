@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import TourNamePrice from "./TourNamePrice";
 import TourImage from "./TourImage";
 import TourDetailContent from "./TourDetailContent";
-import CommentForm from "./CommentForm";
 import TabPrice from "./TabPrice";
 import TabInfo from "./TabInfo";
 import TabOverview from "./TabOverview";
@@ -13,6 +12,7 @@ import { fetchTourBySlug } from '../../services/tour.service';
 import { fetchTourDetail } from '../../services/tourDetail.service';
 import { fetchTourImages } from '../../services/tourImage.service';
 import {TabReview} from '../tourDetail/TabReview'
+import {TabBooking} from '../tourDetail/TabBooking'
 
 const TABS = [
   { key: 'program', label: 'Chương trình tour' },
@@ -21,7 +21,8 @@ const TABS = [
   { key: 'overview', label: 'Tổng quan tour' },
   { key: 'condition', label: 'Điều kiện tour' },
   { key: 'gallery', label: 'Hình ảnh tour' },
-  { key: 'review', label: 'Đánh giá'}
+  { key: 'review', label: 'Đánh giá'},
+  { key: 'booking', label: 'Đặt tour'}
 ];
 
 
@@ -56,6 +57,7 @@ const TourDetail: React.FC = () => {
         setDays(detail);
         setImages(imgs);
         setLoading(false);
+        console.log('Tour data:', tour); // Debug log
       })
       .catch((err) => {
         setError(err.message || 'Lỗi khi tải dữ liệu tour.');
@@ -144,9 +146,15 @@ const TourDetail: React.FC = () => {
           {activeTab === 'condition' && <TabCondition tour_info={tour.tour_info} />}
           {activeTab === 'gallery' && <TabGallery images={images} />}
           {activeTab === 'review' && <TabReview tourId = {tour.id} totalStar={tour.total_star} reviewCount={tour.review_count}/>}
+          {activeTab === 'booking' && (
+            <TabBooking 
+              tourId={tour.id} 
+              tourTitle={tour.title} 
+              tourPrice={displayPrice}
+              tourCapacity={tour.max_participants || 25}
+            />
+          )}
         </div>
-        {/* Form nhận xét luôn hiển thị dưới tab, ngoài box nội dung */}
-        <CommentForm />
       </div>
     </>
   );
