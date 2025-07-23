@@ -12,6 +12,7 @@ import TabGallery from "./TabGallery";
 import { fetchTourBySlug } from '../../services/tour.service';
 import { fetchTourDetail } from '../../services/tourDetail.service';
 import { fetchTourImages } from '../../services/tourImage.service';
+import {TabReview} from '../tourDetail/TabReview'
 
 const TABS = [
   { key: 'program', label: 'Chương trình tour' },
@@ -20,7 +21,10 @@ const TABS = [
   { key: 'overview', label: 'Tổng quan tour' },
   { key: 'condition', label: 'Điều kiện tour' },
   { key: 'gallery', label: 'Hình ảnh tour' },
+  { key: 'review', label: 'Đánh giá'}
 ];
+
+
 
 const TourDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -139,6 +143,7 @@ const TourDetail: React.FC = () => {
           {activeTab === 'overview' && <TabOverview destination_intro={tour.destination_intro} />}
           {activeTab === 'condition' && <TabCondition tour_info={tour.tour_info} />}
           {activeTab === 'gallery' && <TabGallery images={images} />}
+          {activeTab === 'review' && <TabReview tourId = {tour.id} totalStar={tour.total_star} reviewCount={tour.review_count}/>}
         </div>
         {/* Form nhận xét luôn hiển thị dưới tab, ngoài box nội dung */}
         <CommentForm />
