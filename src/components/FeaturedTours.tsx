@@ -1,20 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Navigation } from "swiper/modules";
-// @ts-ignore
-import "swiper/css";
-// @ts-ignore
-import "swiper/css/autoplay";
-// @ts-ignore
-import "swiper/css/navigation";
+import { Autoplay } from "swiper/modules";
 import { fetchTopBookedTours } from '../services/tour.service';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export const FeaturedTours: React.FC = () => {
   const [tours, setTours] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchTopBookedTours(10)
@@ -47,7 +40,7 @@ export const FeaturedTours: React.FC = () => {
       </h2>
       <div className="relative">
         <Swiper
-          modules={[Autoplay, Navigation]}
+          modules={[Autoplay]}
           spaceBetween={16}
           slidesPerView={4}
           loop={true}
@@ -94,12 +87,6 @@ export const FeaturedTours: React.FC = () => {
               </Link>
             </SwiperSlide>
           ))}
-          <button className="featured-prev absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/95 shadow-lg rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 transition-all" aria-label="Previous">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <button className="featured-next absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white/95 shadow-lg rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 transition-all" aria-label="Next">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
         </Swiper>
       </div>
     </div>
