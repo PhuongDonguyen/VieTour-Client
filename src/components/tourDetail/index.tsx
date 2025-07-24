@@ -12,8 +12,8 @@ import { fetchTourBySlug } from '../../services/tour.service';
 import { fetchTourDetail } from '../../services/tourDetail.service';
 import { fetchTourImages } from '../../services/tourImage.service';
 import {TabReview} from '../tourDetail/TabReview'
-import {TabBooking} from '../tourDetail/TabBooking'
-import { Loading } from '../Loading';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import {CommentSection} from "../question"
 
 const TABS = [
@@ -23,8 +23,7 @@ const TABS = [
   { key: 'overview', label: 'Tổng quan tour' },
   { key: 'condition', label: 'Điều kiện tour' },
   { key: 'gallery', label: 'Hình ảnh tour' },
-  { key: 'review', label: 'Đánh giá'},
-  { key: 'booking', label: 'Đặt tour'}
+  { key: 'review', label: 'Đánh giá'}
 ];
 
 
@@ -73,7 +72,19 @@ const TourDetail: React.FC = () => {
       });
   }, [slug]);
 
-  if (loading) return <Loading />;
+  if (loading) return (
+    <div className="pt-24 px-4">
+      <div className="max-w-7xl mx-auto rounded-xl bg-transparent h-[750px] md:h-[80vh] flex flex-col md:flex-row overflow-hidden animate-pulse">
+        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 pt-4 flex flex-col bg-white hide-scrollbar">
+          <Skeleton height={400} className="mb-6" />
+        </div>
+        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 hide-scrollbar">
+          <Skeleton height={40} width={300} style={{ marginBottom: 24, marginTop: 24 }} />
+          <Skeleton count={10} height={20} style={{ marginBottom: 8 }} />
+        </div>
+      </div>
+    </div>
+  );
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!tour) return null;
 
@@ -115,7 +126,7 @@ const TourDetail: React.FC = () => {
       `}</style>
       <div className="pt-24 px-4">
         {/* Phần trên: tên + giá + nút đặt */}
-        <TourNamePrice title={tour.title} price={displayPrice} />
+        <TourNamePrice title={tour.title} price={displayPrice} tourSlug={tour.slug} />
         {/* Nav bar chuyển tab */}
         <div className="max-w-7xl mx-auto flex space-x-4 border-b border-gray-200 mt-10 mb-8">
           {TABS.map(tab => (
@@ -154,14 +165,6 @@ const TourDetail: React.FC = () => {
           {activeTab === 'condition' && <TabCondition tour_info={tour.tour_info} />}
           {activeTab === 'gallery' && <TabGallery images={images} />}
           {activeTab === 'review' && <TabReview tourId = {tour.id} totalStar={tour.total_star} reviewCount={tour.review_count}/>}
-          {activeTab === 'booking' && (
-            <TabBooking 
-              tourId={tour.id} 
-              tourTitle={tour.title} 
-              tourPrice={displayPrice}
-              tourCapacity={tour.max_participants || 25}
-            />
-          )}
         </div>
         
         {/* Comment Section với delay để mượt mà hơn */}

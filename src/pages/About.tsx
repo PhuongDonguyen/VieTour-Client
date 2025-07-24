@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 import { resourcesService } from "../services/resources.service";
-import { TopBar } from "../layouts/TopBar";
-import { NavBar } from "../layouts/NavBar";
-import { Footer } from "../layouts/Footer";
 
 export default function About() {
   const [introduce, setIntroduce] = useState("");
@@ -18,8 +15,6 @@ export default function About() {
 
   return (
     <div className="min-h-screen">
-      <TopBar />
-      <NavBar textDark={true} />
       <div className="max-w-3xl mx-auto py-16 px-4 min-h-[60vh]">
         {loading ? (
           <div className="text-center text-gray-500">Đang tải...</div>
@@ -27,7 +22,6 @@ export default function About() {
           <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: introduce }} />
         )}
       </div>
-      <Footer />
     </div>
   );
 } 
