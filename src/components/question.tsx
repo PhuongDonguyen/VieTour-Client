@@ -1,18 +1,26 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { MessageCircle, User, Send } from "lucide-react";
+import {
+  MessageCircle,
+  User,
+  Send,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { fetchTourBySlug } from "../services/tour.service";
 import { Loading } from "./Loading";
 import {
   fetchQuestionByTuorId,
   sendQuestion,
-  delQuestion
+  delQuestion,
 } from "../services/question.service";
 import {
   fetchUserById,
   fetchUserProfile,
 } from "@/services/userProfile.service";
+import { RepliesSection } from "./renderReplies";
 import dayjs from "dayjs";
+import { dividerClasses } from "@mui/material";
 
 interface Question {
   id: number;
@@ -34,16 +42,15 @@ interface User {
 
 export const CommentSection = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [username, setUsername] = useState("");
+
   const [commentText, setCommentText] = useState("");
   const [tourId, setTourId] = useState<number>(0);
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
-  const [replyUsername, setReplyUsername] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [user, setUser] = useState<User | null>(null);
-
+  const [countQuestion, setCountQuestion] = useState<number>(0);
+  const [loadingQuestion, setLoadingQuestion] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     const loadTour = async () => {
@@ -64,11 +71,15 @@ export const CommentSection = () => {
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        const res = await fetchQuestionByTuorId(tourId); // Gọi API lấy danh sách
+        setLoadingQuestion(true);
+        const res = await fetchQuestionByTuorId(tourId);
+        setCountQuestion(res.data.length);
         const questionsWithUser = await addUsersToQuestions(res.data);
         const nested = nestQuestions(questionsWithUser);
         setQuestions(nested);
+        setLoadingQuestion(false);
       } catch (error) {
+        setLoadingQuestion(false);
         console.error("Lỗi khi tải câu hỏi:", error);
       }
     };
@@ -223,7 +234,7 @@ export const CommentSection = () => {
         user: user,
         replies: [],
       };
-      addReplyToTree(questions, parrent_id, newQuestion);
+      handleAddReply(parrent_id, newQuestion);
       setReplyText("");
       console.log("Gửi câu hỏi thành công:");
       setActiveReplyId(null);
@@ -231,8 +242,14 @@ export const CommentSection = () => {
       return res;
     } catch (error) {
       console.error("Lỗi khi gửi câu hỏi:", error);
+      setLoading(false);
       return null;
     }
+  };
+
+  const handleAddReply = (parentId: number, reply: Question) => {
+    const updatedQuestions = addReplyToTree(questions, parentId, reply);
+    setQuestions(updatedQuestions); // ✅ Trigger rerender
   };
 
   const addReplyToTree = (
@@ -261,130 +278,6 @@ export const CommentSection = () => {
     });
   };
 
-  const renderReplies = (replies: Question[], level = 1) => {
-    if (loading) {
-      return <Loading />;
-    }
-    return (
-      <div
-        className={`mt-4 pl-${
-          level * 4
-        } border-l-2 border-orange-200 space-y-4`}
-      >
-        {replies.map((rep) => (
-          <div key={rep.id} className="text-sm flex items-start gap-3">
-            {/* Avatar */}
-            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
-              {rep.user?.avatar ? (
-                <img
-                  src={rep.user.avatar}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-white font-bold text-xs">
-                  {rep.user?.first_name?.charAt(0).toUpperCase() || "?"}
-                </span>
-              )}
-            </div>
-
-            {/* Nội dung */}
-            <div className="flex-1">
-              <div className="font-semibold text-gray-700">
-                {rep.user
-                  ? `${rep.user.first_name} ${rep.user.last_name}`
-                  : "Ẩn danh"}
-              </div>
-              <div className="text-gray-600">{rep.text}</div>
-              <div className="text-xs text-gray-400">
-                {new Date(rep.created_at)
-                  .toLocaleString("vi-VN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour12: false,
-                  })
-                  .replace(",", " -")}
-              </div>
-
-              {/* Nút Trả lời */}
-              <button
-                onClick={() =>
-                  setActiveReplyId(activeReplyId === rep.id ? null : rep.id)
-                }
-                className="mt-1 text-sm text-orange-600 hover:underline"
-              >
-                Trả lời
-              </button>
-
-              {rep.user?.id === user?.id && (
-                <button
-                  onClick={() => handleDeleteQuestion(rep.id)}
-                  className="mt-2 ms-6 text-sm text-orange-600 hover:underline"
-                >
-                  Xóa
-                </button>
-              )}
-
-              {/* Form trả lời */}
-              {activeReplyId === rep.id && (
-                <div className="mt-2 space-y-2">
-                  <textarea
-                    rows={2}
-                    placeholder="Trả lời..."
-                    value={replyText}
-                    disabled={loading}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg border-gray-300 resize-none"
-                  />
-                  <button
-                    onClick={() => handleReplySubmit(rep.id)}
-                    className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
-                  >
-                    Gửi trả lời
-                  </button>
-                </div>
-              )}
-
-              {/* Đệ quy hiển thị các reply con */}
-              {rep.replies &&
-                rep.replies.length > 0 &&
-                renderReplies(rep.replies, level + 1)}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // const handleReplySubmit = (parentId: number) => {
-  //   if (!replyUsername.trim() || !replyText.trim()) return;
-
-  //   const newReply: Comment = {
-  //     id: Date.now(),
-  //     username: replyUsername,
-  //     content: replyText,
-  //     createdAt: new Date(),
-  //   };
-
-  //   setComments((prevComments) =>
-  //     prevComments.map((comment) =>
-  //       comment.id === parentId
-  //         ? {
-  //             ...comment,
-  //             replies: [...(comment.replies || []), newReply],
-  //           }
-  //         : comment
-  //     )
-  //   );
-
-  //   setReplyText("");
-  //   setReplyUsername("");
-  //   setActiveReplyId(null);
-  // };
-
   const handleDeleteQuestion = async (questionId: number) => {
     if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
     try {
@@ -402,7 +295,7 @@ export const CommentSection = () => {
         <MessageCircle className="w-7 h-7 text-orange-500" />
         <h2 className="text-3xl font-bold text-gray-800">Bình luận</h2>
         <span className="ml-auto bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-          {comments.length} bình luận
+          {countQuestion} bình luận
         </span>
       </div>
 
@@ -422,7 +315,7 @@ export const CommentSection = () => {
 
           <div className="relative">
             <textarea
-              placeholder="Viết bình luận của bạn... (Ctrl + Enter để gửi)"
+              placeholder="Viết bình luận của bạn... (Enter để gửi)"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -435,6 +328,12 @@ export const CommentSection = () => {
             <button
               onClick={submitQuestion}
               disabled={!user || !commentText.trim() || loading}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  submitQuestion();
+                }
+              }}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all transform hover:scale-105 active:scale-95 shadow-lg"
             >
               <Send className="w-4 h-4" />
@@ -446,111 +345,139 @@ export const CommentSection = () => {
 
       {/* Danh sách bình luận */}
       <div className="space-y-4">
-        {questions.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">Chưa có bình luận nào</p>
-            <p className="text-gray-400 text-sm">
-              Hãy là người đầu tiên bình luận!
-            </p>
-          </div>
+        {loading ? (
+          <Loading />
         ) : (
-          questions.map((q) => (
-            <div
-              key={q.id}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 transform hover:-translate-y-1"
-            >
-              <div className="flex items-start gap-4">
-                {/* Avatar chữ cái đầu tên */}
-                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
-                  {q.user?.avatar ? (
-                    <img
-                      src={q.user.avatar}
-                      alt="Avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-white font-bold text-sm">
-                      {q.user?.first_name?.charAt(0).toUpperCase() || "?"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Nội dung chính */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-bold text-gray-800">
-                      {q.user?.first_name + " " + q.user?.last_name ||
-                        "Ẩn danh"}
-                    </h4>
-                    <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(q.created_at)
-                        .toLocaleString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour12: false,
-                        })
-                        .replace(",", " -")}
-                    </span>
-                  </div>
-
-                  <p className="text-gray-700 leading-relaxed">{q.text}</p>
-
-                  {/* Nút trả lời */}
-                  <button
-                    onClick={() =>
-                      setActiveReplyId(activeReplyId === q.id ? null : q.id)
-                    }
-                    className="mt-2 text-sm text-orange-600 hover:underline"
-                  >
-                    Trả lời
-                  </button>
-                  {q.user?.id === user?.id && (
-                    <button
-                      onClick={() => handleDeleteQuestion(q.id)}
-                      className="mt-2 ms-6 text-sm text-orange-600 hover:underline"
-                    >
-                      Xóa
-                    </button>
-                  )}
-                  {/* Ô nhập trả lời */}
-                  {activeReplyId === q.id && (
-                    <div className="mt-4 space-y-2">
-                      {/* <input
-                        type="text"
-                        placeholder="Tên của bạn"
-                        value={replyUsername}
-                        onChange={(e) => setReplyUsername(e.target.value)}
-                        className="w-full px-4 py-2 border rounded-lg border-gray-300"
-                      /> */}
-                      <textarea
-                        rows={3}
-                        placeholder="Trả lời..."
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        className="w-full px-4 py-2 border rounded-lg border-gray-300 resize-none"
-                      />
-                      <button
-                        onClick={() => handleReplySubmit(q.id)}
-                        className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
-                      >
-                        Gửi trả lời
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Danh sách trả lời */}
-                  {q.replies &&
-                    q.replies.length > 0 &&
-                    renderReplies(q.replies)}
-                </div>
+          <div>
+            {questions.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">Chưa có bình luận nào</p>
+                <p className="text-gray-400 text-sm">
+                  Hãy là người đầu tiên bình luận!
+                </p>
               </div>
-            </div>
-          ))
+            ) : (
+              questions.map((q) => (
+                <div
+                  key={q.id}
+                  className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 transform hover:-translate-y-1"
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Avatar chữ cái đầu tên */}
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
+                      {q.user?.avatar ? (
+                        <img
+                          src={q.user.avatar}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white font-bold text-sm">
+                          {q.user?.first_name?.charAt(0).toUpperCase() || "?"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Nội dung chính */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-bold text-gray-800">
+                          {q.user?.first_name + " " + q.user?.last_name ||
+                            "Ẩn danh"}
+                        </h4>
+                        <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(q.created_at)
+                            .toLocaleString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour12: false,
+                            })
+                            .replace(",", " -")}
+                        </span>
+                      </div>
+
+                      <p className="text-gray-700 leading-relaxed">{q.text}</p>
+
+                      {/* Nút trả lời */}
+                      <button
+                        onClick={() =>
+                          setActiveReplyId(activeReplyId === q.id ? null : q.id)
+                        }
+                        className="mt-2 text-sm text-orange-600 hover:underline"
+                      >
+                        Trả lời
+                      </button>
+                      {q.user?.id === user?.id && (
+                        <button
+                          onClick={() => handleDeleteQuestion(q.id)}
+                          className="mt-2 ms-6 text-sm text-orange-600 hover:underline"
+                        >
+                          Xóa
+                        </button>
+                      )}
+                      {/* Ô nhập trả lời */}
+                      {activeReplyId === q.id && (
+                        <div className="mt-2 space-y-2">
+                          {loading ? (
+                            <Loading />
+                          ) : (
+                            <div>
+                              <textarea
+                                rows={2}
+                                placeholder="Trả lời..."
+                                value={replyText}
+                                disabled={loading}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleReplySubmit(q.id);
+                                  }
+                                }}
+                                className="w-full px-4 py-2 border rounded-lg border-gray-300 resize-none"
+                              />
+                              <button
+                                onClick={() => handleReplySubmit(q.id)}
+                                className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
+                              >
+                                Gửi trả lời
+                              </button>
+                              <button
+                                onClick={() => setActiveReplyId(null)}
+                                className="px-4 ms-2 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
+                              >
+                                Thoát
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Danh sách trả lời */}
+                      {q.replies && q.replies.length > 0 && (
+                        <RepliesSection
+                          replies={q.replies}
+                          user={user!}
+                          activeReplyId={activeReplyId}
+                          setActiveReplyId={setActiveReplyId}
+                          replyText={replyText}
+                          setReplyText={setReplyText}
+                          handleReplySubmit={handleReplySubmit}
+                          handleDeleteQuestion={handleDeleteQuestion}
+                          loading={loading}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
     </div>

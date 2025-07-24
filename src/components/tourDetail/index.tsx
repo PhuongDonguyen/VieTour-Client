@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import TourNamePrice from "./TourNamePrice";
 import TourImage from "./TourImage";
 import TourDetailContent from "./TourDetailContent";
-import CommentForm from "./CommentForm";
 import TabPrice from "./TabPrice";
 import TabInfo from "./TabInfo";
 import TabOverview from "./TabOverview";
@@ -15,6 +14,8 @@ import { fetchTourImages } from '../../services/tourImage.service';
 import {TabReview} from '../tourDetail/TabReview'
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import {TabBooking} from '../tourDetail/TabBooking'
+import {CommentSection} from "../question"
 
 const TABS = [
   { key: 'program', label: 'Chương trình tour' },
@@ -23,7 +24,8 @@ const TABS = [
   { key: 'overview', label: 'Tổng quan tour' },
   { key: 'condition', label: 'Điều kiện tour' },
   { key: 'gallery', label: 'Hình ảnh tour' },
-  { key: 'review', label: 'Đánh giá'}
+  { key: 'review', label: 'Đánh giá'},
+  { key: 'booking', label: 'Đặt tour'}
 ];
 
 
@@ -36,6 +38,7 @@ const TourDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('program');
+  const [showCommentSection, setShowCommentSection] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -58,6 +61,12 @@ const TourDetail: React.FC = () => {
         setDays(detail);
         setImages(imgs);
         setLoading(false);
+        console.log('Tour data:', tour); // Debug log
+        
+        // Delay hiển thị comment section để mượt mà hơn
+        setTimeout(() => {
+          setShowCommentSection(true);
+        }, 500);
       })
       .catch((err) => {
         setError(err.message || 'Lỗi khi tải dữ liệu tour.');
@@ -158,9 +167,22 @@ const TourDetail: React.FC = () => {
           {activeTab === 'condition' && <TabCondition tour_info={tour.tour_info} />}
           {activeTab === 'gallery' && <TabGallery images={images} />}
           {activeTab === 'review' && <TabReview tourId = {tour.id} totalStar={tour.total_star} reviewCount={tour.review_count}/>}
+          {activeTab === 'booking' && (
+            <TabBooking 
+              tourId={tour.id} 
+              tourTitle={tour.title} 
+              tourPrice={displayPrice}
+              tourCapacity={tour.max_participants || 25}
+            />
+          )}
         </div>
-        {/* Form nhận xét luôn hiển thị dưới tab, ngoài box nội dung */}
-        <CommentForm />
+        
+        {/* Comment Section với delay để mượt mà hơn */}
+        {showCommentSection && (
+          <div className="mt-8">
+            <CommentSection />
+          </div>
+        )}
       </div>
     </>
   );

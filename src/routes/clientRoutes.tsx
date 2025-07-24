@@ -9,6 +9,7 @@ import EnterOtp from '../pages/EnterOtp';
 import LoginSuccess from '../pages/LoginSuccess';
 import Profile from '../pages/Profile';
 import BlogDetail from '../pages/BlogDetail';
+import MyBooking from '../pages/MyBooking'
 
 export const clientRoutes = [
   { path: '', element: <Home /> },
@@ -21,7 +22,8 @@ export const clientRoutes = [
       { path: 'tour-category/:slug', element: <TourCategory /> },
       { path: 'about', element: <About /> },
       { path: 'blog/:id', element: <BlogDetail /> },
-      { path: 'profile', element: <Profile /> }
+      { path: 'profile', element: <Profile /> },
+      { path: 'my-booking', element: <MyBooking /> }
     ]
   },
   { path: 'reset-password', element: <ForgotPassword /> },
