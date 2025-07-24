@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { tourScheduleService } from '../../services/tourSchedule.service';
 import { fetchUserProfile } from '../../services/userProfile.service';
 import { bookingService } from '../../services/booking.service';
+import { getTourPricesByTourIdAndDate } from '../../apis/tourPrice.api';
 import { useAuth } from '../../hooks/useAuth';
 import Modal from '../Modal';
 import LoginForm from '../authentication/LoginForm';
 import SignupForm from '../authentication/SignupForm';
+import { TourCalendar } from './TourCalendar';
 import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
 
 interface TabBookingProps {
@@ -16,11 +18,10 @@ interface TabBookingProps {
 }
 
 interface PriceOption {
-  id: number;
   adult_price: number;
   kid_price: number;
   note: string;
-  tour_id: number;
+  price_type: string;
 }
 
 interface AvailableDate {
@@ -54,23 +55,19 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
     specialRequests: ''
   });
 
-  // Function to format date to Vietnamese format
-  const formatDateToVietnamese = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
   // Function to check if date is valid (at least 2 days from today)
   const isValidBookingDate = (dateString: string) => {
     const today = new Date();
-    const bookingDate = new Date(dateString);
-    const twoDaysFromNow = new Date(today);
-    twoDaysFromNow.setDate(today.getDate() + 2);
+    const bookingDate = new Date(dateString + 'T00:00:00'); // Ensure proper parsing in local timezone
+    const twoDaysFromNow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
     
-    return bookingDate >= twoDaysFromNow;
+    // Reset time components for accurate date-only comparison
+    const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+    const minDateOnly = new Date(twoDaysFromNow.getFullYear(), twoDaysFromNow.getMonth(), twoDaysFromNow.getDate());
+    
+    console.log(`isValidBookingDate: ${dateString} -> booking: ${bookingDateOnly.toLocaleDateString()}, min: ${minDateOnly.toLocaleDateString()}, valid: ${bookingDateOnly >= minDateOnly}`);
+    
+    return bookingDateOnly >= minDateOnly;
   };
 
   // Load tour schedules trước
@@ -101,35 +98,61 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
     loadTourSchedules();
   }, [tourId]);
 
-  // Load demo prices khi component mount
+  // Load prices khi chuyển sang bước 2 và đã chọn ngày
   useEffect(() => {
-    // Demo price data
-    const mockPriceData = [
-      {
-        id: 1,
-        adult_price: 1000000,
-        kid_price: 500000,
-        note: "người việt nam",
-        tour_id: tourId
-      },
-      {
-        id: 2,
-        adult_price: 1200000,
-        kid_price: 600000,
-        note: "người nước ngoài",
-        tour_id: tourId
+    const loadTourPrices = async () => {
+      if (currentStep === 2 && formData.startDate) {
+        try {
+          console.log('Loading tour prices for tourId:', tourId, 'date:', formData.startDate);
+          const response: any = await getTourPricesByTourIdAndDate(tourId, formData.startDate);
+          console.log('Tour prices response:', response);
+          console.log('Response data:', response.data);
+          
+          // Handle both wrapped response and direct data from axios
+          let priceData: PriceOption[] = [];
+          
+          // Check if response has data field (axios wrapper)
+          if (response.data) {
+            // If response.data has success field (API wrapper)
+            if (response.data.success && response.data.data) {
+              priceData = response.data.data;
+            } 
+            // If response.data is direct array (no API wrapper)
+            else if (Array.isArray(response.data)) {
+              priceData = response.data;
+            }
+            // If response.data is object with data field
+            else if (response.data.data && Array.isArray(response.data.data)) {
+              priceData = response.data.data;
+            }
+          }
+          
+          console.log('Parsed price data:', priceData);
+          
+          if (priceData && priceData.length > 0) {
+            console.log('Setting price options:', priceData);
+            setPriceOptions(priceData);
+            
+            // Initialize selectedPrices với default values
+            const initialPrices: Record<number, { adults: number; children: number }> = {};
+            priceData.forEach((_, index) => {
+              initialPrices[index] = { adults: 0, children: 0 };
+            });
+            setFormData(prev => ({ ...prev, selectedPrices: initialPrices }));
+            console.log('Price options set, length:', priceData.length);
+          } else {
+            console.log('No data found in response');
+            setPriceOptions([]);
+          }
+        } catch (error) {
+          console.error('Error loading tour prices:', error);
+          setPriceOptions([]);
+        }
       }
-    ];
+    };
 
-    setPriceOptions(mockPriceData);
-    
-    // Initialize selectedPrices với default values
-    const initialPrices: Record<number, { adults: number; children: number }> = {};
-    mockPriceData.forEach(price => {
-      initialPrices[price.id] = { adults: 0, children: 0 };
-    });
-    setFormData(prev => ({ ...prev, selectedPrices: initialPrices }));
-  }, [tourId]);
+    loadTourPrices();
+  }, [currentStep, formData.startDate, tourId]);
 
   // Load user profile khi vào bước 3 (thông tin liên hệ)
   useEffect(() => {
@@ -160,6 +183,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleDateSelect = (dateString: string) => {
+    handleInputChange('startDate', dateString);
   };
 
   const handleNext = () => {
@@ -242,8 +269,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
 
       // Tạo booking_details từ selectedPrices
       const bookingDetails: BookingDetail[] = [];
-      Object.entries(formData.selectedPrices).forEach(([priceId, quantities]) => {
-        const priceOption = priceOptions.find(p => p.id === parseInt(priceId));
+      Object.entries(formData.selectedPrices).forEach(([priceIndex, quantities]) => {
+        const priceOption = priceOptions[parseInt(priceIndex)];
         if (priceOption && (quantities.adults > 0 || quantities.children > 0)) {
           bookingDetails.push({
             adult_quanti: quantities.adults,
@@ -281,13 +308,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
     }
   };
 
-  const handlePriceChange = (priceId: number, type: 'adults' | 'children', value: number) => {
+  const handlePriceChange = (priceIndex: number, type: 'adults' | 'children', value: number) => {
     setFormData(prev => ({
       ...prev,
       selectedPrices: {
         ...prev.selectedPrices,
-        [priceId]: {
-          ...prev.selectedPrices[priceId],
+        [priceIndex]: {
+          ...prev.selectedPrices[priceIndex],
           [type]: value
         }
       }
@@ -296,8 +323,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
 
   const calculateTotalPrice = () => {
     let total = 0;
-    Object.entries(formData.selectedPrices).forEach(([priceId, quantities]) => {
-      const priceOption = priceOptions.find(p => p.id === parseInt(priceId));
+    Object.entries(formData.selectedPrices).forEach(([priceIndex, quantities]) => {
+      const priceOption = priceOptions[parseInt(priceIndex)];
       if (priceOption) {
         total += (quantities.adults * priceOption.adult_price) + (quantities.children * priceOption.kid_price);
       }
@@ -320,8 +347,6 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       case 1:
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Chọn ngày khởi hành</h3>
-            
             {/* Tour ID hiển thị */}
             <div className="bg-blue-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600">Tour ID: <span className="font-semibold text-blue-600">{tourId}</span></p>
@@ -329,51 +354,16 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
               <p className="text-sm text-gray-600">Thời gian: <span className="font-semibold">{formData.numDays}</span></p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ngày khởi hành *
-                </label>
-                {/* Debug info */}
-                {/* <div className="text-xs text-gray-500 mb-2">
-                  Debug: Có {availableDates.length} ngày khả dụng, Tour capacity: {tourCapacity}
-                </div> */}
-                <select
-                  value={formData.startDate}
-                  onChange={(e) => handleInputChange('startDate', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                    errors.startDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Chọn ngày khởi hành</option>
-                  {availableDates.map(date => {
-                    const remainingSlots = tourCapacity - date.participant;
-                    const statusText = remainingSlots > 0 ? `(Còn ${remainingSlots} chỗ)` : '(Hết chỗ)';
-                    return (
-                      <option 
-                        key={date.id} 
-                        value={date.start_date}
-                        disabled={remainingSlots <= 0}
-                      >
-                        {formatDateToVietnamese(date.start_date)} {statusText}
-                      </option>
-                    );
-                  })}
-                </select>
-                {errors.startDate && (
-                  <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
-                )}
-              </div>
-            </div>
+            <TourCalendar
+              availableDates={availableDates}
+              tourCapacity={tourCapacity}
+              selectedDate={formData.startDate}
+              onDateSelect={handleDateSelect}
+            />
 
-            {formData.startDate && (
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-green-800">
-                  <span className="font-semibold">Ngày đã chọn:</span> {formData.startDate}
-                </p>
-                <p className="text-sm text-green-600 mt-1">
-                  Bấm "Tiếp tục" để chọn số lượng khách và xem giá chi tiết
-                </p>
+            {errors.startDate && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                {errors.startDate}
               </div>
             )}
           </div>
@@ -396,6 +386,11 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-gray-800">Chọn số lượng khách cho từng loại giá:</h4>
               
+              {/* Debug info */}
+              <div className="bg-yellow-50 p-2 rounded text-xs">
+                Debug: PriceOptions length: {priceOptions.length}, Current step: {currentStep}, Selected date: {formData.startDate}
+              </div>
+              
               {errors.quantity && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                   {errors.quantity}
@@ -408,8 +403,14 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
                 </div>
               )}
               
-              {priceOptions.map(option => (
-                <div key={option.id} className="bg-gray-50 p-4 rounded-lg border">
+              {priceOptions.length === 0 ? (
+                <div className="bg-gray-50 p-4 rounded-lg border text-center">
+                  <p className="text-gray-600">Đang tải thông tin giá tour...</p>
+                  <p className="text-sm text-gray-500 mt-1">Nếu không tải được, có thể không có giá cho ngày này.</p>
+                </div>
+              ) : (
+                priceOptions.map((option, index) => (
+                <div key={index} className="bg-gray-50 p-4 rounded-lg border">
                   <h5 className="font-semibold text-gray-800 mb-3 capitalize">{option.note}</h5>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -425,8 +426,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
                       <input
                         type="number"
                         min="0"
-                        value={formData.selectedPrices[option.id]?.adults || 0}
-                        onChange={(e) => handlePriceChange(option.id, 'adults', parseInt(e.target.value) || 0)}
+                        value={formData.selectedPrices[index]?.adults || 0}
+                        onChange={(e) => handlePriceChange(index, 'adults', parseInt(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
@@ -438,26 +439,27 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
                       <input
                         type="number"
                         min="0"
-                        value={formData.selectedPrices[option.id]?.children || 0}
-                        onChange={(e) => handlePriceChange(option.id, 'children', parseInt(e.target.value) || 0)}
+                        value={formData.selectedPrices[index]?.children || 0}
+                        onChange={(e) => handlePriceChange(index, 'children', parseInt(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
                   </div>
                   
                   {/* Tính tổng cho loại giá này */}
-                  {(formData.selectedPrices[option.id]?.adults > 0 || formData.selectedPrices[option.id]?.children > 0) && (
+                  {(formData.selectedPrices[index]?.adults > 0 || formData.selectedPrices[index]?.children > 0) && (
                     <div className="mt-3 p-2 bg-white rounded border">
                       <div className="text-sm">
                         Tổng cho {option.note}: <span className="font-semibold text-orange-600">
-                          {((formData.selectedPrices[option.id]?.adults || 0) * option.adult_price + 
-                            (formData.selectedPrices[option.id]?.children || 0) * option.kid_price).toLocaleString()} VND
+                          {((formData.selectedPrices[index]?.adults || 0) * option.adult_price + 
+                            (formData.selectedPrices[index]?.children || 0) * option.kid_price).toLocaleString()} VND
                         </span>
                       </div>
                     </div>
                   )}
                 </div>
-              ))}
+              ))
+              )}
             </div>
 
             {/* Tổng cộng toàn bộ */}
@@ -564,11 +566,11 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
               
               <div className="mt-4">
                 <h5 className="font-medium text-gray-800 mb-2">Chi tiết đặt chỗ:</h5>
-                {priceOptions.map(option => {
-                  const quantities = formData.selectedPrices[option.id];
+                {priceOptions.map((option, index) => {
+                  const quantities = formData.selectedPrices[index];
                   if (quantities && (quantities.adults > 0 || quantities.children > 0)) {
                     return (
-                      <div key={option.id} className="ml-4 text-sm">
+                      <div key={index} className="ml-4 text-sm">
                         <p><span className="font-medium capitalize">{option.note}:</span> {quantities.adults} người lớn, {quantities.children} trẻ em</p>
                       </div>
                     );
