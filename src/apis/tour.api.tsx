@@ -20,3 +20,6 @@ export const getToursByCatId = (catId: number) =>
 
 export const getToursByIsActive = ( active:boolean) => 
     axiosInstance.get(`/api/tours?is_active=${active}`);
+
+export const getTourById = (id: number) =>
+  axiosInstance.get(`/api/tours/${id}`)
