@@ -1,3 +1,4 @@
+import ClientLayout from '../layouts/ClientLayout';
 import Home from '../pages/Home';
 import TourDetail from '../pages/TourDetail';
 import Pricing from '../pages/Pricing';
@@ -11,61 +12,21 @@ import BlogDetail from '../pages/BlogDetail';
 import MyBooking from '../pages/MyBooking'
 
 export const clientRoutes = [
+  { path: '', element: <Home /> },
   {
     path: '/',
-    element: <Home />,
+    element: <ClientLayout />,
+    children: [
+      { path: 'tour/:slug', element: <TourDetail /> },
+      { path: 'pricing', element: <Pricing /> },
+      { path: 'tour-category/:slug', element: <TourCategory /> },
+      { path: 'about', element: <About /> },
+      { path: 'blog/:id', element: <BlogDetail /> },
+      { path: 'profile', element: <Profile /> },
+      { path: 'my-booking', element: <MyBooking /> }
+    ]
   },
-  {
-    path: '/tour/:slug',
-    element: <TourDetail />,
-  },
-  {
-    path: '/pricing',
-    element: <Pricing />,
-  },
-  {
-    path: '/tour-category/:slug',
-    element: <TourCategory />,
-  },
-  {
-    path: '/tour/:slug',
-    element: <TourDetail />,
-  },
-  {
-    path: '/pricing',
-    element: <Pricing />,
-  },
-  {
-    path: '/tour-category/:slug',
-    element: <TourCategory />,
-  },
-  {
-    path: '/reset-password',
-    element: <ForgotPassword />,
-  },
-  {
-    path: '/verify/email',
-    element: <EnterOtp />,
-  },
-  {
-    path: '/login/success',
-    element: <LoginSuccess />
-  },
-  {
-    path: '/about',
-    element: <About />,
-  },
-  {
-    path: '/blog/:id',
-    element: <BlogDetail />,
-  },
-  {
-    path: 'profile',
-    element: <Profile/>
-  },
-  {
-    path: 'my-bookings',
-    element: <MyBooking/>
-  }
-
+  { path: 'reset-password', element: <ForgotPassword /> },
+  { path: 'verify/email', element: <EnterOtp /> },
+  { path: 'login/success', element: <LoginSuccess /> },
 ];

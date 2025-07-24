@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Star, Heart, MessageCircle, Clock } from "lucide-react";
 import { fetchReviewByTourId } from "../../services/review.service";
 import { Loading } from "../Loading";
@@ -6,7 +6,11 @@ import {
   fetchUserById,
   fetchUserProfile,
 } from "../../services/userProfile.service";
-import { userLikeReview } from "../../services/like.service";
+import {
+  deleteLike,
+  getLikesByUserIdAndReviewId,
+  userLikeReview,
+} from "../../services/like.service";
 
 interface Review {
   id: number;
@@ -17,7 +21,7 @@ interface Review {
   like_count: number;
   created_at: string;
   user: User | null;
-  is_liked: boolean;
+  user_like_id: number | null;
 }
 
 interface User {
@@ -40,7 +44,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [userCurrent, setUserCurrent] = useState<User | null>(null);
+  const userCurrent = useRef<User | null>(null);
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -64,12 +68,12 @@ export const TabReview: React.FC<ReviewListProps> = ({
         const res = await fetchUserProfile();
         console.log("user cur: ", res.data);
         const data = res.data;
-        setUserCurrent({
+        userCurrent.current = {
           id: data.id,
           first_name: data.first_name,
           last_name: data.last_name,
           avatar: data.avatar,
-        });
+        };
       } catch (error) {
         console.log("Lỗi tải user current");
       }
@@ -92,12 +96,51 @@ export const TabReview: React.FC<ReviewListProps> = ({
     );
   };
 
-  const handleLike = async (reviewId: number) => {
-    if (!userCurrent) return;
-    try {
-      const res = await userLikeReview(userCurrent?.id, reviewId);
-    } catch (error) {}
-  };
+const handleToggleLike = async (reviewId: number) => {
+  if (!userCurrent.current) return;
+  setReviews((prevReviews) =>
+    prevReviews.map((review) => {
+      if (review.id === reviewId) {
+        const isLiked = review.user_like_id !== null;
+
+        return {
+          ...review,
+          user_like_id: isLiked ? null : 1, // 1 là giả lập user_like_id khi đã like
+          like_count: isLiked
+            ? review.like_count - 1
+            : review.like_count + 1,
+        };
+      }
+      return review;
+    })
+  );
+
+  try {
+    const review = reviews.find((r) => r.id === reviewId);
+    if (review?.user_like_id !== null) {
+      await deleteLike(review!.user_like_id);
+    } else {
+      await userLikeReview(userCurrent.current?.id, reviewId);
+    }
+  } catch (error) {
+    // Rollback nếu lỗi
+    setReviews((prevReviews) =>
+      prevReviews.map((review) => {
+        if (review.id === reviewId) {
+          const isLiked = review.user_like_id !== null;
+          return {
+            ...review,
+            user_like_id: isLiked ? null : 1,
+            like_count: isLiked
+              ? review.like_count - 1
+              : review.like_count + 1,
+          };
+        }
+        return review;
+      })
+    );
+  }
+};
 
   const getAverageRating = () => {
     if (reviews.length === 0) return 0;
@@ -147,7 +190,13 @@ export const TabReview: React.FC<ReviewListProps> = ({
                 last_name: userRes.last_name,
                 avatar: userRes.avatar,
               };
-
+              console.log("User current: ", userCurrent);
+              const likeRes = await getLikesByUserIdAndReviewId(
+                userCurrent.current!.id,
+                rv.id
+              );
+              const likeData = likeRes.data;
+              console.log("Like data", likeData);
               return {
                 id: rv.id,
                 user_id: rv.user_id,
@@ -157,6 +206,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
                 like_count: rv.like_count,
                 created_at: rv.created_at,
                 user: userReview,
+                user_like_id: likeData[0].id,
               };
             } catch (err) {
               console.warn(`Failed to fetch user ${rv.user_id}:`, err);
@@ -168,7 +218,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
                 text: rv.text,
                 like_count: rv.like_count,
                 created_at: rv.created_at,
-                is_liked: false,
+                user_like_id: null,
                 user: {
                   id: 0,
                   first_name: "User",
@@ -327,14 +377,30 @@ export const TabReview: React.FC<ReviewListProps> = ({
 
                           <div className="flex items-center justify-between">
                             <button
-                              onClick={() => {
-                                handleLike(review.id);
-                              }}
-                              className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-100 to-rose-100 hover:from-pink-200 hover:to-rose-200 rounded-2xl transition-all group-hover:scale-105 border border-pink-200"
+                              onClick={() => handleToggleLike(review.id)}
+                              className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all group-hover:scale-105 border 
+                            ${
+                              !!review.user_like_id
+                                ? "bg-gradient-to-r from-pink-200 to-rose-200 border-pink-300"
+                                : "bg-gradient-to-r from-pink-100 to-rose-100 hover:from-pink-200 hover:to-rose-200 border-pink-200"
+                            }`}
                             >
-                              <Heart className="w-5 h-5 text-pink-500" />
-                              <span className="font-semibold text-pink-700">
-                                {review.like_count} yêu thích
+                              {!!review.user_like_id ? (
+                                <Heart className="w-5 h-5 text-pink-600 fill-pink-600" />
+                              ) : (
+                                <Heart className="w-5 h-5 text-pink-500" />
+                              )}
+
+                              <span
+                                className={`font-semibold ${
+                                  !review.user_like_id
+                                    ? "text-pink-800"
+                                    : "text-pink-700"
+                                }`}
+                              >
+                                {!!review.user_like_id
+                                  ? "Đã yêu thích"
+                                  : `${review.like_count} yêu thích`}
                               </span>
                             </button>
 
