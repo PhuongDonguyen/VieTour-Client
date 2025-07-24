@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { tourScheduleService } from '../../services/tourSchedule.service';
 import { fetchUserProfile } from '../../services/userProfile.service';
 import { bookingService } from '../../services/booking.service';
+import { paymentService } from '../../services/payment.service';
 import { getTourPricesByTourIdAndDate } from '../../apis/tourPrice.api';
 import { useAuth } from '../../hooks/useAuth';
 import Modal from '../Modal';
@@ -9,6 +10,7 @@ import LoginForm from '../authentication/LoginForm';
 import SignupForm from '../authentication/SignupForm';
 import { TourCalendar } from './TourCalendar';
 import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
+import type { PaymentMethod } from '../../apis/payment.api';
 
 interface TabBookingProps {
   tourId: number;
@@ -39,8 +41,11 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [priceOptions, setPriceOptions] = useState<PriceOption[]>([]);
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRestoredMessage, setShowRestoredMessage] = useState(false);
   const [formData, setFormData] = useState({
     // Bước 1: Thông tin tour
     startDate: '',
@@ -54,6 +59,72 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
     // Bước 4: Ghi chú và yêu cầu đặc biệt
     specialRequests: ''
   });
+
+  // Key cho localStorage
+  const getStorageKey = () => `booking_form_${tourId}`;
+
+  // Lưu form data vào localStorage
+  const saveFormToStorage = (data: any, step: number, paymentMethodId?: number | null) => {
+    const storageData = {
+      formData: data,
+      currentStep: step,
+      selectedPaymentMethod: paymentMethodId,
+      timestamp: Date.now(),
+      tourId: tourId
+    };
+    localStorage.setItem(getStorageKey(), JSON.stringify(storageData));
+  };
+
+  // Khôi phục form data từ localStorage
+  const restoreFormFromStorage = () => {
+    try {
+      const savedData = localStorage.getItem(getStorageKey());
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        // Kiểm tra data không quá cũ (24 giờ)
+        const isExpired = Date.now() - parsed.timestamp > 24 * 60 * 60 * 1000;
+        
+        if (!isExpired && parsed.tourId === tourId) {
+          setFormData(parsed.formData);
+          setCurrentStep(parsed.currentStep);
+          setSelectedPaymentMethod(parsed.selectedPaymentMethod || null);
+          return true;
+        } else {
+          // Xóa data cũ
+          localStorage.removeItem(getStorageKey());
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring form from storage:', error);
+      localStorage.removeItem(getStorageKey());
+    }
+    return false;
+  };
+
+  // Xóa data khỏi localStorage khi hoàn thành booking
+  const clearFormStorage = () => {
+    localStorage.removeItem(getStorageKey());
+  };
+
+  // Effect để khôi phục data khi component mount và user đã đăng nhập
+  useEffect(() => {
+    if (user) {
+      const restored = restoreFormFromStorage();
+      if (restored) {
+        console.log('Form data restored from localStorage');
+        setShowRestoredMessage(true);
+        // Ẩn thông báo sau 5 giây
+        setTimeout(() => setShowRestoredMessage(false), 5000);
+      }
+    }
+  }, [user, tourId]);
+
+  // Effect để lưu data mỗi khi form thay đổi (chỉ khi đã đăng nhập)
+  useEffect(() => {
+    if (user && (formData.startDate || currentStep > 1)) {
+      saveFormToStorage(formData, currentStep, selectedPaymentMethod);
+    }
+  }, [formData, currentStep, selectedPaymentMethod, user]);
 
   // Function to check if date is valid (at least 2 days from today)
   const isValidBookingDate = (dateString: string) => {
@@ -178,6 +249,36 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
     }
   }, [currentStep]);
 
+  // Load payment methods khi vào bước 5
+  useEffect(() => {
+    if (currentStep === 5) {
+      const loadPaymentMethods = async () => {
+        try {
+          console.log('Loading payment methods...');
+          const response = await paymentService.getPaymentMethods();
+          console.log('Payment methods response:', response);
+          
+          if (response.success) {
+            setPaymentMethods(response.data);
+            console.log('Payment methods loaded:', response.data);
+            // Auto select first payment method if available
+            if (response.data.length > 0 && !selectedPaymentMethod) {
+              setSelectedPaymentMethod(response.data[0].id);
+            }
+          } else {
+            console.log('Payment methods API returned success: false');
+            setPaymentMethods([]);
+          }
+        } catch (error) {
+          console.error('Error loading payment methods:', error);
+          setPaymentMethods([]);
+        }
+      };
+
+      loadPaymentMethods();
+    }
+  }, [currentStep, selectedPaymentMethod]);
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -243,6 +344,19 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       }
     }
 
+    if (currentStep === 4) {
+      // Bước 4: Không có validation bắt buộc cho ghi chú
+      // User có thể để trống ghi chú
+    }
+
+    if (currentStep === 5) {
+      // Bước 5: Kiểm tra phương thức thanh toán
+      if (!selectedPaymentMethod) {
+        setErrors({ paymentMethod: 'Vui lòng chọn phương thức thanh toán!' });
+        return;
+      }
+    }
+
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
@@ -256,6 +370,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
 
   const handleSubmit = async () => {
     if (isSubmitting) return; // Prevent double submission
+    
+    // Final validation before submission
+    if (!selectedPaymentMethod) {
+      setErrors({ paymentMethod: 'Vui lòng chọn phương thức thanh toán!' });
+      alert('Vui lòng chọn phương thức thanh toán!');
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -298,7 +419,23 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       const response = await bookingService.createBooking(bookingData);
       
       console.log('Booking response:', response);
+      
+      // Xóa dữ liệu form khỏi localStorage khi thành công
+      clearFormStorage();
+      
       alert('Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.');
+      
+      // Reset form về trạng thái ban đầu
+      setCurrentStep(1);
+      setFormData({
+        startDate: '',
+        numDays: '3 ngày 2 đêm',
+        selectedPrices: {},
+        customerName: '',
+        phone: '',
+        specialRequests: ''
+      });
+      setSelectedPaymentMethod(null);
       
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -378,11 +515,6 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
             {/* Bảng giá cho từng loại */}
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-gray-800">Chọn số lượng khách cho từng loại giá:</h4>
-              
-              {/* Debug info */}
-              {/* <div className="bg-yellow-50 p-2 rounded text-xs">
-                Debug: PriceOptions length: {priceOptions.length}, Current step: {currentStep}, Selected date: {formData.startDate}
-              </div> */}
               
               {errors.quantity && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -588,6 +720,74 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
                 <p>{formData.specialRequests}</p>
               </div>
             )}
+
+            {/* Payment Method Selection */}
+            <div className="bg-white border border-gray-200 p-4 rounded-lg space-y-4">
+              <h4 className="font-semibold text-gray-800 text-lg">Chọn phương thức thanh toán:</h4>
+              
+              {errors.paymentMethod && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  {errors.paymentMethod}
+                </div>
+              )}
+
+              {paymentMethods.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-600">Đang tải phương thức thanh toán...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {paymentMethods.map((method) => (
+                    <div
+                      key={method.id}
+                      onClick={() => setSelectedPaymentMethod(method.id)}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
+                        selectedPaymentMethod === method.id
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <img
+                            src={method.thumbnail}
+                            alt={method.payment_method}
+                            className="w-12 h-12 object-contain rounded"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-gray-900 capitalize">
+                            {method.payment_method}
+                          </h5>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 ${
+                              selectedPaymentMethod === method.id
+                                ? 'border-orange-500 bg-orange-500'
+                                : 'border-gray-300'
+                            }`}
+                          >
+                            {selectedPaymentMethod === method.id && (
+                              <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {selectedPaymentMethod && (
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    <strong>Phương thức thanh toán đã chọn:</strong>{' '}
+                    {paymentMethods.find(m => m.id === selectedPaymentMethod)?.payment_method}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         );
         
@@ -620,6 +820,39 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
         </div>
       ) : (
         <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+      {/* Thông báo khôi phục dữ liệu */}
+      {showRestoredMessage && (
+        <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>Đã khôi phục thông tin đặt tour từ phiên làm việc trước của bạn.</span>
+            </div>
+            <button
+              onClick={() => {
+                clearFormStorage();
+                setCurrentStep(1);
+                setFormData({
+                  startDate: '',
+                  numDays: '3 ngày 2 đêm',
+                  selectedPrices: {},
+                  customerName: '',
+                  phone: '',
+                  specialRequests: ''
+                });
+                setSelectedPaymentMethod(null);
+                setShowRestoredMessage(false);
+              }}
+              className="text-sm text-green-600 hover:text-green-800 underline"
+            >
+              Bắt đầu lại
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Progress indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
