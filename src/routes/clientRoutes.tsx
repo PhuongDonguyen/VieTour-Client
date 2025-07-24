@@ -1,6 +1,7 @@
 import ClientLayout from '../layouts/ClientLayout';
 import Home from '../pages/Home';
 import TourDetail from '../pages/TourDetail';
+import Booking from '../pages/Booking';
 import Pricing from '../pages/Pricing';
 import TourCategory from '../pages/TourCategory';
 import About from '../pages/About';
@@ -18,6 +19,7 @@ export const clientRoutes = [
     element: <ClientLayout />,
     children: [
       { path: 'tour/:slug', element: <TourDetail /> },
+      { path: 'booking/:slug', element: <Booking /> },
       { path: 'pricing', element: <Pricing /> },
       { path: 'tour-category/:slug', element: <TourCategory /> },
       { path: 'about', element: <About /> },

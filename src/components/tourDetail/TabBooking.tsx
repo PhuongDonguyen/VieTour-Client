@@ -347,13 +347,6 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       case 1:
         return (
           <div className="space-y-6">
-            {/* Tour ID hiển thị */}
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Tour ID: <span className="font-semibold text-blue-600">{tourId}</span></p>
-              <h4 className="text-lg font-bold text-blue-800 my-2">{tourTitle}</h4>
-              <p className="text-sm text-gray-600">Thời gian: <span className="font-semibold">{formData.numDays}</span></p>
-            </div>
-
             <TourCalendar
               availableDates={availableDates}
               tourCapacity={tourCapacity}
@@ -387,9 +380,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
               <h4 className="text-lg font-semibold text-gray-800">Chọn số lượng khách cho từng loại giá:</h4>
               
               {/* Debug info */}
-              <div className="bg-yellow-50 p-2 rounded text-xs">
+              {/* <div className="bg-yellow-50 p-2 rounded text-xs">
                 Debug: PriceOptions length: {priceOptions.length}, Current step: {currentStep}, Selected date: {formData.startDate}
-              </div>
+              </div> */}
               
               {errors.quantity && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
