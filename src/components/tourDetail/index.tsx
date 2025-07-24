@@ -13,6 +13,8 @@ import { fetchTourBySlug } from '../../services/tour.service';
 import { fetchTourDetail } from '../../services/tourDetail.service';
 import { fetchTourImages } from '../../services/tourImage.service';
 import {TabReview} from '../tourDetail/TabReview'
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const TABS = [
   { key: 'program', label: 'Chương trình tour' },
@@ -63,7 +65,19 @@ const TourDetail: React.FC = () => {
       });
   }, [slug]);
 
-  if (loading) return <div className="text-center py-10 text-lg text-gray-500">Đang tải chi tiết tour...</div>;
+  if (loading) return (
+    <div className="pt-24 px-4">
+      <div className="max-w-7xl mx-auto rounded-xl bg-transparent h-[750px] md:h-[80vh] flex flex-col md:flex-row overflow-hidden animate-pulse">
+        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 pt-4 flex flex-col bg-white hide-scrollbar">
+          <Skeleton height={400} className="mb-6" />
+        </div>
+        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 hide-scrollbar">
+          <Skeleton height={40} width={300} style={{ marginBottom: 24, marginTop: 24 }} />
+          <Skeleton count={10} height={20} style={{ marginBottom: 8 }} />
+        </div>
+      </div>
+    </div>
+  );
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!tour) return null;
 

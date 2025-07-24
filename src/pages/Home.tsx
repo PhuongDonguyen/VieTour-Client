@@ -1,12 +1,11 @@
-import { TopBar } from "../layouts/TopBar";
-import { NavBar } from "../layouts/NavBar";
 import { HeroSection } from "../components/home/HeroSection";
 import MainTours from "../components/MainTours";
-import {Footer} from "../layouts/Footer"
-
 import FeaturedTours from "../components/FeaturedTours";
 import TourListCarousel from "../components/TourCategoryList";
 import BlogSection from "../components/BlogSection";
+import { TopBar } from "../layouts/TopBar";
+import { NavBar } from "../layouts/NavBar";
+import {Footer} from "../layouts/Footer"
 
 export default function Home() {
   return (

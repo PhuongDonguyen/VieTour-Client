@@ -1,19 +1,11 @@
-import { TopBar } from "../layouts/TopBar";
-import { NavBar } from "../layouts/NavBar";
 import TourDetail from "../components/tourDetail";
-import { Footer } from "../layouts/Footer";
 import {CommentSection} from "../components/question"
 
 export default function TourDetailPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <TopBar />
-      <div className="navbar-custom-black">
-        <NavBar />
-      </div>
+    <div className="min-h-screen">
       <TourDetail />
       <CommentSection/>
-      <Footer />
     </div>
   );
 } 
