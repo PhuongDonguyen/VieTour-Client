@@ -47,14 +47,14 @@ interface AvailableDate {
   tour_id: number;
 }
 
-export const TabBooking: React.FC<TabBookingProps> = ({ 
-  tourId, 
-  tourTitle, 
-  tourCapacity, 
-  duration = BOOKING_CONSTANTS.DEFAULT_DURATION 
+export const TabBooking: React.FC<TabBookingProps> = ({
+  tourId,
+  tourTitle,
+  tourCapacity,
+  duration = BOOKING_CONSTANTS.DEFAULT_DURATION
 }) => {
   const { user } = useAuth();
-  
+
   // Validation for required props
   if (!tourCapacity || tourCapacity <= 0) {
     return (
@@ -214,12 +214,12 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
   // Function để check xem có dữ liệu trong form không
   const hasFormData = () => {
-    return formData.startDate || 
-           currentStep > 1 || 
-           Object.keys(formData.selectedPrices).length > 0 ||
-           formData.customerName ||
-           formData.phone ||
-           formData.specialRequests;
+    return formData.startDate ||
+      currentStep > 1 ||
+      Object.keys(formData.selectedPrices).length > 0 ||
+      formData.customerName ||
+      formData.phone ||
+      formData.specialRequests;
   };
 
   // Function to check if date is valid (at least MIN_BOOKING_DAYS_AHEAD days from today)
@@ -658,9 +658,34 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               )}
 
               {priceOptions.length === 0 ? (
-                <div className="bg-gray-50 p-4 rounded-lg border text-center">
-                  <p className="text-gray-600">Đang tải thông tin giá tour...</p>
-                  <p className="text-sm text-gray-500 mt-1">Nếu không tải được, có thể không có giá cho ngày này.</p>
+                <div className="space-y-4">
+                  {/* Skeleton Loading */}
+                  {[1, 2].map((skeleton) => (
+                    <div key={skeleton} className="bg-gray-50 p-4 rounded-lg border animate-pulse">
+                      {/* Title skeleton */}
+                      <div className="h-5 bg-gray-300 rounded w-32 mb-3"></div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                        {/* Price info skeleton */}
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-300 rounded w-40"></div>
+                          <div className="h-4 bg-gray-300 rounded w-36"></div>
+                        </div>
+
+                        {/* Adult input skeleton */}
+                        <div>
+                          <div className="h-4 bg-gray-300 rounded w-20 mb-1"></div>
+                          <div className="h-10 bg-gray-300 rounded w-full"></div>
+                        </div>
+
+                        {/* Children input skeleton */}
+                        <div>
+                          <div className="h-4 bg-gray-300 rounded w-16 mb-1"></div>
+                          <div className="h-10 bg-gray-300 rounded w-full"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 priceOptions.map((option, index) => (
@@ -859,8 +884,22 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               )}
 
               {paymentMethods.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-gray-600">Đang tải phương thức thanh toán...</p>
+                <div className="space-y-2">
+                  {[1, 2, 3].map((skeleton) => (
+                    <div key={skeleton} className="flex items-center p-3 border border-gray-200 rounded-lg animate-pulse">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-300 rounded w-32"></div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="space-y-2">
