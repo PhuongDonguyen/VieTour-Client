@@ -40,7 +40,7 @@ export const NavBar = ({ textDark = false }) => {
       }
     });
     fetchBlogCategories().then(res => {
-      console.log(res); 
+      console.log(res);
       if (res && res.success) {
         setBlogCategories(res.data);
       }

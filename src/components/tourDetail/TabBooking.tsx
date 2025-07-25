@@ -9,6 +9,7 @@ import LoginForm from '../authentication/LoginForm';
 import SignupForm from '../authentication/SignupForm';
 import { TourCalendar } from './TourCalendar';
 import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
+import { createMomoPayment } from '../../services/momo.service';
 
 interface TabBookingProps {
   tourId: number;
@@ -298,7 +299,23 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       const response = await bookingService.createBooking(bookingData);
       
       console.log('Booking response:', response);
-      alert('Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.');
+      // alert('Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.');
+
+      // Call Momo payment API after booking
+      try {
+        const momoResult = await createMomoPayment({
+          amount: bookingData.total,
+          orderInfo: `Đặt tour: ${tourTitle} - ${formData.customerName} - ${formData.phone}`
+        });
+        if (momoResult && momoResult.payUrl) {
+          window.location.href = momoResult.payUrl;
+        } else {
+          alert('Đã có lỗi xảy ra. Vui lòng liên hệ bên cung cấp thanh toán.');
+        }
+      } catch (momoError) {
+        console.error('Error initializing Momo payment:', momoError);
+        alert('Đã có lỗi xảy ra. Vui lòng liên hệ bên cung cấp thanh toán.');
+      }
       
     } catch (error) {
       console.error('Error creating booking:', error);

@@ -47,3 +47,6 @@ export const checkOtpStatus = () =>
 
 export const emailExists = (email: string) =>
   axiosInstance.post('/auth/email-exists', { email });
+
+export const refreshToken = () =>
+  axiosInstance.post('/auth/refresh-token');
