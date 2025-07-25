@@ -182,7 +182,7 @@ export const NavBar = ({ textDark = false }) => {
                       >
                         <a href="/profile" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Hồ sơ</a>
                         <a href="/my-bookings" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đặt tour của tôi</a>
-                        <a href="/favorites" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Yêu thích</a>
+                        <a href="/password" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Thay đổi mật khẩu</a>
                         <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đăng xuất</a>
                       </div>
                     )}
@@ -277,7 +277,7 @@ export const NavBar = ({ textDark = false }) => {
                       <div className="pl-4 space-y-1">
                         <a href="/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</a>
                         <a href="/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</a>
-                        <a href="/favorites" className="block py-1 text-gray-600 hover:text-orange-500">Yêu thích</a>
+                        <a href="/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</a>
                         <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
                       </div>
                     </div>
