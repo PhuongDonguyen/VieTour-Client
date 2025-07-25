@@ -11,10 +11,11 @@ import TabGallery from "./TabGallery";
 import { fetchTourBySlug } from '../../services/tour.service';
 import { fetchTourDetail } from '../../services/tourDetail.service';
 import { fetchTourImages } from '../../services/tourImage.service';
-import {TabReview} from '../tourDetail/TabReview'
+import { useTourViewTracking } from '../../hooks/useTourViewTracking';
+import { TabReview } from '../tourDetail/TabReview'
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import {CommentSection} from "../question"
+import { CommentSection } from "../question"
 
 const TABS = [
   { key: 'program', label: 'Chương trình tour' },
@@ -23,7 +24,7 @@ const TABS = [
   { key: 'overview', label: 'Tổng quan tour' },
   { key: 'condition', label: 'Điều kiện tour' },
   { key: 'gallery', label: 'Hình ảnh tour' },
-  { key: 'review', label: 'Đánh giá'}
+  { key: 'review', label: 'Đánh giá' }
 ];
 
 
@@ -37,6 +38,9 @@ const TourDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('program');
   const [showCommentSection, setShowCommentSection] = useState(false);
+
+  // Track tour view count with session strategy
+  useTourViewTracking(tour?.id, loading, !!error);
 
   useEffect(() => {
     if (!slug) return;
@@ -59,8 +63,7 @@ const TourDetail: React.FC = () => {
         setDays(detail);
         setImages(imgs);
         setLoading(false);
-        console.log('Tour data:', tour); // Debug log
-        
+
         // Delay hiển thị comment section để mượt mà hơn
         setTimeout(() => {
           setShowCommentSection(true);
@@ -164,9 +167,9 @@ const TourDetail: React.FC = () => {
           {activeTab === 'overview' && <TabOverview destination_intro={tour.destination_intro} />}
           {activeTab === 'condition' && <TabCondition tour_info={tour.tour_info} />}
           {activeTab === 'gallery' && <TabGallery images={images} />}
-          {activeTab === 'review' && <TabReview tourId = {tour.id} totalStar={tour.total_star} reviewCount={tour.review_count}/>}
+          {activeTab === 'review' && <TabReview tourId={tour.id} totalStar={tour.total_star} reviewCount={tour.review_count} />}
         </div>
-        
+
         {/* Comment Section với delay để mượt mà hơn */}
         {showCommentSection && (
           <div className="mt-8">

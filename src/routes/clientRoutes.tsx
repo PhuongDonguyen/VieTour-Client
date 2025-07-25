@@ -16,11 +16,11 @@ import { ProtectedRoute } from '@/components/authentication/ProtectedRoute';
 import AccountPage from "@/pages/AccountPage";
 
 export const clientRoutes = [
-  { path: "", element: <Home /> },
   {
     path: "/",
     element: <ClientLayout />,
     children: [
+      { path: '', element: <Home /> },
       { path: 'tour/:slug', element: <TourDetail /> },
       {
         path: 'booking/:slug',
