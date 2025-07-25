@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   User,
   Lock,
@@ -21,20 +21,34 @@ interface MenuItem {
 interface NavigationUserProps {
   activeTab: string;
   onChangeTab: (tab: string) => void;
+  user?: user; // Optional user prop for profile info
+}
+
+interface user {
+  id: number;
+  first_name: string;
+  last_name: string;
+  avatar: string;
+  email: string;
 }
 
 export const NavigationUser: FC<NavigationUserProps> = ({
   activeTab,
   onChangeTab,
+  user,
 }) => {
   const menuItems: MenuItem[] = [
-    { id: 'dashboard', label: 'Trang chủ', icon: Home, description: 'Tổng quan tài khoản' },
+    // { id: 'dashboard', label: 'Trang chủ', icon: Home, description: 'Tổng quan tài khoản' },
     { id: 'profile', label: 'Thông tin cá nhân', icon: User, description: 'Quản lý hồ sơ của bạn' },
     { id: 'password', label: 'Thay đổi mật khẩu', icon: Lock, description: 'Bảo mật tài khoản' },
     { id: 'my-bookings', label: 'Đặt vé của tôi', icon: Calendar, description: 'Lịch sử đặt tour' },
     { id: 'tours', label: 'Tour đã đặt', icon: MapPin, description: 'Các chuyến đi đã book' },
-    { id: 'settings', label: 'Cài đặt', icon: Settings, description: 'Tùy chỉnh tài khoản' },
+    // { id: 'settings', label: 'Cài đặt', icon: Settings, description: 'Tùy chỉnh tài khoản' },
   ];
+
+  useEffect(() => {
+    console.log("email:", user?.email);
+  }, []);
 
   return (
     <div className="w-80 max-h-screen bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-100">
@@ -44,11 +58,11 @@ export const NavigationUser: FC<NavigationUserProps> = ({
           <div className="w-16 h-16 rounded-full bg-white bg-opacity-20 mx-auto mb-3 flex items-center justify-center text-white font-bold text-xl shadow-md">
             PD
           </div>
-          <h3 className="font-semibold text-lg">Phi Dương</h3>
-          <p className="text-sm text-gray-200">phi.duong@example.com</p>
-          <div className="mt-2 inline-block px-3 py-1 text-xs rounded-full bg-green-100 text-green-700 font-medium">
+          <h3 className="font-semibold text-lg">{user?.first_name} {user?.last_name}</h3>
+          {/* <p className="text-sm text-gray-200">{user?.email}</p> */}
+          {/* <div className="mt-2 inline-block px-3 py-1 text-xs rounded-full bg-green-100 text-green-700 font-medium">
             Thành viên VIP
-          </div>
+          </div> */}
         </div>
       </div>
 

@@ -9,6 +9,7 @@ export interface userProfile {
   province: string;
   address: string;
   avatar: File | null;
+  email?: string;
 }
 
 export const getCurrentUserProfile = () =>
@@ -23,3 +24,9 @@ export const updateProfile = (id: number, profile: userProfile) =>
 
 export const getUserByUserId = (id: number) => 
     axiosInstance.get(`/api/user-profiles/${id}`)
+
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  axiosInstance.post(`auth/change-password`, {
+    currentPassword,
+    newPassword,
+  });

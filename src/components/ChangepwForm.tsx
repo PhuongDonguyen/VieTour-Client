@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { changeUserPassword } from '@/services/userProfile.service';
 
 export const ChangePasswordForm: React.FC = () => {
   const [passwords, setPasswords] = useState({
@@ -27,17 +28,18 @@ export const ChangePasswordForm: React.FC = () => {
 
     try {
       // Gọi API thực tế
-      await axios.post('/api/change-password', {
-        currentPassword: passwords.current,
-        newPassword: passwords.new,
-      });
+      await changeUserPassword(passwords.current, passwords.new);
+      alert('✅ Mật khẩu đã được thay đổi thành công!');
 
       setStatus('success');
+      setPasswords({ current: '', new: '', confirm: '' });
     } catch (err) {
       console.error(err);
+      alert(err instanceof Error ? err.message : '❌ Đã xảy ra lỗi khi đổi mật khẩu!');
       setStatus('error');
     } finally {
       setLoading(false);
+      setStatus('idle');
     }
   };
 
