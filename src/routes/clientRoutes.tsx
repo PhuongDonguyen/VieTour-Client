@@ -24,11 +24,7 @@ export const clientRoutes = [
       { path: 'tour/:slug', element: <TourDetail /> },
       {
         path: 'booking/:slug',
-        element: (
-          <ProtectedRoute>
-            <Booking />
-          </ProtectedRoute>
-        )
+        element: <Booking />
       },
       { path: 'pricing', element: <Pricing /> },
       { path: 'tour-category/:slug', element: <TourCategory /> },

@@ -97,7 +97,8 @@ export default function Booking() {
               tourId={tour.id} 
               tourTitle={tour.title}
               tourPrice={tour.price}
-              tourCapacity={tour.capacity || 25}
+              tourCapacity={tour.capacity}
+              duration={tour.duration}
             />
           </div>
         </div>
