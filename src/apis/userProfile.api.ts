@@ -9,6 +9,7 @@ export interface userProfile {
   province: string;
   address: string;
   avatar: File | null;
+  email?: string;
 }
 
 export const getCurrentUserProfile = () =>

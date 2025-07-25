@@ -1,13 +1,43 @@
-import React, { useState} from "react";
+import React, { use, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { NavigationUser } from "@/components/NavigationProfile";
 import { ProfilePage } from "@/components/ProfileUser";
 import { ChangePasswordForm } from "@/components/ChangepwForm";
-import MyBooking from '@/components/MyBooking'
+import MyBooking from "@/components/MyBooking";
+import { fetchUserProfile } from "@/services/userProfile.service";
+
+interface user {
+  id: number;
+  first_name: string;
+  last_name: string;
+  avatar: string;
+  email: string;
+}
 
 const AccountPage: React.FC = () => {
-const {active}  = useParams<{ active: string }>();
-  const [activeTab, setActiveTab] = useState<string>(active??"profile");
+  const [userCurrent, setUserCurrent] = useState<user | null>(null); // Giả sử bạn có state này từ context hoặc props
+  const { active } = useParams<{ active: string }>();
+  const [activeTab, setActiveTab] = useState<string>(active ?? "profile");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetchUserProfile(); 
+        const userData = response.data;
+        console.log("Fetched user data:", userData);
+        console.log("response:", response);
+        setUserCurrent(userData);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    console.log("Current user:", userCurrent);
+  }, [userCurrent]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -18,7 +48,7 @@ const {active}  = useParams<{ active: string }>();
       case "password":
         return <ChangePasswordForm />;
       case "my-bookings":
-        return <MyBooking/>;
+        return <MyBooking />;
       case "tours":
         return <p>🧳 Các chuyến đi bạn đã tham gia.</p>;
       case "settings":
@@ -34,7 +64,7 @@ const {active}  = useParams<{ active: string }>();
         {/* Sidebar trái */}
         <div className="w-80 pt-20">
           <div className="sticky top-[80px] bg-white border border-gray-200 rounded-xl shadow-sm">
-            <NavigationUser activeTab={activeTab} onChangeTab={setActiveTab} />
+            <NavigationUser user={userCurrent!} activeTab={activeTab} onChangeTab={setActiveTab} />
           </div>
         </div>
 

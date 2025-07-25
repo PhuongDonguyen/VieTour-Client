@@ -2,6 +2,7 @@ import { getCurrentUserProfile , updateProfile, getUserByUserId} from "../apis/u
 import type { userProfile } from "../apis/userProfile.api";
 export const fetchUserProfile = async () => {
     const res = await getCurrentUserProfile();
+    console.log("res:", res);
     if (res.data) return res.data;
     throw new Error("load user fail");
 }
