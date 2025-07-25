@@ -86,8 +86,8 @@ export default function PaymentSuccess() {
                 </div>
 
                 {/* Payment Details Card */}
-                <Card className="mb-6 shadow-lg border-0">
-                    <CardHeader className="bg-green-50 border-b">
+                <Card className="mb-6 py-0 shadow-lg border-0">
+                    <CardHeader className="bg-green-50 border-b py-6">
                         <CardTitle className="flex items-center gap-2 text-green-800">
                             <CreditCard className="w-5 h-5" />
                             Chi tiết thanh toán
@@ -96,7 +96,7 @@ export default function PaymentSuccess() {
                             Thông tin chi tiết về giao dịch thanh toán của bạn
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="pb-6 space-y-4">
                         <div className="flex justify-between items-center">
                             <span className="text-gray-600 flex items-center gap-2">
                                 <FileText className="w-4 h-4" />
@@ -143,18 +143,18 @@ export default function PaymentSuccess() {
                 </Card>
 
                 {/* Next Steps Card */}
-                <Card className="mb-6 shadow-lg border-0">
-                    <CardHeader className="bg-blue-50 border-b">
+                <Card className="mb-6 py-0 shadow-lg border-0">
+                    <CardHeader className="bg-blue-50 py-6 border-b">
                         <CardTitle className="text-blue-800">Bước tiếp theo</CardTitle>
                         <CardDescription>
                             Những việc bạn có thể làm tiếp theo
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6">
+                    <CardContent className="pb-6">
                         <div className="space-y-3 text-gray-600">
                             <div className="flex items-start gap-3">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                                <p>Chúng tôi sẽ gửi email xác nhận đặt tour đến địa chỉ email của bạn trong vòng 15 phút.</p>
+                                <p>Chúng tôi sẽ gửi email xác nhận đặt tour đến địa chỉ email của bạn trong vòng 5 phút.</p>
                             </div>
                             <div className="flex items-start gap-3">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>

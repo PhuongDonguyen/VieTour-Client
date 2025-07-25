@@ -48,10 +48,10 @@ export default function Booking() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-32">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="text-gray-600 mt-4">Đang tải thông tin tour...</p>
+            <p className="text-gray-600 mt-4">Vui lòng chờ trong giây lát...</p>
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function Booking() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-24">
         {/* Tour Booking Form wrapper - giảm độ rộng bằng form điền thông tin */}
         <div className="max-w-4xl mx-auto p-6">
           {/* Tiêu đề khớp với độ rộng form */}
@@ -93,11 +93,12 @@ export default function Booking() {
 
           {/* Form content */}
           <div className="-mx-6 -mb-6">
-            <TabBooking 
-              tourId={tour.id} 
+            <TabBooking
+              tourId={tour.id}
               tourTitle={tour.title}
               tourPrice={tour.price}
-              tourCapacity={tour.capacity || 25}
+              tourCapacity={tour.capacity}
+              duration={tour.duration}
             />
           </div>
         </div>

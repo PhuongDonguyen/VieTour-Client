@@ -14,11 +14,22 @@ import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
 import type { PaymentMethod } from '../../apis/payment.api';
 import { toast } from 'sonner';
 
+// Constants - có thể tùy chỉnh theo business logic
+const BOOKING_CONSTANTS = {
+  DEFAULT_TOUR_CAPACITY: 25,
+  DEFAULT_DURATION: "3 ngày 2 đêm",
+  MIN_BOOKING_DAYS_AHEAD: 2, // Đặt tour trước ít nhất 2 ngày
+  LOCALSTORAGE_EXPIRY_HOURS: 24, // 24 giờ
+  RESTORE_MESSAGE_TIMEOUT: 5000, // 5 giây
+  TOTAL_STEPS: 5
+};
+
 interface TabBookingProps {
   tourId: number;
   tourTitle: string;
   tourPrice: string;
-  tourCapacity?: number;
+  tourCapacity: number;
+  duration?: string;
 }
 
 interface PriceOption {
@@ -36,8 +47,31 @@ interface AvailableDate {
   tour_id: number;
 }
 
-export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourCapacity = 25 }) => {
+export const TabBooking: React.FC<TabBookingProps> = ({ 
+  tourId, 
+  tourTitle, 
+  tourCapacity, 
+  duration = BOOKING_CONSTANTS.DEFAULT_DURATION 
+}) => {
   const { user } = useAuth();
+  
+  // Validation for required props
+  if (!tourCapacity || tourCapacity <= 0) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+        <div className="text-center py-12">
+          <div className="mb-6">
+            <h3 className="text-2xl font-bold text-red-600 mb-2">
+              Lỗi dữ liệu tour
+            </h3>
+            <p className="text-gray-600">
+              Không thể tải thông tin sức chứa của tour. Vui lòng thử lại sau.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const [currentStep, setCurrentStep] = useState(1);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupForm, setShowSignupForm] = useState(false);
@@ -47,11 +81,12 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showRestoredMessage, setShowRestoredMessage] = useState(false);
+  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
+  const [wasLoggedOut, setWasLoggedOut] = useState(false);
   const [formData, setFormData] = useState({
     // Bước 1: Thông tin tour
     startDate: '',
-    numDays: '3 ngày 2 đêm',
+    numDays: duration,
     selectedPrices: {} as Record<number, { adults: number; children: number }>,
 
     // Bước 3: Thông tin khách hàng
@@ -65,78 +100,137 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
   // Key cho localStorage
   const getStorageKey = () => `booking_form_${tourId}`;
 
-  // Lưu form data vào localStorage
-  const saveFormToStorage = (data: any, step: number, paymentMethodId?: number | null) => {
-    const storageData = {
-      formData: data,
-      currentStep: step,
-      selectedPaymentMethod: paymentMethodId,
-      timestamp: Date.now(),
-      tourId: tourId
-    };
-    localStorage.setItem(getStorageKey(), JSON.stringify(storageData));
-  };
-
-  // Khôi phục form data từ localStorage
-  const restoreFormFromStorage = () => {
-    try {
-      const savedData = localStorage.getItem(getStorageKey());
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        // Kiểm tra data không quá cũ (24 giờ)
-        const isExpired = Date.now() - parsed.timestamp > 24 * 60 * 60 * 1000;
-
-        if (!isExpired && parsed.tourId === tourId) {
-          setFormData(parsed.formData);
-          setCurrentStep(parsed.currentStep);
-          setSelectedPaymentMethod(parsed.selectedPaymentMethod || null);
-          return true;
-        } else {
-          // Xóa data cũ
-          localStorage.removeItem(getStorageKey());
-        }
-      }
-    } catch (error) {
-      console.error('Error restoring form from storage:', error);
-      localStorage.removeItem(getStorageKey());
-    }
-    return false;
-  };
-
   // Xóa data khỏi localStorage khi hoàn thành booking
   const clearFormStorage = () => {
     localStorage.removeItem(getStorageKey());
   };
 
-  // Effect để khôi phục data khi component mount và user đã đăng nhập
+  // Xóa tất cả dữ liệu booking (khi logout)
+  const clearAllBookingStorage = () => {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('booking_form_')) {
+        localStorage.removeItem(key);
+      }
+    });
+  };
+
+  // Effect để reset form khi component mount và user đã đăng nhập
   useEffect(() => {
     if (user) {
-      const restored = restoreFormFromStorage();
-      if (restored) {
-        console.log('Form data restored from localStorage');
-        setShowRestoredMessage(true);
-        // Ẩn thông báo sau 5 giây
-        setTimeout(() => setShowRestoredMessage(false), 5000);
+      // Nếu user vừa login lại sau khi logout, reset về bước 1
+      if (wasLoggedOut) {
+        console.log('User logged back in after logout, resetting to step 1');
+        setCurrentStep(1);
+        setFormData({
+          startDate: '',
+          numDays: duration,
+          selectedPrices: {},
+          customerName: '',
+          phone: '',
+          specialRequests: ''
+        });
+        setSelectedPaymentMethod(null);
+        setErrors({});
+        setWasLoggedOut(false);
+        // Clear any existing booking data
+        clearAllBookingStorage();
+        return;
       }
-    }
-  }, [user, tourId]);
 
-  // Effect để lưu data mỗi khi form thay đổi (chỉ khi đã đăng nhập)
+      // Luôn bắt đầu từ bước 1 khi reload trang (không khôi phục dữ liệu)
+      console.log('Page loaded/reloaded, starting from step 1');
+      setCurrentStep(1);
+      setFormData({
+        startDate: '',
+        numDays: duration,
+        selectedPrices: {},
+        customerName: '',
+        phone: '',
+        specialRequests: ''
+      });
+      setSelectedPaymentMethod(null);
+      setErrors({});
+      // Clear any existing booking data on page load
+      clearAllBookingStorage();
+    } else {
+      // Khi user logout, đánh dấu đã logout và xóa tất cả dữ liệu booking
+      setWasLoggedOut(true);
+      clearAllBookingStorage();
+      setCurrentStep(1);
+      setFormData({
+        startDate: '',
+        numDays: duration,
+        selectedPrices: {},
+        customerName: '',
+        phone: '',
+        specialRequests: ''
+      });
+      setSelectedPaymentMethod(null);
+      setErrors({});
+      console.log('User logged out, cleared all booking form data');
+    }
+
+    // Cleanup function để xóa dữ liệu khi component unmount nếu user không đăng nhập
+    return () => {
+      if (!user) {
+        clearAllBookingStorage();
+      }
+    };
+  }, [user, tourId, duration, wasLoggedOut]);
+
+  // Effect để cập nhật numDays khi duration prop thay đổi
   useEffect(() => {
-    if (user && (formData.startDate || currentStep > 1)) {
-      saveFormToStorage(formData, currentStep, selectedPaymentMethod);
-    }
-  }, [formData, currentStep, selectedPaymentMethod, user]);
+    setFormData(prev => ({
+      ...prev,
+      numDays: duration
+    }));
+  }, [duration]);
 
-  // Function to check if date is valid (at least 2 days from today)
+  // Effect để cảnh báo khi người dùng reload trang nếu đã có dữ liệu
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Không cảnh báo nếu đang chuyển hướng sang trang thanh toán
+      if (isRedirectingToPayment) {
+        return;
+      }
+
+      // Chỉ cảnh báo nếu user đã đăng nhập và có dữ liệu trong form
+      if (user && hasFormData()) {
+        const message = 'Bạn có chắc muốn rời khỏi trang? Dữ liệu đặt tour của bạn sẽ bị mất.';
+        event.preventDefault();
+        event.returnValue = message;
+        return message;
+      }
+    };
+
+    // Thêm event listener
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [user, formData.startDate, currentStep, formData.selectedPrices, formData.customerName, formData.phone, formData.specialRequests, isRedirectingToPayment]);
+
+  // Function để check xem có dữ liệu trong form không
+  const hasFormData = () => {
+    return formData.startDate || 
+           currentStep > 1 || 
+           Object.keys(formData.selectedPrices).length > 0 ||
+           formData.customerName ||
+           formData.phone ||
+           formData.specialRequests;
+  };
+
+  // Function to check if date is valid (at least MIN_BOOKING_DAYS_AHEAD days from today)
   const isValidBookingDate = (dateString: string) => {
     const today = new Date();
     const bookingDate = new Date(dateString + 'T00:00:00'); // Ensure proper parsing in local timezone
-    const twoDaysFromNow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
+    const minDaysFromNow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + BOOKING_CONSTANTS.MIN_BOOKING_DAYS_AHEAD);
 
     // Reset time components for accurate date-only comparison
     const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
-    const minDateOnly = new Date(twoDaysFromNow.getFullYear(), twoDaysFromNow.getMonth(), twoDaysFromNow.getDate());
+    const minDateOnly = new Date(minDaysFromNow.getFullYear(), minDaysFromNow.getMonth(), minDaysFromNow.getDate());
 
     console.log(`isValidBookingDate: ${dateString} -> booking: ${bookingDateOnly.toLocaleDateString()}, min: ${minDateOnly.toLocaleDateString()}, valid: ${bookingDateOnly >= minDateOnly}`);
 
@@ -359,7 +453,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       }
     }
 
-    if (currentStep < 5) {
+    if (currentStep < BOOKING_CONSTANTS.TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -380,6 +474,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       return;
     }
 
+    // Đánh dấu đang chuyển hướng ngay từ đầu để tránh cảnh báo beforeunload
+    setIsRedirectingToPayment(true);
     setIsSubmitting(true);
 
     try {
@@ -387,6 +483,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       const selectedDate = availableDates.find(date => date.start_date === formData.startDate);
       if (!selectedDate) {
         toast.error('Không tìm thấy lịch trình cho ngày đã chọn!');
+        setIsRedirectingToPayment(false); // Reset state khi có lỗi
         return;
       }
 
@@ -428,6 +525,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
 
       if (!selectedMethod) {
         toast.error('Không tìm thấy phương thức thanh toán!');
+        setIsRedirectingToPayment(false); // Reset state khi có lỗi
         return;
       }
 
@@ -446,6 +544,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
         const errorMessage = paymentResult.error || 'Đã có lỗi xảy ra trong quá trình thanh toán.';
         toast.error(errorMessage);
         console.error('Payment processing failed:', paymentResult.error);
+        setIsRedirectingToPayment(false); // Reset state khi có lỗi thanh toán
         return;
       }
 
@@ -457,7 +556,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       setCurrentStep(1);
       setFormData({
         startDate: '',
-        numDays: '3 ngày 2 đêm',
+        numDays: duration,
         selectedPrices: {},
         customerName: '',
         phone: '',
@@ -470,6 +569,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       toast.error('Đã có lỗi xảy ra. Vui lòng thử lại');
     } finally {
       setIsSubmitting(false);
+      // Reset redirect state nếu có lỗi
+      setIsRedirectingToPayment(false);
     }
   };
 
@@ -842,35 +943,16 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
         </div>
       ) : (
         <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
-          {/* Thông báo khôi phục dữ liệu */}
-          {showRestoredMessage && (
-            <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Đã khôi phục thông tin đặt tour từ phiên làm việc trước của bạn.</span>
-                </div>
-                <button
-                  onClick={() => {
-                    clearFormStorage();
-                    setCurrentStep(1);
-                    setFormData({
-                      startDate: '',
-                      numDays: '3 ngày 2 đêm',
-                      selectedPrices: {},
-                      customerName: '',
-                      phone: '',
-                      specialRequests: ''
-                    });
-                    setSelectedPaymentMethod(null);
-                    setShowRestoredMessage(false);
-                  }}
-                  className="text-sm text-green-600 hover:text-green-800 underline"
-                >
-                  Bắt đầu lại
-                </button>
+          {/* Cảnh báo mất dữ liệu */}
+          {hasFormData() && (
+            <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm">
+                  <strong>Lưu ý:</strong> Dữ liệu đặt tour sẽ bị mất nếu bạn tải lại trang (F5) hoặc đóng trình duyệt. Hãy hoàn thành đặt tour để tránh mất dữ liệu.
+                </span>
               </div>
             </div>
           )}
@@ -878,7 +960,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
           {/* Progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
-              {[1, 2, 3, 4, 5].map((step) => (
+              {Array.from({ length: BOOKING_CONSTANTS.TOTAL_STEPS }, (_, i) => i + 1).map((step) => (
                 <div key={step} className="flex items-center">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step <= currentStep
@@ -888,7 +970,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
                   >
                     {step}
                   </div>
-                  {step < 5 && (
+                  {step < BOOKING_CONSTANTS.TOTAL_STEPS && (
                     <div
                       className={`w-12 h-1 mx-1 ${step < currentStep ? 'bg-orange-500' : 'bg-gray-200'
                         }`}
@@ -924,7 +1006,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
               Quay lại
             </button>
 
-            {currentStep < 5 ? (
+            {currentStep < BOOKING_CONSTANTS.TOTAL_STEPS ? (
               <button
                 onClick={handleNext}
                 className="px-6 py-2 bg-orange-500 text-white rounded-md font-medium hover:bg-orange-600 transition-colors"
