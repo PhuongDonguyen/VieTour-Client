@@ -289,7 +289,7 @@ export const CommentSection = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-8 bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-xl border border-gray-100 mt-10">
+    <div className="w-full mb-5 max-w-7xl mx-auto p-8 bg-gradient-to-br from-white to-gray-50 rounded-3xl border border-gray-100 mt-10">
       {/* Tiêu đề */}
       <div className="flex items-center gap-3 mb-8">
         <MessageCircle className="w-7 h-7 text-orange-500" />
@@ -361,7 +361,7 @@ export const CommentSection = () => {
               questions.map((q) => (
                 <div
                   key={q.id}
-                  className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 transform hover:-translate-y-1"
+                  className="bg-white mt-2 p-6 rounded-2xl  hover:shadow-sm transition-all duration-200 transform border-2 border-gray-200"
                 >
                   <div className="flex items-start gap-4">
                     {/* Avatar chữ cái đầu tên */}
@@ -422,7 +422,7 @@ export const CommentSection = () => {
                       )}
                       {/* Ô nhập trả lời */}
                       {activeReplyId === q.id && (
-                        <div className="mt-2 space-y-2">
+                        <div className=" mt-2 space-y-2">
                           {loading ? (
                             <Loading />
                           ) : (

@@ -90,7 +90,7 @@ export default function MyBooking() {
     console.log("Selected booking:", booking);
   };
 
-  const handleReviewSubmit = async(rating: number, comment: string) => {
+  const handleReviewSubmit = async (rating: number, comment: string) => {
     if (selectedBooking) {
       console.log("Gửi đánh giá cho booking:", selectedBooking.id, {
         rating,
@@ -126,21 +126,21 @@ export default function MyBooking() {
             style={{ animation: "fadeInUp 0.6s ease forwards 0.6s" }}
           >
             <h2 className="text-3xl font-semibold text-gray-800 mb-8 pl-6 relative">
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></span>
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#FF6B35] rounded-full"></span>
               Lịch sử đặt tour
             </h2>
 
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-              {bookings.map((booking: Booking, index: number) => (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {bookings.reverse().map((booking: Booking, index: number) => (
                 <div
                   key={booking.id}
-                  className={`p-8 hover:bg-gray-50 transition-all duration-200 hover:translate-x-2 relative group ${
+                  className={`p-8 hover:bg-gray-50 transition-all duration-200 relative group ${
                     index < bookings.length - 1
                       ? "border-b border-gray-100"
                       : ""
                   }`}
                 >
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-600 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300"></div>
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6B35] transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300"></div>
 
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold text-gray-800 mb-2 md:mb-0">
@@ -157,7 +157,13 @@ export default function MyBooking() {
                         : "bg-gray-100 text-gray-800"
                     }`}
                       >
-                        {booking.status}
+                        {booking.status === "success"
+                          ? "Thành công"
+                          : booking.status === "pending"
+                          ? "Đang xử lý"
+                          : booking.status === "fail"
+                          ? "Lỗi"
+                          : "Không xác định"}
                       </span>
                       <button
                         onClick={() =>
@@ -274,16 +280,18 @@ export default function MyBooking() {
                     )}
                   </div>
 
-                  {!booking.is_reviewed && new Date() > new Date(booking.schedule.start_date) && booking.status === "success" && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => handleReviewClick(booking)}
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 cursor-pointer rounded-lg shadow-md uppercase tracking-wide text-sm"
-                      >
-                        Đánh giá
-                      </button>
-                    </div>
-                  )}
+                  {!booking.is_reviewed &&
+                    new Date() > new Date(booking.schedule.start_date) &&
+                    booking.status === "success" && (
+                      <div className="mt-4">
+                        <button
+                          onClick={() => handleReviewClick(booking)}
+                          className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 cursor-pointer rounded-lg shadow-md uppercase tracking-wide text-sm"
+                        >
+                          Đánh giá
+                        </button>
+                      </div>
+                    )}
                 </div>
               ))}
             </div>

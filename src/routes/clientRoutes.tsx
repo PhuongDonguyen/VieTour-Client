@@ -33,11 +33,11 @@ export const clientRoutes = [
       { path: 'payment/success', element: <PaymentSuccess /> },
       { path: 'payment/failed', element: <PaymentFailed /> },
       {
-        path: 'profile',
+        path: 'user/:active',
         element: (
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
+          // <ProtectedRoute>
+            <AccountPage />
+          // {/* </ProtectedRoute> */}
         )
       },
       { path: ":active", element: <AccountPage /> }

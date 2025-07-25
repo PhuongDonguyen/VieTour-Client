@@ -58,13 +58,13 @@ export const ChangePasswordForm: React.FC = () => {
     if (status === 'success') return `${base} bg-green-500 text-white`;
     if (status === 'error') return `${base} bg-red-500 text-white`;
 
-    return `${base} bg-blue-600 text-white hover:bg-blue-700`;
+    return `${base} bg-[#FF6B35] text-white hover:bg-[#FF6B35]/80`;
   };
 
   return (
     <div className="mb-12 mt-25 animate-fadeInUp">
       <h2 className="text-3xl font-semibold text-gray-800 mb-8 pl-6 relative">
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></span>
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#FF6B35] rounded-full"></span>
         Thay đổi mật khẩu
       </h2>
 

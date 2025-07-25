@@ -361,7 +361,7 @@ export const ProfilePage: React.FC = () => {
     baseClasses: string
   ): string => {
     let stateClasses =
-      "bg-gradient-to-r from-blue-500 to-purple-600 text-white";
+      "bg-[#FF6B35] text-white";
 
     if (buttonState.success) {
       stateClasses = "bg-gradient-to-r from-green-500 to-green-600 text-white";
@@ -389,9 +389,9 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="bg-gradient-to-br bg-white p-5 mt-18">
-      <div className="max-w-6xl mx-auto bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:-translate-y-2">
+      <div className="max-w-6xl border-1 mx-auto bg-white/95 backdrop-blur-md rounded-3xl overflow-hidden transform transition-all duration-300">
         {/* Header */}
-        <div className="w-32 mx-auto mb-6 text-center">
+        <div className="w-32 mt-10 mx-auto mb-6 text-center">
           <label
             htmlFor="avt"
             className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2"
@@ -418,7 +418,7 @@ export const ProfilePage: React.FC = () => {
 
           <button
             type="button"
-            className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 rounded"
+            className="mt-2 w-full bg-[#FF6B35] hover:bg-[#FF6B35]/80 text-white text-sm py-1 rounded"
             onClick={() => fileInputRef.current?.click()}
           >
             Đổi ảnh
@@ -433,7 +433,7 @@ export const ProfilePage: React.FC = () => {
             style={{ animation: "fadeInUp 0.6s ease forwards 0.2s" }}
           >
             <h2 className="text-3xl font-semibold text-gray-800 mb-8 pl-6 relative">
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></span>
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-[#FF6B35] to-[#FF6B35] rounded-full"></span>
               Thông tin cá nhân
             </h2>
 

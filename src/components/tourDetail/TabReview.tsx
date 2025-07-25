@@ -156,22 +156,7 @@ const handleToggleLike = async (reviewId: number) => {
     return distribution.reverse();
   };
 
-  const getUserName = (userId: number) => {
-    const names = ["Minh Anh", "Thành Long", "Hương Lan", "Đức Nam", "Thu Hà"];
-    return names[userId % names.length];
-  };
 
-  const getRandomColor = (id: number) => {
-    const colors = [
-      "from-pink-400 to-rose-500",
-      "from-blue-400 to-indigo-500",
-      "from-green-400 to-emerald-500",
-      "from-purple-400 to-violet-500",
-      "from-orange-400 to-red-500",
-      "from-teal-400 to-cyan-500",
-    ];
-    return colors[id % colors.length];
-  };
 
   useEffect(() => {
     const loadReviewsWithUsers = async () => {
@@ -247,7 +232,7 @@ const handleToggleLike = async (reviewId: number) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="scale-90 max-w-6xl mx-auto">
       {loading ? (
         <Loading />
       ) : (
@@ -258,7 +243,7 @@ const handleToggleLike = async (reviewId: number) => {
               <MessageCircle className="w-8 h-8 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-800">
+              <h2 className="text-[20px] font-bold text-gray-800">
                 Đánh giá khách hàng
               </h2>
               <p className="text-gray-600">
@@ -270,7 +255,7 @@ const handleToggleLike = async (reviewId: number) => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Left: Rating Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 sticky top-6">
+              <div className="bg-white rounded-3xl p-8 border border-gray-200 sticky top-6">
                 <div className="text-center mb-6">
                   <div className="text-6xl font-bold text-transparent bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text mb-2">
                     {getAverageRating()}
@@ -330,7 +315,7 @@ const handleToggleLike = async (reviewId: number) => {
                   {reviews.map((review, index) => (
                     <div
                       key={review.id}
-                      className="group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2"
+                      className="group bg-white rounded-3xl p-8 border border-gray-200 transition-all duration-300 hover:border-orange-300"
                     >
                       <div className="flex gap-6">
                         {/* Avatar */}
@@ -399,12 +384,12 @@ const handleToggleLike = async (reviewId: number) => {
                                 }`}
                               >
                                 {!!review.user_like_id
-                                  ? "Đã yêu thích"
-                                  : `${review.like_count} yêu thích`}
+                                  ? `${review.like_count} `
+                                  : `${review.like_count}`}
                               </span>
                             </button>
 
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            {/* <div className="flex items-center gap-2 text-gray-400 text-sm">
                               <span>Hữu ích?</span>
                               <button className="hover:text-amber-500 transition-colors">
                                 👍
@@ -412,7 +397,7 @@ const handleToggleLike = async (reviewId: number) => {
                               <button className="hover:text-amber-500 transition-colors">
                                 👎
                               </button>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>

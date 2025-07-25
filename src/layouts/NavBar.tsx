@@ -180,9 +180,9 @@ export const NavBar = ({ textDark = false }) => {
                         className={`absolute top-full right-0 mt-4 w-48 shadow-lg py-2 z-50 backdrop-blur-sm ${isScrolled || textDark ? 'bg-white' : 'bg-white/10'}`}
                         onMouseEnter={() => setActiveDropdown('user')}
                       >
-                        <a href="/profile" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Hồ sơ</a>
-                        <a href="/my-bookings" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đặt tour của tôi</a>
-                        <a href="/password" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Thay đổi mật khẩu</a>
+                        <a href="/user/profile" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Hồ sơ</a>
+                        <a href="/user/my-bookings" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đặt tour của tôi</a>
+                        <a href="/user/password" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Thay đổi mật khẩu</a>
                         <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đăng xuất</a>
                       </div>
                     )}
@@ -275,9 +275,9 @@ export const NavBar = ({ textDark = false }) => {
                         <span className="text-gray-700 font-medium">{user?.first_name || 'Unknown'}</span>
                       </div>
                       <div className="pl-4 space-y-1">
-                        <a href="/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</a>
-                        <a href="/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</a>
-                        <a href="/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</a>
+                        <a href="/user/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</a>
+                        <a href="/user/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</a>
+                        <a href="/user/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</a>
                         <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
                       </div>
                     </div>
