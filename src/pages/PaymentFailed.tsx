@@ -84,8 +84,8 @@ export default function PaymentFailed() {
                 </div>
 
                 {/* Error Details Card */}
-                <Card className="mb-6 shadow-lg border-0 border-l-4 border-l-red-500">
-                    <CardHeader className="bg-red-50 border-b">
+                <Card className="mb-6 py-0 shadow-lg border-0 border-l-4 border-l-red-500">
+                    <CardHeader className="bg-red-50 border-b py-6">
                         <CardTitle className="flex items-center gap-2 text-red-800">
                             <AlertTriangle className="w-5 h-5" />
                             Chi tiết lỗi
@@ -94,7 +94,7 @@ export default function PaymentFailed() {
                             Thông tin về lỗi thanh toán đã xảy ra
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="pb-6 space-y-4">
                         <div className="flex justify-between items-start">
                             <span className="text-gray-600 flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4" />
