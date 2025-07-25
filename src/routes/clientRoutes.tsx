@@ -10,13 +10,14 @@ import EnterOtp from '../pages/EnterOtp';
 import LoginSuccess from '../pages/LoginSuccess';
 import Profile from '../pages/Profile';
 import BlogDetail from '../pages/BlogDetail';
-import MyBooking from '../pages/MyBooking';
+import PaymentSuccess from '../pages/PaymentSuccess';
 import { ProtectedRoute } from '@/components/authentication/ProtectedRoute';
+import AccountPage from "@/pages/AccountPage";
 
 export const clientRoutes = [
-  { path: '', element: <Home /> },
+  { path: "", element: <Home /> },
   {
-    path: '/',
+    path: "/",
     element: <ClientLayout />,
     children: [
       { path: 'tour/:slug', element: <TourDetail /> },
@@ -32,6 +33,7 @@ export const clientRoutes = [
       { path: 'tour-category/:slug', element: <TourCategory /> },
       { path: 'about', element: <About /> },
       { path: 'blog/:id', element: <BlogDetail /> },
+      { path: 'payment/success', element: <PaymentSuccess /> },
       {
         path: 'profile',
         element: (
@@ -40,16 +42,10 @@ export const clientRoutes = [
           </ProtectedRoute>
         )
       },
-      {
-        path: 'my-booking',
-        element: (
-          <ProtectedRoute>
-            <MyBooking />
-          </ProtectedRoute>)
-      }
+      { path: ":active", element: <AccountPage /> }
     ]
   },
-  { path: 'reset-password', element: <ForgotPassword /> },
-  { path: 'verify/email', element: <EnterOtp /> },
-  { path: 'login/success', element: <LoginSuccess /> },
+  { path: "reset-password", element: <ForgotPassword /> },
+  { path: "verify/email", element: <EnterOtp /> },
+  { path: "login/success", element: <LoginSuccess /> },
 ];

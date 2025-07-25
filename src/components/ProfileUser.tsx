@@ -388,7 +388,7 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br bg-white min-h-screen p-5 mt-18">
+    <div className="bg-gradient-to-br bg-white p-5 mt-18">
       <div className="max-w-6xl mx-auto bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:-translate-y-2">
         {/* Header */}
         <div className="w-32 mx-auto mb-6 text-center">
@@ -620,79 +620,8 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Thay đổi mật khẩu */}
-          <div
-            className="mb-12 opacity-0 animate-pulse"
-            style={{ animation: "fadeInUp 0.6s ease forwards 0.4s" }}
-          >
-            <h2 className="text-3xl font-semibold text-gray-800 mb-8 pl-6 relative">
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></span>
-              Thay đổi mật khẩu
-            </h2>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    Mật khẩu hiện tại
-                  </label>
-                  <input
-                    type="password"
-                    name="current"
-                    value={passwords.current}
-                    onChange={handlePasswordChange}
-                    placeholder="Nhập mật khẩu hiện tại"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    Mật khẩu mới
-                  </label>
-                  <input
-                    type="password"
-                    name="new"
-                    value={passwords.new}
-                    onChange={handlePasswordChange}
-                    placeholder="Nhập mật khẩu mới"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    Xác nhận mật khẩu mới
-                  </label>
-                  <input
-                    type="password"
-                    name="confirm"
-                    value={passwords.confirm}
-                    onChange={handlePasswordChange}
-                    placeholder="Xác nhận mật khẩu mới"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={handleChangePassword}
-                disabled={buttonStates.changePassword.loading}
-                className={getButtonClasses(
-                  buttonStates.changePassword,
-                  "mt-6 px-8 py-3 rounded-lg font-medium uppercase tracking-wide transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-                )}
-              >
-                {getButtonText(
-                  buttonStates.changePassword,
-                  "Đang xử lý...",
-                  "Đổi mật khẩu thành công!",
-                  "Đổi mật khẩu thất bại",
-                  "Đổi mật khẩu"
-                )}
-              </button>
-            </div>
-          </div>
 
 
         </div>

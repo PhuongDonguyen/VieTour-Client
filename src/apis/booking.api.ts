@@ -19,3 +19,6 @@ export interface BookingRequest {
 
 export const createBooking = (bookingData: BookingRequest) =>
   axiosInstance.post('/api/bookings', bookingData);
+
+export const getMyBookings = () => 
+  axiosInstance.get('/api/bookings');

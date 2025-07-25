@@ -1,66 +1,76 @@
-import { TopBar } from "../layouts/TopBar";
-import { NavBar } from "../layouts/NavBar";
 import { useEffect, useState } from "react";
+import { fetchMyBookings } from "@/services/booking.service";
 
-interface Tour {
-  id: string;
-  name: string;
-  date: string;
-  people: string;
-  price: string;
-  status: "completed" | "upcoming" | "cancelled";
-  statusText: string;
-  statusColor: string;
+
+export interface Tour {
+  id: number;
+  title: string;
+  poster_url: string;
+  provider_id: number;
+  capacity: number;
+  transportation: string;
+  accommodation: string;
+  destination_intro: string;
+  view_count: string;
+  slug: string;
+  tour_category_id: number;
+  is_active: boolean;
+  total_star: number;
+  review_count: number;
+  live_commentary: string;
+  duration: string;
+  booked_count: number;
+}
+
+export interface Schedule {
+  id: number;
+  start_date: string;
+  participant: number;
+  status: string;
+  tour_id: number;
+  tour: Tour;
+}
+
+export interface Booking {
+  id: number;
+  user_id: number;
+  schedule_id: number;
+  total: number;
+  status: string;
+  payment_id: string | null;
+  txn_ref: string | null;
+  create_at: string;
+  is_reviewed: boolean;
+  client_name: string;
+  client_phone: string;
+  note: string;
+  schedule: Schedule;
 }
 
 
 
 export default function MyBooking() {
-  const tours: Tour[] = [
-    {
-      id: "TL2024001",
-      name: "Tour Hạ Long Bay - Sapa 5N4Đ",
-      date: "15/12/2024 - 20/12/2024",
-      people: "2 người",
-      price: "12.500.000 VNĐ",
-      status: "completed",
-      statusText: "Đã hoàn thành",
-      statusColor: "bg-green-100 text-green-800",
-    },
-    {
-      id: "TL2025002",
-      name: "Tour Phú Quốc 3N2Đ",
-      date: "25/07/2025 - 28/07/2025",
-      people: "4 người",
-      price: "8.900.000 VNĐ",
-      status: "upcoming",
-      statusText: "Sắp diễn ra",
-      statusColor: "bg-yellow-100 text-yellow-800",
-    },
-    {
-      id: "TL2025003",
-      name: "Tour Đà Lạt 2N1Đ",
-      date: "10/06/2025 - 12/06/2025",
-      people: "2 người",
-      price: "3.200.000 VNĐ",
-      status: "cancelled",
-      statusText: "Đã hủy",
-      statusColor: "bg-red-100 text-red-800",
-    },
-  ];
-
-  const [userIdCurrent, setUserIdCurrent] = useState<number|null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchUserCurrent = async() => {
-        
-    }
-  },[]);
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const result = await fetchMyBookings();
+        setBookings(result.bookings); // Kết quả phải là { bookings: Booking[] }
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu booking:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   return (
-    <div className="min-h-screen">
-      <TopBar />
-      <NavBar textDark={true} />
+    <div className="">
       {/* Lịch sử đặt tour */}
       <div
         className="mt-25 max-w-6xl mx-auto opacity-0 animate-pulse"
@@ -71,42 +81,42 @@ export default function MyBooking() {
           Lịch sử đặt tour
         </h2>
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          {tours.map((tour: Tour, index: number) => (
+          {bookings.map((booking: Booking, index: number) => (
             <div
-              key={tour.id}
+              key={booking.id}
               className={`p-8 hover:bg-gray-50 transition-all duration-200 hover:translate-x-2 relative group ${
-                index < tours.length - 1 ? "border-b border-gray-100" : ""
+                index < bookings.length - 1 ? "border-b border-gray-100" : ""
               }`}
             >
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-600 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300"></div>
 
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2 md:mb-0">
-                  {tour.name}
+                  {booking.schedule.tour.title}
                 </h3>
                 <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium uppercase tracking-wide ${tour.statusColor}`}
+                  // className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium uppercase tracking-wide ${tour.statusColor}`}
                 >
-                  {tour.statusText}
+                  {/* {tour.statusText} */}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">📅</span>
-                  <span>{tour.date}</span>
+                  <span>{booking.schedule.start_date}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">👥</span>
-                  <span>{tour.people}</span>
+                  {/* <span>{tour.people}</span> */}
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">💰</span>
-                  <span>{tour.price}</span>
+                  {/* <span>{tour.price}</span> */}
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">🆔</span>
-                  <span>{tour.id}</span>
+                  {/* <span>{tour.id}</span> */}
                 </div>
               </div>
             </div>
