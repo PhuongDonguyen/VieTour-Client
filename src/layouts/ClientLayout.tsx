@@ -8,7 +8,7 @@ export default function ClientLayout() {
     <div className="min-h-screen flex flex-col">
       <TopBar />
       <NavBar textDark={true} />
-      <div className="flex-1 mt-10">
+      <div className="flex-1">
         <Outlet />
       </div>
       <Footer />

@@ -3,6 +3,7 @@ import { tourScheduleService } from '../../services/tourSchedule.service';
 import { fetchUserProfile } from '../../services/userProfile.service';
 import { bookingService } from '../../services/booking.service';
 import { paymentService } from '../../services/payment.service';
+import { processPayment, getPaymentMethodDisplayName } from '../../services/paymentGateway.service';
 import { getTourPricesByTourIdAndDate } from '../../apis/tourPrice.api';
 import { useAuth } from '../../hooks/useAuth';
 import Modal from '../Modal';
@@ -10,7 +11,6 @@ import LoginForm from '../authentication/LoginForm';
 import SignupForm from '../authentication/SignupForm';
 import { TourCalendar } from './TourCalendar';
 import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
-import { createMomoPayment } from '../../services/momo.service';
 import type { PaymentMethod } from '../../apis/payment.api';
 import { toast } from 'sonner';
 
@@ -376,7 +376,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
     // Final validation before submission
     if (!selectedPaymentMethod) {
       setErrors({ paymentMethod: 'Vui lòng chọn phương thức thanh toán!' });
-      alert('Vui lòng chọn phương thức thanh toán!');
+      toast.error('Vui lòng chọn phương thức thanh toán!');
       return;
     }
 
@@ -386,7 +386,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       // Tìm schedule_id từ ngày đã chọn
       const selectedDate = availableDates.find(date => date.start_date === formData.startDate);
       if (!selectedDate) {
-        alert('Không tìm thấy lịch trình cho ngày đã chọn!');
+        toast.error('Không tìm thấy lịch trình cho ngày đã chọn!');
         return;
       }
 
@@ -412,6 +412,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
         client_name: formData.customerName,
         client_phone: formData.phone,
         note: formData.specialRequests || '',
+        payment_id: selectedPaymentMethod, // Add payment method ID
         booking_details: bookingDetails
       };
 
@@ -421,18 +422,31 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
       const response = await bookingService.createBooking(bookingData);
 
       console.log('Booking response:', response);
-      // alert('Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.');
 
-      // Call Momo payment API after booking
+      // Get the selected payment method details
+      const selectedMethod = paymentMethods.find(m => m.id === selectedPaymentMethod);
 
-      const momoResult = await createMomoPayment({
+      if (!selectedMethod) {
+        toast.error('Không tìm thấy phương thức thanh toán!');
+        return;
+      }
+
+      // Process payment using the payment gateway service
+      const paymentResult = await processPayment(selectedMethod, {
         amount: bookingData.total,
-        orderInfo: `Đặt tour: ${tourTitle} - ${formData.customerName} - ${formData.phone}`
+        orderInfo: `Đặt tour: ${tourTitle} - ${formData.customerName} - ${formData.phone}`,
+        bookingId: response.data?.id
       });
-      if (momoResult && momoResult.payUrl) {
-        window.location.href = momoResult.payUrl;
+
+      if (paymentResult.success && paymentResult.payUrl) {
+        // Redirect to payment URL
+        window.location.href = paymentResult.payUrl;
       } else {
-        alert('Đã có lỗi xảy ra. Vui lòng liên hệ bên cung cấp thanh toán.');
+        // Show error message with toast instead of alert
+        const errorMessage = paymentResult.error || 'Đã có lỗi xảy ra trong quá trình thanh toán.';
+        toast.error(errorMessage);
+        console.error('Payment processing failed:', paymentResult.error);
+        return;
       }
 
 
@@ -748,32 +762,39 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
                   <p className="text-gray-600">Đang tải phương thức thanh toán...</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   {paymentMethods.map((method) => (
-                    <div
+                    <label
                       key={method.id}
-                      onClick={() => setSelectedPaymentMethod(method.id)}
-                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${selectedPaymentMethod === method.id
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${selectedPaymentMethod === method.id
                         ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        : 'border-gray-200'
                         }`}
                     >
-                      <div className="flex items-center space-x-3">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method.id}
+                        checked={selectedPaymentMethod === method.id}
+                        onChange={() => setSelectedPaymentMethod(method.id)}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center space-x-3 flex-1">
                         <div className="flex-shrink-0">
                           <img
                             src={method.thumbnail}
                             alt={method.payment_method}
-                            className="w-12 h-12 object-contain rounded"
+                            className="w-8 h-8 object-contain rounded"
                           />
                         </div>
                         <div className="flex-1">
-                          <h5 className="font-medium text-gray-900 capitalize">
-                            {method.payment_method}
-                          </h5>
+                          <span className="font-medium text-gray-900">
+                            {getPaymentMethodDisplayName(method.payment_method)}
+                          </span>
                         </div>
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === method.id
+                            className={`w-4 h-4 rounded-full border-2 ${selectedPaymentMethod === method.id
                               ? 'border-orange-500 bg-orange-500'
                               : 'border-gray-300'
                               }`}
@@ -784,17 +805,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({ tourId, tourTitle, tourC
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </label>
                   ))}
-                </div>
-              )}
-
-              {selectedPaymentMethod && (
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <p className="text-sm text-blue-700">
-                    <strong>Phương thức thanh toán đã chọn:</strong>{' '}
-                    {paymentMethods.find(m => m.id === selectedPaymentMethod)?.payment_method}
-                  </p>
                 </div>
               )}
             </div>

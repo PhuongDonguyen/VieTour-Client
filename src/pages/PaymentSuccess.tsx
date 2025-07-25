@@ -70,7 +70,7 @@ export default function PaymentSuccess() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-12 px-4">
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-25 px-4">
             <div className="max-w-2xl mx-auto">
                 {/* Success Icon and Header */}
                 <div className="text-center mb-8">

@@ -11,6 +11,7 @@ import LoginSuccess from '../pages/LoginSuccess';
 import Profile from '../pages/Profile';
 import BlogDetail from '../pages/BlogDetail';
 import PaymentSuccess from '../pages/PaymentSuccess';
+import PaymentFailed from '../pages/PaymentFailed';
 import { ProtectedRoute } from '@/components/authentication/ProtectedRoute';
 import AccountPage from "@/pages/AccountPage";
 
@@ -34,6 +35,7 @@ export const clientRoutes = [
       { path: 'about', element: <About /> },
       { path: 'blog/:id', element: <BlogDetail /> },
       { path: 'payment/success', element: <PaymentSuccess /> },
+      { path: 'payment/failed', element: <PaymentFailed /> },
       {
         path: 'profile',
         element: (
