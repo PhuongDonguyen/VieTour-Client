@@ -15,7 +15,7 @@ export const FeaturedTours: React.FC = () => {
         setTours(data);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setError('Không thể tải dữ liệu tour nổi bật.');
         setLoading(false);
       });

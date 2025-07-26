@@ -1,12 +1,10 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   User,
   Lock,
   MapPin,
   Calendar,
-  Settings,
   LogOut,
-  Home,
 } from 'lucide-react';
 import type { FC } from 'react';
 import type { LucideIcon } from 'lucide-react';
@@ -75,18 +73,16 @@ export const NavigationUser: FC<NavigationUserProps> = ({
             <button
               key={id}
               onClick={() => onChangeTab(id)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                isActive
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
                   ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-[1.02]'
                   : 'hover:bg-gray-100 text-gray-700'
-              }`}
+                }`}
             >
               <div
-                className={`p-2 rounded-lg transition-colors duration-200 ${
-                  isActive
+                className={`p-2 rounded-lg transition-colors duration-200 ${isActive
                     ? 'bg-white bg-opacity-20'
                     : 'bg-gray-100 group-hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 <Icon size={18} className={`${isActive ? 'text-black' : 'text-gray-600'}`} />
               </div>

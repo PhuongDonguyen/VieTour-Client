@@ -4,8 +4,6 @@ import {
   MessageCircle,
   User,
   Send,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { fetchTourBySlug } from "../services/tour.service";
 import { Loading } from "./Loading";
@@ -19,8 +17,6 @@ import {
   fetchUserProfile,
 } from "@/services/userProfile.service";
 import { RepliesSection } from "./renderReplies";
-import dayjs from "dayjs";
-import { dividerClasses } from "@mui/material";
 
 interface Question {
   id: number;

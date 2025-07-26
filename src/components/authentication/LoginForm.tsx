@@ -53,7 +53,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, onSwitchForm, onForgotPa
       setError(null);
       setLoading(true);
       try {
-        const user = await loginUser({ email: values.email, password: values.password });
+        const user = await loginUser({ email: values.email, password: values.password, role: 'user' });
         login(user); // Call login from useAuth with the user data
         setLoading(false);
         if (onClose) onClose();
