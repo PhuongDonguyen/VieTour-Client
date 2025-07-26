@@ -129,6 +129,13 @@ export default function MyBooking() {
 
   return (
     <div className="">
+      {selectedBooking && (
+        <ReviewForm
+          booking={selectedBooking}
+          onSubmit={handleReviewSubmit}
+          onClose={() => setSelectedBooking(null)}
+        />
+      )}
       {loading ? (
         <div className="mt-30">
           <Loading />
@@ -136,7 +143,7 @@ export default function MyBooking() {
       ) : (
         <div>
           <div
-            className="mt-25 max-w-6xl mx-auto opacity-0 animate-pulse"
+            className="mt-25 ms-4 max-w-6xl mx-auto opacity-0 animate-pulse"
             style={{ animation: "fadeInUp 0.6s ease forwards 0.6s" }}
           >
             <h2 className="text-3xl font-semibold text-gray-800 mb-8 pl-6 relative">
@@ -145,7 +152,7 @@ export default function MyBooking() {
             </h2>
 
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              {bookings.reverse().map((booking: Booking, index: number) => (
+              {bookings.map((booking: Booking, index: number) => (
                 <div
                   key={booking.id}
                   className={`p-8 hover:bg-gray-50 transition-all duration-200 relative group ${
@@ -320,13 +327,6 @@ export default function MyBooking() {
                 </div>
               ))}
             </div>
-            {selectedBooking && (
-              <ReviewForm
-                booking={selectedBooking}
-                onSubmit={handleReviewSubmit}
-                onClose={() => setSelectedBooking(null)}
-              />
-            )}
           </div>
 
           <style

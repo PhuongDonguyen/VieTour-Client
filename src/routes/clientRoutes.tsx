@@ -43,12 +43,11 @@ export const clientRoutes = [
       {
         path: 'user/:active',
         element: (
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <AccountPage />
-          // {/* </ProtectedRoute> */}
+          </ProtectedRoute> 
         )
       },
-      { path: ":active", element: <AccountPage /> }
     ]
   },
   { path: "reset-password", element: <ForgotPassword /> },
