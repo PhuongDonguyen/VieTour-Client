@@ -1,5 +1,4 @@
-import React, { useEffect, useState , } from "react";
-
+import React, { useEffect, useState } from "react";
 
 export interface Tour {
   id: number;
@@ -62,23 +61,26 @@ interface ReviewFormProps {
   onClose: () => void;
 }
 
-export const ReviewForm: React.FC<ReviewFormProps> = ({ booking, onSubmit, onClose }) => {
+export const ReviewForm: React.FC<ReviewFormProps> = ({
+  booking,
+  onSubmit,
+  onClose,
+}) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
 
-useEffect(() => {
-  const originalOverflow = window.getComputedStyle(document.body).overflow;
-  const originalPadding = document.body.style.paddingRight;
+  useEffect(() => {
+    const originalOverflow = window.getComputedStyle(document.body).overflow;
+    const originalPadding = document.body.style.paddingRight;
 
-  document.body.style.overflow = "hidden";
-  document.body.style.paddingRight = "16px"; // hoặc 'calc(100vw - 100%)'
+    document.body.style.overflow = "hidden";
+    document.body.style.paddingRight = "16px"; // hoặc 'calc(100vw - 100%)'
 
-  return () => {
-    document.body.style.overflow = originalOverflow;
-    document.body.style.paddingRight = originalPadding;
-  };
-}, []);
-
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPadding;
+    };
+  }, []);
 
   const handleSubmit = () => {
     if (rating === 0) {
@@ -90,9 +92,11 @@ useEffect(() => {
   };
 
   return (
-    <div className="fixed inset-0 bg-opacity-30 flex items-center justify-center z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brightness-75">
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
-        <h2 className="text-xl font-bold mb-4 text-center">Đánh giá {booking.schedule.tour.title}</h2>
+        <h2 className="text-xl font-bold mb-4 text-center">
+          Đánh giá {booking.schedule.tour.title}
+        </h2>
 
         {/* Star rating */}
         <div className="flex justify-center space-x-1 mb-4">
@@ -100,7 +104,9 @@ useEffect(() => {
             <button
               key={star}
               onClick={() => setRating(star)}
-              className={`text-2xl ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
+              className={`text-2xl ${
+                star <= rating ? "text-yellow-400" : "text-gray-300"
+              }`}
             >
               ★
             </button>

@@ -61,7 +61,7 @@ export const ChangePasswordForm: React.FC = () => {
   };
 
   return (
-    <div className="mb-12 mt-25 animate-fadeInUp">
+    <div className="ms-5 mb-12 mt-25 animate-fadeInUp">
       <h2 className="text-3xl font-semibold text-gray-800 mb-8 pl-6 relative">
         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#FF6B35] rounded-full"></span>
         Thay đổi mật khẩu

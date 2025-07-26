@@ -8,7 +8,6 @@ import About from '../pages/About';
 import ForgotPassword from '../pages/ForgotPassword';
 import EnterOtp from '../pages/EnterOtp';
 import LoginSuccess from '../pages/LoginSuccess';
-import Profile from '../pages/Profile';
 import BlogDetail from '../pages/BlogDetail';
 import PaymentSuccess from '../pages/PaymentSuccess';
 import PaymentFailed from '../pages/PaymentFailed';
@@ -44,12 +43,11 @@ export const clientRoutes = [
       {
         path: 'user/:active',
         element: (
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <AccountPage />
-          // {/* </ProtectedRoute> */}
+          </ProtectedRoute> 
         )
       },
-      { path: ":active", element: <AccountPage /> }
     ]
   },
   { path: "reset-password", element: <ForgotPassword /> },

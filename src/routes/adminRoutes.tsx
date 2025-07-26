@@ -175,6 +175,61 @@ export const adminRoutes = [
       </RequireAdminAccess>
     ),
   },
+  // Blog routes
+  {
+    path: "/admin/blog",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Blog Management">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold">Blog Posts</h1>
+            <p className="text-muted-foreground">Manage all blog posts and articles.</p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <p className="text-blue-800 text-sm">
+                📝 Create and manage engaging content for your travel blog
+              </p>
+            </div>
+          </div>
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/blog/new",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Create Blog Post">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold">Create New Blog Post</h1>
+            <p className="text-muted-foreground">Write and publish a new travel article.</p>
+            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+              <p className="text-green-800 text-sm">
+                ✍️ Share travel tips, destination guides, and inspiring stories
+              </p>
+            </div>
+          </div>
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/blog/categories",
+    element: (
+      <RequireAdminOnly>
+        <AdminLayout title="Blog Categories">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold">Blog Categories</h1>
+            <p className="text-muted-foreground">Organize blog posts with categories and tags.</p>
+            <div className="mt-4 p-4 bg-purple-50 rounded-lg">
+              <p className="text-purple-800 text-sm">
+                🏷️ Create categories like "Travel Tips", "Destinations", "Food & Culture"
+              </p>
+            </div>
+          </div>
+        </AdminLayout>
+      </RequireAdminOnly>
+    ),
+  },
   {
     path: "/admin/settings",
     element: (
