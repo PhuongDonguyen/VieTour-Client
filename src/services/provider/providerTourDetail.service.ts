@@ -1,4 +1,4 @@
-import { providerTourDetailApi, type TourDetail, type TourDetailsResponse } from '../apis/providerTourDetail.api';
+import { providerTourDetailApi, type TourDetail, type TourDetailsResponse } from '../../apis/provider/providerTourDetail.api';
 
 export const providerTourDetailService = {
   async getTourDetails(params?: {

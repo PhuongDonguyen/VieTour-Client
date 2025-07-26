@@ -1,4 +1,4 @@
-import { providerApi } from '../apis/provider.api';
+import { providerApi } from '../../apis/provider/provider.api';
 
 // Provider service để xử lý logic nghiệp vụ
 export const providerService = {

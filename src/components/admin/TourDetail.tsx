@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import './TipTapEditor.css';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +34,9 @@ import {
   Clock,
   Plus
 } from 'lucide-react';
-import { providerTourDetailService } from '../../services/providerTourDetail.service';
-import type { TourDetail } from '../../apis/providerTourDetail.api';
+import { providerTourDetailService } from '../../services/provider/providerTourDetail.service';
+import type { TourDetail } from '../../apis/provider/providerTourDetail.api';
+import { AuthContext } from '../../context/authContext';
 
 // Rich Text Editor Component
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -186,6 +187,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, plac
 };
 
 const TourDetails: React.FC = () => {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === 'admin';
+  
   const [tourDetails, setTourDetails] = useState<TourDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -306,15 +310,18 @@ const TourDetails: React.FC = () => {
           <h1 className="text-3xl font-bold">Quản Lý Chi Tiết Tours</h1>
           <p className="text-muted-foreground">
             Quản lý lịch trình chi tiết của các tours ({totalItems} chi tiết)
+            {isAdmin && <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>}
           </p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm Chi Tiết Tour
-        </Button>
+        {!isAdmin && (
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm Chi Tiết Tour
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -365,7 +372,7 @@ const TourDetails: React.FC = () => {
                 <TableHead>Tiêu Đề</TableHead>
                 <TableHead>Thứ Tự</TableHead>
                 <TableHead>Danh Mục</TableHead>
-                <TableHead>Thao Tác</TableHead>
+                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -402,21 +409,25 @@ const TourDetails: React.FC = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditDetail(detail)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeleteDetail(detail.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {!isAdmin && (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditDetail(detail)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteDetail(detail.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

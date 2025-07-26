@@ -74,7 +74,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
             allowedRoles: ['admin', 'provider'],
             subItems: [
                 {
-                    label: 'All Tours',
+                    label: 'Tours',
                     href: '/admin/tours',
                     icon: <List className="w-4 h-4" />,
                     allowedRoles: ['admin', 'provider']

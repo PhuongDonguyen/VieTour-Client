@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthContext } from '@/context/authContext';
 import { 
   Table,
   TableBody,
@@ -33,10 +34,13 @@ import {
   Plus,
   DollarSign
 } from 'lucide-react';
-import { providerTourPriceService } from '../../services/providerTourPrice.service';
-import type { TourPrice } from '../../apis/providerTourPrice.api';
+import { providerTourPriceService } from '../../services/provider/providerTourPrice.service';
+import type { TourPrice } from '../../apis/provider/providerTourPrice.api';
 
 const TourPricesManagement: React.FC = () => {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === 'admin';
+  
   const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,9 +49,7 @@ const TourPricesManagement: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [selectedPrice, setSelectedPrice] = useState<TourPrice | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingPrice, setEditingPrice] = useState<TourPrice | null>(null);
   const [selectedTourId, setSelectedTourId] = useState<string>('all');
   const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
 
@@ -120,12 +122,21 @@ const TourPricesManagement: React.FC = () => {
 
   // Handle edit price
   const handleEditPrice = (price: TourPrice) => {
-    setEditingPrice({ ...price });
-    setIsEditDialogOpen(true);
+    if (isAdmin) {
+      alert('Admin không có quyền chỉnh sửa.');
+      return;
+    }
+    // Edit functionality for non-admin users would go here
+    console.log('Edit price:', price.id);
+    alert('Chức năng chỉnh sửa đã bị vô hiệu hóa');
   };
 
   // Handle delete price
   const handleDeletePrice = async (id: number) => {
+    if (isAdmin) {
+      alert('Admin không có quyền xóa.');
+      return;
+    }
     if (window.confirm('Bạn có chắc chắn muốn xóa giá tour này?')) {
       try {
         await providerTourPriceService.deleteTourPrice(id);
@@ -139,10 +150,7 @@ const TourPricesManagement: React.FC = () => {
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
   };
 
   return (
@@ -153,15 +161,18 @@ const TourPricesManagement: React.FC = () => {
           <h1 className="text-3xl font-bold">Quản Lý Giá Tours</h1>
           <p className="text-muted-foreground">
             Quản lý bảng giá cho các tours ({totalItems} bảng giá)
+            {isAdmin && <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>}
           </p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm Giá Tour
-        </Button>
+        {!isAdmin && (
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm Giá Tour
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -213,7 +224,7 @@ const TourPricesManagement: React.FC = () => {
                 <TableHead>Giá Trẻ Em</TableHead>
                 <TableHead>Ghi Chú</TableHead>
                 <TableHead>Danh Mục</TableHead>
-                <TableHead>Thao Tác</TableHead>
+                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -257,21 +268,25 @@ const TourPricesManagement: React.FC = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditPrice(price)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeletePrice(price.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {!isAdmin && (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditPrice(price)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeletePrice(price.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

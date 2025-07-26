@@ -1,5 +1,5 @@
-import { providerTourApi } from '../apis/providerTour.api';
-import type { ProviderTour } from '../apis/providerTour.api';
+import { providerTourApi } from '../../apis/provider/providerTour.api';
+import type { ProviderTour } from '../../apis/provider/providerTour.api';
 
 export interface TourFilters {
   page?: number;

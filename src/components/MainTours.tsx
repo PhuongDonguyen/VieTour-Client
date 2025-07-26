@@ -114,14 +114,14 @@ const TourCard: React.FC<TourCardProps> = ({
           <div className="flex items-center gap-2">
             {/* {discount && (
               <span className="text-sm text-gray-500 line-through">
-                {originalPrice.toLocaleString()}₫
+                {originalPrice.toLocaleString()} VND
               </span>
             )} */}
             <span className="text-2xl font-bold text-orange-600">
-              {price.toLocaleString()}
+              {price.toLocaleString()}đ
             </span>
             <span className="text-sm text-gray-500 line-through">
-              {price.toLocaleString()}
+              {price.toLocaleString()}đ
             </span>
           </div>
           {/* <p className="text-sm text-gray-600">/ người</p> */}

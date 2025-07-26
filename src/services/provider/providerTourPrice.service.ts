@@ -1,4 +1,4 @@
-import { providerTourPriceApi, type TourPrice, type TourPricesResponse } from '../apis/providerTourPrice.api';
+import { providerTourPriceApi, type TourPrice, type TourPricesResponse } from '../../apis/provider/providerTourPrice.api';
 
 export const providerTourPriceService = {
   // Lấy danh sách giá tours

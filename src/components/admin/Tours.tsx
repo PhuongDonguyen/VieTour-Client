@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthContext } from '@/context/authContext';
 import { 
   Table,
   TableBody,
@@ -30,10 +31,13 @@ import {
   MapPin,
   Clock
 } from 'lucide-react';
-import { providerTourService } from '../../services/providerTour.service';
-import type { ProviderTour } from '../../apis/providerTour.api';
+import { providerTourService } from '../../services/provider/providerTour.service';
+import type { ProviderTour } from '../../apis/provider/providerTour.api';
 
 const ProviderTours: React.FC = () => {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === 'admin';
+  
   const [tours, setTours] = useState<ProviderTour[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,6 +110,10 @@ const ProviderTours: React.FC = () => {
 
   // Handle delete tour
   const handleDeleteTour = async (id: number) => {
+    if (isAdmin) {
+      alert('Admin không có quyền xóa tour.');
+      return;
+    }
     if (window.confirm('Bạn có chắc chắn muốn xóa tour này?')) {
       try {
         await providerTourService.deleteTour(id);
@@ -119,6 +127,10 @@ const ProviderTours: React.FC = () => {
 
   // Handle toggle status
   const handleToggleStatus = async (id: number) => {
+    if (isAdmin) {
+      alert('Admin không có quyền thay đổi trạng thái tour.');
+      return;
+    }
     try {
       await providerTourService.toggleTourStatus(id);
       fetchTours(); // Refresh list
@@ -142,16 +154,19 @@ const ProviderTours: React.FC = () => {
           <h1 className="text-3xl font-bold">Quản Lý Tours</h1>
           <p className="text-muted-foreground">
             Quản lý tất cả tours của bạn ({totalItems} tours)
+            {isAdmin && <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>}
           </p>
           {/* Debug info */}
           <div className="text-xs text-gray-500 mt-2">
             Debug: tours.length = {tours.length}, loading = {loading.toString()}
           </div>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm Tour Mới
-        </Button>
+        {!isAdmin && (
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm Tour Mới
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -191,7 +206,7 @@ const ProviderTours: React.FC = () => {
                 <TableHead>Đánh Giá</TableHead>
                 <TableHead>Lượt Xem</TableHead>
                 <TableHead>Đã Đặt</TableHead>
-                <TableHead>Thao Tác</TableHead>
+                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -263,28 +278,32 @@ const ProviderTours: React.FC = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {/* Handle edit */}}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleToggleStatus(tour.id)}
-                        >
-                          {tour.is_active ? "Tạm dừng" : "Kích hoạt"}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeleteTour(tour.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {!isAdmin && (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {/* Handle edit */}}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleToggleStatus(tour.id)}
+                            >
+                              {tour.is_active ? "Tạm dừng" : "Kích hoạt"}
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteTour(tour.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

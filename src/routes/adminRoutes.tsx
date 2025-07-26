@@ -1,9 +1,12 @@
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminLogin from "../pages/AdminLogin";
 import AdminLayout from "../components/admin/AdminLayout";
-import ProviderTours from "../components/admin/ProviderTours";
-import TourPricesManagement from "../components/admin/ProviderTourPrice";
-import TourDetails from "../components/admin/ProviderTourDetail";
+import ProviderTours from "../components/admin/Tours";
+import TourPricesManagement from "../components/admin/TourPrice";
+import TourDetails from "../components/admin/TourDetail";
+import TourSchedulesManagement from "../components/admin/TourSchedule";
+import TourImagesManagement from "../components/admin/TourImage";
+import TourPriceOverridesManagement from "../components/admin/TourPriceOverride";
 import { RequireAdminAccess, RequireAdminOnly, RequireProviderOnly } from "../components/admin/AuthWrappers";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
@@ -68,19 +71,21 @@ export const adminRoutes = [
     ),
   },
   {
+    path: "/admin/tours/price-overrides",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Tour Price Overrides">
+          <TourPriceOverridesManagement />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
     path: "/admin/tours/schedules", 
     element: (
       <RequireAdminAccess>
         <AdminLayout title="Tour Schedules">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">Quản Lý Lịch Trình Tours</h1>
-            <p className="text-muted-foreground">Quản lý lịch trình và thời gian biểu của tours.</p>
-            <div className="mt-4 p-4 bg-green-50 rounded-lg">
-              <p className="text-green-800 text-sm">
-                📅 API endpoint: GET /api/provider/tour-schedules
-              </p>
-            </div>
-          </div>
+          <TourSchedulesManagement />
         </AdminLayout>
       </RequireAdminAccess>
     ),
@@ -90,15 +95,7 @@ export const adminRoutes = [
     element: (
       <RequireAdminAccess>
         <AdminLayout title="Tour Images">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">Quản Lý Hình Ảnh Tours</h1>
-            <p className="text-muted-foreground">Quản lý thư viện hình ảnh của tours.</p>
-            <div className="mt-4 p-4 bg-purple-50 rounded-lg">
-              <p className="text-purple-800 text-sm">
-                🖼️ API endpoint: GET /api/provider/tour-images
-              </p>
-            </div>
-          </div>
+          <TourImagesManagement />
         </AdminLayout>
       </RequireAdminAccess>
     ),
