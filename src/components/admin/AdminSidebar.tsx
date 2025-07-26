@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, Plus, List, Eye, DollarSign, Building, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -225,10 +225,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                         className="w-full justify-start h-10"
                         asChild
                     >
-                        <a href={item.href}>
+                        <Link to={item.href || '#'}>
                             {item.icon}
                             <span className="ml-3">{item.label}</span>
-                        </a>
+                        </Link>
                     </Button>
                 )}
 
@@ -249,10 +249,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                                     )}
                                     asChild
                                 >
-                                    <a href={subItem.href}>
+                                    <Link to={subItem.href}>
                                         {subItem.icon}
                                         <span className="ml-3">{subItem.label}</span>
-                                    </a>
+                                    </Link>
                                 </Button>
                             );
                         })}
