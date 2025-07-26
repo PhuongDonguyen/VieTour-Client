@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, Plus, List, Eye, DollarSign, Building } from 'lucide-react';
+import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, List, Eye, DollarSign, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -63,9 +63,27 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                     allowedRoles: ['admin', 'provider']
                 },
                 {
-                    label: 'Add New Tour',
-                    href: '/admin/tours/new',
-                    icon: <Plus className="w-4 h-4" />,
+                    label: 'Tour Details',
+                    href: '/admin/tours/details',
+                    icon: <List className="w-4 h-4" />,
+                    allowedRoles: ['admin', 'provider']
+                },
+                {
+                    label: 'Tour Prices',
+                    href: '/admin/tours/prices',
+                    icon: <DollarSign className="w-4 h-4" />,
+                    allowedRoles: ['admin', 'provider']
+                },
+                {
+                    label: 'Tour Schedules',
+                    href: '/admin/tours/schedules',
+                    icon: <Calendar className="w-4 h-4" />,
+                    allowedRoles: ['admin', 'provider']
+                },
+                {
+                    label: 'Tour Images',
+                    href: '/admin/tours/images',
+                    icon: <Eye className="w-4 h-4" />,
                     allowedRoles: ['admin', 'provider']
                 },
                 {
@@ -73,6 +91,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                     href: '/admin/tours/categories',
                     icon: <Eye className="w-4 h-4" />,
                     allowedRoles: ['admin'] // Only admins can manage categories
+                },
+                {
+                    label: 'Price Overrides',
+                    href: '/admin/tours/price-overrides',
+                    icon: <DollarSign className="w-4 h-4" />,
+                    allowedRoles: ['admin', 'provider']
                 },
             ]
         },
