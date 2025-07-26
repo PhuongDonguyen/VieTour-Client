@@ -35,7 +35,9 @@ import {
   Plus
 } from 'lucide-react';
 import { providerTourDetailService } from '../../services/provider/providerTourDetail.service';
+import { adminTourDetailService } from '../../services/admin/adminTourDetail.service';
 import type { TourDetail } from '../../apis/provider/providerTourDetail.api';
+import type { AdminTourDetail } from '../../apis/admin/adminTourDetail.api';
 import { AuthContext } from '../../context/authContext';
 
 // Rich Text Editor Component
@@ -190,30 +192,54 @@ const TourDetails: React.FC = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'admin';
   
-  const [tourDetails, setTourDetails] = useState<TourDetail[]>([]);
+  const [tourDetails, setTourDetails] = useState<(TourDetail | AdminTourDetail)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedDetail, setSelectedDetail] = useState<TourDetail | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<TourDetail | AdminTourDetail | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingDetail, setEditingDetail] = useState<TourDetail | null>(null);
+  const [editingDetail, setEditingDetail] = useState<TourDetail | AdminTourDetail | null>(null);
   const [selectedTourId, setSelectedTourId] = useState<string>('all');
   const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
+
+  // Helper functions to normalize data between TourDetail and AdminTourDetail
+  const getTourInfo = (detail: TourDetail | AdminTourDetail) => {
+    // Both TourDetail and AdminTourDetail have tour property with same structure
+    return {
+      id: detail.tour.id,
+      title: detail.tour.title,
+      poster_url: detail.tour.poster_url,
+      category_name: detail.tour.tour_category.name
+    };
+  };
 
   // Fetch tour details data
   const fetchTourDetails = async () => {
     try {
       setLoading(true);
-      const response = await providerTourDetailService.getTourDetails({
-        page: currentPage,
-        limit: 10,
-        search: searchTerm || undefined,
-        tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
-      });
+      
+      let response;
+      if (isAdmin) {
+        // Use admin service to get all tour details from all providers
+        response = await adminTourDetailService.getAllTourDetails({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
+        });
+      } else {
+        // Use provider service to get only provider's tour details
+        response = await providerTourDetailService.getTourDetails({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
+        });
+      }
       
       console.log('Full response from service:', response);
       
@@ -225,12 +251,12 @@ const TourDetails: React.FC = () => {
       console.log('Pagination data:', paginationData);
       
       // Sort by tour title
-      const sortedDetailsData = detailsData.sort((a, b) => 
+      const sortedDetailsData = detailsData.sort((a: TourDetail | AdminTourDetail, b: TourDetail | AdminTourDetail) => 
         a.tour.title.localeCompare(b.tour.title, 'vi', { sensitivity: 'base' })
       );
       
       // Extract unique tours for dropdown
-      const uniqueTours = detailsData.reduce((acc: { id: number; title: string }[], detail) => {
+      const uniqueTours = detailsData.reduce((acc: { id: number; title: string }[], detail: TourDetail | AdminTourDetail) => {
         if (!acc.find(tour => tour.id === detail.tour.id)) {
           acc.push({ id: detail.tour.id, title: detail.tour.title });
         }
@@ -238,7 +264,7 @@ const TourDetails: React.FC = () => {
       }, []);
       
       // Sort available tours by title
-      const sortedTours = uniqueTours.sort((a, b) => 
+      const sortedTours = uniqueTours.sort((a: { id: number; title: string }, b: { id: number; title: string }) => 
         a.title.localeCompare(b.title, 'vi', { sensitivity: 'base' })
       );
       
@@ -268,19 +294,23 @@ const TourDetails: React.FC = () => {
   };
 
   // Handle view detail
-  const handleViewDetail = (detail: TourDetail) => {
+  const handleViewDetail = (detail: TourDetail | AdminTourDetail) => {
     setSelectedDetail(detail);
     setIsViewDialogOpen(true);
   };
 
   // Handle edit detail
-  const handleEditDetail = (detail: TourDetail) => {
+  const handleEditDetail = (detail: TourDetail | AdminTourDetail) => {
     setEditingDetail({ ...detail });
     setIsEditDialogOpen(true);
   };
 
   // Handle delete detail
   const handleDeleteDetail = async (id: number) => {
+    if (isAdmin) {
+      alert('Admin không có quyền xóa chi tiết tour.');
+      return;
+    }
     if (window.confirm('Bạn có chắc chắn muốn xóa chi tiết tour này?')) {
       try {
         await providerTourDetailService.deleteTourDetail(id);
@@ -382,12 +412,12 @@ const TourDetails: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={detail.tour.poster_url}
-                          alt={detail.tour.title}
+                          src={getTourInfo(detail).poster_url}
+                          alt={getTourInfo(detail).title}
                           className="w-12 h-8 object-cover rounded"
                         />
                         <div>
-                          <p className="font-medium text-sm">{detail.tour.title}</p>
+                          <p className="font-medium text-sm">{getTourInfo(detail).title}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -398,7 +428,7 @@ const TourDetails: React.FC = () => {
                       <Badge variant="outline">Ngày {detail.order}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{detail.tour.tour_category.name}</Badge>
+                      <Badge variant="secondary">{getTourInfo(detail).category_name}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -492,16 +522,16 @@ const TourDetails: React.FC = () => {
               {/* Header */}
               <div className="flex gap-4">
                 <img
-                  src={selectedDetail.tour.poster_url}
-                  alt={selectedDetail.tour.title}
+                  src={getTourInfo(selectedDetail).poster_url}
+                  alt={getTourInfo(selectedDetail).title}
                   className="w-24 h-16 object-cover rounded-lg"
                 />
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold mb-1">{selectedDetail.title}</h3>
-                  <p className="text-lg text-muted-foreground mb-2">{selectedDetail.tour.title}</p>
+                  <p className="text-lg text-muted-foreground mb-2">{getTourInfo(selectedDetail).title}</p>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <Badge variant="outline">Ngày {selectedDetail.order}</Badge>
-                    <Badge variant="secondary">{selectedDetail.tour.tour_category.name}</Badge>
+                    <Badge variant="secondary">{getTourInfo(selectedDetail).category_name}</Badge>
                   </div>
                 </div>
               </div>
@@ -576,13 +606,13 @@ const TourDetails: React.FC = () => {
               {/* Header */}
               <div className="flex gap-4">
                 <img
-                  src={editingDetail.tour.poster_url}
-                  alt={editingDetail.tour.title}
+                  src={getTourInfo(editingDetail).poster_url}
+                  alt={getTourInfo(editingDetail).title}
                   className="w-24 h-16 object-cover rounded-lg"
                 />
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold mb-1">{editingDetail.title}</h3>
-                  <p className="text-lg text-muted-foreground mb-2">{editingDetail.tour.title}</p>
+                  <p className="text-lg text-muted-foreground mb-2">{getTourInfo(editingDetail).title}</p>
                   <Badge variant="outline">Ngày {editingDetail.order}</Badge>
                 </div>
               </div>

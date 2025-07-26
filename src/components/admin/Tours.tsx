@@ -32,35 +32,87 @@ import {
   Clock
 } from 'lucide-react';
 import { providerTourService } from '../../services/provider/providerTour.service';
+import { adminTourService } from '../../services/admin/adminTour.service';
 import type { ProviderTour } from '../../apis/provider/providerTour.api';
+import type { AdminTour } from '../../apis/admin/adminTour.api';
 
 const ProviderTours: React.FC = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'admin';
   
-  const [tours, setTours] = useState<ProviderTour[]>([]);
+  const [tours, setTours] = useState<(ProviderTour | AdminTour)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedTour, setSelectedTour] = useState<ProviderTour | null>(null);
+  const [selectedTour, setSelectedTour] = useState<ProviderTour | AdminTour | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
+  // Helper functions to normalize data between AdminTour and ProviderTour
+  const getTourCapacity = (tour: ProviderTour | AdminTour): number => {
+    return 'capacity' in tour ? tour.capacity : tour.max_participants;
+  };
+
+  const getTourRating = (tour: ProviderTour | AdminTour): number => {
+    return 'total_star' in tour ? tour.total_star : tour.average_rating;
+  };
+
+  const getTourReviewCount = (tour: ProviderTour | AdminTour): number => {
+    return 'review_count' in tour ? tour.review_count : tour.total_reviews;
+  };
+
+  const getTourBookedCount = (tour: ProviderTour | AdminTour): number => {
+    return 'booked_count' in tour ? tour.booked_count : tour.booking_count;
+  };
+
+  const getTourViewCount = (tour: ProviderTour | AdminTour): string => {
+    const viewCount = tour.view_count;
+    return typeof viewCount === 'string' ? viewCount : viewCount.toString();
+  };
+
+  const getTourTransportation = (tour: ProviderTour | AdminTour): string => {
+    return 'transportation' in tour ? tour.transportation : tour.location;
+  };
+
+  const getTourAccommodation = (tour: ProviderTour | AdminTour): string => {
+    return 'accommodation' in tour ? tour.accommodation : 'Không có thông tin';
+  };
+
+  const getTourDestinationIntro = (tour: ProviderTour | AdminTour): string | null => {
+    return 'destination_intro' in tour ? tour.destination_intro : null;
+  };
+
+  const getTourInfo = (tour: ProviderTour | AdminTour): string | null => {
+    return 'tour_info' in tour ? tour.tour_info : null;
+  };
 
   // Fetch tours data
   const fetchTours = async () => {
     try {
       setLoading(true);
-      const response = await providerTourService.getTours({
-        page: currentPage,
-        limit: 10,
-        search: searchTerm || undefined
-      });
+      
+      let response;
+      if (isAdmin) {
+        // Use admin service to get all tours from all providers
+        response = await adminTourService.getAllTours({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined
+        });
+      } else {
+        // Use provider service to get only provider's tours
+        response = await providerTourService.getTours({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined
+        });
+      }
       
       console.log('Full response from service:', response); // Debug log
       
       // Handle different response formats
-      let toursData: ProviderTour[] = [];
+      let toursData: (ProviderTour | AdminTour)[] = [];
       let paginationData = { totalPages: 1, totalItems: 0 };
       
       if (response && typeof response === 'object') {
@@ -141,7 +193,7 @@ const ProviderTours: React.FC = () => {
   };
 
   // Handle view tour details
-  const handleViewTour = (tour: ProviderTour) => {
+  const handleViewTour = (tour: ProviderTour | AdminTour) => {
     setSelectedTour(tour);
     setIsViewDialogOpen(true);
   };
@@ -245,28 +297,28 @@ const ProviderTours: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4 text-muted-foreground" />
-                        {tour.capacity}
+                        {getTourCapacity(tour)}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-500" />
-                        {tour.total_star > 0 ? `${tour.total_star}/5` : "N/A"}
+                        {getTourRating(tour) > 0 ? `${getTourRating(tour)}/5` : "N/A"}
                         <span className="text-sm text-muted-foreground">
-                          ({tour.review_count})
+                          ({getTourReviewCount(tour)})
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4 text-muted-foreground" />
-                        {parseInt(tour.view_count).toLocaleString()}
+                        {parseInt(getTourViewCount(tour)).toLocaleString()}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        {tour.booked_count}
+                        {getTourBookedCount(tour)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -377,7 +429,7 @@ const ProviderTours: React.FC = () => {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
-                      {selectedTour.transportation}
+                      {getTourTransportation(selectedTour)}
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
@@ -398,7 +450,7 @@ const ProviderTours: React.FC = () => {
                 <Card>
                   <CardContent className="p-4 text-center">
                     <Users className="w-6 h-6 mx-auto mb-2 text-blue-500" />
-                    <p className="text-2xl font-bold">{selectedTour.capacity}</p>
+                    <p className="text-2xl font-bold">{getTourCapacity(selectedTour)}</p>
                     <p className="text-sm text-muted-foreground">Sức chứa</p>
                   </CardContent>
                 </Card>
@@ -406,10 +458,10 @@ const ProviderTours: React.FC = () => {
                   <CardContent className="p-4 text-center">
                     <Star className="w-6 h-6 mx-auto mb-2 text-yellow-500" />
                     <p className="text-2xl font-bold">
-                      {selectedTour.total_star > 0 ? `${selectedTour.total_star}/5` : "N/A"}
+                      {getTourRating(selectedTour) > 0 ? `${getTourRating(selectedTour)}/5` : "N/A"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Đánh giá ({selectedTour.review_count})
+                      Đánh giá ({getTourReviewCount(selectedTour)})
                     </p>
                   </CardContent>
                 </Card>
@@ -417,7 +469,7 @@ const ProviderTours: React.FC = () => {
                   <CardContent className="p-4 text-center">
                     <Eye className="w-6 h-6 mx-auto mb-2 text-green-500" />
                     <p className="text-2xl font-bold">
-                      {parseInt(selectedTour.view_count).toLocaleString()}
+                      {parseInt(getTourViewCount(selectedTour)).toLocaleString()}
                     </p>
                     <p className="text-sm text-muted-foreground">Lượt xem</p>
                   </CardContent>
@@ -425,7 +477,7 @@ const ProviderTours: React.FC = () => {
                 <Card>
                   <CardContent className="p-4 text-center">
                     <Calendar className="w-6 h-6 mx-auto mb-2 text-purple-500" />
-                    <p className="text-2xl font-bold">{selectedTour.booked_count}</p>
+                    <p className="text-2xl font-bold">{getTourBookedCount(selectedTour)}</p>
                     <p className="text-sm text-muted-foreground">Đã đặt</p>
                   </CardContent>
                 </Card>
@@ -444,11 +496,11 @@ const ProviderTours: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium">Vận chuyển:</p>
-                      <p className="text-muted-foreground">{selectedTour.transportation}</p>
+                      <p className="text-muted-foreground">{getTourTransportation(selectedTour)}</p>
                     </div>
                     <div>
                       <p className="font-medium">Lưu trú:</p>
-                      <p className="text-muted-foreground">{selectedTour.accommodation}</p>
+                      <p className="text-muted-foreground">{getTourAccommodation(selectedTour)}</p>
                     </div>
                     <div>
                       <p className="font-medium">Thời gian:</p>
@@ -456,7 +508,7 @@ const ProviderTours: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium">Sức chứa tối đa:</p>
-                      <p className="text-muted-foreground">{selectedTour.capacity} người</p>
+                      <p className="text-muted-foreground">{getTourCapacity(selectedTour)} người</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -478,49 +530,49 @@ const ProviderTours: React.FC = () => {
                     <div>
                       <p className="font-medium">Tổng lượt xem:</p>
                       <p className="text-muted-foreground">
-                        {parseInt(selectedTour.view_count).toLocaleString()} lượt
+                        {parseInt(getTourViewCount(selectedTour)).toLocaleString()} lượt
                       </p>
                     </div>
                     <div>
                       <p className="font-medium">Đánh giá trung bình:</p>
                       <p className="text-muted-foreground">
-                        {selectedTour.total_star > 0 
-                          ? `${selectedTour.total_star}/5 (${selectedTour.review_count} đánh giá)`
+                        {getTourRating(selectedTour) > 0 
+                          ? `${getTourRating(selectedTour)}/5 (${getTourReviewCount(selectedTour)} đánh giá)`
                           : "Chưa có đánh giá"
                         }
                       </p>
                     </div>
                     <div>
                       <p className="font-medium">Số lượng đã đặt:</p>
-                      <p className="text-muted-foreground">{selectedTour.booked_count} lượt đặt</p>
+                      <p className="text-muted-foreground">{getTourBookedCount(selectedTour)} lượt đặt</p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Tour Description */}
-              {selectedTour.destination_intro && (
+              {getTourDestinationIntro(selectedTour) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Giới Thiệu Điểm Đến</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground leading-relaxed">
-                      {selectedTour.destination_intro}
+                      {getTourDestinationIntro(selectedTour)}
                     </p>
                   </CardContent>
                 </Card>
               )}
 
               {/* Tour Info */}
-              {selectedTour.tour_info && (
+              {getTourInfo(selectedTour) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Thông Tin Tour</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground leading-relaxed">
-                      {selectedTour.tour_info}
+                      {getTourInfo(selectedTour)}
                     </p>
                   </CardContent>
                 </Card>
