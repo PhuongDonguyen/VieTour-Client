@@ -12,6 +12,7 @@ import Profile from '../pages/Profile';
 import BlogDetail from '../pages/BlogDetail';
 import PaymentSuccess from '../pages/PaymentSuccess';
 import PaymentFailed from '../pages/PaymentFailed';
+import CancelBooking from '../pages/CancelBooking';
 import { ProtectedRoute } from '@/components/authentication/ProtectedRoute';
 import AccountPage from "@/pages/AccountPage";
 
@@ -32,6 +33,14 @@ export const clientRoutes = [
       { path: 'blog/:id', element: <BlogDetail /> },
       { path: 'payment/success', element: <PaymentSuccess /> },
       { path: 'payment/failed', element: <PaymentFailed /> },
+      {
+        path: 'cancel-booking/:bookingId',
+        element: (
+          <ProtectedRoute>
+            <CancelBooking />
+          </ProtectedRoute>
+        )
+      },
       {
         path: 'user/:active',
         element: (

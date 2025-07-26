@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchMyBookings } from "@/services/booking.service";
 import { Loading } from "./Loading";
 import { ReviewForm } from "./ReviewForm";
@@ -67,6 +68,7 @@ export default function MyBooking() {
     null
   );
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadData = async () => {
@@ -111,6 +113,18 @@ export default function MyBooking() {
       // TODO: gọi API gửi đánh giá
       setSelectedBooking(null); // đóng form
     }
+  };
+
+  // Kiểm tra xem booking có thể hủy không (chỉ những tour chưa diễn ra và status success)
+  const canCancelBooking = (booking: Booking): boolean => {
+    const today = new Date();
+    const tourDate = new Date(booking.schedule.start_date);
+    return tourDate > today && booking.status === "success";
+  };
+
+  // Xử lý hủy booking
+  const handleCancelBooking = (bookingId: number) => {
+    navigate(`/cancel-booking/${bookingId}`);
   };
 
   return (
@@ -280,18 +294,29 @@ export default function MyBooking() {
                     )}
                   </div>
 
-                  {!booking.is_reviewed &&
-                    new Date() > new Date(booking.schedule.start_date) &&
-                    booking.status === "success" && (
-                      <div className="mt-4">
+                  {/* Buttons section */}
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {!booking.is_reviewed &&
+                      new Date() > new Date(booking.schedule.start_date) &&
+                      booking.status === "success" && (
                         <button
                           onClick={() => handleReviewClick(booking)}
                           className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 cursor-pointer rounded-lg shadow-md uppercase tracking-wide text-sm"
                         >
                           Đánh giá
                         </button>
-                      </div>
+                      )}
+
+                    {/* Nút hủy tour - chỉ hiển thị cho tour chưa diễn ra và đã thanh toán thành công */}
+                    {canCancelBooking(booking) && (
+                      <button
+                        onClick={() => handleCancelBooking(booking.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 cursor-pointer rounded-lg shadow-md uppercase tracking-wide text-sm"
+                      >
+                        Hủy tour
+                      </button>
                     )}
+                  </div>
                 </div>
               ))}
             </div>
