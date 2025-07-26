@@ -10,10 +10,9 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     const { user, loading } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    console.log('ProtectedRoute user:', user);
-
     if (loading) return <div>Loading...</div>;
 
-    if (!user) navigate('/login');
+    if (!user || user.role !== 'user') navigate('/login');
     return <>{children}</>;
 };
+ 

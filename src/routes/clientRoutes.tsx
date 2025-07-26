@@ -8,7 +8,6 @@ import About from '../pages/About';
 import ForgotPassword from '../pages/ForgotPassword';
 import EnterOtp from '../pages/EnterOtp';
 import LoginSuccess from '../pages/LoginSuccess';
-import Profile from '../pages/Profile';
 import BlogDetail from '../pages/BlogDetail';
 import PaymentSuccess from '../pages/PaymentSuccess';
 import PaymentFailed from '../pages/PaymentFailed';

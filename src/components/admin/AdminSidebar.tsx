@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, Plus, List, Eye, DollarSign, Building } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, Plus, List, Eye, DollarSign, Building, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ interface NavItem {
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
     const { user } = useAuth();
+    const location = useLocation();
 
     const toggleExpanded = (itemLabel: string) => {
         setExpandedItems(prev =>
@@ -37,12 +39,27 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         );
     };
 
-    const navItems: NavItem[] = [
+    // Function to check if a route is active
+    const isActive = (href?: string, subItems?: SubItem[]) => {
+        if (href) {
+            // Handle the case where /admin redirects to /admin/dashboard
+            if (href === '/admin/dashboard' && (location.pathname === '/admin' || location.pathname === '/admin/dashboard')) {
+                return true;
+            }
+            return location.pathname === href;
+        }
+        // For parent items with sub-items, check if any sub-item is active
+        if (subItems) {
+            return subItems.some(subItem => location.pathname === subItem.href);
+        }
+        return false;
+    };
+
+    const navItems: NavItem[] = useMemo(() => [
         {
             label: 'Dashboard',
             href: '/admin/dashboard',
             icon: <Home className="w-4 h-4" />,
-            active: true,
             allowedRoles: ['admin', 'provider']
         },
         {
@@ -83,6 +100,31 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
             allowedRoles: ['admin', 'provider']
         },
         {
+            label: 'Blog',
+            icon: <FileText className="w-4 h-4" />,
+            allowedRoles: ['admin', 'provider'],
+            subItems: [
+                {
+                    label: 'All Posts',
+                    href: '/admin/blog',
+                    icon: <List className="w-4 h-4" />,
+                    allowedRoles: ['admin', 'provider']
+                },
+                {
+                    label: 'Add New Post',
+                    href: '/admin/blog/new',
+                    icon: <Plus className="w-4 h-4" />,
+                    allowedRoles: ['admin', 'provider']
+                },
+                {
+                    label: 'Blog Categories',
+                    href: '/admin/blog/categories',
+                    icon: <Eye className="w-4 h-4" />,
+                    allowedRoles: ['admin'] // Only admins can manage blog categories
+                },
+            ]
+        },
+        {
             label: 'Settings',
             href: '/admin/settings',
             icon: <Settings className="w-4 h-4" />,
@@ -113,7 +155,31 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
             icon: <Building className="w-4 h-4" />,
             allowedRoles: ['provider'] // Only providers can manage their profile
         },
-    ];
+    ], []);
+
+    // Auto-expand parent items when their sub-items are active
+    useEffect(() => {
+        const expandParentsOfActiveItems = () => {
+            const itemsToExpand: string[] = [];
+
+            navItems.forEach(item => {
+                if (item.subItems) {
+                    const hasActiveSubItem = item.subItems.some(subItem =>
+                        location.pathname === subItem.href
+                    );
+                    if (hasActiveSubItem && !expandedItems.includes(item.label)) {
+                        itemsToExpand.push(item.label);
+                    }
+                }
+            });
+
+            if (itemsToExpand.length > 0) {
+                setExpandedItems(prev => [...prev, ...itemsToExpand]);
+            }
+        };
+
+        expandParentsOfActiveItems();
+    }, [location.pathname, navItems, expandedItems]);
 
     // Filter navigation items based on user role
     const filteredNavItems = navItems.filter(item => {
@@ -134,12 +200,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         const isExpanded = expandedItems.includes(item.label);
         const filteredSubItems = filterSubItems(item.subItems);
         const hasFilteredSubItems = filteredSubItems && filteredSubItems.length > 0;
+        const itemIsActive = isActive(item.href, filteredSubItems);
 
         return (
             <div key={index}>
                 {hasFilteredSubItems ? (
                     <Button
-                        variant={item.active ? "secondary" : "ghost"}
+                        variant={itemIsActive ? "secondary" : "ghost"}
                         className="w-full justify-between h-10"
                         onClick={() => toggleExpanded(item.label)}
                     >
@@ -154,7 +221,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                     </Button>
                 ) : (
                     <Button
-                        variant={item.active ? "secondary" : "ghost"}
+                        variant={itemIsActive ? "secondary" : "ghost"}
                         className="w-full justify-start h-10"
                         asChild
                     >
@@ -168,19 +235,27 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                 {/* Render filtered sub-items if expanded */}
                 {hasFilteredSubItems && isExpanded && (
                     <div className="ml-4 mt-1 space-y-1">
-                        {filteredSubItems!.map((subItem, subIndex) => (
-                            <Button
-                                key={subIndex}
-                                variant="ghost"
-                                className="w-full justify-start h-9 text-sm text-muted-foreground hover:text-foreground"
-                                asChild
-                            >
-                                <a href={subItem.href}>
-                                    {subItem.icon}
-                                    <span className="ml-3">{subItem.label}</span>
-                                </a>
-                            </Button>
-                        ))}
+                        {filteredSubItems!.map((subItem, subIndex) => {
+                            const subItemIsActive = location.pathname === subItem.href;
+                            return (
+                                <Button
+                                    key={subIndex}
+                                    variant={subItemIsActive ? "secondary" : "ghost"}
+                                    className={cn(
+                                        "w-full justify-start h-9 text-sm",
+                                        subItemIsActive
+                                            ? "text-foreground"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    asChild
+                                >
+                                    <a href={subItem.href}>
+                                        {subItem.icon}
+                                        <span className="ml-3">{subItem.label}</span>
+                                    </a>
+                                </Button>
+                            );
+                        })}
                     </div>
                 )}
             </div>

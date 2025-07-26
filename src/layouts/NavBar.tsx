@@ -18,8 +18,6 @@ export const NavBar = ({ textDark = false }) => {
 
   // Remove mock user state
   const { user } = useAuth();
-  console.log({ user });
-
   const { logout } = useAuth();
 
   const [tourCategories, setTourCategories] = useState<any[]>([]);
@@ -153,7 +151,7 @@ export const NavBar = ({ textDark = false }) => {
               </div>
               {/* User Menu */}
               <div className="relative hidden md:block flex items-center gap-2">
-                {user ? (
+                {user && user.role === 'user' ? (
                   <div className="relative">
                     <button
                       onClick={() => handleDropdownToggle('user')}
@@ -258,7 +256,7 @@ export const NavBar = ({ textDark = false }) => {
                 <a href="/contact" className="block px-3 py-2 text-gray-700 hover:text-orange-500">LIÊN HỆ</a>
                 {/* Mobile User Menu */}
                 <div className="border-t pt-2 mt-2">
-                  {user ? (
+                  {(user && user.role === 'user') ? (
                     <div className="px-3 py-2">
                       <div className="flex items-center space-x-2 mb-2">
                         <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
@@ -269,7 +267,7 @@ export const NavBar = ({ textDark = false }) => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            user?.first_name?.charAt(0) || 'U'
+                            user?.first_name?.charAt(0)
                           )}
                         </div>
                         <span className="text-gray-700 font-medium">{user?.first_name || 'Unknown'}</span>

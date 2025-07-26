@@ -32,11 +32,11 @@ const RequireRole: React.FC<RequireRoleProps> = ({
 
     // Check if user has required role
     if (!allowedRoles.includes(user.role)) {
-        console.log(`Access denied. User role: ${user.role}, Required roles: ${allowedRoles.join(', ')}`);
+        // console.log(`Access denied. User role: ${user.role}, Required roles: ${allowedRoles.join(', ')}`);
 
         // You can customize this based on your needs:
         // Option 1: Redirect to login
-        // return <Navigate to={redirectTo} state={{ from: location }} replace />;
+        return <Navigate to={redirectTo} state={{ from: location }} replace />;
 
         // Option 2: Show access denied page
         return (
