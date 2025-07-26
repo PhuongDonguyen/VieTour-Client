@@ -169,13 +169,8 @@ const TourDetail: React.FC = () => {
           {activeTab === 'gallery' && <TabGallery images={images} />}
           {activeTab === 'review' && <TabReview tourId={tour.id} totalStar={tour.total_star} reviewCount={tour.review_count} />}
         </div>
+        
 
-        {/* Comment Section với delay để mượt mà hơn */}
-        {showCommentSection && (
-          <div className="mt-8">
-            <CommentSection />
-          </div>
-        )}
       </div>
     </>
   );

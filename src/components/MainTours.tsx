@@ -41,7 +41,7 @@ const TourCard: React.FC<TourCardProps> = ({
   // const originalPrice = Math.round(parseInt(price.replace(/,/g, '')) / (1 - discount / 100));
 
   return (
-    <div className="group relative w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 cursor-pointer">
+    <div className="group relative w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-500 hover:shadow-2xl cursor-pointer">
       {/* Discount Badge */}
       {/* {discount && (
         <div className="absolute top-4 left-4 z-10 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
@@ -62,7 +62,7 @@ const TourCard: React.FC<TourCardProps> = ({
       </button> */}
 
       {/* Image Container */}
-      <div className="relative h-64 overflow-hidden" onClick={handleGoDetail}>
+      <div className="relative h-72 overflow-hidden" onClick={handleGoDetail}>
         <img
           src={imageUrl}
           alt={title}
@@ -118,10 +118,10 @@ const TourCard: React.FC<TourCardProps> = ({
               </span>
             )} */}
             <span className="text-2xl font-bold text-orange-600">
-              {price.toLocaleString()}₫
+              {price.toLocaleString()}
             </span>
             <span className="text-sm text-gray-500 line-through">
-              {price.toLocaleString()}₫
+              {price.toLocaleString()}
             </span>
           </div>
           {/* <p className="text-sm text-gray-600">/ người</p> */}
@@ -129,7 +129,7 @@ const TourCard: React.FC<TourCardProps> = ({
 
         {/* Button */}
         <button
-          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+          className="w-full bg-[#FF6B35] cursor-pointer text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
           onClick={handleGoDetail}
         >
           <span className="flex items-center justify-center gap-2">
@@ -152,8 +152,8 @@ const TourCard: React.FC<TourCardProps> = ({
       </div>
 
       {/* Decorative Elements */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500"></div>
-      <div className="absolute -bottom-1 -right-1 w-20 h-20 bg-gradient-to-tl from-orange-100 to-transparent rounded-full opacity-50"></div>
+      {/* <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500"></div> */}
+      {/* <div className="absolute -bottom-1 -right-1 w-20 h-20 bg-gradient-to-tl from-orange-100 to-transparent rounded-full opacity-50"></div> */}
     </div>
   );
 };

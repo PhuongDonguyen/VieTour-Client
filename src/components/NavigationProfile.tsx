@@ -49,12 +49,16 @@ export const NavigationUser: FC<NavigationUserProps> = ({
   }, []);
 
   return (
-    <div className="w-80 max-h-screen bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-100">
+    <div className="w-80 max-h-screen bg-white rounded-2xl overflow-hidden flex flex-col border border-gray-100">
       {/* Profile Header */}
-      <div className="p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white relative">
+      <div className="p-6 bg-gradient-to-r bg-[#FF6B35] text-white relative">
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-white bg-opacity-20 mx-auto mb-3 flex items-center justify-center text-white font-bold text-xl shadow-md">
-            PD
+            <img
+              src={user?.avatar || "/public/avatar-default.jpg"}
+              alt="Profile Avatar"
+              className="w-full h-full object-cover rounded-full border-[#FF6B35] border-2"
+            />
           </div>
           <h3 className="font-semibold text-lg">{user?.first_name} {user?.last_name}</h3>
           {/* <p className="text-sm text-gray-200">{user?.email}</p> */}
@@ -73,8 +77,9 @@ export const NavigationUser: FC<NavigationUserProps> = ({
             <button
               key={id}
               onClick={() => onChangeTab(id)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                isActive
+                  ? 'bg-[#FF6B35] text-white shadow-lg scale-[1.02]'
                   : 'hover:bg-gray-100 text-gray-700'
                 }`}
             >

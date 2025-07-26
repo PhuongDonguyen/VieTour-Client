@@ -48,7 +48,7 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
         return (
           <div key={rep.id} className="text-sm flex items-start gap-3">
             {/* Avatar */}
-            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
+            <div className="ms-3 w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
               {rep.user?.avatar ? (
                 <img
                   src={rep.user.avatar}
