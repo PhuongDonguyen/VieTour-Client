@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent } from "react";
 import {
   fetchUserProfile,
   updateUserProfile,
@@ -207,7 +207,7 @@ export const ProfilePage: React.FC = () => {
             setWards([]);
           }
         }
-      } catch (error) {}
+      } catch (error) { }
     };
     fetchData();
   }, [provinces]);
@@ -528,7 +528,7 @@ export const ProfilePage: React.FC = () => {
                     value={selectedDistrict?.code}
                     onChange={handleDistrictChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                    // disabled={!!selectedDistrict}
+                  // disabled={!!selectedDistrict}
                   >
                     <option value="">
                       {formData?.district || "-- Chọn huyện / quận --"}
@@ -554,7 +554,7 @@ export const ProfilePage: React.FC = () => {
                     value={selectedWard?.code}
                     onChange={handleWardChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-                    // disabled={!!selectedWard}
+                  // disabled={!!selectedWard}
                   >
                     <option value="">
                       {formData?.ward || "-- Chọn xã / thị trấn --"}

@@ -1,10 +1,8 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { RatingStars } from "./RatingStarsProps";
 import { fetchTours } from "../services/tour.service";
-import { tourPriceService } from "../services/tourPrice.service";
-import { Navigate, useNavigate } from "react-router-dom";
-import { TourPrices } from "./TourPrices";
-import { Star, MapPin, Clock, Users, Heart, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Clock, Users, Eye } from "lucide-react";
 import { Loading } from "./Loading";
 
 type TourCardProps = {
@@ -34,7 +32,6 @@ const TourCard: React.FC<TourCardProps> = ({
   // maxGuests = 20,
   // discount = 15
 }) => {
-  const [isLiked, setIsLiked] = React.useState(false);
   const navigate = useNavigate();
   const handleGoDetail = () => {
     navigate(`/tour/${slug}`);
@@ -165,10 +162,8 @@ const MainTours: React.FC = () => {
   const [tours, setTours] = useState<TourCardProps[]>([]);
   const [pagination, setPagination] = useState<any>({});
   const [existTourMore, setExistTourMore] = useState<boolean>(true);
-  const  [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const formatVND = (value: number) =>
-    new Intl.NumberFormat("vi-VN").format(value);
 
   useEffect(() => {
     console.log("Tour: ", tours);
@@ -253,23 +248,23 @@ const MainTours: React.FC = () => {
           <h2 className="text-4xl font-bold text-[#015294] mb-4">TOUR CHÍNH</h2>
           <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
         </div>
-      {loading ? <Loading/> :(
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {tours.map((tour, index) => (
-            <TourCard key={index} {...tour} />
-          ))}
-        </div>)}
+        {loading ? <Loading /> : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {tours.map((tour, index) => (
+              <TourCard key={index} {...tour} />
+            ))}
+          </div>)}
 
         {existTourMore && (
           <div className="text-center mt-12">
-            {loadingMore ? <Loading/>:(
-            <button
-              onClick={handleMoreTours}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
-            >
-              Xem thêm tour khác
-            </button>
-          )}
+            {loadingMore ? <Loading /> : (
+              <button
+                onClick={handleMoreTours}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
+              >
+                Xem thêm tour khác
+              </button>
+            )}
           </div>
         )}
       </div>

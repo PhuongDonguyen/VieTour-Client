@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { changeUserPassword } from '@/services/userProfile.service';
 
 export const ChangePasswordForm: React.FC = () => {
@@ -76,8 +75,8 @@ export const ChangePasswordForm: React.FC = () => {
                 {field === 'current'
                   ? 'Mật khẩu hiện tại'
                   : field === 'new'
-                  ? 'Mật khẩu mới'
-                  : 'Xác nhận mật khẩu mới'}
+                    ? 'Mật khẩu mới'
+                    : 'Xác nhận mật khẩu mới'}
               </label>
               <input
                 type="password"
@@ -88,8 +87,8 @@ export const ChangePasswordForm: React.FC = () => {
                   field === 'current'
                     ? 'Nhập mật khẩu hiện tại'
                     : field === 'new'
-                    ? 'Nhập mật khẩu mới'
-                    : 'Xác nhận mật khẩu mới'
+                      ? 'Nhập mật khẩu mới'
+                      : 'Xác nhận mật khẩu mới'
                 }
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
               />

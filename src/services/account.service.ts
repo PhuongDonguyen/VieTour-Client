@@ -1,6 +1,6 @@
 import * as accountApi from '../apis/account.api';
 
-export const loginUser = async (credentials: { email: string; password: string }) => {
+export const loginUser = async (credentials: { email: string; password: string, role? : string }) => {
   try {
     const response = await accountApi.login(credentials);
     localStorage.setItem('token', response.data.token);
