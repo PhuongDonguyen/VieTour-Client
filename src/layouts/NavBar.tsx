@@ -65,19 +65,19 @@ export const NavBar = ({ textDark = false }) => {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
-              <a href="/" className="hover:opacity-80 transition-opacity">
+              <Link to="/" className="hover:opacity-80 transition-opacity">
                 <img
                   src="/VieTour-Logo.png"
                   alt="VieTour Logo"
                   className="h-11 w-auto"
                 />
-              </a>
+              </Link>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center font-medium">
-              <a href="/" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</a>
-              <a href="/about" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</a>
+              <Link to="/" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</Link>
+              <Link to="/about" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</Link>
               <div className="relative">
                 <button
                   onClick={() => handleDropdownToggle('tour')}
@@ -119,20 +119,20 @@ export const NavBar = ({ textDark = false }) => {
                     onMouseEnter={() => setActiveDropdown('blog')}
                   >
                     {blogCategories.map(cat => (
-                      <a
+                      <Link
                         key={cat.id}
-                        href={`/blog-category/${cat.id}`}
+                        to={`/blog-category/${cat.id}`}
                         className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}
                       >
                         {cat.title}
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 )}
               </div>
-              <a href="/pricing" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</a>
-              <a href="/gallery" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</a>
-              <a href="/contact" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</a>
+              <Link to="/pricing" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</Link>
+              <Link to="/gallery" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</Link>
+              <Link to="/contact" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</Link>
             </div>
 
             {/* Search and User Menu */}
@@ -178,9 +178,9 @@ export const NavBar = ({ textDark = false }) => {
                         className={`absolute top-full right-0 mt-4 w-48 shadow-lg py-2 z-50 backdrop-blur-sm ${isScrolled || textDark ? 'bg-white' : 'bg-white/10'}`}
                         onMouseEnter={() => setActiveDropdown('user')}
                       >
-                        <a href="/user/profile" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Hồ sơ</a>
-                        <a href="/user/my-bookings" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đặt tour của tôi</a>
-                        <a href="/user/password" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Thay đổi mật khẩu</a>
+                        <Link to="/user/profile" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Hồ sơ</Link>
+                        <Link to="/user/my-bookings" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đặt tour của tôi</Link>
+                        <Link to="/user/password" className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Thay đổi mật khẩu</Link>
                         <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}>Đăng xuất</a>
                       </div>
                     )}
@@ -219,8 +219,8 @@ export const NavBar = ({ textDark = false }) => {
           {isMenuOpen && (
             <div className="md:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
-                <a href="/" className="block px-3 py-2 text-gray-700 hover:text-orange-500">TRANG CHỦ</a>
-                <a href="/about" className="block px-3 py-2 text-gray-700 hover:text-orange-500">GIỚI THIỆU</a>
+                <Link to="/" className="block px-3 py-2 text-gray-700 hover:text-orange-500">TRANG CHỦ</Link>
+                <Link to="/about" className="block px-3 py-2 text-gray-700 hover:text-orange-500">GIỚI THIỆU</Link>
                 <div className="px-3 py-2">
                   <div className="text-gray-700 font-medium mb-2">TOUR</div>
                   <div className="pl-4 space-y-1">
@@ -239,64 +239,64 @@ export const NavBar = ({ textDark = false }) => {
                   <div className="text-gray-700 font-medium mb-2">BLOG</div>
                   <div className="pl-4 space-y-1">
                     {blogCategories.map(cat => (
-                      <a
+                      <Link
                         key={cat.id}
-                        href={`/blog-category/${cat.id}`}
+                        to={`/blog-category/${cat.id}`}
                         className="block py-1 text-gray-600 hover:text-orange-500"
                       >
                         {cat.name}
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </div>
-                <a href="/pricing" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BẢNG GIÁ</a>
-                <a href="/booking" className="block px-3 py-2 text-gray-700 hover:text-orange-500">ĐẶT TOUR</a>
-                <a href="/blog" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BLOG</a>
-                <a href="/gallery" className="block px-3 py-2 text-gray-700 hover:text-orange-500">HÌNH ẢNH</a>
-                <a href="/contact" className="block px-3 py-2 text-gray-700 hover:text-orange-500">LIÊN HỆ</a>
-                {/* Mobile User Menu */}
-                <div className="border-t pt-2 mt-2">
-                  {(user && user.role === 'user') ? (
-                    <div className="px-3 py-2">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
-                          {user?.avatar ? (
-                            <img
-                              src={user.avatar}
-                              alt={`${user.first_name} ${user.last_name}`}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            user?.first_name?.charAt(0)
-                          )}
+                <Link to="/pricing" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BẢNG GIÁ</Link>
+                <Link to="/booking" className="block px-3 py-2 text-gray-700 hover:text-orange-500">ĐẶT TOUR</Link>
+                <Link to="/blog" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BLOG</Link>
+                <Link to="/gallery" className="block px-3 py-2 text-gray-700 hover:text-orange-500">HÌNH ẢNH</Link>
+                <Link to="/contact" className="block px-3 py-2 text-gray-700 hover:text-orange-500">LIÊN HỆ</Link>
+                {/* Mobile User Menu */
+                  <div className="border-t pt-2 mt-2">
+                    {(user && user.role === 'user') ? (
+                      <div className="px-3 py-2">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
+                            {user?.avatar ? (
+                              <img
+                                src={user.avatar}
+                                alt={`${user.first_name} ${user.last_name}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              user?.first_name?.charAt(0)
+                            )}
+                          </div>
+                          <span className="text-gray-700 font-medium">{user?.first_name || 'Unknown'}</span>
                         </div>
-                        <span className="text-gray-700 font-medium">{user?.first_name || 'Unknown'}</span>
+                        <div className="pl-4 space-y-1">
+                          <Link to="/user/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</Link>
+                          <Link to="/user/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</Link>
+                          <Link to="/user/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</Link>
+                          <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
+                        </div>
                       </div>
-                      <div className="pl-4 space-y-1">
-                        <a href="/user/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</a>
-                        <a href="/user/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</a>
-                        <a href="/user/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</a>
-                        <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => { setShowLoginModal(true); setShowSignupModal(false); }}
+                          className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
+                        >
+                          Đăng nhập
+                        </button>
+                        <span className="text-gray-400 select-none">/</span>
+                        <button
+                          onClick={() => { setShowSignupModal(true); setShowLoginModal(false); }}
+                          className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
+                        >
+                          Đăng ký
+                        </button>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => { setShowLoginModal(true); setShowSignupModal(false); }}
-                        className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
-                      >
-                        Đăng nhập
-                      </button>
-                      <span className="text-gray-400 select-none">/</span>
-                      <button
-                        onClick={() => { setShowSignupModal(true); setShowLoginModal(false); }}
-                        className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
-                      >
-                        Đăng ký
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>}
               </div>
             </div>
           )}
