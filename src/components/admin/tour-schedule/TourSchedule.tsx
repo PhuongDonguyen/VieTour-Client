@@ -21,11 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Edit, Trash2, Eye, Plus, Calendar, Users } from "lucide-react";
-import { providerTourScheduleService } from "../../services/provider/providerTourSchedule.service";
-import { adminTourScheduleService } from "../../services/admin/adminTourSchedule.service";
-import { providerTourApi } from "../../apis/provider/providerTour.api";
-import type { TourSchedule } from "../../apis/provider/providerTourSchedule.api";
-import type { AdminTourSchedule } from "../../apis/admin/adminTourSchedule.api";
+import { providerTourScheduleService } from "../../../services/provider/providerTourSchedule.service";
+import { adminTourScheduleService } from "../../../services/admin/adminTourSchedule.service";
+import { providerTourApi } from "../../../apis/provider/providerTour.api";
+import type { TourSchedule } from "../../../apis/provider/providerTourSchedule.api";
+import type { AdminTourSchedule } from "../../../apis/admin/adminTourSchedule.api";
 
 const TourSchedulesManagement: React.FC = () => {
   const navigate = useNavigate();

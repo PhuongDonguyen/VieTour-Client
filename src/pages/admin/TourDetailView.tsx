@@ -1,5 +1,5 @@
 import React from "react";
-import TourDetailViewContent from "@/components/admin/TourDetailViewContent";
+import TourDetailViewContent from "@/components/admin/tour-detail/TourDetailViewContent";
 
 const TourDetailView: React.FC = () => {
   return <TourDetailViewContent />;

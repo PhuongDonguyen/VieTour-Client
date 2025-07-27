@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/select";
 import { AuthContext } from "@/context/authContext";
 import { ArrowLeft, Save, DollarSign, Users } from "lucide-react";
-import { providerTourPriceService } from "../../services/provider/providerTourPrice.service";
-import { providerTourService } from "../../services/provider/providerTour.service";
-import TinyMCEEditor from "../../components/TinyMCEEditor";
+import { providerTourPriceService } from "../../../services/provider/providerTourPrice.service";
+import { providerTourService } from "../../../services/provider/providerTour.service";
+import TinyMCEEditor from "../../TinyMCEEditor";
 import { Badge } from "@/components/ui/badge";
 
 interface TourPriceFormData {
@@ -96,17 +96,7 @@ const TourPriceEditor: React.FC = () => {
         parseInt(id)
       );
 
-      let priceData: any;
-      if (response && typeof response === "object") {
-        if (response.data && response.data.data) {
-          priceData = response.data.data;
-        } else if (response.data) {
-          priceData = response.data;
-        } else {
-          priceData = response;
-        }
-      }
-
+      const priceData: any = response;
       if (priceData) {
         setFormData({
           tour_id: priceData.tour_id,

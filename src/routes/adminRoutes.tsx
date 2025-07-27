@@ -1,21 +1,21 @@
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminLogin from "../pages/AdminLogin";
 import AdminLayout from "../components/admin/AdminLayout";
-import ProviderTours from "../components/admin/Tours";
-import TourEditor from "../pages/admin/TourEditor";
+import ProviderTours from "../components/admin/tour/Tours";
+import TourEditor from "../components/admin/tour/TourEditor";
 import TourView from "../pages/admin/TourView";
 import TourDetailView from "../pages/admin/TourDetailView";
-import TourDetailEditor from "../pages/admin/TourDetailEditor";
+import TourDetailEditor from "../components/admin/tour-detail/TourDetailEditor";
 import TourPriceView from "../pages/admin/TourPriceView";
-import TourPriceEditor from "../pages/admin/TourPriceEditor";
+import TourPriceEditor from "../components/admin/tour-price/TourPriceEditor";
 import TourScheduleView from "../pages/admin/TourScheduleView";
-import TourScheduleEditor from "../pages/admin/TourScheduleEditor";
-import TourPricesManagement from "../components/admin/TourPrice";
-import TourDetails from "../components/admin/TourDetail";
-import TourSchedulesManagement from "../components/admin/TourSchedule";
-import TourImagesManagement from "../components/admin/TourImage";
-import TourPriceOverridesManagement from "../components/admin/TourPriceOverride";
-import TourCategory from "../components/admin/TourCategory";
+import TourScheduleEditor from "../components/admin/tour-schedule/TourScheduleEditor";
+import TourPricesManagement from "../components/admin/tour-price/TourPrice";
+import TourDetails from "../components/admin/tour-detail/TourDetail";
+import TourSchedulesManagement from "../components/admin/tour-schedule/TourSchedule";
+import TourImagesManagement from "../components/admin/tour-image/TourImage";
+import TourPriceOverridesManagement from "../components/admin/tour-price-override/TourPriceOverride";
+import TourCategory from "../components/admin/tour-category/TourCategory";
 import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
@@ -24,8 +24,9 @@ import {
   RequireAdminOnly,
   RequireProviderOnly,
 } from "../components/admin/AuthWrappers";
-import TourImageViewContent from "../components/admin/TourImageViewContent";
-import TourImageEditor from "../components/admin/TourImageEditor";
+import TourImageViewContent from "../components/admin/tour-image/TourImageViewContent";
+import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
+import TourImageView from "../pages/admin/TourImageView";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -201,11 +202,33 @@ export const adminRoutes = [
   },
   {
     path: "/admin/tours/images/new",
-    element: <TourImageEditor mode="create" />,
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Create Tour Image">
+          <TourImageEditor mode="create" />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
   },
   {
     path: "/admin/tours/images/edit/:id",
-    element: <TourImageEditor mode="edit" />,
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Edit Tour Image">
+          <TourImageEditor />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/tours/images/view/:id",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Tour Image Details">
+          <TourImageView />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
   },
   {
     path: "/admin/tours/details",

@@ -26,11 +26,11 @@ import {
   MapPin,
   Clock,
 } from "lucide-react";
-import { providerTourService } from "../../services/provider/providerTour.service";
-import { adminTourService } from "../../services/admin/adminTour.service";
-import { fetchActiveTourCategories } from "../../services/tourCategory.service";
-import type { ProviderTour } from "../../apis/provider/providerTour.api";
-import type { AdminTour } from "../../apis/admin/adminTour.api";
+import { providerTourService } from "../../../services/provider/providerTour.service";
+import { adminTourService } from "../../../services/admin/adminTour.service";
+import { fetchActiveTourCategories } from "../../../services/tourCategory.service";
+import type { ProviderTour } from "../../../apis/provider/providerTour.api";
+import type { AdminTour } from "../../../apis/admin/adminTour.api";
 
 const ProviderTours: React.FC = () => {
   const navigate = useNavigate();

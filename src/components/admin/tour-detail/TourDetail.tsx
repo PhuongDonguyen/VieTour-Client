@@ -20,11 +20,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Edit, Trash2, Eye, Clock, Plus } from "lucide-react";
-import { providerTourDetailService } from "../../services/provider/providerTourDetail.service";
-import { adminTourDetailService } from "../../services/admin/adminTourDetail.service";
-import type { TourDetail } from "../../apis/provider/providerTourDetail.api";
-import type { AdminTourDetail } from "../../apis/admin/adminTourDetail.api";
-import { AuthContext } from "../../context/authContext";
+import { providerTourDetailService } from "../../../services/provider/providerTourDetail.service";
+import { adminTourDetailService } from "../../../services/admin/adminTourDetail.service";
+import type { TourDetail } from "../../../apis/provider/providerTourDetail.api";
+import type { AdminTourDetail } from "../../../apis/admin/adminTourDetail.api";
+import { AuthContext } from "../../../context/authContext";
 
 const TourDetails: React.FC = () => {
   const navigate = useNavigate();

@@ -21,10 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Edit, Trash2, Eye, Plus, DollarSign } from "lucide-react";
-import { providerTourPriceService } from "../../services/provider/providerTourPrice.service";
-import { adminTourPriceService } from "../../services/admin/adminTourPrice.service";
-import type { TourPrice } from "../../apis/provider/providerTourPrice.api";
-import type { AdminTourPrice } from "../../apis/admin/adminTourPrice.api";
+import { providerTourPriceService } from "../../../services/provider/providerTourPrice.service";
+import { adminTourPriceService } from "../../../services/admin/adminTourPrice.service";
+import type { TourPrice } from "../../../apis/provider/providerTourPrice.api";
+import type { AdminTourPrice } from "../../../apis/admin/adminTourPrice.api";
 
 const TourPricesManagement: React.FC = () => {
   const navigate = useNavigate();

@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Save, Calendar, Users } from "lucide-react";
 import { AuthContext } from "@/context/authContext";
-import { providerTourScheduleService } from "../../services/provider/providerTourSchedule.service";
-import { providerTourService } from "../../services/provider/providerTour.service";
-import type { TourSchedule } from "../../apis/provider/providerTourSchedule.api";
+import { providerTourScheduleService } from "../../../services/provider/providerTourSchedule.service";
+import { providerTourService } from "../../../services/provider/providerTour.service";
+import type { TourSchedule } from "../../../apis/provider/providerTourSchedule.api";
 
 const TourScheduleEditor: React.FC = () => {
   const navigate = useNavigate();
