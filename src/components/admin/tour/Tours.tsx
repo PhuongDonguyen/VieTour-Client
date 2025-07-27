@@ -13,6 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   Search,
@@ -31,6 +38,7 @@ import { adminTourService } from "../../../services/admin/adminTour.service";
 import { fetchActiveTourCategories } from "../../../services/tourCategory.service";
 import type { ProviderTour } from "../../../apis/provider/providerTour.api";
 import type { AdminTour } from "../../../apis/admin/adminTour.api";
+import { providerTourCategoryApi } from "../../../apis/provider/providerTourCategory.api";
 
 const ProviderTours: React.FC = () => {
   const navigate = useNavigate();
@@ -40,10 +48,16 @@ const ProviderTours: React.FC = () => {
   const [tours, setTours] = useState<(ProviderTour | AdminTour)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // input value
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [tourCategories, setTourCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
+  const [filteredTours, setFilteredTours] = useState<
+    (ProviderTour | AdminTour)[]
+  >([]);
+  const [loadingTourId, setLoadingTourId] = useState<number | null>(null);
 
   // Helper functions to normalize data between AdminTour and ProviderTour
   const getTourCapacity = (tour: ProviderTour | AdminTour): number => {
@@ -103,6 +117,10 @@ const ProviderTours: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
+          category_id:
+            selectedCategoryId === "all"
+              ? undefined
+              : parseInt(selectedCategoryId, 10),
         });
       } else {
         // Use provider service to get only provider's tours
@@ -110,6 +128,10 @@ const ProviderTours: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
+          tour_category_id:
+            selectedCategoryId === "all"
+              ? undefined
+              : parseInt(selectedCategoryId, 10),
         });
       }
 
@@ -174,15 +196,44 @@ const ProviderTours: React.FC = () => {
     }
   };
 
+  // Fetch tour categories on mount
+  useEffect(() => {
+    fetchActiveTourCategories().then((data) => {
+      setTourCategories(data);
+    });
+  }, []);
+
+  // FE search/filter
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredTours(tours);
+    } else {
+      setFilteredTours(
+        tours.filter((tour) =>
+          tour.title.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+  }, [searchTerm, tours]);
+
   useEffect(() => {
     fetchTours();
-    fetchTourCategoriesData(); // Fetch categories on component mount
-  }, [currentPage, searchTerm]);
+  }, [currentPage, selectedCategoryId]); // Không gửi searchTerm lên BE
 
   // Handle search
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleSearchInput = (value: string) => {
+    setSearchInput(value);
+    setSearchTerm(value); // FE search only
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategoryId(value);
+    setLoading(true); // show loading until list update
   };
 
   // Handle delete tour
@@ -209,11 +260,19 @@ const ProviderTours: React.FC = () => {
       return;
     }
     try {
+      setLoadingTourId(id);
       await providerTourService.toggleTourStatus(id);
-      fetchTours(); // Refresh list
+      // Cập nhật trạng thái tour ngay trên FE, không fetch lại cả list
+      setTours((prevTours) =>
+        prevTours.map((tour) =>
+          tour.id === id ? { ...tour, is_active: !tour.is_active } : tour
+        )
+      );
     } catch (error) {
       console.error("Failed to toggle tour status:", error);
       alert("Không thể thay đổi trạng thái tour. Vui lòng thử lại.");
+    } finally {
+      setLoadingTourId(null);
     }
   };
 
@@ -252,10 +311,6 @@ const ProviderTours: React.FC = () => {
               <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
             )}
           </p>
-          {/* Debug info */}
-          <div className="text-xs text-gray-500 mt-2">
-            Debug: tours.length = {tours.length}, loading = {loading.toString()}
-          </div>
         </div>
         {!isAdmin && (
           <Button onClick={handleCreateTour}>
@@ -276,10 +331,28 @@ const ProviderTours: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Tìm kiếm theo tên tour..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => handleSearchInput(e.target.value)}
                 className="pl-10 max-w-sm"
               />
+            </div>
+            <div className="w-56">
+              <Select
+                value={selectedCategoryId}
+                onValueChange={handleCategoryChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn danh mục" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả danh mục</SelectItem>
+                  {tourCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -291,138 +364,160 @@ const ProviderTours: React.FC = () => {
           <CardTitle>Danh Sách Tours</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Hình Ảnh</TableHead>
-                <TableHead>Tên Tour</TableHead>
-                <TableHead>Danh Mục</TableHead>
-                <TableHead>Trạng Thái</TableHead>
-                <TableHead>Số Lượng</TableHead>
-                <TableHead>Đánh Giá</TableHead>
-                <TableHead>Lượt Xem</TableHead>
-                <TableHead>Đã Đặt</TableHead>
-                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.isArray(tours) && tours.length > 0 ? (
-                tours.map((tour) => (
-                  <TableRow key={tour.id}>
-                    <TableCell>
-                      <img
-                        src={tour.poster_url}
-                        alt={tour.title}
-                        className="w-16 h-12 object-cover rounded"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p
-                          className="font-medium truncate max-w-[200px] cursor-pointer"
-                          title={tour.title}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-4"></div>
+              <span className="text-muted-foreground text-lg">
+                Đang tải danh sách tours...
+              </span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Hình Ảnh</TableHead>
+                  <TableHead>Tên Tour</TableHead>
+                  <TableHead>Danh Mục</TableHead>
+                  <TableHead>Trạng Thái</TableHead>
+                  <TableHead>Số Lượng</TableHead>
+                  <TableHead>Đánh Giá</TableHead>
+                  <TableHead>Lượt Xem</TableHead>
+                  <TableHead>Đã Đặt</TableHead>
+                  <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(filteredTours) && filteredTours.length > 0 ? (
+                  filteredTours.map((tour) => (
+                    <TableRow
+                      key={tour.id}
+                      className={loadingTourId === tour.id ? "opacity-60" : ""}
+                    >
+                      <TableCell>
+                        <img
+                          src={tour.poster_url}
+                          alt={tour.title}
+                          className="w-16 h-12 object-cover rounded"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p
+                            className="font-medium truncate max-w-[200px] cursor-pointer"
+                            title={tour.title}
+                          >
+                            {tour.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {tour.duration}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {tour.tour_category.name}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={tour.is_active ? "default" : "secondary"}
+                          className={
+                            tour.is_active ? "bg-green-500" : "bg-red-500"
+                          }
                         >
-                          {tour.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {tour.duration}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {tour.tour_category.name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={tour.is_active ? "default" : "secondary"}
-                        className={
-                          tour.is_active ? "bg-green-500" : "bg-red-500"
-                        }
-                      >
-                        {tour.is_active ? "Hoạt động" : "Tạm dừng"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                        {getTourCapacity(tour)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        {getTourRating(tour) > 0
-                          ? `${getTourRating(tour)}/5`
-                          : "N/A"}
-                        <span className="text-sm text-muted-foreground">
-                          ({getTourReviewCount(tour)})
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Eye className="w-4 h-4 text-muted-foreground" />
-                        {parseInt(getTourViewCount(tour)).toLocaleString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        {getTourBookedCount(tour)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewTour(tour)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {!isAdmin && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditTour(tour)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleToggleStatus(tour.id)}
-                            >
-                              {tour.is_active ? "Tạm dừng" : "Kích hoạt"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteTour(tour.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                          {tour.is_active ? "Hoạt động" : "Tạm dừng"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-muted-foreground" />
+                          {getTourCapacity(tour)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-500" />
+                          {getTourRating(tour) > 0
+                            ? `${getTourRating(tour)}/5`
+                            : "N/A"}
+                          <span className="text-sm text-muted-foreground">
+                            ({getTourReviewCount(tour)})
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Eye className="w-4 h-4 text-muted-foreground" />
+                          {parseInt(getTourViewCount(tour)).toLocaleString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          {getTourBookedCount(tour)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewTour(tour)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {!isAdmin && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditTour(tour)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleStatus(tour.id)}
+                                disabled={loadingTourId === tour.id}
+                              >
+                                {loadingTourId === tour.id ? (
+                                  <span className="flex items-center">
+                                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-1"></span>
+                                    {tour.is_active ? "Tạm dừng" : "Kích hoạt"}
+                                  </span>
+                                ) : tour.is_active ? (
+                                  "Tạm dừng"
+                                ) : (
+                                  "Kích hoạt"
+                                )}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteTour(tour.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8">
+                      {loading
+                        ? "Đang tải..."
+                        : "Không có tours nào được tìm thấy."}
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
-                    {loading
-                      ? "Đang tải..."
-                      : "Không có tours nào được tìm thấy."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           {/* Pagination */}
           {Array.isArray(tours) && totalPages > 1 && (

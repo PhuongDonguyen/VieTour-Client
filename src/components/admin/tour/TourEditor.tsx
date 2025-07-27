@@ -277,36 +277,34 @@ const TourEditor: React.FC = () => {
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Tours</span>
+            <span>Quay lại danh sách tour</span>
           </Button>
           <div>
             <h1 className="text-3xl font-bold">
-              {isEditing ? "Edit Tour" : "Create New Tour"}
+              {isEditing ? "Chỉnh sửa Tour" : "Tạo Tour Mới"}
             </h1>
             <p className="text-muted-foreground">
-              {isEditing
-                ? "Update tour information"
-                : "Create a new tour package"}
+              {isEditing ? "Cập nhật thông tin tour" : "Tạo một gói tour mới"}
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
           <Button
-            variant="outline"
-            onClick={handlePreview}
-            className="flex items-center space-x-2"
-          >
-            <Eye className="w-4 h-4" />
-            <span>Preview</span>
-          </Button>
-          <Button
             onClick={handleSave}
             disabled={isLoading}
             className="flex items-center space-x-2"
           >
             <Save className="w-4 h-4" />
-            <span>{isEditing ? "Update Tour" : "Create Tour"}</span>
+            <span>
+              {isLoading
+                ? isEditing
+                  ? "Đang cập nhật..."
+                  : "Đang tạo..."
+                : isEditing
+                ? "Cập nhật Tour"
+                : "Tạo Tour"}
+            </span>
           </Button>
         </div>
       </div>
@@ -317,14 +315,14 @@ const TourEditor: React.FC = () => {
           {/* Basic Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle>Thông tin cơ bản</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="title">Tour Title</Label>
+                <Label htmlFor="title">Tiêu đề Tour</Label>
                 <Input
                   id="title"
-                  placeholder="Enter tour title..."
+                  placeholder="Nhập tiêu đề tour..."
                   value={formData.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
                   className="text-lg"
@@ -341,7 +339,7 @@ const TourEditor: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="capacity">Capacity</Label>
+                  <Label htmlFor="capacity">Số lượng người tham gia tour</Label>
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -357,7 +355,7 @@ const TourEditor: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="duration">Duration</Label>
+                  <Label htmlFor="duration">Thời gian</Label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -374,7 +372,7 @@ const TourEditor: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="transportation">Transportation</Label>
+                <Label htmlFor="transportation">Phương tiện</Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -390,7 +388,7 @@ const TourEditor: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="accommodation">Accommodation</Label>
+                <Label htmlFor="accommodation">Lưu trú</Label>
                 <div className="relative">
                   <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -410,11 +408,11 @@ const TourEditor: React.FC = () => {
           {/* Tour Schedule */}
           <Card>
             <CardHeader>
-              <CardTitle>Tour Schedule</CardTitle>
+              <CardTitle>Chu kì diễn ra tour</CardTitle>
             </CardHeader>
             <CardContent>
               <div>
-                <Label htmlFor="live_commentary">Tour Schedule</Label>
+                <Label htmlFor="live_commentary">Chu kì diễn ra tour</Label>
                 <Textarea
                   id="live_commentary"
                   placeholder="VD: Thứ 2, Thứ 6 hàng tuần | Khởi hành 8:00 sáng..."
@@ -431,13 +429,11 @@ const TourEditor: React.FC = () => {
           {/* Tour Description */}
           <Card>
             <CardHeader>
-              <CardTitle>Tour Description</CardTitle>
+              <CardTitle>Mô tả Tour</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="destination_intro">
-                  Destination Introduction
-                </Label>
+                <Label htmlFor="destination_intro">Giới thiệu điểm đến</Label>
                 <TinyMCEEditor
                   value={formData.destination_intro}
                   onChange={(content) =>
@@ -449,7 +445,7 @@ const TourEditor: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="tour_info">Tour Information</Label>
+                <Label htmlFor="tour_info">Thông tin chi tiết</Label>
                 <TinyMCEEditor
                   value={formData.tour_info}
                   onChange={(content) =>
@@ -468,11 +464,11 @@ const TourEditor: React.FC = () => {
           {/* Tour Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>Tour Settings</CardTitle>
+              <CardTitle>Cài đặt Tour</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">Danh mục</Label>
                 <select
                   id="category"
                   value={formData.tour_category_id}
@@ -481,7 +477,7 @@ const TourEditor: React.FC = () => {
                   }
                   className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">Select category</option>
+                  <option value="">Chọn danh mục</option>
                   {tourCategories.map((category) => (
                     <option key={category.id} value={category.id.toString()}>
                       {category.name}
@@ -500,7 +496,7 @@ const TourEditor: React.FC = () => {
                   }
                   className="rounded"
                 />
-                <Label htmlFor="is_active">Active Tour</Label>
+                <Label htmlFor="is_active">Hoạt động Tour</Label>
               </div>
             </CardContent>
           </Card>
@@ -508,7 +504,7 @@ const TourEditor: React.FC = () => {
           {/* Tour Image */}
           <Card>
             <CardHeader>
-              <CardTitle>Tour Image</CardTitle>
+              <CardTitle>Ảnh Tour</CardTitle>
             </CardHeader>
             <CardContent>
               {imagePreview ? (
@@ -524,7 +520,7 @@ const TourEditor: React.FC = () => {
                       onClick={() => fileInputRef.current?.click()}
                       className="flex-1"
                     >
-                      Change Image
+                      Thay đổi ảnh
                     </Button>
                     <Button
                       variant="outline"
@@ -534,7 +530,7 @@ const TourEditor: React.FC = () => {
                       }}
                       className="flex-1"
                     >
-                      Remove
+                      Xóa
                     </Button>
                   </div>
                 </div>
@@ -545,7 +541,7 @@ const TourEditor: React.FC = () => {
                 >
                   <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Click to upload tour image
+                    Click để tải lên ảnh tour
                   </p>
                 </div>
               )}
@@ -563,25 +559,29 @@ const TourEditor: React.FC = () => {
           {isEditing && currentTour && (
             <Card>
               <CardHeader>
-                <CardTitle>Tour Statistics</CardTitle>
+                <CardTitle>Thống kê Tour</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Views:</span>
+                  <span className="text-sm text-muted-foreground">
+                    Lượt xem:
+                  </span>
                   <span className="font-medium">
                     {parseInt(currentTour.view_count).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Bookings:
+                    Đặt chỗ:
                   </span>
                   <span className="font-medium">
                     {currentTour.booked_count}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Rating:</span>
+                  <span className="text-sm text-muted-foreground">
+                    Đánh giá:
+                  </span>
                   <span className="font-medium">
                     {currentTour.total_star > 0
                       ? `${currentTour.total_star}/5`
@@ -590,7 +590,7 @@ const TourEditor: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Reviews:
+                    Đánh giá:
                   </span>
                   <span className="font-medium">
                     {currentTour.review_count}

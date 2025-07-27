@@ -24,17 +24,20 @@ import { providerTourService } from "@/services/provider/providerTour.service";
 import { adminTourService } from "@/services/admin/adminTour.service";
 import type { ProviderTour } from "@/apis/provider/providerTour.api";
 import type { AdminTour } from "@/apis/admin/adminTour.api";
+import { providerTourCategoryApi } from "@/apis/provider/providerTourCategory.api";
 
 interface TourViewContentProps {
   tourId?: string;
   onBack?: () => void;
   showHeader?: boolean;
+  tourCategories?: { id: number; name: string }[];
 }
 
 const TourViewContent: React.FC<TourViewContentProps> = ({
   tourId,
   onBack,
   showHeader = true,
+  tourCategories = [],
 }) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -43,6 +46,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
 
   const [tour, setTour] = useState<ProviderTour | AdminTour | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categoryName, setCategoryName] = useState<string>("Không xác định");
 
   const actualTourId = tourId || id;
 
@@ -183,6 +187,20 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
     loadTourData();
   }, [actualTourId, isAdmin]);
 
+  useEffect(() => {
+    if (!tour) return;
+    if ((tour as any).tour_category?.name) {
+      setCategoryName((tour as any).tour_category.name);
+    } else if ((tour as any).tour_category_id) {
+      providerTourCategoryApi
+        .getCategoryById((tour as any).tour_category_id)
+        .then((cat) => setCategoryName(cat?.name || "Không xác định"))
+        .catch(() => setCategoryName("Không xác định"));
+    } else {
+      setCategoryName("Không xác định");
+    }
+  }, [tour]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -234,7 +252,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 className="flex items-center space-x-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <span>Quay lại</span>
               </Button>
             ) : (
               <Button
@@ -243,13 +261,13 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 className="flex items-center space-x-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Tours</span>
+                <span>Về danh sách tour</span>
               </Button>
             )}
             <div>
               <h1 className="text-3xl font-bold">{tour.title}</h1>
               <p className="text-muted-foreground">
-                Tour Details • {tour.tour_category?.name || "Unknown Category"}
+                Chi tiết Tour • {categoryName}
               </p>
             </div>
           </div>
@@ -276,7 +294,9 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
               <CardContent className="p-4 text-center">
                 <Users className="w-6 h-6 mx-auto mb-2 text-blue-500" />
                 <p className="text-2xl font-bold">{getTourCapacity(tour)}</p>
-                <p className="text-sm text-muted-foreground">Capacity</p>
+                <p className="text-sm text-muted-foreground">
+                  Số lượng người tham gia
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -288,7 +308,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                     : "N/A"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Rating ({getTourReviewCount(tour)})
+                  Đánh giá ({getTourReviewCount(tour)})
                 </p>
               </CardContent>
             </Card>
@@ -298,14 +318,14 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 <p className="text-2xl font-bold">
                   {parseInt(getTourViewCount(tour)).toLocaleString()}
                 </p>
-                <p className="text-sm text-muted-foreground">Views</p>
+                <p className="text-sm text-muted-foreground">Lượt xem</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <Calendar className="w-6 h-6 mx-auto mb-2 text-purple-500" />
                 <p className="text-2xl font-bold">{getTourBookedCount(tour)}</p>
-                <p className="text-sm text-muted-foreground">Bookings</p>
+                <p className="text-sm text-muted-foreground">Đặt chỗ</p>
               </CardContent>
             </Card>
           </div>
@@ -315,14 +335,14 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                Tour Information
+                Thông tin Tour
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
-                    Duration
+                    Thời gian
                   </p>
                   <p className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
@@ -331,7 +351,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 </div>
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
-                    Transportation
+                    Phương tiện
                   </p>
                   <p className="flex items-center gap-2">
                     <Building className="w-4 h-4" />
@@ -340,7 +360,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 </div>
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
-                    Accommodation
+                    Lưu trú
                   </p>
                   <p className="flex items-center gap-2">
                     <Building className="w-4 h-4" />
@@ -355,7 +375,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
           {getTourDestinationIntro(tour) && (
             <Card>
               <CardHeader>
-                <CardTitle>Destination Introduction</CardTitle>
+                <CardTitle>Giới thiệu điểm đến</CardTitle>
               </CardHeader>
               <CardContent>
                 <div
@@ -372,7 +392,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
           {getTourInfo(tour) && (
             <Card>
               <CardHeader>
-                <CardTitle>Tour Information</CardTitle>
+                <CardTitle>Thông tin chi tiết</CardTitle>
               </CardHeader>
               <CardContent>
                 <div
@@ -391,7 +411,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {!isAdmin && (
@@ -400,7 +420,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                   className="w-full"
                 >
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit Tour
+                  Chỉnh sửa Tour
                 </Button>
               )}
               <Button
@@ -411,7 +431,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 className="w-full"
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
-                Manage Prices
+                Quản lý giá
               </Button>
               <Button
                 variant="outline"
@@ -421,7 +441,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 className="w-full"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Manage Tour Details
+                Quản lý chi tiết tour
               </Button>
               <Button
                 variant="outline"
@@ -431,7 +451,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 className="w-full"
               >
                 <Calendar className="w-4 h-4 mr-2" />
-                Manage Schedules
+                Quản lý lịch trình
               </Button>
               <Button
                 variant="outline"
@@ -441,7 +461,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 className="w-full"
               >
                 <Eye className="w-4 h-4 mr-2" />
-                Manage Images
+                Quản lý ảnh
               </Button>
             </CardContent>
           </Card>
@@ -449,23 +469,23 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
           {/* Tour Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Tour Details</CardTitle>
+              <CardTitle>Thông tin Tour</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Category:</span>
-                <Badge variant="secondary">
-                  {tour.tour_category?.name || "Unknown Category"}
-                </Badge>
+                <span className="text-sm text-muted-foreground">Danh mục:</span>
+                <Badge variant="secondary">{categoryName}</Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Tour ID:</span>
+                <span className="text-sm text-muted-foreground">Mã Tour:</span>
                 <span className="font-medium">{tour.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Slug:</span>
+                <span className="text-sm text-muted-foreground">
+                  Đường dẫn:
+                </span>
                 <span className="font-mono text-xs">
-                  {tour.slug || "No slug"}
+                  {tour.slug || "Không có đường dẫn"}
                 </span>
               </div>
             </CardContent>
@@ -474,12 +494,12 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
           {/* Performance Metrics */}
           <Card>
             <CardHeader>
-              <CardTitle>Performance Metrics</CardTitle>
+              <CardTitle>Hiệu suất</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Views</span>
+                  <span>Lượt xem</span>
                   <span className="font-medium">
                     {parseInt(getTourViewCount(tour)).toLocaleString()}
                   </span>
@@ -499,7 +519,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Bookings</span>
+                  <span>Đặt chỗ</span>
                   <span className="font-medium">
                     {getTourBookedCount(tour)}
                   </span>
@@ -519,7 +539,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Rating</span>
+                  <span>Đánh giá</span>
                   <span className="font-medium">
                     {getTourRating(tour) > 0
                       ? `${getTourRating(tour).toFixed(1)}/5`
@@ -539,20 +559,22 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
           {/* Recent Activity */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle>Hoạt động gần đây</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Tour is currently active</span>
+                <span>Tour đang hoạt động</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Last updated: {new Date().toLocaleDateString()}</span>
+                <span>
+                  Cập nhật lần cuối: {new Date().toLocaleDateString()}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span>Created: {new Date().toLocaleDateString()}</span>
+                <span>Ngày tạo: {new Date().toLocaleDateString()}</span>
               </div>
             </CardContent>
           </Card>
