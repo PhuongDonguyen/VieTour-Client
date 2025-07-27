@@ -1,62 +1,74 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AuthContext } from '@/context/authContext';
-import { 
+import React, { useState, useEffect, useContext } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthContext } from "@/context/authContext";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { 
-  Search, 
-  Trash2, 
+} from "@/components/ui/dialog";
+import {
+  Search,
+  Trash2,
   Eye,
   Plus,
   ImageIcon,
   Star,
   StarOff,
-  ExternalLink
-} from 'lucide-react';
-import { providerTourImageService } from '../../services/provider/providerTourImage.service';
-import { adminTourImageService } from '../../services/admin/adminTourImage.service';
-import type { TourImage } from '../../apis/provider/providerTourImage.api';
-import type { AdminTourImage } from '../../apis/admin/adminTourImage.api';
+  ExternalLink,
+  Edit,
+} from "lucide-react";
+import { providerTourImageService } from "../../services/provider/providerTourImage.service";
+import { adminTourImageService } from "../../services/admin/adminTourImage.service";
+import type { TourImage } from "../../apis/provider/providerTourImage.api";
+import type { AdminTourImage } from "../../apis/admin/adminTourImage.api";
+import { useNavigate } from "react-router-dom";
+import TourImageViewModal from "./TourImageViewModal";
 
 const TourImagesManagement: React.FC = () => {
   const { user } = useContext(AuthContext);
-  const isAdmin = user?.role === 'admin';
-  
-  const [tourImages, setTourImages] = useState<(TourImage | AdminTourImage)[]>([]);
+  const isAdmin = user?.role === "admin";
+
+  const [tourImages, setTourImages] = useState<(TourImage | AdminTourImage)[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedImage, setSelectedImage] = useState<TourImage | AdminTourImage | null>(null);
+  const [selectedImage, setSelectedImage] = useState<
+    TourImage | AdminTourImage | null
+  >(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [viewImageId, setViewImageId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedTourId, setSelectedTourId] = useState<string>('all');
-  const [selectedFeatured, setSelectedFeatured] = useState<string>('all');
-  const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
+  const [selectedTourId, setSelectedTourId] = useState<string>("all");
+  const [selectedFeatured, setSelectedFeatured] = useState<string>("all");
+  const [availableTours, setAvailableTours] = useState<
+    { id: number; title: string }[]
+  >([]);
+
+  const navigate = useNavigate();
 
   // Helper functions to normalize data between TourImage and AdminTourImage
   const getTourInfo = (image: TourImage | AdminTourImage) => {
@@ -65,23 +77,25 @@ const TourImagesManagement: React.FC = () => {
       id: image.tour.id,
       title: image.tour.title,
       poster_url: image.tour.poster_url,
-      category_name: image.tour.tour_category.name
+      category_name: image.tour.tour_category.name,
     };
   };
 
   const getAltText = (image: TourImage | AdminTourImage): string => {
-    return 'alt_text' in image ? image.alt_text : (image.description || 'Tour image');
+    return "alt_text" in image
+      ? image.alt_text
+      : image.description || "Tour image";
   };
 
   const getTourId = (image: TourImage | AdminTourImage): number => {
-    return 'tour_id' in image ? image.tour_id : image.tour.id;
+    return "tour_id" in image ? image.tour_id : image.tour.id;
   };
 
   // Fetch tour images data from API
   const fetchTourImages = async () => {
     try {
       setLoading(true);
-      
+
       let response;
       if (isAdmin) {
         // Use admin service to get all tour images from all providers
@@ -89,8 +103,12 @@ const TourImagesManagement: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
-          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
-          is_featured: selectedFeatured === 'all' ? undefined : selectedFeatured === 'true'
+          tour_id:
+            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+          is_featured:
+            selectedFeatured === "all"
+              ? undefined
+              : selectedFeatured === "true",
         });
       } else {
         // Use provider service to get only provider's tour images
@@ -98,42 +116,59 @@ const TourImagesManagement: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
-          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
-          is_featured: selectedFeatured === 'all' ? undefined : selectedFeatured === 'true'
+          tour_id:
+            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+          is_featured:
+            selectedFeatured === "all"
+              ? undefined
+              : selectedFeatured === "true",
         });
       }
-      
-      console.log('API response:', response);
-      
+
+      console.log("API response:", response);
+
       const imagesData = response.data || [];
-      const paginationData = response.pagination || { totalPages: 1, totalItems: 0 };
-      
+      const paginationData = response.pagination || {
+        totalPages: 1,
+        totalItems: 0,
+      };
+
       // Sort by tour title, then by image ID
-      const sortedImagesData = imagesData.sort((a: TourImage | AdminTourImage, b: TourImage | AdminTourImage) => {
-        const tourCompare = a.tour.title.localeCompare(b.tour.title, 'vi', { sensitivity: 'base' });
-        return tourCompare !== 0 ? tourCompare : a.id - b.id;
-      });
-      
-      // Extract unique tours for dropdown
-      const uniqueTours = imagesData.reduce((acc: { id: number; title: string }[], image: TourImage | AdminTourImage) => {
-        if (!acc.find(tour => tour.id === image.tour.id)) {
-          acc.push({ id: image.tour.id, title: image.tour.title });
+      const sortedImagesData = imagesData.sort(
+        (a: TourImage | AdminTourImage, b: TourImage | AdminTourImage) => {
+          const tourCompare = a.tour.title.localeCompare(b.tour.title, "vi", {
+            sensitivity: "base",
+          });
+          return tourCompare !== 0 ? tourCompare : a.id - b.id;
         }
-        return acc;
-      }, []);
-      
-      // Sort available tours by title
-      const sortedTours = uniqueTours.sort((a: { id: number; title: string }, b: { id: number; title: string }) => 
-        a.title.localeCompare(b.title, 'vi', { sensitivity: 'base' })
       );
-      
+
+      // Extract unique tours for dropdown
+      const uniqueTours = imagesData.reduce(
+        (
+          acc: { id: number; title: string }[],
+          image: TourImage | AdminTourImage
+        ) => {
+          if (!acc.find((tour) => tour.id === image.tour.id)) {
+            acc.push({ id: image.tour.id, title: image.tour.title });
+          }
+          return acc;
+        },
+        []
+      );
+
+      // Sort available tours by title
+      const sortedTours = uniqueTours.sort(
+        (a: { id: number; title: string }, b: { id: number; title: string }) =>
+          a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
+      );
+
       setTourImages(sortedImagesData);
       setAvailableTours(sortedTours);
       setTotalPages(paginationData.totalPages || 1);
       setTotalItems(paginationData.totalItems || 0);
-      
     } catch (error) {
-      console.error('Failed to fetch tour images:', error);
+      console.error("Failed to fetch tour images:", error);
       setTourImages([]);
       setTotalPages(1);
       setTotalItems(0);
@@ -154,46 +189,56 @@ const TourImagesManagement: React.FC = () => {
 
   // Handle view image
   const handleViewImage = (image: TourImage | AdminTourImage) => {
-    setSelectedImage(image);
+    setViewImageId(image.id.toString());
     setIsViewDialogOpen(true);
+  };
+
+  const handleCreateImage = () => {
+    navigate("/admin/tours/images/new");
+  };
+
+  const handleEditImage = (image: TourImage | AdminTourImage) => {
+    navigate(`/admin/tours/images/edit/${image.id}`);
   };
 
   // Handle toggle featured
   const handleToggleFeatured = async (id: number) => {
     if (isAdmin) {
-      alert('Admin không có quyền thay đổi trạng thái.');
+      alert("Admin không có quyền thay đổi trạng thái.");
       return;
     }
     try {
       await providerTourImageService.toggleFeatured(id);
       fetchTourImages();
     } catch (error) {
-      console.error('Failed to toggle featured status:', error);
-      alert('Không thể thay đổi trạng thái nổi bật. Vui lòng thử lại.');
+      console.error("Failed to toggle featured status:", error);
+      alert("Không thể thay đổi trạng thái nổi bật. Vui lòng thử lại.");
     }
   };
 
   // Handle delete image
   const handleDeleteImage = async (id: number) => {
     if (isAdmin) {
-      alert('Admin không có quyền xóa.');
+      alert("Admin không có quyền xóa.");
       return;
     }
-    if (window.confirm('Bạn có chắc chắn muốn xóa hình ảnh này?')) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa hình ảnh này?")) {
       try {
         await providerTourImageService.deleteTourImage(id);
         fetchTourImages();
       } catch (error) {
-        console.error('Failed to delete tour image:', error);
-        alert('Không thể xóa hình ảnh. Vui lòng thử lại.');
+        console.error("Failed to delete tour image:", error);
+        alert("Không thể xóa hình ảnh. Vui lòng thử lại.");
       }
     }
   };
 
   // Handle image error
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
     const img = e.target as HTMLImageElement;
-    img.src = '/avatar-default.jpg'; // Fallback image
+    img.src = "/avatar-default.jpg"; // Fallback image
   };
 
   return (
@@ -203,13 +248,16 @@ const TourImagesManagement: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">Quản Lý Hình Ảnh Tours</h1>
           <p className="text-muted-foreground">
-            Quản lý thư viện hình ảnh và ảnh nổi bật của các tours ({totalItems} hình ảnh)
-            {isAdmin && <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>}
+            Quản lý thư viện hình ảnh và ảnh nổi bật của các tours ({totalItems}{" "}
+            hình ảnh)
+            {isAdmin && (
+              <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+            )}
           </p>
         </div>
         {!isAdmin && (
-          <Button 
-            onClick={() => setIsCreateDialogOpen(true)}
+          <Button
+            onClick={handleCreateImage}
             className="bg-purple-600 hover:bg-purple-700"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -250,7 +298,10 @@ const TourImagesManagement: React.FC = () => {
               </Select>
             </div>
             <div className="w-40">
-              <Select value={selectedFeatured} onValueChange={setSelectedFeatured}>
+              <Select
+                value={selectedFeatured}
+                onValueChange={setSelectedFeatured}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Nổi bật" />
                 </SelectTrigger>
@@ -297,7 +348,9 @@ const TourImagesManagement: React.FC = () => {
                         />
                         <div className="flex items-center gap-1">
                           <ImageIcon className="w-4 h-4 text-blue-600" />
-                          <span className="text-xs text-muted-foreground">ID: {image.id}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ID: {image.id}
+                          </span>
                         </div>
                       </div>
                     </TableCell>
@@ -310,36 +363,45 @@ const TourImagesManagement: React.FC = () => {
                           onError={handleImageError}
                         />
                         <div>
-                          <p className="font-medium text-sm">{image.tour.title}</p>
+                          <p className="font-medium text-sm">
+                            {image.tour.title}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm max-w-32 truncate" title={getAltText(image)}>
+                      <p
+                        className="text-sm max-w-32 truncate"
+                        title={getAltText(image)}
+                      >
                         {getAltText(image)}
                       </p>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Badge variant={image.is_featured ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={image.is_featured ? "default" : "secondary"}
+                        >
                           {image.is_featured ? (
                             <>
                               <Star className="w-3 h-3 mr-1" />
                               Nổi bật
                             </>
                           ) : (
-                            'Thường'
+                            "Thường"
                           )}
                         </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{image.tour.tour_category.name}</Badge>
+                      <Badge variant="outline">
+                        {image.tour.tour_category.name}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewImage(image)}
                           title="Xem chi tiết"
@@ -348,17 +410,27 @@ const TourImagesManagement: React.FC = () => {
                         </Button>
                         {!isAdmin && (
                           <>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleToggleFeatured(image.id)}
-                              title={image.is_featured ? "Bỏ nổi bật" : "Đặt nổi bật"}
-                              className={image.is_featured ? "text-orange-600 hover:text-orange-800" : "text-blue-600 hover:text-blue-800"}
+                              title={
+                                image.is_featured ? "Bỏ nổi bật" : "Đặt nổi bật"
+                              }
+                              className={
+                                image.is_featured
+                                  ? "text-orange-600 hover:text-orange-800"
+                                  : "text-blue-600 hover:text-blue-800"
+                              }
                             >
-                              {image.is_featured ? <StarOff className="w-4 h-4" /> : <Star className="w-4 h-4" />}
+                              {image.is_featured ? (
+                                <StarOff className="w-4 h-4" />
+                              ) : (
+                                <Star className="w-4 h-4" />
+                              )}
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleDeleteImage(image.id)}
                               className="text-red-600 hover:text-red-800"
@@ -375,7 +447,9 @@ const TourImagesManagement: React.FC = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
-                    {loading ? "Đang tải..." : "Không có hình ảnh nào được tìm thấy."}
+                    {loading
+                      ? "Đang tải..."
+                      : "Không có hình ảnh nào được tìm thấy."}
                   </TableCell>
                 </TableRow>
               )}
@@ -386,13 +460,16 @@ const TourImagesManagement: React.FC = () => {
           {Array.isArray(tourImages) && totalPages > 1 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
-                Hiển thị {Array.isArray(tourImages) ? tourImages.length : 0} trong tổng số {totalItems} hình ảnh
+                Hiển thị {Array.isArray(tourImages) ? tourImages.length : 0}{" "}
+                trong tổng số {totalItems} hình ảnh
               </p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   Trước
@@ -403,7 +480,9 @@ const TourImagesManagement: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   Sau
@@ -414,203 +493,12 @@ const TourImagesManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* View Image Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ImageIcon className="w-5 h-5" />
-              Chi Tiết Hình Ảnh Tour
-            </DialogTitle>
-            <DialogDescription>
-              Xem thông tin chi tiết hình ảnh của tour được chọn
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedImage && (
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="flex gap-4">
-                <img
-                  src={selectedImage.tour.poster_url}
-                  alt={selectedImage.tour.title}
-                  className="w-24 h-16 object-cover rounded-lg"
-                  onError={handleImageError}
-                />
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-1">{selectedImage.tour.title}</h3>
-                  <Badge variant="outline" className="mb-2">{selectedImage.tour.tour_category.name}</Badge>
-                  <p className="text-sm text-muted-foreground">ID hình ảnh: {selectedImage.id}</p>
-                </div>
-              </div>
-
-              {/* Main Image */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <ImageIcon className="w-5 h-5" />
-                      Hình Ảnh Chính
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={selectedImage.is_featured ? 'default' : 'secondary'}>
-                        {selectedImage.is_featured ? (
-                          <>
-                            <Star className="w-3 h-3 mr-1" />
-                            Nổi bật
-                          </>
-                        ) : (
-                          'Thường'
-                        )}
-                      </Badge>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(selectedImage.image_url, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        Mở ảnh gốc
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-center">
-                    <img
-                      src={selectedImage.image_url}
-                      alt={getAltText(selectedImage)}
-                      className="max-w-full max-h-96 object-contain rounded-lg border"
-                      onError={handleImageError}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Image Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Thông Tin Chi Tiết</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Mô tả ảnh (Alt Text)</label>
-                    <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                      {getAltText(selectedImage)}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">URL hình ảnh</label>
-                    <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded break-all">
-                      {selectedImage.image_url}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">ID Tour</label>
-                      <p className="text-sm text-muted-foreground">{getTourId(selectedImage)}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Trạng thái nổi bật</label>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedImage.is_featured ? 'Có' : 'Không'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Tour Image Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Thêm Hình Ảnh Tour Mới
-            </DialogTitle>
-            <DialogDescription>
-              Tạo hình ảnh mới cho tour
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Thông Tin Cơ Bản</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Chọn Tour</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn tour..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTours.map((tour) => (
-                        <SelectItem key={tour.id} value={tour.id.toString()}>
-                          {tour.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">URL Hình Ảnh</label>
-                  <Input 
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Mô Tả Ảnh (Alt Text)</label>
-                  <Input 
-                    placeholder="Nhập mô tả cho hình ảnh..."
-                    className="w-full"
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="is_featured" className="rounded" />
-                  <label htmlFor="is_featured" className="text-sm font-medium">
-                    Đặt làm ảnh nổi bật
-                  </label>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                Hủy
-              </Button>
-              <Button 
-                className="bg-purple-600 hover:bg-purple-700"
-                disabled
-              >
-                Lưu Hình Ảnh
-              </Button>
-            </div>
-
-            {/* Footer Note */}
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <p className="text-sm text-purple-800">
-                🖼️ <strong>Lưu ý:</strong> Form tạo mới đã được thiết kế. Tính năng lưu sẽ được kích hoạt sau.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Modal for viewing image details */}
+      <TourImageViewModal
+        isOpen={isViewDialogOpen}
+        onClose={() => setIsViewDialogOpen(false)}
+        imageId={viewImageId || ""}
+      />
     </div>
   );
 };

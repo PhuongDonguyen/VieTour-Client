@@ -33,6 +33,17 @@ export const adminTourService = {
     }
   },
 
+  // Lấy tour theo ID (alias cho getTour)
+  getTourById: async (id: number): Promise<AdminTour> => {
+    try {
+      const response = await adminTourApi.getTour(id);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch admin tour:', error);
+      throw error;
+    }
+  },
+
   // Lấy thống kê tours
   getTourStats: async () => {
     try {

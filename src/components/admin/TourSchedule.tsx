@@ -1,97 +1,144 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AuthContext } from '@/context/authContext';
-import { 
+import React, { useState, useEffect, useContext } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthContext } from "@/context/authContext";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye,
-  Plus,
-  Calendar,
-  Users
-} from 'lucide-react';
-import { providerTourScheduleService } from '../../services/provider/providerTourSchedule.service';
-import { adminTourScheduleService } from '../../services/admin/adminTourSchedule.service';
-import type { TourSchedule } from '../../apis/provider/providerTourSchedule.api';
-import type { AdminTourSchedule } from '../../apis/admin/adminTourSchedule.api';
+} from "@/components/ui/select";
+import { Search, Edit, Trash2, Eye, Plus, Calendar, Users } from "lucide-react";
+import { providerTourScheduleService } from "../../services/provider/providerTourSchedule.service";
+import { adminTourScheduleService } from "../../services/admin/adminTourSchedule.service";
+import { providerTourApi } from "../../apis/provider/providerTour.api";
+import type { TourSchedule } from "../../apis/provider/providerTourSchedule.api";
+import type { AdminTourSchedule } from "../../apis/admin/adminTourSchedule.api";
 
 const TourSchedulesManagement: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
-  const isAdmin = user?.role === 'admin';
-  
-  const [tourSchedules, setTourSchedules] = useState<(TourSchedule | AdminTourSchedule)[]>([]);
+  const isAdmin = user?.role === "admin";
+
+  // Get tour_id from URL query parameter
+  const tourIdFromUrl = searchParams.get("tour_id");
+
+  const [tourSchedules, setTourSchedules] = useState<
+    (TourSchedule | AdminTourSchedule)[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedSchedule, setSelectedSchedule] = useState<TourSchedule | AdminTourSchedule | null>(null);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedTourId, setSelectedTourId] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
+
+  const [selectedTourId, setSelectedTourId] = useState<string>(
+    tourIdFromUrl || "all"
+  );
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [availableTours, setAvailableTours] = useState<
+    { id: number; title: string }[]
+  >([]);
+  const [tourInfoMap, setTourInfoMap] = useState<{
+    [key: number]: { title: string; poster_url: string; category_name: string };
+  }>({});
+  const [loadingTours, setLoadingTours] = useState<{ [key: number]: boolean }>(
+    {}
+  );
 
   // Helper functions to normalize data between TourSchedule and AdminTourSchedule
   const getTourInfo = (schedule: TourSchedule | AdminTourSchedule) => {
-    // Both TourSchedule and AdminTourSchedule have tour property with same structure
-    return {
-      id: schedule.tour.id,
-      title: schedule.tour.title,
-      poster_url: schedule.tour.poster_url,
-      category_name: schedule.tour.tour_category.name
-    };
+    // Check if schedule has tour property (AdminTourSchedule) or just tour_id (TourSchedule)
+    if ("tour" in schedule && schedule.tour) {
+      return {
+        id: schedule.tour.id,
+        title: schedule.tour.title,
+        poster_url: schedule.tour.poster_url,
+        category_name: schedule.tour.tour_category.name,
+      };
+    } else {
+      // For basic TourSchedule with only tour_id, use tour info map
+      const tourSchedule = schedule as TourSchedule;
+      const tourInfo = tourInfoMap[tourSchedule.tour_id];
+      return {
+        id: tourSchedule.tour_id,
+        title: tourInfo?.title || `Tour ID: ${tourSchedule.tour_id}`,
+        poster_url: tourInfo?.poster_url || "/public/VieTour-Logo.png",
+        category_name: tourInfo?.category_name || "N/A",
+      };
+    }
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long', 
-      day: 'numeric',
-      weekday: 'long'
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long",
     });
   };
 
   const formatStatus = (status: string): string => {
     const statusMap: { [key: string]: string } = {
-      'active': 'Hoạt động',
-      'inactive': 'Tạm dừng',
-      'completed': 'Hoàn thành',
-      'cancelled': 'Đã hủy'
+      active: "Hoạt động",
+      inactive: "Tạm dừng",
+      completed: "Hoàn thành",
+      cancelled: "Đã hủy",
     };
     return statusMap[status] || status;
+  };
+
+  // Function to fetch tour information
+  const fetchTourInfo = async (tourId: number) => {
+    if (tourInfoMap[tourId] || loadingTours[tourId]) return;
+
+    try {
+      setLoadingTours((prev) => ({ ...prev, [tourId]: true }));
+      const response = await providerTourApi.getTourById(tourId);
+      const tourData = response.data.data;
+
+      setTourInfoMap((prev) => ({
+        ...prev,
+        [tourId]: {
+          title: tourData.title,
+          poster_url: tourData.poster_url,
+          category_name: tourData.tour_category?.name || "Chưa phân loại",
+        },
+      }));
+    } catch (error) {
+      console.error(`Error fetching tour info for tour ${tourId}:`, error);
+      // Set fallback data
+      setTourInfoMap((prev) => ({
+        ...prev,
+        [tourId]: {
+          title: `Tour ID: ${tourId}`,
+          poster_url: "/public/VieTour-Logo.png",
+          category_name: "Chưa phân loại",
+        },
+      }));
+    } finally {
+      setLoadingTours((prev) => ({ ...prev, [tourId]: false }));
+    }
   };
 
   // Fetch tour schedules data from API
   const fetchTourSchedules = async () => {
     try {
       setLoading(true);
-      
+
       let response;
       if (isAdmin) {
         // Use admin service to get all tour schedules from all providers
@@ -99,8 +146,12 @@ const TourSchedulesManagement: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
-          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
-          status: selectedStatus === 'all' ? undefined : selectedStatus as "cancelled" | "available" | "full"
+          tour_id:
+            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+          status:
+            selectedStatus === "all"
+              ? undefined
+              : (selectedStatus as "cancelled" | "available" | "full"),
         });
       } else {
         // Use provider service to get only provider's tour schedules
@@ -108,41 +159,93 @@ const TourSchedulesManagement: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
-          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
-          status: selectedStatus === 'all' ? undefined : selectedStatus as "cancelled" | "available" | "full"
+          tour_id:
+            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+          status:
+            selectedStatus === "all"
+              ? undefined
+              : (selectedStatus as "cancelled" | "available" | "full"),
         });
       }
-      
-      console.log('API response:', response);
-      
+
+      console.log("API response:", response);
+
       const schedulesData = response.data || [];
-      const paginationData = response.pagination || { totalPages: 1, totalItems: 0 };
-      
+      const paginationData = response.pagination || {
+        totalPages: 1,
+        totalItems: 0,
+      };
+
       // Sort by start date
-      const sortedSchedulesData = schedulesData.sort((a: TourSchedule | AdminTourSchedule, b: TourSchedule | AdminTourSchedule) => 
-        new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+      const sortedSchedulesData = schedulesData.sort(
+        (
+          a: TourSchedule | AdminTourSchedule,
+          b: TourSchedule | AdminTourSchedule
+        ) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
       );
-      
-      // Extract unique tours for dropdown
-      const uniqueTours = schedulesData.reduce((acc: { id: number; title: string }[], schedule: TourSchedule | AdminTourSchedule) => {
-        if (!acc.find(tour => tour.id === schedule.tour.id)) {
-          acc.push({ id: schedule.tour.id, title: schedule.tour.title });
+
+      // Extract unique tours for dropdown and build tour info map
+      const uniqueTours = schedulesData.reduce(
+        (
+          acc: { id: number; title: string }[],
+          schedule: TourSchedule | AdminTourSchedule
+        ) => {
+          let tourId: number;
+          let tourTitle: string;
+
+          if ("tour" in schedule && schedule.tour) {
+            tourId = schedule.tour.id;
+            tourTitle = schedule.tour.title;
+          } else {
+            tourId = (schedule as TourSchedule).tour_id;
+            tourTitle = `Tour ID: ${(schedule as TourSchedule).tour_id}`;
+          }
+
+          if (!acc.find((tour) => tour.id === tourId)) {
+            acc.push({ id: tourId, title: tourTitle });
+          }
+          return acc;
+        },
+        []
+      );
+
+      // Build tour info map for schedules without tour data and fetch tour info
+      const newTourInfoMap: {
+        [key: number]: {
+          title: string;
+          poster_url: string;
+          category_name: string;
+        };
+      } = {};
+
+      schedulesData.forEach((schedule: TourSchedule | AdminTourSchedule) => {
+        if (!("tour" in schedule) || !schedule.tour) {
+          const tourId = (schedule as TourSchedule).tour_id;
+          if (!newTourInfoMap[tourId] && !tourInfoMap[tourId]) {
+            newTourInfoMap[tourId] = {
+              title: `Tour ID: ${tourId}`,
+              poster_url: "/public/VieTour-Logo.png",
+              category_name: "Chưa phân loại",
+            };
+            // Fetch tour info for this tour
+            fetchTourInfo(tourId);
+          }
         }
-        return acc;
-      }, []);
-      
+      });
+
       // Sort available tours by title
-      const sortedTours = uniqueTours.sort((a: { id: number; title: string }, b: { id: number; title: string }) => 
-        a.title.localeCompare(b.title, 'vi', { sensitivity: 'base' })
+      const sortedTours = uniqueTours.sort(
+        (a: { id: number; title: string }, b: { id: number; title: string }) =>
+          a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
       );
-      
+
       setTourSchedules(sortedSchedulesData);
       setAvailableTours(sortedTours);
+      setTourInfoMap(newTourInfoMap);
       setTotalPages(paginationData.totalPages || 1);
       setTotalItems(paginationData.totalItems || 0);
-      
     } catch (error) {
-      console.error('Failed to fetch tour schedules:', error);
+      console.error("Failed to fetch tour schedules:", error);
       setTourSchedules([]);
       setTotalPages(1);
       setTotalItems(0);
@@ -163,34 +266,31 @@ const TourSchedulesManagement: React.FC = () => {
 
   // Handle view schedule
   const handleViewSchedule = (schedule: TourSchedule | AdminTourSchedule) => {
-    setSelectedSchedule(schedule);
-    setIsViewDialogOpen(true);
+    navigate(`/admin/tours/schedules/view/${schedule.id}`);
   };
 
-  // Handle edit schedule  
+  // Handle edit schedule
   const handleEditSchedule = (schedule: TourSchedule | AdminTourSchedule) => {
     if (isAdmin) {
-      alert('Admin không có quyền chỉnh sửa.');
+      alert("Admin không có quyền chỉnh sửa.");
       return;
     }
-    // Tạm thời show view dialog thay vì edit
-    setSelectedSchedule(schedule);
-    setIsViewDialogOpen(true);
+    navigate(`/admin/tours/schedules/edit/${schedule.id}`);
   };
 
   // Handle delete schedule
   const handleDeleteSchedule = async (id: number) => {
     if (isAdmin) {
-      alert('Admin không có quyền xóa.');
+      alert("Admin không có quyền xóa.");
       return;
     }
-    if (window.confirm('Bạn có chắc chắn muốn xóa lịch trình tour này?')) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa lịch trình tour này?")) {
       try {
         await providerTourScheduleService.deleteTourSchedule(id);
         fetchTourSchedules();
       } catch (error) {
-        console.error('Failed to delete tour schedule:', error);
-        alert('Không thể xóa lịch trình tour. Vui lòng thử lại.');
+        console.error("Failed to delete tour schedule:", error);
+        alert("Không thể xóa lịch trình tour. Vui lòng thử lại.");
       }
     }
   };
@@ -198,26 +298,26 @@ const TourSchedulesManagement: React.FC = () => {
   // Get status badge variant
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'available':
-        return 'default';
-      case 'full':
-        return 'destructive';
-      case 'cancelled':
-        return 'secondary';
+      case "available":
+        return "default";
+      case "full":
+        return "destructive";
+      case "cancelled":
+        return "secondary";
       default:
-        return 'outline';
+        return "outline";
     }
   };
 
   // Get status text
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'available':
-        return 'Còn chỗ';
-      case 'full':
-        return 'Hết chỗ';
-      case 'cancelled':
-        return 'Đã hủy';
+      case "available":
+        return "Còn chỗ";
+      case "full":
+        return "Hết chỗ";
+      case "cancelled":
+        return "Đã hủy";
       default:
         return status;
     }
@@ -230,13 +330,16 @@ const TourSchedulesManagement: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">Quản Lý Lịch Trình Tours</h1>
           <p className="text-muted-foreground">
-            Quản lý lịch trình và thời gian biểu của các tours ({totalItems} lịch trình)
-            {isAdmin && <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>}
+            Quản lý lịch trình và thời gian biểu của các tours ({totalItems}{" "}
+            lịch trình)
+            {isAdmin && (
+              <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+            )}
           </p>
         </div>
         {!isAdmin && (
-          <Button 
-            onClick={() => setIsCreateDialogOpen(true)}
+          <Button
+            onClick={() => navigate("/admin/tours/schedules/new")}
             className="bg-purple-600 hover:bg-purple-700"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -316,28 +419,67 @@ const TourSchedulesManagement: React.FC = () => {
                   <TableRow key={schedule.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <img
-                          src={schedule.tour.poster_url}
-                          alt={schedule.tour.title}
-                          className="w-12 h-8 object-cover rounded"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">{schedule.tour.title}</p>
-                        </div>
+                        {loadingTours[(schedule as TourSchedule).tour_id] ? (
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-8 bg-gray-200 rounded animate-pulse"></div>
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded w-24"></div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <img
+                              src={
+                                "tour" in schedule && schedule.tour
+                                  ? schedule.tour.poster_url
+                                  : tourInfoMap[
+                                      (schedule as TourSchedule).tour_id
+                                    ]?.poster_url || "/public/VieTour-Logo.png"
+                              }
+                              alt={
+                                "tour" in schedule && schedule.tour
+                                  ? schedule.tour.title
+                                  : tourInfoMap[
+                                      (schedule as TourSchedule).tour_id
+                                    ]?.title ||
+                                    `Tour ID: ${
+                                      (schedule as TourSchedule).tour_id
+                                    }`
+                              }
+                              className="w-12 h-8 object-cover rounded"
+                            />
+                            <div>
+                              <p className="font-medium text-sm">
+                                {"tour" in schedule && schedule.tour
+                                  ? schedule.tour.title
+                                  : tourInfoMap[
+                                      (schedule as TourSchedule).tour_id
+                                    ]?.title ||
+                                    `Tour ID: ${
+                                      (schedule as TourSchedule).tour_id
+                                    }`}
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-blue-600" />
                         <div>
-                          <p className="font-medium">{formatDate(schedule.start_date)}</p>
+                          <p className="font-medium">
+                            {formatDate(schedule.start_date)}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4 text-green-600" />
-                        <span className="font-semibold">{schedule.participant} người</span>
+                        <span className="font-semibold">
+                          {schedule.participant} người
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -346,12 +488,17 @@ const TourSchedulesManagement: React.FC = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{schedule.tour.tour_category.name}</Badge>
+                      <Badge variant="secondary">
+                        {"tour" in schedule && schedule.tour
+                          ? schedule.tour.tour_category.name
+                          : tourInfoMap[(schedule as TourSchedule).tour_id]
+                              ?.category_name || "Chưa phân loại"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewSchedule(schedule)}
                         >
@@ -359,15 +506,15 @@ const TourSchedulesManagement: React.FC = () => {
                         </Button>
                         {!isAdmin && (
                           <>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleEditSchedule(schedule)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleDeleteSchedule(schedule.id)}
                               className="text-red-600 hover:text-red-800"
@@ -383,7 +530,9 @@ const TourSchedulesManagement: React.FC = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
-                    {loading ? "Đang tải..." : "Không có lịch trình nào được tìm thấy."}
+                    {loading
+                      ? "Đang tải..."
+                      : "Không có lịch trình nào được tìm thấy."}
                   </TableCell>
                 </TableRow>
               )}
@@ -394,13 +543,17 @@ const TourSchedulesManagement: React.FC = () => {
           {Array.isArray(tourSchedules) && totalPages > 1 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
-                Hiển thị {Array.isArray(tourSchedules) ? tourSchedules.length : 0} trong tổng số {totalItems} lịch trình
+                Hiển thị{" "}
+                {Array.isArray(tourSchedules) ? tourSchedules.length : 0} trong
+                tổng số {totalItems} lịch trình
               </p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   Trước
@@ -411,7 +564,9 @@ const TourSchedulesManagement: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   Sau
@@ -421,175 +576,6 @@ const TourSchedulesManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* View Schedule Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Chi Tiết Lịch Trình Tour
-            </DialogTitle>
-            <DialogDescription>
-              Xem thông tin chi tiết lịch trình của tour được chọn
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedSchedule && (
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="flex gap-4">
-                <img
-                  src={selectedSchedule.tour.poster_url}
-                  alt={selectedSchedule.tour.title}
-                  className="w-24 h-16 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-1">{selectedSchedule.tour.title}</h3>
-                  <Badge variant="secondary" className="mb-2">{selectedSchedule.tour.tour_category.name}</Badge>
-                  <p className="text-sm text-muted-foreground">ID: {selectedSchedule.id}</p>
-                </div>
-              </div>
-
-              {/* Schedule Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-blue-600 flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      Ngày Khởi Hành
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-lg font-bold">{formatDate(selectedSchedule.start_date)}</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-green-600 flex items-center gap-2">
-                      <Users className="w-5 h-5" />
-                      Số Người Tham Gia
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-lg font-bold">{selectedSchedule.participant} người</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Status */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Trạng Thái</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant={getStatusVariant(selectedSchedule.status)} className="text-sm">
-                    {getStatusText(selectedSchedule.status)}
-                  </Badge>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Tour Schedule Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Thêm Lịch Trình Tour Mới
-            </DialogTitle>
-            <DialogDescription>
-              Tạo lịch trình mới cho tour
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Thông Tin Cơ Bản</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Chọn Tour</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn tour..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTours.map((tour) => (
-                        <SelectItem key={tour.id} value={tour.id.toString()}>
-                          {tour.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Ngày Khởi Hành</label>
-                    <Input 
-                      type="date"
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Số Người Tham Gia</label>
-                    <Input 
-                      type="number"
-                      placeholder="0"
-                      min="0"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Trạng Thái</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn trạng thái..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="available">Còn chỗ</SelectItem>
-                      <SelectItem value="full">Hết chỗ</SelectItem>
-                      <SelectItem value="cancelled">Đã hủy</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                Hủy
-              </Button>
-              <Button 
-                className="bg-purple-600 hover:bg-purple-700"
-                disabled
-              >
-                Lưu Lịch Trình
-              </Button>
-            </div>
-
-            {/* Footer Note */}
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <p className="text-sm text-purple-800">
-                📅 <strong>Lưu ý:</strong> Form tạo mới đã được thiết kế. Tính năng lưu sẽ được kích hoạt sau.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -1,73 +1,79 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AuthContext } from '@/context/authContext';
-import { 
+import React, { useState, useEffect, useContext } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthContext } from "@/context/authContext";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye,
-  Plus,
-  DollarSign
-} from 'lucide-react';
-import { providerTourPriceService } from '../../services/provider/providerTourPrice.service';
-import { adminTourPriceService } from '../../services/admin/adminTourPrice.service';
-import type { TourPrice } from '../../apis/provider/providerTourPrice.api';
-import type { AdminTourPrice } from '../../apis/admin/adminTourPrice.api';
+} from "@/components/ui/select";
+import { Search, Edit, Trash2, Eye, Plus, DollarSign } from "lucide-react";
+import { providerTourPriceService } from "../../services/provider/providerTourPrice.service";
+import { adminTourPriceService } from "../../services/admin/adminTourPrice.service";
+import type { TourPrice } from "../../apis/provider/providerTourPrice.api";
+import type { AdminTourPrice } from "../../apis/admin/adminTourPrice.api";
 
 const TourPricesManagement: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
-  const isAdmin = user?.role === 'admin';
-  
-  const [tourPrices, setTourPrices] = useState<(TourPrice | AdminTourPrice)[]>([]);
+  const isAdmin = user?.role === "admin";
+
+  // Get tour_id from URL query parameter
+  const tourIdFromUrl = searchParams.get("tour_id");
+
+  const [tourPrices, setTourPrices] = useState<(TourPrice | AdminTourPrice)[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedPrice, setSelectedPrice] = useState<TourPrice | AdminTourPrice | null>(null);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedTourId, setSelectedTourId] = useState<string>('all');
-  const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
+  const [selectedTourId, setSelectedTourId] = useState<string>(
+    tourIdFromUrl || "all"
+  );
+  const [availableTours, setAvailableTours] = useState<
+    { id: number; title: string }[]
+  >([]);
 
   // Helper functions to normalize data between TourPrice and AdminTourPrice
   const getTourInfo = (price: TourPrice | AdminTourPrice) => {
-    // Both TourPrice and AdminTourPrice have tour property with same structure
-    return {
-      id: price.tour.id,
-      title: price.tour.title,
-      poster_url: price.tour.poster_url,
-      category_name: price.tour.tour_category.name
-    };
+    // Handle case where tour property might be undefined
+    if (price.tour) {
+      return {
+        id: price.tour.id,
+        title: price.tour.title,
+        poster_url: price.tour.poster_url,
+        category_name: price.tour.tour_category.name,
+      };
+    } else {
+      // Fallback for when tour info is not available
+      const tourId = "tour_id" in price ? price.tour_id : 0;
+      return {
+        id: tourId,
+        title: `Tour ID: ${tourId}`,
+        poster_url: "/avatar-default.jpg",
+        category_name: "Unknown",
+      };
+    }
   };
 
   const getChildPrice = (price: TourPrice | AdminTourPrice): number => {
-    return 'kid_price' in price ? price.kid_price : price.child_price;
+    return "kid_price" in price ? price.kid_price : price.child_price;
   };
 
   const formatPrice = (price: number): string => {
@@ -78,7 +84,7 @@ const TourPricesManagement: React.FC = () => {
   const fetchTourPrices = async () => {
     try {
       setLoading(true);
-      
+
       let response;
       if (isAdmin) {
         // Use admin service to get all tour prices from all providers
@@ -86,7 +92,8 @@ const TourPricesManagement: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
-          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
+          tour_id:
+            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
         });
       } else {
         // Use provider service to get only provider's tour prices
@@ -94,40 +101,64 @@ const TourPricesManagement: React.FC = () => {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
-          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
+          tour_id:
+            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
         });
       }
-      
-      console.log('API response:', response);
-      
+
+      console.log("API response:", response);
+
       const pricesData = response.data || [];
-      const paginationData = response.pagination || { totalPages: 1, totalItems: 0 };
-      
-      // Sort by tour title
-      const sortedPricesData = pricesData.sort((a: TourPrice | AdminTourPrice, b: TourPrice | AdminTourPrice) => 
-        a.tour.title.localeCompare(b.tour.title, 'vi', { sensitivity: 'base' })
-      );
-      
-      // Extract unique tours for dropdown
-      const uniqueTours = pricesData.reduce((acc: { id: number; title: string }[], price: TourPrice | AdminTourPrice) => {
-        if (!acc.find(tour => tour.id === price.tour.id)) {
-          acc.push({ id: price.tour.id, title: price.tour.title });
+      const paginationData = response.pagination || {
+        totalPages: 1,
+        totalItems: 0,
+      };
+
+      // Sort by tour title (handle undefined tour)
+      const sortedPricesData = pricesData.sort(
+        (a: TourPrice | AdminTourPrice, b: TourPrice | AdminTourPrice) => {
+          const aTitle =
+            a.tour?.title ||
+            `Tour ID: ${"tour_id" in a ? a.tour_id : a.tour?.id || 0}`;
+          const bTitle =
+            b.tour?.title ||
+            `Tour ID: ${"tour_id" in b ? b.tour_id : b.tour?.id || 0}`;
+          return aTitle.localeCompare(bTitle, "vi", {
+            sensitivity: "base",
+          });
         }
-        return acc;
-      }, []);
-      
-      // Sort available tours by title
-      const sortedTours = uniqueTours.sort((a: { id: number; title: string }, b: { id: number; title: string }) => 
-        a.title.localeCompare(b.title, 'vi', { sensitivity: 'base' })
       );
-      
+
+      // Extract unique tours for dropdown (handle undefined tour)
+      const uniqueTours = pricesData.reduce(
+        (
+          acc: { id: number; title: string }[],
+          price: TourPrice | AdminTourPrice
+        ) => {
+          const tourId =
+            price.tour?.id || ("tour_id" in price ? price.tour_id : 0);
+          const tourTitle = price.tour?.title || `Tour ID: ${tourId}`;
+
+          if (!acc.find((tour) => tour.id === tourId)) {
+            acc.push({ id: tourId, title: tourTitle });
+          }
+          return acc;
+        },
+        []
+      );
+
+      // Sort available tours by title
+      const sortedTours = uniqueTours.sort(
+        (a: { id: number; title: string }, b: { id: number; title: string }) =>
+          a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
+      );
+
       setTourPrices(sortedPricesData);
       setAvailableTours(sortedTours);
       setTotalPages(paginationData.totalPages || 1);
       setTotalItems(paginationData.totalItems || 0);
-      
     } catch (error) {
-      console.error('Failed to fetch tour prices:', error);
+      console.error("Failed to fetch tour prices:", error);
       setTourPrices([]);
       setAvailableTours([]);
       setTotalPages(1);
@@ -149,41 +180,38 @@ const TourPricesManagement: React.FC = () => {
 
   // Handle view price
   const handleViewPrice = (price: TourPrice | AdminTourPrice) => {
-    setSelectedPrice(price);
-    setIsViewDialogOpen(true);
+    navigate(`/admin/tours/prices/view/${price.id}`);
   };
 
   // Handle edit price
   const handleEditPrice = (price: TourPrice | AdminTourPrice) => {
     if (isAdmin) {
-      alert('Admin không có quyền chỉnh sửa.');
+      alert("Admin không có quyền chỉnh sửa.");
       return;
     }
-    // Edit functionality for non-admin users would go here
-    console.log('Edit price:', price.id);
-    alert('Chức năng chỉnh sửa đã bị vô hiệu hóa');
+    navigate(`/admin/tours/prices/edit/${price.id}`);
   };
 
   // Handle delete price
   const handleDeletePrice = async (id: number) => {
     if (isAdmin) {
-      alert('Admin không có quyền xóa.');
+      alert("Admin không có quyền xóa.");
       return;
     }
-    if (window.confirm('Bạn có chắc chắn muốn xóa giá tour này?')) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa giá tour này?")) {
       try {
         await providerTourPriceService.deleteTourPrice(id);
         fetchTourPrices();
       } catch (error) {
-        console.error('Failed to delete tour price:', error);
-        alert('Không thể xóa giá tour. Vui lòng thử lại.');
+        console.error("Failed to delete tour price:", error);
+        alert("Không thể xóa giá tour. Vui lòng thử lại.");
       }
     }
   };
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
+    return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
   };
 
   return (
@@ -194,12 +222,14 @@ const TourPricesManagement: React.FC = () => {
           <h1 className="text-3xl font-bold">Quản Lý Giá Tours</h1>
           <p className="text-muted-foreground">
             Quản lý bảng giá cho các tours ({totalItems} bảng giá)
-            {isAdmin && <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>}
+            {isAdmin && (
+              <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+            )}
           </p>
         </div>
         {!isAdmin && (
-          <Button 
-            onClick={() => setIsCreateDialogOpen(true)}
+          <Button
+            onClick={() => navigate("/admin/tours/prices/new")}
             className="bg-green-600 hover:bg-green-700"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -255,7 +285,6 @@ const TourPricesManagement: React.FC = () => {
                 <TableHead>Tour</TableHead>
                 <TableHead>Giá Người Lớn</TableHead>
                 <TableHead>Giá Trẻ Em</TableHead>
-                <TableHead>Ghi Chú</TableHead>
                 <TableHead>Danh Mục</TableHead>
                 <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
               </TableRow>
@@ -267,35 +296,36 @@ const TourPricesManagement: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <img
-                          src={price.tour.poster_url}
-                          alt={price.tour.title}
+                          src={getTourInfo(price).poster_url}
+                          alt={getTourInfo(price).title}
                           className="w-12 h-8 object-cover rounded"
                         />
                         <div>
-                          <p className="font-medium text-sm">{price.tour.title}</p>
+                          <p className="font-medium text-sm">
+                            {getTourInfo(price).title}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-semibold text-green-600">
+                      <div className="font-semibold text-green-600">
                         {formatCurrency(price.adult_price)}
-                      </span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-semibold text-blue-600">
+                      <div className="font-semibold text-blue-600">
                         {formatCurrency(getChildPrice(price))}
-                      </span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{price.note}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{price.tour.tour_category.name}</Badge>
+                      <Badge variant="secondary">
+                        {getTourInfo(price).category_name}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewPrice(price)}
                         >
@@ -303,15 +333,15 @@ const TourPricesManagement: React.FC = () => {
                         </Button>
                         {!isAdmin && (
                           <>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleEditPrice(price)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleDeletePrice(price.id)}
                               className="text-red-600 hover:text-red-800"
@@ -326,8 +356,10 @@ const TourPricesManagement: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
-                    {loading ? "Đang tải..." : "Không có bảng giá nào được tìm thấy."}
+                  <TableCell colSpan={5} className="text-center py-8">
+                    {loading
+                      ? "Đang tải..."
+                      : "Không có bảng giá nào được tìm thấy."}
                   </TableCell>
                 </TableRow>
               )}
@@ -338,13 +370,16 @@ const TourPricesManagement: React.FC = () => {
           {Array.isArray(tourPrices) && totalPages > 1 && (
             <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
-                Hiển thị {Array.isArray(tourPrices) ? tourPrices.length : 0} trong tổng số {totalItems} bảng giá
+                Hiển thị {Array.isArray(tourPrices) ? tourPrices.length : 0}{" "}
+                trong tổng số {totalItems} bảng giá
               </p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   Trước
@@ -355,7 +390,9 @@ const TourPricesManagement: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   Sau
@@ -365,161 +402,6 @@ const TourPricesManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* View Price Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              Chi Tiết Bảng Giá Tour
-            </DialogTitle>
-            <DialogDescription>
-              Xem thông tin chi tiết bảng giá của tour được chọn
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedPrice && (
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="flex gap-4">
-                <img
-                  src={selectedPrice.tour.poster_url}
-                  alt={selectedPrice.tour.title}
-                  className="w-24 h-16 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-1">{selectedPrice.tour.title}</h3>
-                  <Badge variant="secondary" className="mb-2">{selectedPrice.tour.tour_category.name}</Badge>
-                  <p className="text-sm text-muted-foreground">ID: {selectedPrice.id}</p>
-                </div>
-              </div>
-
-              {/* Price Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-green-600">Giá Người Lớn</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold">{formatCurrency(selectedPrice.adult_price)}</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-blue-600">Giá Trẻ Em</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold">{formatCurrency(getChildPrice(selectedPrice))}</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Note */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Ghi Chú</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">{selectedPrice.note}</p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Tour Price Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Thêm Bảng Giá Tour Mới
-            </DialogTitle>
-            <DialogDescription>
-              Tạo bảng giá mới cho tour
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Thông Tin Cơ Bản</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Chọn Tour</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn tour..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTours.map((tour) => (
-                        <SelectItem key={tour.id} value={tour.id.toString()}>
-                          {tour.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Giá Người Lớn (VND)</label>
-                    <Input 
-                      type="number"
-                      placeholder="20000000"
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Giá Trẻ Em (VND)</label>
-                    <Input 
-                      type="number"
-                      placeholder="15000000"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Ghi Chú</label>
-                  <Input 
-                    placeholder="Nhập ghi chú..."
-                    className="w-full"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                Hủy
-              </Button>
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                disabled
-              >
-                Lưu Bảng Giá
-              </Button>
-            </div>
-
-            {/* Footer Note */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm text-green-800">
-                📝 <strong>Lưu ý:</strong> Form tạo mới đã được thiết kế. Tính năng lưu sẽ được kích hoạt sau.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
