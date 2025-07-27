@@ -31,26 +31,27 @@ import {
   Trash2, 
   Eye,
   Plus,
-  DollarSign,
   Calendar,
   ToggleLeft,
   ToggleRight,
   Clock
 } from 'lucide-react';
 import { providerTourPriceOverrideService } from '../../services/provider/providerTourPriceOverride.service';
+import { adminTourPriceOverrideService } from '../../services/admin/adminTourPriceOverride.service';
 import type { TourPriceOverride } from '../../apis/provider/providerTourPriceOverride.api';
+import type { AdminTourPriceOverride } from '../../apis/admin/adminTourPriceOverride.api';
 
 const TourPriceOverridesManagement: React.FC = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'admin';
   
-  const [priceOverrides, setPriceOverrides] = useState<TourPriceOverride[]>([]);
+  const [priceOverrides, setPriceOverrides] = useState<(TourPriceOverride | AdminTourPriceOverride)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedOverride, setSelectedOverride] = useState<TourPriceOverride | null>(null);
+  const [selectedOverride, setSelectedOverride] = useState<TourPriceOverride | AdminTourPriceOverride | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedOverrideType, setSelectedOverrideType] = useState<string>('all');
@@ -62,13 +63,26 @@ const TourPriceOverridesManagement: React.FC = () => {
     try {
       setLoading(true);
       
-      const response = await providerTourPriceOverrideService.getTourPriceOverrides({
-        page: currentPage,
-        limit: 10,
-        search: searchTerm || undefined,
-        override_type: selectedOverrideType === 'all' ? undefined : selectedOverrideType,
-        is_active: selectedStatus === 'all' ? undefined : selectedStatus === 'true'
-      });
+      let response;
+      if (isAdmin) {
+        // Admin uses admin service
+        response = await adminTourPriceOverrideService.getAllTourPriceOverrides({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          override_type: selectedOverrideType === 'all' ? undefined : selectedOverrideType as any,
+          is_active: selectedStatus === 'all' ? undefined : selectedStatus === 'true'
+        });
+      } else {
+        // Provider uses provider service
+        response = await providerTourPriceOverrideService.getTourPriceOverrides({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          override_type: selectedOverrideType === 'all' ? undefined : selectedOverrideType,
+          is_active: selectedStatus === 'all' ? undefined : selectedStatus === 'true'
+        });
+      }
       
       console.log('API response:', response);
       
@@ -76,7 +90,7 @@ const TourPriceOverridesManagement: React.FC = () => {
       const paginationData = response.pagination || { totalPages: 1, totalItems: 0 };
       
       // Sort by tour title, then by override date
-      const sortedOverridesData = overridesData.sort((a: TourPriceOverride, b: TourPriceOverride) => {
+      const sortedOverridesData = overridesData.sort((a: TourPriceOverride | AdminTourPriceOverride, b: TourPriceOverride | AdminTourPriceOverride) => {
         const tourCompare = a.tour_price.tour.title.localeCompare(b.tour_price.tour.title, 'vi', { sensitivity: 'base' });
         if (tourCompare !== 0) return tourCompare;
         
@@ -87,7 +101,7 @@ const TourPriceOverridesManagement: React.FC = () => {
       });
       
       // Extract unique tours for dropdown
-      const uniqueTours = overridesData.reduce((acc: { id: number; title: string }[], override: TourPriceOverride) => {
+      const uniqueTours = overridesData.reduce((acc: { id: number; title: string }[], override: TourPriceOverride | AdminTourPriceOverride) => {
         if (!acc.find(tour => tour.id === override.tour_price.tour.id)) {
           acc.push({ id: override.tour_price.tour.id, title: override.tour_price.tour.title });
         }
@@ -125,7 +139,7 @@ const TourPriceOverridesManagement: React.FC = () => {
   };
 
   // Handle view override
-  const handleViewOverride = (override: TourPriceOverride) => {
+  const handleViewOverride = (override: TourPriceOverride | AdminTourPriceOverride) => {
     setSelectedOverride(override);
     setIsViewDialogOpen(true);
   };
@@ -205,7 +219,7 @@ const TourPriceOverridesManagement: React.FC = () => {
   };
 
   // Get date display for override
-  const getDateDisplay = (override: TourPriceOverride) => {
+  const getDateDisplay = (override: TourPriceOverride | AdminTourPriceOverride) => {
     if (override.override_type === 'single_date' && override.override_date) {
       return formatDate(override.override_date);
     }
@@ -223,10 +237,14 @@ const TourPriceOverridesManagement: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Quản Lý Ghi Đè Giá Tours</h1>
+          <h1 className="text-3xl font-bold">
+            {isAdmin ? 'Quản Lý Price Overrides (Admin)' : 'Quản Lý Ghi Đè Giá Tours'}
+          </h1>
           <p className="text-muted-foreground">
-            Quản lý các quy tắc ghi đè giá theo ngày và thời gian ({totalItems} quy tắc)
-            {isAdmin && <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>}
+            {isAdmin 
+              ? `Xem tất cả price overrides trong hệ thống (${totalItems} quy tắc) - Chỉ xem`
+              : `Quản lý các quy tắc ghi đè giá theo ngày và thời gian (${totalItems} quy tắc)`
+            }
           </p>
         </div>
         {!isAdmin && (
@@ -336,20 +354,14 @@ const TourPriceOverridesManagement: React.FC = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-green-600" />
-                        <span className="font-semibold text-green-700">
-                          {formatCurrency(override.adult_price)}
-                        </span>
-                      </div>
+                      <span className="font-semibold text-green-700">
+                        {formatCurrency(override.adult_price)}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-blue-600" />
-                        <span className="font-semibold text-blue-700">
-                          {formatCurrency(override.kid_price)}
-                        </span>
-                      </div>
+                      <span className="font-semibold text-blue-700">
+                        {formatCurrency(override.kid_price)}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -441,7 +453,7 @@ const TourPriceOverridesManagement: React.FC = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
+              <Clock className="w-5 h-5" />
               Chi Tiết Ghi Đè Giá Tour
             </DialogTitle>
             <DialogDescription>

@@ -37,37 +37,71 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { providerTourImageService } from '../../services/provider/providerTourImage.service';
+import { adminTourImageService } from '../../services/admin/adminTourImage.service';
 import type { TourImage } from '../../apis/provider/providerTourImage.api';
+import type { AdminTourImage } from '../../apis/admin/adminTourImage.api';
 
 const TourImagesManagement: React.FC = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'admin';
   
-  const [tourImages, setTourImages] = useState<TourImage[]>([]);
+  const [tourImages, setTourImages] = useState<(TourImage | AdminTourImage)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedImage, setSelectedImage] = useState<TourImage | null>(null);
+  const [selectedImage, setSelectedImage] = useState<TourImage | AdminTourImage | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTourId, setSelectedTourId] = useState<string>('all');
   const [selectedFeatured, setSelectedFeatured] = useState<string>('all');
   const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
 
+  // Helper functions to normalize data between TourImage and AdminTourImage
+  const getTourInfo = (image: TourImage | AdminTourImage) => {
+    // Both TourImage and AdminTourImage have tour property with same structure
+    return {
+      id: image.tour.id,
+      title: image.tour.title,
+      poster_url: image.tour.poster_url,
+      category_name: image.tour.tour_category.name
+    };
+  };
+
+  const getAltText = (image: TourImage | AdminTourImage): string => {
+    return 'alt_text' in image ? image.alt_text : (image.description || 'Tour image');
+  };
+
+  const getTourId = (image: TourImage | AdminTourImage): number => {
+    return 'tour_id' in image ? image.tour_id : image.tour.id;
+  };
+
   // Fetch tour images data from API
   const fetchTourImages = async () => {
     try {
       setLoading(true);
       
-      const response = await providerTourImageService.getTourImages({
-        page: currentPage,
-        limit: 10,
-        search: searchTerm || undefined,
-        tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
-        is_featured: selectedFeatured === 'all' ? undefined : selectedFeatured === 'true'
-      });
+      let response;
+      if (isAdmin) {
+        // Use admin service to get all tour images from all providers
+        response = await adminTourImageService.getAllTourImages({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
+          is_featured: selectedFeatured === 'all' ? undefined : selectedFeatured === 'true'
+        });
+      } else {
+        // Use provider service to get only provider's tour images
+        response = await providerTourImageService.getTourImages({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
+          is_featured: selectedFeatured === 'all' ? undefined : selectedFeatured === 'true'
+        });
+      }
       
       console.log('API response:', response);
       
@@ -75,13 +109,13 @@ const TourImagesManagement: React.FC = () => {
       const paginationData = response.pagination || { totalPages: 1, totalItems: 0 };
       
       // Sort by tour title, then by image ID
-      const sortedImagesData = imagesData.sort((a: TourImage, b: TourImage) => {
+      const sortedImagesData = imagesData.sort((a: TourImage | AdminTourImage, b: TourImage | AdminTourImage) => {
         const tourCompare = a.tour.title.localeCompare(b.tour.title, 'vi', { sensitivity: 'base' });
         return tourCompare !== 0 ? tourCompare : a.id - b.id;
       });
       
       // Extract unique tours for dropdown
-      const uniqueTours = imagesData.reduce((acc: { id: number; title: string }[], image: TourImage) => {
+      const uniqueTours = imagesData.reduce((acc: { id: number; title: string }[], image: TourImage | AdminTourImage) => {
         if (!acc.find(tour => tour.id === image.tour.id)) {
           acc.push({ id: image.tour.id, title: image.tour.title });
         }
@@ -119,13 +153,17 @@ const TourImagesManagement: React.FC = () => {
   };
 
   // Handle view image
-  const handleViewImage = (image: TourImage) => {
+  const handleViewImage = (image: TourImage | AdminTourImage) => {
     setSelectedImage(image);
     setIsViewDialogOpen(true);
   };
 
   // Handle toggle featured
   const handleToggleFeatured = async (id: number) => {
+    if (isAdmin) {
+      alert('Admin không có quyền thay đổi trạng thái.');
+      return;
+    }
     try {
       await providerTourImageService.toggleFeatured(id);
       fetchTourImages();
@@ -137,6 +175,10 @@ const TourImagesManagement: React.FC = () => {
 
   // Handle delete image
   const handleDeleteImage = async (id: number) => {
+    if (isAdmin) {
+      alert('Admin không có quyền xóa.');
+      return;
+    }
     if (window.confirm('Bạn có chắc chắn muốn xóa hình ảnh này?')) {
       try {
         await providerTourImageService.deleteTourImage(id);
@@ -248,7 +290,7 @@ const TourImagesManagement: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <img
                           src={image.image_url}
-                          alt={image.alt_text}
+                          alt={getAltText(image)}
                           className="w-16 h-12 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
                           onError={handleImageError}
                           onClick={() => handleViewImage(image)}
@@ -273,8 +315,8 @@ const TourImagesManagement: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm max-w-32 truncate" title={image.alt_text}>
-                        {image.alt_text}
+                      <p className="text-sm max-w-32 truncate" title={getAltText(image)}>
+                        {getAltText(image)}
                       </p>
                     </TableCell>
                     <TableCell>
@@ -436,7 +478,7 @@ const TourImagesManagement: React.FC = () => {
                   <div className="flex justify-center">
                     <img
                       src={selectedImage.image_url}
-                      alt={selectedImage.alt_text}
+                      alt={getAltText(selectedImage)}
                       className="max-w-full max-h-96 object-contain rounded-lg border"
                       onError={handleImageError}
                     />
@@ -453,7 +495,7 @@ const TourImagesManagement: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Mô tả ảnh (Alt Text)</label>
                     <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                      {selectedImage.alt_text}
+                      {getAltText(selectedImage)}
                     </p>
                   </div>
                   
@@ -467,7 +509,7 @@ const TourImagesManagement: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">ID Tour</label>
-                      <p className="text-sm text-muted-foreground">{selectedImage.tour_id}</p>
+                      <p className="text-sm text-muted-foreground">{getTourId(selectedImage)}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Trạng thái nổi bật</label>

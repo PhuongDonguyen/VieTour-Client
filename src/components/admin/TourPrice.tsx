@@ -35,35 +35,68 @@ import {
   DollarSign
 } from 'lucide-react';
 import { providerTourPriceService } from '../../services/provider/providerTourPrice.service';
+import { adminTourPriceService } from '../../services/admin/adminTourPrice.service';
 import type { TourPrice } from '../../apis/provider/providerTourPrice.api';
+import type { AdminTourPrice } from '../../apis/admin/adminTourPrice.api';
 
 const TourPricesManagement: React.FC = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'admin';
   
-  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
+  const [tourPrices, setTourPrices] = useState<(TourPrice | AdminTourPrice)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedPrice, setSelectedPrice] = useState<TourPrice | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<TourPrice | AdminTourPrice | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTourId, setSelectedTourId] = useState<string>('all');
   const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
+
+  // Helper functions to normalize data between TourPrice and AdminTourPrice
+  const getTourInfo = (price: TourPrice | AdminTourPrice) => {
+    // Both TourPrice and AdminTourPrice have tour property with same structure
+    return {
+      id: price.tour.id,
+      title: price.tour.title,
+      poster_url: price.tour.poster_url,
+      category_name: price.tour.tour_category.name
+    };
+  };
+
+  const getChildPrice = (price: TourPrice | AdminTourPrice): number => {
+    return 'kid_price' in price ? price.kid_price : price.child_price;
+  };
+
+  const formatPrice = (price: number): string => {
+    return `${price.toLocaleString()} VND`;
+  };
 
   // Fetch tour prices data from API
   const fetchTourPrices = async () => {
     try {
       setLoading(true);
       
-      const response = await providerTourPriceService.getTourPrices({
-        page: currentPage,
-        limit: 10,
-        search: searchTerm || undefined,
-        tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
-      });
+      let response;
+      if (isAdmin) {
+        // Use admin service to get all tour prices from all providers
+        response = await adminTourPriceService.getAllTourPrices({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
+        });
+      } else {
+        // Use provider service to get only provider's tour prices
+        response = await providerTourPriceService.getTourPrices({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId)
+        });
+      }
       
       console.log('API response:', response);
       
@@ -71,12 +104,12 @@ const TourPricesManagement: React.FC = () => {
       const paginationData = response.pagination || { totalPages: 1, totalItems: 0 };
       
       // Sort by tour title
-      const sortedPricesData = pricesData.sort((a: TourPrice, b: TourPrice) => 
+      const sortedPricesData = pricesData.sort((a: TourPrice | AdminTourPrice, b: TourPrice | AdminTourPrice) => 
         a.tour.title.localeCompare(b.tour.title, 'vi', { sensitivity: 'base' })
       );
       
       // Extract unique tours for dropdown
-      const uniqueTours = pricesData.reduce((acc: { id: number; title: string }[], price: TourPrice) => {
+      const uniqueTours = pricesData.reduce((acc: { id: number; title: string }[], price: TourPrice | AdminTourPrice) => {
         if (!acc.find(tour => tour.id === price.tour.id)) {
           acc.push({ id: price.tour.id, title: price.tour.title });
         }
@@ -115,13 +148,13 @@ const TourPricesManagement: React.FC = () => {
   };
 
   // Handle view price
-  const handleViewPrice = (price: TourPrice) => {
+  const handleViewPrice = (price: TourPrice | AdminTourPrice) => {
     setSelectedPrice(price);
     setIsViewDialogOpen(true);
   };
 
   // Handle edit price
-  const handleEditPrice = (price: TourPrice) => {
+  const handleEditPrice = (price: TourPrice | AdminTourPrice) => {
     if (isAdmin) {
       alert('Admin không có quyền chỉnh sửa.');
       return;
@@ -250,7 +283,7 @@ const TourPricesManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <span className="font-semibold text-blue-600">
-                        {formatCurrency(price.kid_price)}
+                        {formatCurrency(getChildPrice(price))}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -378,7 +411,7 @@ const TourPricesManagement: React.FC = () => {
                     <CardTitle className="text-lg text-blue-600">Giá Trẻ Em</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold">{formatCurrency(selectedPrice.kid_price)}</p>
+                    <p className="text-2xl font-bold">{formatCurrency(getChildPrice(selectedPrice))}</p>
                   </CardContent>
                 </Card>
               </div>

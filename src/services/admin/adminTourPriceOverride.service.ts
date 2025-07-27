@@ -7,13 +7,10 @@ export const adminTourPriceOverrideService = {
     page?: number;
     limit?: number;
     search?: string;
-    tour_id?: number;
-    provider_id?: number;
-    override_type?: 'date_range' | 'special_event' | 'seasonal';
     is_active?: boolean;
-    start_date_from?: string;
-    start_date_to?: string;
-    sort_by?: 'start_date' | 'adult_price' | 'created_at';
+    override_type?: 'single_date' | 'date_range' | 'day_of_week';
+    tour_id?: number;
+    sort_by?: 'override_date' | 'adult_price' | 'created_at';
     sort_order?: 'asc' | 'desc';
   }): Promise<AdminTourPriceOverridesResponse> => {
     try {

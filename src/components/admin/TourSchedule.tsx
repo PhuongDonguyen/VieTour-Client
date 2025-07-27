@@ -36,37 +36,82 @@ import {
   Users
 } from 'lucide-react';
 import { providerTourScheduleService } from '../../services/provider/providerTourSchedule.service';
+import { adminTourScheduleService } from '../../services/admin/adminTourSchedule.service';
 import type { TourSchedule } from '../../apis/provider/providerTourSchedule.api';
+import type { AdminTourSchedule } from '../../apis/admin/adminTourSchedule.api';
 
 const TourSchedulesManagement: React.FC = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'admin';
   
-  const [tourSchedules, setTourSchedules] = useState<TourSchedule[]>([]);
+  const [tourSchedules, setTourSchedules] = useState<(TourSchedule | AdminTourSchedule)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedSchedule, setSelectedSchedule] = useState<TourSchedule | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<TourSchedule | AdminTourSchedule | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTourId, setSelectedTourId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
 
+  // Helper functions to normalize data between TourSchedule and AdminTourSchedule
+  const getTourInfo = (schedule: TourSchedule | AdminTourSchedule) => {
+    // Both TourSchedule and AdminTourSchedule have tour property with same structure
+    return {
+      id: schedule.tour.id,
+      title: schedule.tour.title,
+      poster_url: schedule.tour.poster_url,
+      category_name: schedule.tour.tour_category.name
+    };
+  };
+
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: 'long', 
+      day: 'numeric',
+      weekday: 'long'
+    });
+  };
+
+  const formatStatus = (status: string): string => {
+    const statusMap: { [key: string]: string } = {
+      'active': 'Hoạt động',
+      'inactive': 'Tạm dừng',
+      'completed': 'Hoàn thành',
+      'cancelled': 'Đã hủy'
+    };
+    return statusMap[status] || status;
+  };
+
   // Fetch tour schedules data from API
   const fetchTourSchedules = async () => {
     try {
       setLoading(true);
       
-      const response = await providerTourScheduleService.getTourSchedules({
-        page: currentPage,
-        limit: 10,
-        search: searchTerm || undefined,
-        tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
-        status: selectedStatus === 'all' ? undefined : selectedStatus
-      });
+      let response;
+      if (isAdmin) {
+        // Use admin service to get all tour schedules from all providers
+        response = await adminTourScheduleService.getAllTourSchedules({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
+          status: selectedStatus === 'all' ? undefined : selectedStatus as "cancelled" | "available" | "full"
+        });
+      } else {
+        // Use provider service to get only provider's tour schedules
+        response = await providerTourScheduleService.getTourSchedules({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_id: selectedTourId === 'all' ? undefined : parseInt(selectedTourId),
+          status: selectedStatus === 'all' ? undefined : selectedStatus as "cancelled" | "available" | "full"
+        });
+      }
       
       console.log('API response:', response);
       
@@ -74,12 +119,12 @@ const TourSchedulesManagement: React.FC = () => {
       const paginationData = response.pagination || { totalPages: 1, totalItems: 0 };
       
       // Sort by start date
-      const sortedSchedulesData = schedulesData.sort((a: TourSchedule, b: TourSchedule) => 
+      const sortedSchedulesData = schedulesData.sort((a: TourSchedule | AdminTourSchedule, b: TourSchedule | AdminTourSchedule) => 
         new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
       );
       
       // Extract unique tours for dropdown
-      const uniqueTours = schedulesData.reduce((acc: { id: number; title: string }[], schedule: TourSchedule) => {
+      const uniqueTours = schedulesData.reduce((acc: { id: number; title: string }[], schedule: TourSchedule | AdminTourSchedule) => {
         if (!acc.find(tour => tour.id === schedule.tour.id)) {
           acc.push({ id: schedule.tour.id, title: schedule.tour.title });
         }
@@ -117,13 +162,17 @@ const TourSchedulesManagement: React.FC = () => {
   };
 
   // Handle view schedule
-  const handleViewSchedule = (schedule: TourSchedule) => {
+  const handleViewSchedule = (schedule: TourSchedule | AdminTourSchedule) => {
     setSelectedSchedule(schedule);
     setIsViewDialogOpen(true);
   };
 
   // Handle edit schedule  
-  const handleEditSchedule = (schedule: TourSchedule) => {
+  const handleEditSchedule = (schedule: TourSchedule | AdminTourSchedule) => {
+    if (isAdmin) {
+      alert('Admin không có quyền chỉnh sửa.');
+      return;
+    }
     // Tạm thời show view dialog thay vì edit
     setSelectedSchedule(schedule);
     setIsViewDialogOpen(true);
@@ -131,6 +180,10 @@ const TourSchedulesManagement: React.FC = () => {
 
   // Handle delete schedule
   const handleDeleteSchedule = async (id: number) => {
+    if (isAdmin) {
+      alert('Admin không có quyền xóa.');
+      return;
+    }
     if (window.confirm('Bạn có chắc chắn muốn xóa lịch trình tour này?')) {
       try {
         await providerTourScheduleService.deleteTourSchedule(id);
@@ -140,16 +193,6 @@ const TourSchedulesManagement: React.FC = () => {
         alert('Không thể xóa lịch trình tour. Vui lòng thử lại.');
       }
     }
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
-    });
   };
 
   // Get status badge variant

@@ -7,6 +7,7 @@ import TourDetails from "../components/admin/TourDetail";
 import TourSchedulesManagement from "../components/admin/TourSchedule";
 import TourImagesManagement from "../components/admin/TourImage";
 import TourPriceOverridesManagement from "../components/admin/TourPriceOverride";
+import TourCategory from "../components/admin/TourCategory";
 import { RequireAdminAccess, RequireAdminOnly, RequireProviderOnly } from "../components/admin/AuthWrappers";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
@@ -115,35 +116,9 @@ export const adminRoutes = [
     element: (
       <RequireAdminOnly>
         <AdminLayout title="Tour Categories">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">Quản Lý Danh Mục Tours</h1>
-            <p className="text-muted-foreground">Quản lý các danh mục và phân loại tours.</p>
-            <div className="mt-4 p-4 bg-red-50 rounded-lg">
-              <p className="text-red-800 text-sm">
-                🏷️ API endpoint: GET /api/provider/tour-categories
-              </p>
-            </div>
-          </div>
+          <TourCategory />
         </AdminLayout>
       </RequireAdminOnly>
-    ),
-  },
-  {
-    path: "/admin/tours/price-overrides",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Price Overrides">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">Quản Lý Giá Đặc Biệt</h1>
-            <p className="text-muted-foreground">Quản lý giá đặc biệt và các ưu đãi theo mùa.</p>
-            <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
-              <p className="text-indigo-800 text-sm">
-                💲 API endpoint: GET /api/provider/tour-price-overrides
-              </p>
-            </div>
-          </div>
-        </AdminLayout>
-      </RequireAdminAccess>
     ),
   },
   {

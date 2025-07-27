@@ -34,7 +34,7 @@ export const adminTourCategoryService = {
   // Tạo tour category mới
   createTourCategory: async (categoryData: {
     name: string;
-    description: string;
+    description?: string;
     image_url: string;
     is_active?: boolean;
   }): Promise<AdminTourCategory> => {

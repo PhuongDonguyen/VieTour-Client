@@ -3,13 +3,14 @@ import axiosInstance from '../axiosInstance';
 export interface AdminTourCategory {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   image_url: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  tour_count: number;
-  active_tour_count: number;
+  slug: string;
+  tourCount: number;
+  created_at?: string;
+  updated_at?: string;
+  active_tour_count?: number;
 }
 
 export interface AdminTourCategoriesResponse {
@@ -53,7 +54,7 @@ export const adminTourCategoryApi = {
   // Tạo tour category mới (Admin only)
   createTourCategory: (categoryData: {
     name: string;
-    description: string;
+    description?: string;
     image_url: string;
     is_active?: boolean;
   }): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
