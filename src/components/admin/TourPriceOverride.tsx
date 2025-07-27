@@ -57,6 +57,21 @@ const TourPriceOverridesManagement: React.FC = () => {
   const [selectedOverrideType, setSelectedOverrideType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [availableTours, setAvailableTours] = useState<{ id: number; title: string }[]>([]);
+  const [availableTourPrices, setAvailableTourPrices] = useState<{ id: number; tour_title: string; adult_price: number }[]>([]);
+  
+  // Create form states
+  const [createForm, setCreateForm] = useState({
+    tour_price_id: '',
+    override_type: '',
+    override_date: '',
+    start_date: '',
+    end_date: '',
+    day_of_week: '',
+    adult_price: '',
+    kid_price: '',
+    note: '',
+    is_active: true
+  });
 
   // Fetch price overrides data from API
   const fetchPriceOverrides = async () => {
@@ -173,6 +188,52 @@ const TourPriceOverridesManagement: React.FC = () => {
         console.error('Failed to delete price override:', error);
         alert('Không thể xóa ghi đè giá. Vui lòng thử lại.');
       }
+    }
+  };
+
+  // Handle create override
+  const handleCreateOverride = async () => {
+    if (isAdmin) {
+      alert('Admin không có quyền tạo mới.');
+      return;
+    }
+
+    try {
+      const data = {
+        tour_price_id: parseInt(createForm.tour_price_id),
+        override_type: createForm.override_type as 'single_date' | 'date_range' | 'day_of_week',
+        override_date: createForm.override_type === 'single_date' ? createForm.override_date : undefined,
+        start_date: createForm.override_type === 'date_range' ? createForm.start_date : undefined,
+        end_date: createForm.override_type === 'date_range' ? createForm.end_date : undefined,
+        day_of_week: createForm.override_type === 'day_of_week' ? createForm.day_of_week : undefined,
+        adult_price: parseFloat(createForm.adult_price),
+        kid_price: parseFloat(createForm.kid_price),
+        note: createForm.note || '',
+        is_active: createForm.is_active
+      };
+
+      await providerTourPriceOverrideService.createTourPriceOverride(data);
+      setIsCreateDialogOpen(false);
+      fetchPriceOverrides();
+      
+      // Reset form
+      setCreateForm({
+        tour_price_id: '',
+        override_type: '',
+        override_date: '',
+        start_date: '',
+        end_date: '',
+        day_of_week: '',
+        adult_price: '',
+        kid_price: '',
+        note: '',
+        is_active: true
+      });
+      
+      alert('Tạo ghi đè giá thành công!');
+    } catch (error) {
+      console.error('Failed to create price override:', error);
+      alert('Không thể tạo ghi đè giá. Vui lòng thử lại.');
     }
   };
 
@@ -583,7 +644,7 @@ const TourPriceOverridesManagement: React.FC = () => {
               <CardContent className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Chọn Tour</label>
-                  <Select>
+                  <Select value={createForm.tour_price_id} onValueChange={(value) => setCreateForm({...createForm, tour_price_id: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn tour..." />
                     </SelectTrigger>
@@ -599,7 +660,7 @@ const TourPriceOverridesManagement: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium mb-2">Loại Ghi Đè</label>
-                  <Select>
+                  <Select value={createForm.override_type} onValueChange={(value) => setCreateForm({...createForm, override_type: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn loại ghi đè..." />
                     </SelectTrigger>
@@ -610,6 +671,62 @@ const TourPriceOverridesManagement: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Date inputs based on override type */}
+                {createForm.override_type === 'single_date' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Ngày áp dụng</label>
+                    <Input 
+                      type="date"
+                      value={createForm.override_date}
+                      onChange={(e) => setCreateForm({...createForm, override_date: e.target.value})}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+
+                {createForm.override_type === 'date_range' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Ngày bắt đầu</label>
+                      <Input 
+                        type="date"
+                        value={createForm.start_date}
+                        onChange={(e) => setCreateForm({...createForm, start_date: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Ngày kết thúc</label>
+                      <Input 
+                        type="date"
+                        value={createForm.end_date}
+                        onChange={(e) => setCreateForm({...createForm, end_date: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {createForm.override_type === 'day_of_week' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Thứ trong tuần</label>
+                    <Select value={createForm.day_of_week} onValueChange={(value) => setCreateForm({...createForm, day_of_week: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn thứ..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2">Thứ 2</SelectItem>
+                        <SelectItem value="3">Thứ 3</SelectItem>
+                        <SelectItem value="4">Thứ 4</SelectItem>
+                        <SelectItem value="5">Thứ 5</SelectItem>
+                        <SelectItem value="6">Thứ 6</SelectItem>
+                        <SelectItem value="7">Thứ 7</SelectItem>
+                        <SelectItem value="8">Chủ Nhật</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -618,6 +735,8 @@ const TourPriceOverridesManagement: React.FC = () => {
                       type="number"
                       placeholder="0"
                       min="0"
+                      value={createForm.adult_price}
+                      onChange={(e) => setCreateForm({...createForm, adult_price: e.target.value})}
                       className="w-full"
                     />
                   </div>
@@ -627,6 +746,8 @@ const TourPriceOverridesManagement: React.FC = () => {
                       type="number"
                       placeholder="0"
                       min="0"
+                      value={createForm.kid_price}
+                      onChange={(e) => setCreateForm({...createForm, kid_price: e.target.value})}
                       className="w-full"
                     />
                   </div>
@@ -636,12 +757,20 @@ const TourPriceOverridesManagement: React.FC = () => {
                   <label className="block text-sm font-medium mb-2">Ghi Chú</label>
                   <Input 
                     placeholder="Nhập ghi chú cho quy tắc ghi đè..."
+                    value={createForm.note}
+                    onChange={(e) => setCreateForm({...createForm, note: e.target.value})}
                     className="w-full"
                   />
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="is_active" className="rounded" defaultChecked />
+                  <input 
+                    type="checkbox" 
+                    id="is_active" 
+                    className="rounded" 
+                    checked={createForm.is_active}
+                    onChange={(e) => setCreateForm({...createForm, is_active: e.target.checked})}
+                  />
                   <label htmlFor="is_active" className="text-sm font-medium">
                     Kích hoạt ngay
                   </label>
@@ -659,7 +788,8 @@ const TourPriceOverridesManagement: React.FC = () => {
               </Button>
               <Button 
                 className="bg-green-600 hover:bg-green-700"
-                disabled
+                onClick={handleCreateOverride}
+                disabled={!createForm.tour_price_id || !createForm.override_type || !createForm.adult_price || !createForm.kid_price}
               >
                 Lưu Ghi Đè Giá
               </Button>
@@ -668,7 +798,7 @@ const TourPriceOverridesManagement: React.FC = () => {
             {/* Footer Note */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-sm text-green-800">
-                💰 <strong>Lưu ý:</strong> Form tạo mới đã được thiết kế. Tính năng lưu sẽ được kích hoạt sau.
+                💰 <strong>Lưu ý:</strong> Điền đầy đủ thông tin để tạo quy tắc ghi đè giá mới.
               </p>
             </div>
           </div>

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { providerTourService } from '../../services/provider/providerTour.service';
 import { adminTourService } from '../../services/admin/adminTour.service';
+import { fetchActiveTourCategories } from '../../services/tourCategory.service';
 import type { ProviderTour } from '../../apis/provider/providerTour.api';
 import type { AdminTour } from '../../apis/admin/adminTour.api';
 
@@ -48,6 +49,75 @@ const ProviderTours: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [selectedTour, setSelectedTour] = useState<ProviderTour | AdminTour | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // Form states
+  const [tourForm, setTourForm] = useState({
+    title: '',
+    image: null as File | null,
+    capacity: '',
+    transportation: '',
+    accommodation: '',
+    destination_intro: '',
+    tour_info: '',
+    duration: '',
+    tour_category_id: '',
+    live_commentary: '', // Tour diễn ra
+    is_active: true
+  });
+  const [editingTourId, setEditingTourId] = useState<number | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [tourCategories, setTourCategories] = useState<any[]>([]);
+
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setTourForm({...tourForm, image: file});
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  // Generate slug from title
+  const generateSlug = (title: string): string => {
+    return title
+      .toLowerCase()
+      .normalize('NFD') // Decompose accented characters
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+      .replace(/[đĐ]/g, 'd') // Handle Vietnamese đ
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .trim()
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  };
+
+  // Clear form
+  const clearForm = () => {
+    setTourForm({
+      title: '',
+      image: null,
+      capacity: '',
+      transportation: '',
+      accommodation: '',
+      destination_intro: '',
+      tour_info: '',
+      duration: '',
+      tour_category_id: '',
+      live_commentary: '',
+      is_active: true
+    });
+    // Cleanup preview URL to prevent memory leak
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    setEditingTourId(null);
+  };
 
   // Helper functions to normalize data between AdminTour and ProviderTour
   const getTourCapacity = (tour: ProviderTour | AdminTour): number => {
@@ -85,6 +155,10 @@ const ProviderTours: React.FC = () => {
 
   const getTourInfo = (tour: ProviderTour | AdminTour): string | null => {
     return 'tour_info' in tour ? tour.tour_info : null;
+  };
+
+  const getTourLiveCommentary = (tour: ProviderTour | AdminTour): string | null => {
+    return 'live_commentary' in tour ? tour.live_commentary : null;
   };
 
   // Fetch tours data
@@ -150,9 +224,30 @@ const ProviderTours: React.FC = () => {
     }
   };
 
+  // Fetch tour categories
+  const fetchTourCategoriesData = async () => {
+    try {
+      const categories = await fetchActiveTourCategories();
+      setTourCategories(categories);
+    } catch (error) {
+      console.error('Error fetching tour categories:', error);
+      setTourCategories([]);
+    }
+  };
+
   useEffect(() => {
     fetchTours();
+    fetchTourCategoriesData(); // Fetch categories on component mount
   }, [currentPage, searchTerm]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -198,6 +293,115 @@ const ProviderTours: React.FC = () => {
     setIsViewDialogOpen(true);
   };
 
+  // Handle create tour
+  const handleCreateTour = () => {
+    if (isAdmin) {
+      alert('Admin không có quyền tạo tour.');
+      return;
+    }
+    // Reset form
+    clearForm();
+    setIsCreateDialogOpen(true);
+  };
+
+  // Handle edit tour
+  const handleEditTour = (tour: ProviderTour | AdminTour) => {
+    if (isAdmin) {
+      alert('Admin không có quyền chỉnh sửa tour.');
+      return;
+    }
+    
+    // Populate form with tour data
+    setTourForm({
+      title: tour.title,
+      image: null, // Will be set if user selects new image
+      capacity: getTourCapacity(tour).toString(),
+      transportation: getTourTransportation(tour),
+      accommodation: getTourAccommodation(tour),
+      destination_intro: getTourDestinationIntro(tour) || '',
+      tour_info: getTourInfo(tour) || '',
+      duration: tour.duration.toString(),
+      tour_category_id: tour.tour_category.id.toString(),
+      live_commentary: getTourLiveCommentary(tour) || '', // Load existing live_commentary
+      is_active: tour.is_active
+    });
+    
+    // Set current image as preview if exists
+    if ('poster_url' in tour && tour.poster_url) {
+      setImagePreview(tour.poster_url);
+    }
+    
+    setEditingTourId(tour.id);
+    setSelectedTour(tour);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle save tour (create/update)
+  const handleSaveTour = async () => {
+    if (isAdmin) {
+      alert('Admin không có quyền lưu tour.');
+      return;
+    }
+
+    // Validation
+    if (!tourForm.title || !tourForm.capacity || !tourForm.tour_category_id) {
+      alert('Vui lòng điền đầy đủ thông tin bắt buộc (Tên tour, Sức chứa, Danh mục).');
+      return;
+    }
+
+    // For create, image is required
+    if (!editingTourId && !tourForm.image) {
+      alert('Vui lòng chọn ảnh cho tour.');
+      return;
+    }
+
+    try {
+      // Create FormData
+      const formData = new FormData();
+      formData.append('title', tourForm.title);
+      formData.append('slug', generateSlug(tourForm.title)); // Generate slug from title
+      formData.append('capacity', tourForm.capacity);
+      formData.append('transportation', tourForm.transportation);
+      formData.append('accommodation', tourForm.accommodation);
+      formData.append('destination_intro', tourForm.destination_intro);
+      formData.append('tour_info', tourForm.tour_info);
+      formData.append('duration', tourForm.duration);
+      formData.append('tour_category_id', tourForm.tour_category_id);
+      formData.append('live_commentary', tourForm.live_commentary);
+      formData.append('is_active', tourForm.is_active.toString());
+      
+      // Add provider_id from current user
+      if (user?.id) {
+        formData.append('provider_id', user.id.toString());
+      }
+      
+      // Add image if selected
+      if (tourForm.image) {
+        formData.append('image', tourForm.image);
+      }
+
+      if (selectedTour && isEditDialogOpen) {
+        // Update existing tour
+        await providerTourService.updateTour(selectedTour.id, formData);
+        setIsEditDialogOpen(false);
+        alert('Cập nhật tour thành công!');
+      } else {
+        // Create new tour
+        await providerTourService.createTour(formData);
+        setIsCreateDialogOpen(false);
+        alert('Tạo tour mới thành công!');
+      }
+      
+      fetchTours(); // Refresh list
+      setSelectedTour(null);
+      clearForm();
+      
+    } catch (error) {
+      console.error('Failed to save tour:', error);
+      alert('Không thể lưu tour. Vui lòng thử lại.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -214,7 +418,7 @@ const ProviderTours: React.FC = () => {
           </div>
         </div>
         {!isAdmin && (
-          <Button>
+          <Button onClick={handleCreateTour}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm Tour Mới
           </Button>
@@ -335,7 +539,7 @@ const ProviderTours: React.FC = () => {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {/* Handle edit */}}
+                              onClick={() => handleEditTour(tour)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -510,6 +714,12 @@ const ProviderTours: React.FC = () => {
                       <p className="font-medium">Sức chứa tối đa:</p>
                       <p className="text-muted-foreground">{getTourCapacity(selectedTour)} người</p>
                     </div>
+                    {getTourLiveCommentary(selectedTour) && (
+                      <div>
+                        <p className="font-medium">Tour diễn ra:</p>
+                        <p className="text-muted-foreground">{getTourLiveCommentary(selectedTour)}</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -579,6 +789,337 @@ const ProviderTours: React.FC = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Tour Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+        setIsCreateDialogOpen(open);
+        if (!open) clearForm();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Tạo Tour Mới
+            </DialogTitle>
+            <DialogDescription>
+              Nhập thông tin để tạo tour mới
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Tên Tour</label>
+              <Input 
+                placeholder="Nhập tên tour..."
+                value={tourForm.title}
+                onChange={(e) => setTourForm({...tourForm, title: e.target.value})}
+              />
+              {tourForm.title && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Slug: <span className="font-mono">{generateSlug(tourForm.title)}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Hình Ảnh Tour</label>
+              <input 
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full p-2 border rounded-md"
+              />
+              {imagePreview && (
+                <div className="mt-2">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-32 h-32 object-cover rounded-md border"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Sức Chứa</label>
+                <Input 
+                  type="number"
+                  placeholder="50"
+                  value={tourForm.capacity}
+                  onChange={(e) => setTourForm({...tourForm, capacity: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Thời Gian</label>
+                <Input 
+                  placeholder="3 ngày 2 đêm"
+                  value={tourForm.duration}
+                  onChange={(e) => setTourForm({...tourForm, duration: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Vận Chuyển</label>
+              <Input 
+                placeholder="Xe khách, máy bay..."
+                value={tourForm.transportation}
+                onChange={(e) => setTourForm({...tourForm, transportation: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Lưu Trú</label>
+              <Input 
+                placeholder="Khách sạn 3 sao..."
+                value={tourForm.accommodation}
+                onChange={(e) => setTourForm({...tourForm, accommodation: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Giới Thiệu Điểm Đến</label>
+              <textarea 
+                className="w-full p-2 border rounded-md min-h-[80px]"
+                placeholder="Mô tả về điểm đến..."
+                value={tourForm.destination_intro}
+                onChange={(e) => setTourForm({...tourForm, destination_intro: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Thông Tin Tour</label>
+              <textarea 
+                className="w-full p-2 border rounded-md min-h-[80px]"
+                placeholder="Thông tin chi tiết về tour..."
+                value={tourForm.tour_info}
+                onChange={(e) => setTourForm({...tourForm, tour_info: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Danh Mục Tour</label>
+              <select 
+                className="w-full p-2 border rounded-md"
+                value={tourForm.tour_category_id}
+                onChange={(e) => setTourForm({...tourForm, tour_category_id: e.target.value})}
+              >
+                <option value="">Chọn danh mục...</option>
+                {tourCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Tour Diễn Ra</label>
+              <textarea 
+                className="w-full p-2 border rounded-md min-h-[60px]"
+                placeholder="VD: Thứ 2, Thứ 6 hàng tuần | Khởi hành 8:00 sáng..."
+                value={tourForm.live_commentary}
+                onChange={(e) => setTourForm({...tourForm, live_commentary: e.target.value})}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="create_is_active" 
+                checked={tourForm.is_active}
+                onChange={(e) => setTourForm({...tourForm, is_active: e.target.checked})}
+              />
+              <label htmlFor="create_is_active" className="text-sm font-medium">
+                Kích hoạt ngay
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Hủy
+              </Button>
+              <Button 
+                onClick={handleSaveTour}
+                disabled={!tourForm.title || !tourForm.capacity || !tourForm.tour_category_id || (!tourForm.image && !editingTourId)}
+              >
+                Tạo Tour
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Tour Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) clearForm();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5" />
+              Chỉnh Sửa Tour
+            </DialogTitle>
+            <DialogDescription>
+              Cập nhật thông tin tour
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Tên Tour</label>
+              <Input 
+                placeholder="Nhập tên tour..."
+                value={tourForm.title}
+                onChange={(e) => setTourForm({...tourForm, title: e.target.value})}
+              />
+              {tourForm.title && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Slug: <span className="font-mono">{generateSlug(tourForm.title)}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Hình Ảnh Tour</label>
+              <input 
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full p-2 border rounded-md"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Để trống nếu không muốn thay đổi ảnh
+              </div>
+              {imagePreview && (
+                <div className="mt-2">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-32 h-32 object-cover rounded-md border"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Sức Chứa</label>
+                <Input 
+                  type="number"
+                  placeholder="50"
+                  value={tourForm.capacity}
+                  onChange={(e) => setTourForm({...tourForm, capacity: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Thời Gian</label>
+                <Input 
+                  placeholder="3 ngày 2 đêm"
+                  value={tourForm.duration}
+                  onChange={(e) => setTourForm({...tourForm, duration: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Vận Chuyển</label>
+              <Input 
+                placeholder="Xe khách, máy bay..."
+                value={tourForm.transportation}
+                onChange={(e) => setTourForm({...tourForm, transportation: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Lưu Trú</label>
+              <Input 
+                placeholder="Khách sạn 3 sao..."
+                value={tourForm.accommodation}
+                onChange={(e) => setTourForm({...tourForm, accommodation: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Giới Thiệu Điểm Đến</label>
+              <textarea 
+                className="w-full p-2 border rounded-md min-h-[80px]"
+                placeholder="Mô tả về điểm đến..."
+                value={tourForm.destination_intro}
+                onChange={(e) => setTourForm({...tourForm, destination_intro: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Thông Tin Tour</label>
+              <textarea 
+                className="w-full p-2 border rounded-md min-h-[80px]"
+                placeholder="Thông tin chi tiết về tour..."
+                value={tourForm.tour_info}
+                onChange={(e) => setTourForm({...tourForm, tour_info: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Danh Mục Tour</label>
+              <select 
+                className="w-full p-2 border rounded-md"
+                value={tourForm.tour_category_id}
+                onChange={(e) => setTourForm({...tourForm, tour_category_id: e.target.value})}
+              >
+                <option value="">Chọn danh mục...</option>
+                {tourCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Tour Diễn Ra</label>
+              <textarea 
+                className="w-full p-2 border rounded-md min-h-[60px]"
+                placeholder="VD: Thứ 2, Thứ 6 hàng tuần | Khởi hành 8:00 sáng..."
+                value={tourForm.live_commentary}
+                onChange={(e) => setTourForm({...tourForm, live_commentary: e.target.value})}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="edit_is_active" 
+                checked={tourForm.is_active}
+                onChange={(e) => setTourForm({...tourForm, is_active: e.target.checked})}
+              />
+              <label htmlFor="edit_is_active" className="text-sm font-medium">
+                Kích hoạt
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Hủy
+              </Button>
+              <Button 
+                onClick={handleSaveTour}
+                disabled={!tourForm.title || !tourForm.capacity || !tourForm.tour_category_id}
+              >
+                Cập Nhật
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -59,13 +59,21 @@ export const providerTourApi = {
   },
 
   // Tạo tour mới
-  createTour: (tourData: Partial<ProviderTour>) => {
-    return axiosInstance.post('/api/provider/tours', tourData);
+  createTour: (tourData: FormData) => {
+    return axiosInstance.post('/api/provider/tours', tourData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   },
 
   // Cập nhật tour
-  updateTour: (id: number, tourData: Partial<ProviderTour>) => {
-    return axiosInstance.put(`/api/provider/tours/${id}`, tourData);
+  updateTour: (id: number, tourData: FormData) => {
+    return axiosInstance.put(`/api/provider/tours/${id}`, tourData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   },
 
   // Xóa tour
@@ -81,5 +89,10 @@ export const providerTourApi = {
   // Thay đổi trạng thái tour
   toggleTourStatus: (id: number) => {
     return axiosInstance.patch(`/api/provider/tours/${id}/toggle-status`);
+  },
+
+  // Tăng view count tour
+  incrementViewCount: (id: number) => {
+    return axiosInstance.patch(`/api/provider/tours/${id}/increment-view`);
   }
 };

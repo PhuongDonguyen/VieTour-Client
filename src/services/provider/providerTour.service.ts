@@ -28,7 +28,7 @@ export const providerTourService = {
   },
 
   // Tạo tour mới
-  async createTour(tourData: Partial<ProviderTour>): Promise<ProviderTour> {
+  async createTour(tourData: FormData): Promise<ProviderTour> {
     try {
       const response = await providerTourApi.createTour(tourData);
       return response.data;
@@ -39,7 +39,7 @@ export const providerTourService = {
   },
 
   // Cập nhật tour
-  async updateTour(id: number, tourData: Partial<ProviderTour>): Promise<ProviderTour> {
+  async updateTour(id: number, tourData: FormData): Promise<ProviderTour> {
     try {
       const response = await providerTourApi.updateTour(id, tourData);
       return response.data;
@@ -77,6 +77,17 @@ export const providerTourService = {
       return response.data;
     } catch (error) {
       console.error('Error toggling tour status:', error);
+      throw error;
+    }
+  },
+
+  // Tăng view count tour
+  async incrementViewCount(id: number): Promise<ProviderTour> {
+    try {
+      const response = await providerTourApi.incrementViewCount(id);
+      return response.data;
+    } catch (error) {
+      console.error('Error incrementing view count:', error);
       throw error;
     }
   },
