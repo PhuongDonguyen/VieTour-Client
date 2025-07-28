@@ -29,7 +29,7 @@ export const clientRoutes = [
       { path: 'pricing', element: <Pricing /> },
       { path: 'tour-category/:slug', element: <TourCategory /> },
       { path: 'about', element: <About /> },
-      { path: 'blog/:id', element: <BlogDetail /> },
+      { path: 'blog/:slug', element: <BlogDetail /> },
       { path: 'payment/success', element: <PaymentSuccess /> },
       { path: 'payment/failed', element: <PaymentFailed /> },
       {

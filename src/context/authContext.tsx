@@ -2,13 +2,14 @@ import { createContext, useState } from "react";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import * as accountApi from '../apis/account.api';
 
 
 interface AuthContextType {
   user: any;
   // setUser: (user: User | null) => void;
   login: (user: any) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
 }
 
@@ -16,7 +17,7 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   // setUser: () => { },
   login: () => { },
-  logout: () => { },
+  logout: async () => { },
   loading: true
 });
 
@@ -52,9 +53,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setItem("user", userData);
   }
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
     removeItem("user");
+    await accountApi.logout();
   }
 
   console.log({ contextUser: user });

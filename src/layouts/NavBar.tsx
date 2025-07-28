@@ -5,8 +5,8 @@ import Modal from '../components/Modal';
 import LoginForm from '../components/authentication/LoginForm';
 import SignupForm from '../components/authentication/SignupForm';
 import { useAuth } from '../hooks/useAuth';
-import { getTourCategories } from '../apis/tourCategory.api';
-import { fetchBlogCategories } from '../services/blogCategory.service';
+import { fetchActiveTourCategories } from '../services/tourCategory.service';
+import { getActiveCategories } from '../services/blogCategory.service';
 
 export const NavBar = ({ textDark = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -32,16 +32,12 @@ export const NavBar = ({ textDark = false }) => {
   }, []);
 
   useEffect(() => {
-    getTourCategories().then(res => {
-      if (res.data && res.data.success) {
-        setTourCategories(res.data.data);
-      }
+    fetchActiveTourCategories().then(res => {
+      setTourCategories(res);
     });
-    fetchBlogCategories().then(res => {
+    getActiveCategories().then(res => {
       console.log(res);
-      if (res && res.success) {
-        setBlogCategories(res.data);
-      }
+      setBlogCategories(res);
     });
   }, []);
 
@@ -276,7 +272,14 @@ export const NavBar = ({ textDark = false }) => {
                           <Link to="/user/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</Link>
                           <Link to="/user/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</Link>
                           <Link to="/user/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</Link>
-                          <a href="#" onClick={(e) => { e.preventDefault(); logout(); }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
+                          <a href="#" onClick={async (e) => { 
+                            e.preventDefault(); 
+                            try {
+                              await logout(); 
+                            } catch (error) {
+                              console.error('Logout failed:', error);
+                            }
+                          }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
                         </div>
                       </div>
                     ) : (

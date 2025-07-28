@@ -21,34 +21,27 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-import { fetchBlogCategories, type BlogCategory } from '@/services/blogCategory.service';
-
-interface BlogPost {
-    id: number;
-    title: string;
-    content: string;
-    thumbnail: string;
-    category_id: number;
-    account_id: number;
-    author: string;
-    created_at: string;
-    updated_at: string;
-    status: 'draft' | 'published' | 'archived';
-}
+import { getAllCategories, type BlogCategory } from '@/services/blogCategory.service';
+import { fetchBlogsByAuthor, deleteBlog, type BlogPost } from '@/services/blog.service';
+import { useAuth } from '@/hooks/useAuth';
 
 const AdminBlog: React.FC = () => {
     const [blogs, setBlogs] = useState<BlogPost[]>([]);
     const [categories, setCategories] = useState<BlogCategory[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     // Load categories
     useEffect(() => {
         const loadCategories = async () => {
             try {
-                const categoryList = await fetchBlogCategories();
+                const categoryList = await getAllCategories();
                 setCategories(categoryList);
             } catch (error) {
                 console.error('Error loading categories:', error);
@@ -57,57 +50,57 @@ const AdminBlog: React.FC = () => {
         loadCategories();
     }, []);
 
-    // Mock data for now - replace with actual API calls
+    // Debounce search term
     useEffect(() => {
-        const mockBlogs: BlogPost[] = [
-            {
-                id: 1,
-                title: "Top 10 Must-Visit Destinations in Vietnam",
-                content: "Discover the most beautiful places in Vietnam...",
-                thumbnail: "/blog-1.jpg",
-                category_id: 1,
-                account_id: 1,
-                author: "Admin User",
-                created_at: "2024-01-15T10:00:00Z",
-                updated_at: "2024-01-15T10:00:00Z",
-                status: "published"
-            },
-            {
-                id: 2,
-                title: "Vietnamese Street Food Guide",
-                content: "A comprehensive guide to Vietnamese street food...",
-                thumbnail: "/blog-2.jpg",
-                category_id: 2,
-                account_id: 1,
-                author: "Food Blogger",
-                created_at: "2024-01-10T14:30:00Z",
-                updated_at: "2024-01-12T09:15:00Z",
-                status: "published"
-            },
-            {
-                id: 3,
-                title: "Planning Your Perfect Halong Bay Trip",
-                content: "Everything you need to know about visiting Halong Bay...",
-                thumbnail: "/blog-3.jpg",
-                category_id: 1,
-                account_id: 2,
-                author: "Travel Expert",
-                created_at: "2024-01-08T11:20:00Z",
-                updated_at: "2024-01-08T11:20:00Z",
-                status: "draft"
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Load blogs from API for current user
+    useEffect(() => {
+        const loadBlogs = async () => {
+            if (!user?.account_id) return;
+
+            try {
+                setIsLoading(true);
+                const response = await fetchBlogsByAuthor(
+                    user.account_id,
+                    page,
+                    10
+                );
+
+                // Filter by category and search if needed
+                let filteredBlogs = response.data;
+
+                if (selectedCategory !== 'all') {
+                    filteredBlogs = filteredBlogs.filter(blog =>
+                        blog.category_id === parseInt(selectedCategory)
+                    );
+                }
+
+                if (debouncedSearchTerm) {
+                    filteredBlogs = filteredBlogs.filter(blog =>
+                        blog.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                        blog.content.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+                    );
+                }
+
+                setBlogs(filteredBlogs);
+                setTotalPages(response.totalPages);
+            } catch (error) {
+                console.error('Error loading blogs:', error);
+                setBlogs([]);
+                setTotalPages(0);
+            } finally {
+                setIsLoading(false);
             }
-        ];
+        };
 
-        setTimeout(() => {
-            setBlogs(mockBlogs);
-            setIsLoading(false);
-        }, 1000);
-    }, []);
-
-    const filteredBlogs = blogs.filter(blog =>
-        blog.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (selectedCategory === 'all' || blog.category_id.toString() === selectedCategory)
-    );
+        loadBlogs();
+    }, [page, selectedCategory, debouncedSearchTerm, user?.account_id]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -128,14 +121,29 @@ const AdminBlog: React.FC = () => {
 
     const getCategoryName = (categoryId: number) => {
         const category = categories.find(cat => cat.id === categoryId);
-        return category ? category.name : 'Unknown';
+        return category ? category.title : 'Unknown';
     };
 
     const handleDelete = async (blogId: number) => {
         if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-            // TODO: Implement delete API call
-            setBlogs(blogs.filter(blog => blog.id !== blogId));
+            try {
+                await deleteBlog(blogId);
+                setBlogs(blogs.filter(blog => blog.id !== blogId));
+            } catch (error) {
+                console.error('Error deleting blog:', error);
+                alert('Có lỗi xảy ra khi xóa bài viết. Vui lòng thử lại.');
+            }
         }
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchTerm(value);
+        setPage(1); // Reset to first page when searching
+    };
+
+    const handleCategoryChange = (value: string) => {
+        setSelectedCategory(value);
+        setPage(1); // Reset to first page when filtering
     };
 
     if (isLoading) {
@@ -248,19 +256,19 @@ const AdminBlog: React.FC = () => {
                             <Input
                                 placeholder="Search blog posts..."
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                                 className="pl-10"
                             />
                         </div>
                         <select
                             value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            onChange={(e) => handleCategoryChange(e.target.value)}
                             className="px-3 py-2 border border-input bg-background rounded-md text-sm"
                         >
                             <option value="all">All Categories</option>
                             {categories.map((category) => (
                                 <option key={category.id} value={category.id.toString()}>
-                                    {category.name}
+                                    {category.title}
                                 </option>
                             ))}
                         </select>
@@ -280,7 +288,7 @@ const AdminBlog: React.FC = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredBlogs.map((blog) => (
+                                {blogs.map((blog) => (
                                     <TableRow key={blog.id}>
                                         <TableCell>
                                             <div className="flex items-center space-x-3">
@@ -323,7 +331,7 @@ const AdminBlog: React.FC = () => {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => window.open(`/blog/${blog.id}`, '_blank')}
+                                                    onClick={() => window.open(`/blog/${blog.slug}`, '_blank')}
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </Button>
@@ -360,6 +368,33 @@ const AdminBlog: React.FC = () => {
                             </TableBody>
                         </Table>
                     </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4">
+                            <div className="text-sm text-muted-foreground">
+                                Page {page} of {totalPages}
+                            </div>
+                            <div className="flex space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                                    disabled={page === 1}
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={page === totalPages}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

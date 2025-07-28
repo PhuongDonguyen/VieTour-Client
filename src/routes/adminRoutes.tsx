@@ -19,6 +19,7 @@ import TourCategory from "../components/admin/tour-category/TourCategory";
 import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
+
 import {
   RequireAdminAccess,
   RequireAdminOnly,
@@ -27,6 +28,7 @@ import {
 import TourImageViewContent from "../components/admin/tour-image/TourImageViewContent";
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
+import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -215,7 +217,7 @@ export const adminRoutes = [
     element: (
       <RequireAdminAccess>
         <AdminLayout title="Edit Tour Image">
-          <TourImageEditor />
+          <TourImageEditor mode="edit" />
         </AdminLayout>
       </RequireAdminAccess>
     ),

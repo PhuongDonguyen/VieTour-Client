@@ -1,164 +1,210 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Eye, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Upload } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import slugify from 'slugify';
+import { isEqual } from 'lodash';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import TinyMCEEditor from '@/components/TinyMCEEditor';
-import { fetchActiveBlogCategories, type BlogCategory } from '@/services/blogCategory.service';
+import { getActiveCategories, type BlogCategory } from '@/services/blogCategory.service';
+import { fetchBlogById, createBlog, updateBlog, type CreateBlogRequest } from '@/services/blog.service';
+import { useAuth } from '@/hooks/useAuth';
+
+// Form validation schema
+const schema = yup.object({
+    title: yup.string().required('Title is required').min(3, 'Title must be at least 3 characters'),
+    content: yup.string().required('Content is required').min(10, 'Content must be at least 10 characters'),
+    excerpt: yup.string().required('Excerpt is required').max(200, 'Excerpt cannot exceed 200 characters'),
+    slug: yup.string().required('Slug is required').matches(/^[a-z0-9-]+$/, 'Slug must be lowercase, alphanumeric with hyphens'),
+    category_id: yup.string().required('Category is required'),
+    status: yup.string().oneOf(['draft', 'published', 'archived'], 'Invalid status').required('Status is required'),
+    thumbnail: yup.mixed().required('Featured image is required').test('is-file-or-string', 'Featured image is required', function(value) {
+        return value instanceof File || (typeof value === 'string' && value.length > 0);
+    }),
+    author: yup.string().required('Author is required').min(2, 'Author must be at least 2 characters'),
+}).required();
 
 interface BlogFormData {
     title: string;
     content: string;
-    thumbnail: string;
+    thumbnail: File | string;
     category_id: string;
     status: 'draft' | 'published' | 'archived';
     excerpt: string;
-    tags: string[];
+    slug: string;
+    author: string;
 }
-
-
 
 const BlogEditor: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditing = !!id;
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { user } = useAuth();
 
-    const [formData, setFormData] = useState<BlogFormData>({
-        title: '',
-        content: '',
-        thumbnail: '',
-        category_id: '',
-        status: 'draft',
-        excerpt: '',
-        tags: []
+    const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting, isDirty, dirtyFields }, trigger, reset } = useForm<BlogFormData>({
+        resolver: yupResolver(schema),
+        defaultValues: {
+            title: '',
+            content: '',
+            thumbnail: '',
+            category_id: '',
+            status: 'draft',
+            excerpt: '',
+            slug: '',
+            author: '',
+        },
     });
 
-    const [categories, setCategories] = useState<BlogCategory[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [newTag, setNewTag] = useState('');
-    const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+    const [categories, setCategories] = React.useState<BlogCategory[]>([]);
+    const [thumbnailPreview, setThumbnailPreview] = React.useState<string>('');
+    const [originalBlogData, setOriginalBlogData] = React.useState<BlogFormData | null>(null);
+    const [hasChanges, setHasChanges] = React.useState(false);
 
-    // Load categories on component mount
+    const title = watch('title');
+    const formValues = watch();
+
+    // Helper function to generate slug from title
+    const generateSlugFromTitle = (title: string) => {
+        if (title.trim() === '') return '';
+        return slugify(title, {
+            lower: true,
+            strict: true,
+            remove: /[*+~.()'"!:@]/g,
+        });
+    };
+
+    // Helper function to create FormData for API calls
+    const createFormData = (data: Partial<BlogFormData>) => {
+        const formData = new FormData();
+        
+        Object.entries(data).forEach(([key, value]) => {
+            if (value !== undefined && value !== '') {
+                formData.append(key, value instanceof File ? value : value.toString());
+            }
+        });
+        
+        return formData;
+    };
+
+    // Generate slug when title changes
     useEffect(() => {
-        const loadCategories = async () => {
+        const slug = generateSlugFromTitle(title);
+        const shouldMarkDirty = !isEditing || (originalBlogData && title !== originalBlogData.title);
+        setValue('slug', slug, { shouldDirty: shouldMarkDirty });
+    }, [title, setValue, isEditing, originalBlogData]);
+
+    // Check for changes between current form values and original data
+    useEffect(() => {
+        if (isEditing && originalBlogData) {
+            const changesExist = !isEqual(formValues, originalBlogData);
+            setHasChanges(changesExist);
+        } else {
+            setHasChanges(isDirty);
+        }
+    }, [formValues, originalBlogData, isEditing, isDirty]);
+
+    // Load categories and blog data
+    useEffect(() => {
+        const loadData = async () => {
             try {
-                const categoryList = await fetchActiveBlogCategories();
+                // Always load categories first
+                const categoryList = await getActiveCategories();
                 setCategories(categoryList);
+                
+                // Then load blog data if editing
+                if (isEditing) {
+                    const blog = await fetchBlogById(parseInt(id!));
+                    const blogData = {
+                        title: blog.title,
+                        content: blog.content,
+                        thumbnail: blog.thumbnail || '',
+                        category_id: blog.category_id.toString(),
+                        status: blog.status,
+                        excerpt: blog.excerpt,
+                        slug: blog.slug,
+                        author: blog.author || '',
+                    };
+                    
+                    setOriginalBlogData(blogData);
+                    reset(blogData);
+                    
+                    if (blog.thumbnail) {
+                        setThumbnailPreview(blog.thumbnail);
+                    }
+                }
             } catch (error) {
-                console.error('Error loading categories:', error);
+                console.error('Error loading data:', error);
+                if (isEditing) {
+                    alert('Error loading blog data. Please try again.');
+                    navigate('/admin/blog');
+                }
             }
         };
-        loadCategories();
-    }, []);
 
-    useEffect(() => {
-        if (isEditing) {
-            // TODO: Fetch blog data for editing
-            // For now, use mock data with rich text content
-            setFormData({
-                title: 'Sample Blog Post: Exploring the Hidden Gems of Vietnam',
-                content: `<h2>Welcome to Vietnam's Hidden Treasures</h2>
-<p>Vietnam is a country of <strong>breathtaking landscapes</strong>, rich culture, and incredible hospitality. Beyond the popular destinations like <em>Ha Long Bay</em> and <em>Ho Chi Minh City</em>, there are countless hidden gems waiting to be discovered.</p>
-
-<h3>Must-Visit Hidden Destinations</h3>
-<ol>
-<li><strong>Mu Cang Chai Terraces</strong> - Stunning rice terraces in the mountains</li>
-<li><strong>Phong Nha-Ke Bang National Park</strong> - Amazing cave systems</li>
-<li><strong>Con Dao Islands</strong> - Pristine beaches and marine life</li>
-</ol>
-
-<blockquote>
-<p>"Vietnam is not just a destination, it's an experience that stays with you forever." - Travel enthusiast</p>
-</blockquote>
-
-<p>Whether you're seeking <u>adventure</u>, <u>culture</u>, or <u>relaxation</u>, Vietnam has something special for every traveler.</p>`,
-                thumbnail: '/sample-image.jpg',
-                category_id: '1',
-                status: 'draft',
-                excerpt: 'Discover the hidden gems of Vietnam beyond the tourist hotspots. From stunning rice terraces to pristine islands, explore the authentic beauty of this incredible country.',
-                tags: ['travel', 'vietnam', 'hidden gems', 'destinations']
-            });
-            setThumbnailPreview('/sample-image.jpg');
-        }
-    }, [isEditing]);
-
-    const handleInputChange = (field: keyof BlogFormData, value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const handleContentChange = (content: string) => {
-        setFormData(prev => ({
-            ...prev,
-            content
-        }));
-    };
+        loadData();
+    }, [isEditing, id, navigate, reset]);
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            // TODO: Upload to server
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const result = e.target?.result as string;
-                setThumbnailPreview(result);
-                setFormData(prev => ({
-                    ...prev,
-                    thumbnail: result // In real app, this would be the uploaded URL
-                }));
-            };
-            reader.readAsDataURL(file);
+            setThumbnailPreview(URL.createObjectURL(file));
+            setValue('thumbnail', file, { shouldDirty: true });
+            trigger('thumbnail');
         }
     };
 
-    const addTag = () => {
-        if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                tags: [...prev.tags, newTag.trim()]
-            }));
-            setNewTag('');
-        }
+    const handleRemoveImage = () => {
+        setThumbnailPreview('');
+        setValue('thumbnail', '', { shouldDirty: true });
+        trigger('thumbnail');
     };
 
-    const removeTag = (tagToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            tags: prev.tags.filter(tag => tag !== tagToRemove)
-        }));
-    };
-
-    const handleSave = async (status: 'draft' | 'published') => {
-        setIsLoading(true);
+    const onSubmit = async (data: BlogFormData, status: 'draft' | 'published') => {
         try {
-            const dataToSave = {
-                ...formData,
-                status
-            };
+            if (isEditing) {
+                if (!hasChanges && status === originalBlogData?.status) {
+                    alert('No changes detected.');
+                    return;
+                }
 
-            // TODO: Implement save API call
-            console.log('Saving blog post:', dataToSave);
+                // Create an object with only the changed values
+                const changedFields: Partial<BlogFormData> = {};
+                
+                Object.keys(data).forEach((key) => {
+                    const fieldKey = key as keyof BlogFormData;
+                    if (!isEqual(data[fieldKey], originalBlogData?.[fieldKey])) {
+                        changedFields[fieldKey] = data[fieldKey];
+                    }
+                });
 
-            // Mock save delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
+                // Always include status if it differs
+                if (status !== originalBlogData?.status) {
+                    changedFields.status = status;
+                }
 
+                const formData = createFormData(changedFields);
+                await updateBlog(parseInt(id!), formData);
+            } else {
+                const formData = createFormData(data);
+                await createBlog(formData);
+            }
+
+            alert(isEditing ? 'Blog post updated successfully!' : 'Blog post created successfully!');
             navigate('/admin/blog');
         } catch (error) {
             console.error('Error saving blog post:', error);
-        } finally {
-            setIsLoading(false);
+            alert('Error saving blog post. Please try again.');
         }
     };
 
     const handlePreview = () => {
-        // TODO: Implement preview functionality
         window.open('/blog/preview', '_blank');
     };
 
@@ -167,13 +213,9 @@ const BlogEditor: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                    <Button
-                        variant="ghost"
-                        onClick={() => navigate('/admin/blog')}
-                        className="flex items-center space-x-2"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Back to Blog</span>
+                    <Button variant="ghost" onClick={() => navigate('/admin/blog')}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Blog
                     </Button>
                     <div>
                         <h1 className="text-3xl font-bold">
@@ -184,32 +226,25 @@ const BlogEditor: React.FC = () => {
                         </p>
                     </div>
                 </div>
-
                 <div className="flex items-center space-x-2">
-                    <Button
-                        variant="outline"
-                        onClick={handlePreview}
-                        className="flex items-center space-x-2"
-                    >
-                        <Eye className="w-4 h-4" />
-                        <span>Preview</span>
+                    <Button variant="outline" onClick={handlePreview}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Preview
                     </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => handleSave('draft')}
-                        disabled={isLoading}
-                        className="flex items-center space-x-2"
+                    <Button 
+                        variant="outline" 
+                        onClick={handleSubmit((data) => onSubmit(data, 'draft'))} 
+                        disabled={isSubmitting || (isEditing && !hasChanges)}
                     >
-                        <Save className="w-4 h-4" />
-                        <span>Save Draft</span>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Draft
                     </Button>
-                    <Button
-                        onClick={() => handleSave('published')}
-                        disabled={isLoading}
-                        className="flex items-center space-x-2"
+                    <Button 
+                        onClick={handleSubmit((data) => onSubmit(data, 'published'))} 
+                        disabled={isSubmitting || (isEditing && !hasChanges)}
                     >
-                        <Save className="w-4 h-4" />
-                        <span>Publish</span>
+                        <Save className="w-4 h-4 mr-2" />
+                        Publish
                     </Button>
                 </div>
             </div>
@@ -217,18 +252,41 @@ const BlogEditor: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Title */}
+                    {/* Blog Title Section */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Blog Title</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <Input
-                                placeholder="Enter blog post title..."
-                                value={formData.title}
-                                onChange={(e) => handleInputChange('title', e.target.value)}
-                                className="text-lg"
-                            />
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Input
+                                    {...register('title')}
+                                    placeholder="Enter blog post title..."
+                                    className="text-lg"
+                                />
+                                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="slug">URL Slug</Label>
+                                <Input
+                                    {...register('slug')}
+                                    placeholder="url-friendly-slug"
+                                    className="mt-1 font-mono text-sm"
+                                />
+                                {errors.slug && title.trim() !== '' && <p className="text-red-500 text-sm mt-1">{errors.slug.message}</p>}
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Auto-generated from title. You can customize it manually.
+                                </p>
+                            </div>
+                            <div>
+                                <Label htmlFor="author">Author</Label>
+                                <Input
+                                    {...register('author')}
+                                    placeholder="Enter author name..."
+                                    className="mt-1"
+                                />
+                                {errors.author && <p className="text-red-500 text-sm mt-1">{errors.author.message}</p>}
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -239,11 +297,16 @@ const BlogEditor: React.FC = () => {
                         </CardHeader>
                         <CardContent>
                             <TinyMCEEditor
-                                value={formData.content}
-                                onChange={handleContentChange}
+                                value={watch('content')}
+                                onChange={(content) => {
+                                    const shouldMarkDirty = !isEditing || content !== originalBlogData?.content;
+                                    setValue('content', content, { shouldDirty: shouldMarkDirty });
+                                    trigger('content');
+                                }}
                                 placeholder="Nội dung bài viết..."
                                 className="min-h-[400px]"
                             />
+                            {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>}
                         </CardContent>
                     </Card>
 
@@ -254,11 +317,11 @@ const BlogEditor: React.FC = () => {
                         </CardHeader>
                         <CardContent>
                             <Textarea
+                                {...register('excerpt')}
                                 placeholder="Write a brief excerpt for your blog post..."
-                                value={formData.excerpt}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('excerpt', e.target.value)}
                                 rows={3}
                             />
+                            {errors.excerpt && <p className="text-red-500 text-sm mt-1">{errors.excerpt.message}</p>}
                         </CardContent>
                     </Card>
                 </div>
@@ -274,19 +337,19 @@ const BlogEditor: React.FC = () => {
                             <div>
                                 <Label htmlFor="status">Status</Label>
                                 <select
-                                    value={formData.status}
-                                    onChange={(e) => handleInputChange('status', e.target.value)}
+                                    {...register('status')}
                                     className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
                                     <option value="draft">Draft</option>
                                     <option value="published">Published</option>
                                     <option value="archived">Archived</option>
                                 </select>
+                                {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
                             </div>
 
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="category">Category</Label>
+                                    <Label htmlFor="category_id">Category</Label>
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -297,17 +360,17 @@ const BlogEditor: React.FC = () => {
                                     </Button>
                                 </div>
                                 <select
-                                    value={formData.category_id}
-                                    onChange={(e) => handleInputChange('category_id', e.target.value)}
+                                    {...register('category_id')}
                                     className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
                                     <option value="">Select category</option>
                                     {categories.map((category) => (
                                         <option key={category.id} value={category.id.toString()}>
-                                            {category.name}
+                                            {category.title}
                                         </option>
                                     ))}
                                 </select>
+                                {errors.category_id && <p className="text-red-500 text-sm mt-1">{errors.category_id.message}</p>}
                             </div>
                         </CardContent>
                     </Card>
@@ -327,10 +390,7 @@ const BlogEditor: React.FC = () => {
                                     />
                                     <Button
                                         variant="outline"
-                                        onClick={() => {
-                                            setThumbnailPreview('');
-                                            setFormData(prev => ({ ...prev, thumbnail: '' }));
-                                        }}
+                                        onClick={handleRemoveImage}
                                         className="w-full"
                                     >
                                         Remove Image
@@ -354,36 +414,7 @@ const BlogEditor: React.FC = () => {
                                 onChange={handleImageUpload}
                                 className="hidden"
                             />
-                        </CardContent>
-                    </Card>
-
-                    {/* Tags */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Tags</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex space-x-2">
-                                <Input
-                                    placeholder="Add tag..."
-                                    value={newTag}
-                                    onChange={(e) => setNewTag(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                                />
-                                <Button onClick={addTag}>Add</Button>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                                {formData.tags.map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                                        {tag}
-                                        <X
-                                            className="w-3 h-3 cursor-pointer"
-                                            onClick={() => removeTag(tag)}
-                                        />
-                                    </Badge>
-                                ))}
-                            </div>
+                            {errors.thumbnail && <p className="text-red-500 text-sm mt-1">{errors.thumbnail.message}</p>}
                         </CardContent>
                     </Card>
                 </div>

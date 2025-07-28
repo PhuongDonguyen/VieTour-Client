@@ -46,13 +46,13 @@ export const TourCard: React.FC<TourCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden max-w-sm mx-auto">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden w-full h-full">
       {/* Image Section */}
       <div className="relative overflow-hidden group" onClick={handleGoDetail}>
         <img
           src={image}
           alt={title}
-          className="w-full h-100 object-cover transform transition-transform duration-300 ease-in-out group-hover:scale-120 cursor-pointer"
+          className="w-full h-80 object-cover transform transition-transform duration-300 ease-in-out group-hover:scale-110 cursor-pointer"
         />
 
         {/* Discount Badge */}
@@ -64,21 +64,21 @@ export const TourCard: React.FC<TourCardProps> = ({
       {/* Content Section */}
       <div className="p-4">
         {/* Title */}
-        <h3 className="text-lg min-h-16 font-semibold text-gray-800 mb-3 line-clamp-2">
+        <h3 className="text-sm min-h-12 font-semibold text-gray-800 mb-2 line-clamp-2">
           {title}
         </h3>
 
         {/* Pricing */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex flex-col">
-            <span className="text-sm text-gray-500">Giá gốc:</span>
-            <span className="text-lg font-bold text-gray-800">
+        <div className="flex flex-col gap-1 mb-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-500">Giá gốc:</span>
+            <span className="text-sm font-bold text-gray-800 line-through">
               {formatPrice(originalPrice)}
             </span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm text-gray-500">Còn:</span>
-            <span className="text-lg font-bold text-red-600">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-500">Còn:</span>
+            <span className="text-base font-bold text-red-600">
               {formatPrice(discountedPrice)}
             </span>
           </div>
@@ -87,29 +87,29 @@ export const TourCard: React.FC<TourCardProps> = ({
         {/* Book Tour Button */}
         <button
           onClick={handleGoDetail}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200 mb-4 cursor-pointer"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-md transition-colors duration-200 mb-3 cursor-pointer text-sm"
         >
           ĐẶT TOUR
         </button>
 
         {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-100">
+        <div className="flex flex-col gap-1 text-sm text-gray-600 pt-2 border-t border-gray-100">
           <div className="flex items-center gap-1">
-            <MapPin className="w-4 h-4 text-blue-500" />
-            <span className="text-blue-500">Đặt vé quan tâm:</span>
+            <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
+            <span className="text-blue-500 text-xs">Đặt vé quan tâm:</span>
           </div>
-          <div className="flex items-center gap-4 ms-10">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4 text-blue-500" />
-              <span className="text-blue-500">{views}</span>
+              <Eye className="w-3 h-3 text-blue-500 flex-shrink-0" />
+              <span className="text-blue-500 text-xs">{views}</span>
             </div>
             <div className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4 text-blue-500" />
-              <span className="text-blue-500">{comments}</span>
+              <MessageCircle className="w-3 h-3 text-blue-500 flex-shrink-0" />
+              <span className="text-blue-500 text-xs">{comments}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Users className="w-4 h-4 text-blue-500" />
-              <span className="text-blue-500">{participants}</span>
+              <Users className="w-3 h-3 text-blue-500 flex-shrink-0" />
+              <span className="text-blue-500 text-xs">{participants}</span>
             </div>
           </div>
         </div>

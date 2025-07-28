@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getTourCategoriesBySlug } from "../services/tourCategory.service";
 import { TourCard } from "../components/TourCard";
-import { fetchToursByCategoryId } from "../services/tour.service"
+import { fetchToursByCategoryId } from "../services/tour.service";
 import { Loading } from "./Loading";
 
-interface TourCardProps {
+interface TourCardData {
   id: string;
   title: string;
   image: string;
@@ -21,68 +21,81 @@ interface TourCardProps {
   onBookTour?: (id: string) => void;
 }
 
-
 export const TourByCategory = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [tours, setTours] = useState<TourCardProps[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [nameTourCategory, setNameTourCategory] = useState<string>("");
+  const [tours, setTours] = useState<TourCardData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchToursByCategory = async () => {
+      if (!slug) return;
+      setIsLoading(true);
       try {
-        if (!slug) return;
-        setLoading(true);
-        const tourCategory = await getTourCategoriesBySlug(slug);
-        setNameTourCategory(tourCategory.data[0].name);
-        const tourRes = await fetchToursByCategoryId(
-          tourCategory.data[0].id
-        );
-        const tourResData = tourRes.data;
+        // Fetch category info by slug
+        const categoryRes = await getTourCategoriesBySlug(slug);
+        const category = categoryRes.data[0];
+        setCategoryName(category.name);
+
+        // Fetch tours by category id
+        const toursRes = await fetchToursByCategoryId(category.id);
+        const toursData = toursRes.data;
         setTours(
-          tourResData.map((tour: any) => ({
+          toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
             originalPrice: tour.price || 0,
-            discountedPrice: 680000,
+            discountedPrice: 680000, // TODO: Replace with real discounted price if available
             image: tour.poster_url,
             totalStar: tour.total_star || 0,
             reviewCount: tour.review_count || 0,
             views: tour.view_count?.toString() || "",
-            comments: "3.8M",
-            participants: "45M",
-            discount: 23,
+            comments: "3.8M", // TODO: Replace with real data if available
+            participants: "45M", // TODO: Replace with real data if available
+            discount: 23, // TODO: Replace with real discount if available
             slug: tour.slug
           }))
         );
       } catch (error) {
-        console.error("Lỗi khi load dữ liệu: ", error);
+        console.error("Error loading tours by category:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setLoading(false);
     };
-    fetchData();
+    fetchToursByCategory();
   }, [slug]);
 
-
-
-
-
   return (
-    <div className="max-h-screen mt-17 bg-gradient-to-br bg-white py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-blue-700 mb-4">
-            {nameTourCategory}
-          </h2>
-          <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+    <div className="max-w-6xl container mx-auto px-4 py-8 mt-20">
+      <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
+        {categoryName}
+      </h1>
+      
+      {isLoading ? (
+        <Loading />
+      ) : tours.length > 0 ? (
+        <div className="grid grid-cols-3 gap-6">
+          {tours.map((tour) => (
+            <TourCard
+              key={tour.id}
+              id={tour.id}
+              title={tour.title}
+              image={tour.image}
+              originalPrice={tour.originalPrice}
+              discountedPrice={tour.discountedPrice}
+              discount={tour.discount}
+              views={tour.views}
+              comments={tour.comments}
+              participants={tour.participants}
+              slug={tour.slug}
+            />
+          ))}
         </div>
-        {loading ? <Loading /> : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {tours.map((tour, index) => (
-              <TourCard key={index} {...tour} />
-            ))}
-          </div>)}
-      </div>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">Chưa có tour nào cho danh mục này.</p>
+        </div>
+      )}
     </div>
   );
 };
