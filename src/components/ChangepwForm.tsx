@@ -83,6 +83,7 @@ export const ChangePasswordForm: React.FC = () => {
                 name={field}
                 value={passwords[field as keyof typeof passwords]}
                 onChange={handleChange}
+                autoComplete='new-password'
                 placeholder={
                   field === 'current'
                     ? 'Nhập mật khẩu hiện tại'
