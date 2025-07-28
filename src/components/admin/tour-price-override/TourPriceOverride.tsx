@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,13 +36,18 @@ import {
   ToggleLeft,
   ToggleRight,
   Clock,
+  Edit,
+  Loader2,
 } from "lucide-react";
 import { providerTourPriceOverrideService } from "../../../services/provider/providerTourPriceOverride.service";
 import { adminTourPriceOverrideService } from "../../../services/admin/adminTourPriceOverride.service";
 import type { TourPriceOverride } from "../../../apis/provider/providerTourPriceOverride.api";
 import type { AdminTourPriceOverride } from "../../../apis/admin/adminTourPriceOverride.api";
+import TourPriceOverrideViewContent from "./TourPriceOverrideViewContent";
+import TourPriceOverrideEditor from "./TourPriceOverrideEditor";
 
 const TourPriceOverridesManagement: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
@@ -56,8 +62,6 @@ const TourPriceOverridesManagement: React.FC = () => {
   const [selectedOverride, setSelectedOverride] = useState<
     TourPriceOverride | AdminTourPriceOverride | null
   >(null);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedOverrideType, setSelectedOverrideType] =
     useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -67,20 +71,11 @@ const TourPriceOverridesManagement: React.FC = () => {
   const [availableTourPrices, setAvailableTourPrices] = useState<
     { id: number; tour_title: string; adult_price: number }[]
   >([]);
-
-  // Create form states
-  const [createForm, setCreateForm] = useState({
-    tour_price_id: "",
-    override_type: "",
-    override_date: "",
-    start_date: "",
-    end_date: "",
-    day_of_week: "",
-    adult_price: "",
-    kid_price: "",
-    note: "",
-    is_active: true,
-  });
+  const [mode, setMode] = useState<"list" | "view" | "edit" | "create">("list");
+  const [selectedOverrideId, setSelectedOverrideId] = useState<string | null>(
+    null
+  );
+  const [loadingActiveIds, setLoadingActiveIds] = useState<number[]>([]);
 
   // Fetch price overrides data from API
   const fetchPriceOverrides = async () => {
@@ -197,8 +192,8 @@ const TourPriceOverridesManagement: React.FC = () => {
   const handleViewOverride = (
     override: TourPriceOverride | AdminTourPriceOverride
   ) => {
-    setSelectedOverride(override);
-    setIsViewDialogOpen(true);
+    setSelectedOverrideId(override.id.toString());
+    setMode("view");
   };
 
   // Handle toggle active
@@ -207,12 +202,22 @@ const TourPriceOverridesManagement: React.FC = () => {
       alert("Admin không có quyền thay đổi trạng thái.");
       return;
     }
+    setLoadingActiveIds((prev) => [...prev, id]);
     try {
       await providerTourPriceOverrideService.toggleActive(id);
-      fetchPriceOverrides();
+      // Cập nhật local state thay vì reload toàn bộ list
+      setPriceOverrides((prevOverrides) =>
+        prevOverrides.map((override) =>
+          override.id === id
+            ? { ...override, is_active: !override.is_active }
+            : override
+        )
+      );
     } catch (error) {
       console.error("Failed to toggle active status:", error);
       alert("Không thể thay đổi trạng thái. Vui lòng thử lại.");
+    } finally {
+      setLoadingActiveIds((prev) => prev.filter((item) => item !== id));
     }
   };
 
@@ -225,7 +230,10 @@ const TourPriceOverridesManagement: React.FC = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa ghi đè giá này?")) {
       try {
         await providerTourPriceOverrideService.deleteTourPriceOverride(id);
-        fetchPriceOverrides();
+        // Cập nhật local state thay vì reload toàn bộ list
+        setPriceOverrides((prevOverrides) =>
+          prevOverrides.filter((override) => override.id !== id)
+        );
       } catch (error) {
         console.error("Failed to delete price override:", error);
         alert("Không thể xóa ghi đè giá. Vui lòng thử lại.");
@@ -233,65 +241,30 @@ const TourPriceOverridesManagement: React.FC = () => {
     }
   };
 
-  // Handle create override
-  const handleCreateOverride = async () => {
+  const handleEditOverride = (
+    override: TourPriceOverride | AdminTourPriceOverride
+  ) => {
     if (isAdmin) {
-      alert("Admin không có quyền tạo mới.");
+      alert("Admin không có quyền chỉnh sửa giá đặc biệt.");
       return;
     }
+    setSelectedOverrideId(override.id.toString());
+    setMode("edit");
+  };
 
-    try {
-      const data = {
-        tour_price_id: parseInt(createForm.tour_price_id),
-        override_type: createForm.override_type as
-          | "single_date"
-          | "date_range"
-          | "day_of_week",
-        override_date:
-          createForm.override_type === "single_date"
-            ? createForm.override_date
-            : undefined,
-        start_date:
-          createForm.override_type === "date_range"
-            ? createForm.start_date
-            : undefined,
-        end_date:
-          createForm.override_type === "date_range"
-            ? createForm.end_date
-            : undefined,
-        day_of_week:
-          createForm.override_type === "day_of_week"
-            ? createForm.day_of_week
-            : undefined,
-        adult_price: parseFloat(createForm.adult_price),
-        kid_price: parseFloat(createForm.kid_price),
-        note: createForm.note || "",
-        is_active: createForm.is_active,
-      };
-
-      await providerTourPriceOverrideService.createTourPriceOverride(data);
-      setIsCreateDialogOpen(false);
-      fetchPriceOverrides();
-
-      // Reset form
-      setCreateForm({
-        tour_price_id: "",
-        override_type: "",
-        override_date: "",
-        start_date: "",
-        end_date: "",
-        day_of_week: "",
-        adult_price: "",
-        kid_price: "",
-        note: "",
-        is_active: true,
-      });
-
-      alert("Tạo ghi đè giá thành công!");
-    } catch (error) {
-      console.error("Failed to create price override:", error);
-      alert("Không thể tạo ghi đè giá. Vui lòng thử lại.");
+  const handleCreateOverride = () => {
+    if (isAdmin) {
+      alert("Admin không có quyền tạo giá đặc biệt.");
+      return;
     }
+    setSelectedOverrideId(null);
+    setMode("create");
+  };
+
+  const handleBack = () => {
+    setMode("list");
+    setSelectedOverrideId(null);
+    fetchPriceOverrides(); // reload lại list nếu cần
   };
 
   // Format currency
@@ -315,7 +288,7 @@ const TourPriceOverridesManagement: React.FC = () => {
         return "Ngày cụ thể";
       case "date_range":
         return "Khoảng thời gian";
-      case "day_of_week":
+      case "weekly":
         return "Theo thứ";
       default:
         return type;
@@ -329,7 +302,7 @@ const TourPriceOverridesManagement: React.FC = () => {
         return "default";
       case "date_range":
         return "secondary";
-      case "day_of_week":
+      case "weekly":
         return "outline";
       default:
         return "outline";
@@ -352,465 +325,77 @@ const TourPriceOverridesManagement: React.FC = () => {
         override.end_date
       )}`;
     }
-    if (override.override_type === "day_of_week" && override.day_of_week) {
-      return `Thứ ${override.day_of_week}`;
+    if (override.override_type === "weekly" && override.day_of_week) {
+      // Map từ tiếng Anh lowercase sang tiếng Việt để hiển thị
+      const dayMap: { [key: string]: string } = {
+        monday: "Thứ 2",
+        tuesday: "Thứ 3",
+        wednesday: "Thứ 4",
+        thursday: "Thứ 5",
+        friday: "Thứ 6",
+        saturday: "Thứ 7",
+        sunday: "Chủ nhật",
+      };
+      return dayMap[override.day_of_week] || override.day_of_week;
     }
     return "Chưa xác định";
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">
-            {isAdmin
-              ? "Quản Lý Price Overrides (Admin)"
-              : "Quản Lý Ghi Đè Giá Tours"}
-          </h1>
-          <p className="text-muted-foreground">
-            {isAdmin
-              ? `Xem tất cả price overrides trong hệ thống (${totalItems} quy tắc) - Chỉ xem`
-              : `Quản lý các quy tắc ghi đè giá theo ngày và thời gian (${totalItems} quy tắc)`}
-          </p>
-        </div>
-        {!isAdmin && (
-          <Button
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm Ghi Đè Giá
-          </Button>
-        )}
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tìm Kiếm & Bộ Lọc</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm theo tên tour hoặc ghi chú..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10 max-w-sm"
-              />
-            </div>
-            <div className="w-48">
-              <Select
-                value={selectedOverrideType}
-                onValueChange={setSelectedOverrideType}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Loại ghi đè" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả loại</SelectItem>
-                  <SelectItem value="single_date">Ngày cụ thể</SelectItem>
-                  <SelectItem value="date_range">Khoảng thời gian</SelectItem>
-                  <SelectItem value="day_of_week">Theo thứ</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-40">
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="true">Kích hoạt</SelectItem>
-                  <SelectItem value="false">Tạm ngưng</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Price Overrides Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh Sách Ghi Đè Giá Tours</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tour</TableHead>
-                <TableHead>Thời Gian Áp Dụng</TableHead>
-                <TableHead>Loại Ghi Đè</TableHead>
-                <TableHead>Giá Người Lớn</TableHead>
-                <TableHead>Giá Trẻ Em</TableHead>
-                <TableHead>Trạng Thái</TableHead>
-                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.isArray(priceOverrides) && priceOverrides.length > 0 ? (
-                priceOverrides.map((override) => (
-                  <TableRow key={override.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={override.tour_price.tour.poster_url}
-                          alt={override.tour_price.tour.title}
-                          className="w-12 h-8 object-cover rounded"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {override.tour_price.tour.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Giá gốc:{" "}
-                            {formatCurrency(override.tour_price.adult_price)}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-blue-600" />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {getDateDisplay(override)}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={getOverrideTypeVariant(override.override_type)}
-                      >
-                        {getOverrideTypeText(override.override_type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-green-700">
-                        {formatCurrency(override.adult_price)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-blue-700">
-                        {formatCurrency(override.kid_price)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={override.is_active ? "default" : "secondary"}
-                        >
-                          {override.is_active ? "Kích hoạt" : "Tạm ngưng"}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewOverride(override)}
-                          title="Xem chi tiết"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {!isAdmin && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleToggleActive(override.id)}
-                              title={
-                                override.is_active ? "Tạm ngưng" : "Kích hoạt"
-                              }
-                              className={
-                                override.is_active
-                                  ? "text-orange-600 hover:text-orange-800"
-                                  : "text-green-600 hover:text-green-800"
-                              }
-                            >
-                              {override.is_active ? (
-                                <ToggleRight className="w-4 h-4" />
-                              ) : (
-                                <ToggleLeft className="w-4 h-4" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteOverride(override.id)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Xóa ghi đè"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    {loading
-                      ? "Đang tải..."
-                      : "Không có quy tắc ghi đè giá nào được tìm thấy."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          {Array.isArray(priceOverrides) && totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4">
-              <p className="text-sm text-muted-foreground">
-                Hiển thị{" "}
-                {Array.isArray(priceOverrides) ? priceOverrides.length : 0}{" "}
-                trong tổng số {totalItems} quy tắc
+      {mode === "list" && (
+        <>
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">
+                {isAdmin
+                  ? "Quản Lý Price Overrides (Admin)"
+                  : "Quản Lý Ghi Đè Giá Tours"}
+              </h1>
+              <p className="text-muted-foreground">
+                {isAdmin
+                  ? `Xem tất cả price overrides trong hệ thống (${totalItems} quy tắc) - Chỉ xem`
+                  : `Quản lý các quy tắc ghi đè giá theo ngày và thời gian (${totalItems} quy tắc)`}
               </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  Trước
-                </Button>
-                <span className="px-3 py-1 text-sm bg-muted rounded">
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Sau
-                </Button>
-              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            {!isAdmin && (
+              <Button
+                onClick={handleCreateOverride}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm Ghi Đè Giá
+              </Button>
+            )}
+          </div>
 
-      {/* View Override Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              Chi Tiết Ghi Đè Giá Tour
-            </DialogTitle>
-            <DialogDescription>
-              Xem thông tin chi tiết quy tắc ghi đè giá được chọn
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedOverride && (
-            <div className="space-y-6">
-              {/* Header */}
+          {/* Search and Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tìm Kiếm & Bộ Lọc</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="flex gap-4">
-                <img
-                  src={selectedOverride.tour_price.tour.poster_url}
-                  alt={selectedOverride.tour_price.tour.title}
-                  className="w-24 h-16 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-1">
-                    {selectedOverride.tour_price.tour.title}
-                  </h3>
-                  <Badge variant="outline" className="mb-2">
-                    {selectedOverride.tour_price.tour.tour_category.name}
-                  </Badge>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <p>ID ghi đè: {selectedOverride.id}</p>
-                    <Badge
-                      variant={
-                        selectedOverride.is_active ? "default" : "secondary"
-                      }
-                    >
-                      {selectedOverride.is_active ? "Kích hoạt" : "Tạm ngưng"}
-                    </Badge>
-                  </div>
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm theo tên tour hoặc ghi chú..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-10 max-w-sm"
+                  />
                 </div>
-              </div>
-
-              {/* Price Comparison */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-gray-600">
-                      Giá Gốc
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Người lớn:</span>
-                      <span className="font-semibold">
-                        {formatCurrency(
-                          selectedOverride.tour_price.adult_price
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Trẻ em:</span>
-                      <span className="font-semibold">
-                        {formatCurrency(selectedOverride.tour_price.kid_price)}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-green-600">
-                      Giá Ghi Đè
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Người lớn:</span>
-                      <span className="font-bold text-green-700">
-                        {formatCurrency(selectedOverride.adult_price)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Trẻ em:</span>
-                      <span className="font-bold text-blue-700">
-                        {formatCurrency(selectedOverride.kid_price)}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Override Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    Thông Tin Ghi Đè
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Loại ghi đè
-                      </label>
-                      <Badge
-                        variant={getOverrideTypeVariant(
-                          selectedOverride.override_type
-                        )}
-                      >
-                        {getOverrideTypeText(selectedOverride.override_type)}
-                      </Badge>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Thời gian áp dụng
-                      </label>
-                      <p className="text-sm text-muted-foreground">
-                        {getDateDisplay(selectedOverride)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {selectedOverride.note && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Ghi chú
-                      </label>
-                      <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                        {selectedOverride.note}
-                      </p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Ghi chú giá gốc
-                    </label>
-                    <p className="text-sm text-muted-foreground bg-blue-50 p-3 rounded">
-                      {selectedOverride.tour_price.note}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Price Override Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Thêm Ghi Đè Giá Mới
-            </DialogTitle>
-            <DialogDescription>
-              Tạo quy tắc ghi đè giá mới cho tour
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Thông Tin Cơ Bản</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Chọn Tour
-                  </label>
+                <div className="w-48">
                   <Select
-                    value={createForm.tour_price_id}
-                    onValueChange={(value) =>
-                      setCreateForm({ ...createForm, tour_price_id: value })
-                    }
+                    value={selectedOverrideType}
+                    onValueChange={setSelectedOverrideType}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn tour..." />
+                      <SelectValue placeholder="Loại ghi đè" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableTours.map((tour) => (
-                        <SelectItem key={tour.id} value={tour.id.toString()}>
-                          {tour.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Loại Ghi Đè
-                  </label>
-                  <Select
-                    value={createForm.override_type}
-                    onValueChange={(value) =>
-                      setCreateForm({ ...createForm, override_type: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn loại ghi đè..." />
-                    </SelectTrigger>
-                    <SelectContent>
+                      <SelectItem value="all">Tất cả loại</SelectItem>
                       <SelectItem value="single_date">Ngày cụ thể</SelectItem>
                       <SelectItem value="date_range">
                         Khoảng thời gian
@@ -819,196 +404,260 @@ const TourPriceOverridesManagement: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="w-40">
+                  <Select
+                    value={selectedStatus}
+                    onValueChange={setSelectedStatus}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="true">Kích hoạt</SelectItem>
+                      <SelectItem value="false">Tạm ngưng</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                {/* Date inputs based on override type */}
-                {createForm.override_type === "single_date" && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Ngày áp dụng
-                    </label>
-                    <Input
-                      type="date"
-                      value={createForm.override_date}
-                      onChange={(e) =>
-                        setCreateForm({
-                          ...createForm,
-                          override_date: e.target.value,
-                        })
+          {/* Price Overrides Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Danh Sách Ghi Đè Giá Tours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-4"></div>
+                  <span className="text-muted-foreground text-lg">
+                    Đang tải danh sách ghi đè giá...
+                  </span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tour</TableHead>
+                      <TableHead>Thời Gian Áp Dụng</TableHead>
+                      <TableHead>Loại Ghi Đè</TableHead>
+                      <TableHead>Giá Người Lớn</TableHead>
+                      <TableHead>Giá Trẻ Em</TableHead>
+                      <TableHead>Trạng Thái</TableHead>
+                      <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.isArray(priceOverrides) &&
+                    priceOverrides.length > 0 ? (
+                      priceOverrides.map((override) => (
+                        <TableRow key={override.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={override.tour_price.tour.poster_url}
+                                alt={override.tour_price.tour.title}
+                                className="w-12 h-8 object-cover rounded"
+                              />
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {override.tour_price.tour.title}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Giá gốc:{" "}
+                                  {formatCurrency(
+                                    override.tour_price.adult_price
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-blue-600" />
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {getDateDisplay(override)}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={getOverrideTypeVariant(
+                                override.override_type
+                              )}
+                            >
+                              {getOverrideTypeText(override.override_type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-semibold text-green-700">
+                              {formatCurrency(override.adult_price)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-semibold text-blue-700">
+                              {formatCurrency(override.kid_price)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  override.is_active ? "default" : "secondary"
+                                }
+                              >
+                                {override.is_active ? "Kích hoạt" : "Tạm ngưng"}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewOverride(override)}
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {!isAdmin && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditOverride(override)}
+                                    title="Chỉnh sửa"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleToggleActive(override.id)
+                                    }
+                                    disabled={loadingActiveIds.includes(
+                                      override.id
+                                    )}
+                                    title={
+                                      override.is_active
+                                        ? "Tạm ngưng"
+                                        : "Kích hoạt"
+                                    }
+                                    className={
+                                      override.is_active
+                                        ? "text-orange-600 hover:text-orange-800"
+                                        : "text-green-600 hover:text-green-800"
+                                    }
+                                  >
+                                    {loadingActiveIds.includes(override.id) ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : override.is_active ? (
+                                      <ToggleRight className="w-4 h-4" />
+                                    ) : (
+                                      <ToggleLeft className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleDeleteOverride(override.id)
+                                    }
+                                    className="text-red-600 hover:text-red-800"
+                                    title="Xóa ghi đè"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <div className="flex flex-col items-center space-y-2">
+                            <Calendar className="w-12 h-12 text-muted-foreground/50" />
+                            <p className="text-muted-foreground">
+                              Không có quy tắc ghi đè giá nào được tìm thấy.
+                            </p>
+                            <p className="text-sm text-muted-foreground/70">
+                              Thử thay đổi bộ lọc hoặc tạo quy tắc mới.
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+
+              {/* Pagination */}
+              {Array.isArray(priceOverrides) && totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Hiển thị{" "}
+                    {Array.isArray(priceOverrides) ? priceOverrides.length : 0}{" "}
+                    trong tổng số {totalItems} quy tắc
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
                       }
-                      className="w-full"
-                    />
-                  </div>
-                )}
-
-                {createForm.override_type === "date_range" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Ngày bắt đầu
-                      </label>
-                      <Input
-                        type="date"
-                        value={createForm.start_date}
-                        onChange={(e) =>
-                          setCreateForm({
-                            ...createForm,
-                            start_date: e.target.value,
-                          })
-                        }
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Ngày kết thúc
-                      </label>
-                      <Input
-                        type="date"
-                        value={createForm.end_date}
-                        onChange={(e) =>
-                          setCreateForm({
-                            ...createForm,
-                            end_date: e.target.value,
-                          })
-                        }
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {createForm.override_type === "day_of_week" && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Thứ trong tuần
-                    </label>
-                    <Select
-                      value={createForm.day_of_week}
-                      onValueChange={(value) =>
-                        setCreateForm({ ...createForm, day_of_week: value })
-                      }
+                      disabled={currentPage === 1}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn thứ..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2">Thứ 2</SelectItem>
-                        <SelectItem value="3">Thứ 3</SelectItem>
-                        <SelectItem value="4">Thứ 4</SelectItem>
-                        <SelectItem value="5">Thứ 5</SelectItem>
-                        <SelectItem value="6">Thứ 6</SelectItem>
-                        <SelectItem value="7">Thứ 7</SelectItem>
-                        <SelectItem value="8">Chủ Nhật</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Giá Người Lớn (VND)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      min="0"
-                      value={createForm.adult_price}
-                      onChange={(e) =>
-                        setCreateForm({
-                          ...createForm,
-                          adult_price: e.target.value,
-                        })
+                      Trước
+                    </Button>
+                    <span className="px-3 py-1 text-sm bg-muted rounded">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                       }
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Giá Trẻ Em (VND)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      min="0"
-                      value={createForm.kid_price}
-                      onChange={(e) =>
-                        setCreateForm({
-                          ...createForm,
-                          kid_price: e.target.value,
-                        })
-                      }
-                      className="w-full"
-                    />
+                      disabled={currentPage === totalPages}
+                    >
+                      Sau
+                    </Button>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Ghi Chú
-                  </label>
-                  <Input
-                    placeholder="Nhập ghi chú cho quy tắc ghi đè..."
-                    value={createForm.note}
-                    onChange={(e) =>
-                      setCreateForm({ ...createForm, note: e.target.value })
-                    }
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    className="rounded"
-                    checked={createForm.is_active}
-                    onChange={(e) =>
-                      setCreateForm({
-                        ...createForm,
-                        is_active: e.target.checked,
-                      })
-                    }
-                  />
-                  <label htmlFor="is_active" className="text-sm font-medium">
-                    Kích hoạt ngay
-                  </label>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                Hủy
-              </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700"
-                onClick={handleCreateOverride}
-                disabled={
-                  !createForm.tour_price_id ||
-                  !createForm.override_type ||
-                  !createForm.adult_price ||
-                  !createForm.kid_price
-                }
-              >
-                Lưu Ghi Đè Giá
-              </Button>
-            </div>
-
-            {/* Footer Note */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm text-green-800">
-                💰 <strong>Lưu ý:</strong> Điền đầy đủ thông tin để tạo quy tắc
-                ghi đè giá mới.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+      {mode === "view" && selectedOverrideId && (
+        <TourPriceOverrideViewContent
+          overrideId={selectedOverrideId}
+          onBack={handleBack}
+          showHeader={true}
+          onEdit={(id) => {
+            setSelectedOverrideId(id.toString());
+            setMode("edit");
+          }}
+        />
+      )}
+      {mode === "edit" && selectedOverrideId && (
+        <TourPriceOverrideEditor
+          mode="edit"
+          id={selectedOverrideId}
+          onBack={handleBack}
+        />
+      )}
+      {mode === "create" && (
+        <TourPriceOverrideEditor mode="create" onBack={handleBack} />
+      )}
     </div>
   );
 };

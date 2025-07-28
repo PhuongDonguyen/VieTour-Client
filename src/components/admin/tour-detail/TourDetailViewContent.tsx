@@ -181,7 +181,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
                 className="flex items-center space-x-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <span>Quay lại</span>
               </Button>
             ) : (
               <Button
@@ -190,13 +190,13 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
                 className="flex items-center space-x-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Tour Details</span>
+                <span>Về danh sách chi tiết tour</span>
               </Button>
             )}
             <div>
               <h1 className="text-3xl font-bold">{tourDetail.title}</h1>
               <p className="text-muted-foreground">
-                Tour Detail • Order: {tourDetail.order}
+                Chi tiết lịch trình • Ngày: {tourDetail.order}
               </p>
             </div>
           </div>
@@ -238,20 +238,20 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                Tour Detail Information
+                Thông tin chi tiết
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
-                    Title
+                    Tiêu đề
                   </p>
                   <p className="text-lg font-semibold">{tourDetail.title}</p>
                 </div>
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
-                    Order
+                    Thứ tự ngày
                   </p>
                   <p className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
@@ -260,13 +260,13 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
                 </div>
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
-                    Tour ID
+                    Mã Tour
                   </p>
                   <p className="font-mono text-sm">{tourDetail.tour_id}</p>
                 </div>
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
-                    Detail ID
+                    Mã Chi Tiết
                   </p>
                   <p className="font-mono text-sm">{tourDetail.id}</p>
                 </div>
@@ -274,13 +274,13 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
             </CardContent>
           </Card>
 
-          {/* Morning Description */}
+          {/* Buổi Sáng */}
           {tourDetail.morning_description && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  Morning Schedule
+                  Buổi Sáng
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -295,13 +295,13 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
             </Card>
           )}
 
-          {/* Noon Description */}
+          {/* Buổi Trưa */}
           {tourDetail.noon_description && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  Noon Schedule
+                  Buổi Trưa
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -315,13 +315,13 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
             </Card>
           )}
 
-          {/* Afternoon Description */}
+          {/* Buổi Chiều */}
           {tourDetail.afternoon_description && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building className="w-5 h-5" />
-                  Afternoon Schedule
+                  Buổi Chiều
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -339,10 +339,10 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions */}
+          {/* Thao tác nhanh */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {!isAdmin && (
@@ -353,7 +353,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
                   className="w-full"
                 >
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit Tour Detail
+                  Chỉnh sửa chi tiết
                 </Button>
               )}
               <Button
@@ -364,20 +364,20 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
                 className="w-full"
               >
                 <Eye className="w-4 h-4 mr-2" />
-                View Tour
+                Xem Tour
               </Button>
             </CardContent>
           </Card>
 
-          {/* Tour Details */}
+          {/* Thông tin Tour */}
           <Card>
             <CardHeader>
-              <CardTitle>Tour Details</CardTitle>
+              <CardTitle>Thông tin Tour</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Tour Name
+                  Tên Tour
                 </label>
                 <p className="font-medium text-sm">
                   {getTourInfo(tourDetail).title}
@@ -385,7 +385,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Category
+                  Danh mục
                 </label>
                 <Badge variant="secondary" className="text-xs">
                   {getTourInfo(tourDetail).category_name}
@@ -393,20 +393,20 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Tour ID
+                  Mã Tour
                 </label>
                 <p className="font-mono text-sm">{tourDetail.tour_id}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Detail ID
+                  Mã Chi Tiết
                 </label>
                 <p className="font-mono text-sm">{tourDetail.id}</p>
               </div>
               {tourDetail.created_at && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Created
+                    Ngày tạo
                   </label>
                   <p className="text-sm">
                     {new Date(tourDetail.created_at).toLocaleDateString(
@@ -418,7 +418,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
               {tourDetail.updated_at && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Updated
+                    Cập nhật
                   </label>
                   <p className="text-sm">
                     {new Date(tourDetail.updated_at).toLocaleDateString(

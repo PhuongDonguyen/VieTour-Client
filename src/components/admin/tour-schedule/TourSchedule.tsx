@@ -304,6 +304,8 @@ const TourSchedulesManagement: React.FC = () => {
         return "destructive";
       case "cancelled":
         return "secondary";
+      case "completed":
+        return "outline";
       default:
         return "outline";
     }
@@ -318,9 +320,20 @@ const TourSchedulesManagement: React.FC = () => {
         return "Hết chỗ";
       case "cancelled":
         return "Đã hủy";
+      case "completed":
+        return "Hoàn thành";
       default:
         return status;
     }
+  };
+
+  const handleTourChange = (tourId: string) => {
+    setSelectedTourId(tourId);
+    setLoading(true); // show loading until list update
+  };
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status);
+    setLoading(true); // show loading until list update
   };
 
   return (
@@ -365,7 +378,7 @@ const TourSchedulesManagement: React.FC = () => {
               />
             </div>
             <div className="w-56">
-              <Select value={selectedTourId} onValueChange={setSelectedTourId}>
+              <Select value={selectedTourId} onValueChange={handleTourChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn tour" />
                 </SelectTrigger>
@@ -380,7 +393,7 @@ const TourSchedulesManagement: React.FC = () => {
               </Select>
             </div>
             <div className="w-40">
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
@@ -389,6 +402,7 @@ const TourSchedulesManagement: React.FC = () => {
                   <SelectItem value="available">Còn chỗ</SelectItem>
                   <SelectItem value="full">Hết chỗ</SelectItem>
                   <SelectItem value="cancelled">Đã hủy</SelectItem>
+                  <SelectItem value="completed">Hoàn thành</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -402,142 +416,154 @@ const TourSchedulesManagement: React.FC = () => {
           <CardTitle>Danh Sách Lịch Trình Tours</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tour</TableHead>
-                <TableHead>Ngày Khởi Hành</TableHead>
-                <TableHead>Số Người Tham Gia</TableHead>
-                <TableHead>Trạng Thái</TableHead>
-                <TableHead>Danh Mục</TableHead>
-                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.isArray(tourSchedules) && tourSchedules.length > 0 ? (
-                tourSchedules.map((schedule) => (
-                  <TableRow key={schedule.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {loadingTours[(schedule as TourSchedule).tour_id] ? (
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-8 bg-gray-200 rounded animate-pulse"></div>
-                            <div className="animate-pulse">
-                              <div className="h-4 bg-gray-200 rounded w-24"></div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-4"></div>
+              <span className="text-muted-foreground text-lg">
+                Đang tải danh sách lịch trình...
+              </span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tour</TableHead>
+                  <TableHead>Ngày Khởi Hành</TableHead>
+                  <TableHead>Số Người Tham Gia</TableHead>
+                  <TableHead>Trạng Thái</TableHead>
+                  <TableHead>Danh Mục</TableHead>
+                  <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(tourSchedules) && tourSchedules.length > 0 ? (
+                  tourSchedules.map((schedule) => (
+                    <TableRow key={schedule.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {loadingTours[(schedule as TourSchedule).tour_id] ? (
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-8 bg-gray-200 rounded animate-pulse"></div>
+                              <div className="animate-pulse">
+                                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <>
-                            <img
-                              src={
-                                "tour" in schedule && schedule.tour
-                                  ? schedule.tour.poster_url
-                                  : tourInfoMap[
-                                      (schedule as TourSchedule).tour_id
-                                    ]?.poster_url || "/public/VieTour-Logo.png"
-                              }
-                              alt={
-                                "tour" in schedule && schedule.tour
-                                  ? schedule.tour.title
-                                  : tourInfoMap[
-                                      (schedule as TourSchedule).tour_id
-                                    ]?.title ||
-                                    `Tour ID: ${
-                                      (schedule as TourSchedule).tour_id
-                                    }`
-                              }
-                              className="w-12 h-8 object-cover rounded"
-                            />
-                            <div>
-                              <p className="font-medium text-sm">
-                                {"tour" in schedule && schedule.tour
-                                  ? schedule.tour.title
-                                  : tourInfoMap[
-                                      (schedule as TourSchedule).tour_id
-                                    ]?.title ||
-                                    `Tour ID: ${
-                                      (schedule as TourSchedule).tour_id
-                                    }`}
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-blue-600" />
-                        <div>
-                          <p className="font-medium">
-                            {formatDate(schedule.start_date)}
-                          </p>
+                          ) : (
+                            <>
+                              <img
+                                src={
+                                  "tour" in schedule && schedule.tour
+                                    ? schedule.tour.poster_url
+                                    : tourInfoMap[
+                                        (schedule as TourSchedule).tour_id
+                                      ]?.poster_url ||
+                                      "/public/VieTour-Logo.png"
+                                }
+                                alt={
+                                  "tour" in schedule && schedule.tour
+                                    ? schedule.tour.title
+                                    : tourInfoMap[
+                                        (schedule as TourSchedule).tour_id
+                                      ]?.title ||
+                                      `Tour ID: ${
+                                        (schedule as TourSchedule).tour_id
+                                      }`
+                                }
+                                className="w-12 h-8 object-cover rounded"
+                              />
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {"tour" in schedule && schedule.tour
+                                    ? schedule.tour.title
+                                    : tourInfoMap[
+                                        (schedule as TourSchedule).tour_id
+                                      ]?.title ||
+                                      `Tour ID: ${
+                                        (schedule as TourSchedule).tour_id
+                                      }`}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-green-600" />
-                        <span className="font-semibold">
-                          {schedule.participant} người
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(schedule.status)}>
-                        {getStatusText(schedule.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {"tour" in schedule && schedule.tour
-                          ? schedule.tour.tour_category.name
-                          : tourInfoMap[(schedule as TourSchedule).tour_id]
-                              ?.category_name || "Chưa phân loại"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewSchedule(schedule)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {!isAdmin && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditSchedule(schedule)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteSchedule(schedule.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-600" />
+                          <div>
+                            <p className="font-medium">
+                              {formatDate(schedule.start_date)}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-green-600" />
+                          <span className="font-semibold">
+                            {schedule.participant} người
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(schedule.status)}>
+                          {getStatusText(schedule.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {"tour" in schedule && schedule.tour
+                            ? schedule.tour.tour_category.name
+                            : tourInfoMap[(schedule as TourSchedule).tour_id]
+                                ?.category_name || "Chưa phân loại"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewSchedule(schedule)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {!isAdmin && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditSchedule(schedule)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteSchedule(schedule.id)
+                                }
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      {loading
+                        ? "Đang tải..."
+                        : "Không có lịch trình nào được tìm thấy."}
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
-                    {loading
-                      ? "Đang tải..."
-                      : "Không có lịch trình nào được tìm thấy."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           {/* Pagination */}
           {Array.isArray(tourSchedules) && totalPages > 1 && (

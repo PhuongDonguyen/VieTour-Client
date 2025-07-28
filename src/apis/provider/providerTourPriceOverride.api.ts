@@ -1,5 +1,5 @@
-import type { AxiosResponse } from 'axios';
-import axiosInstance from '../axiosInstance';
+import type { AxiosResponse } from "axios";
+import axiosInstance from "../axiosInstance";
 
 // TypeScript interfaces for Tour Price Override data
 export interface TourPriceOverride {
@@ -13,7 +13,7 @@ export interface TourPriceOverride {
   note: string;
   is_active: boolean;
   tour_price_id: number;
-  override_type: 'single_date' | 'date_range' | 'day_of_week';
+  override_type: "single_date" | "date_range" | "weekly";
   tour_price: {
     id: number;
     adult_price: number;
@@ -61,7 +61,7 @@ export interface CreateTourPriceOverrideData {
   note: string;
   is_active: boolean;
   tour_price_id: number;
-  override_type: 'single_date' | 'date_range' | 'day_of_week';
+  override_type: "single_date" | "date_range" | "weekly";
 }
 
 export interface UpdateTourPriceOverrideData {
@@ -74,38 +74,53 @@ export interface UpdateTourPriceOverrideData {
   note?: string;
   is_active?: boolean;
   tour_price_id?: number;
-  override_type?: 'single_date' | 'date_range' | 'day_of_week';
+  override_type?: "single_date" | "date_range" | "weekly";
 }
 
 // API functions
 export const providerTourPriceOverrideApi = {
   // Get all tour price overrides
-  getTourPriceOverrides: (params?: TourPriceOverrideParams): Promise<AxiosResponse<TourPriceOverrideResponse>> => {
-    return axiosInstance.get('/api/provider/tour-price-overrides', { params });
+  getTourPriceOverrides: (
+    params?: TourPriceOverrideParams
+  ): Promise<AxiosResponse<TourPriceOverrideResponse>> => {
+    return axiosInstance.get("/api/provider/tour-price-overrides", { params });
   },
 
   // Get tour price override by ID
-  getTourPriceOverrideById: (id: number): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
+  getTourPriceOverrideById: (
+    id: number
+  ): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
     return axiosInstance.get(`/api/provider/tour-price-overrides/${id}`);
   },
 
   // Create new tour price override
-  createTourPriceOverride: (data: CreateTourPriceOverrideData): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
-    return axiosInstance.post('/api/provider/tour-price-overrides', data);
+  createTourPriceOverride: (
+    data: CreateTourPriceOverrideData
+  ): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
+    return axiosInstance.post("/api/provider/tour-price-overrides", data);
   },
 
   // Update tour price override
-  updateTourPriceOverride: (id: number, data: UpdateTourPriceOverrideData): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
+  updateTourPriceOverride: (
+    id: number,
+    data: UpdateTourPriceOverrideData
+  ): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
     return axiosInstance.put(`/api/provider/tour-price-overrides/${id}`, data);
   },
 
   // Delete tour price override
-  deleteTourPriceOverride: (id: number): Promise<AxiosResponse<{ success: boolean }>> => {
+  deleteTourPriceOverride: (
+    id: number
+  ): Promise<AxiosResponse<{ success: boolean }>> => {
     return axiosInstance.delete(`/api/provider/tour-price-overrides/${id}`);
   },
 
   // Toggle active status
-  toggleActive: (id: number): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
-    return axiosInstance.patch(`/api/provider/tour-price-overrides/${id}/toggle-active`);
-  }
+  toggleActive: (
+    id: number
+  ): Promise<AxiosResponse<{ success: boolean; data: TourPriceOverride }>> => {
+    return axiosInstance.patch(
+      `/api/provider/tour-price-overrides/${id}/toggle-active`
+    );
+  },
 };

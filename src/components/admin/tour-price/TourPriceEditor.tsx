@@ -217,6 +217,16 @@ const TourPriceEditor: React.FC = () => {
             </p>
           </div>
         </div>
+        <Button onClick={handleSave} disabled={loading}>
+          <Save className="w-4 h-4 mr-2" />
+          {loading
+            ? isEditing
+              ? "Đang cập nhật..."
+              : "Đang tạo..."
+            : isEditing
+            ? "Cập nhật"
+            : "Tạo mới"}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -270,6 +280,11 @@ const TourPriceEditor: React.FC = () => {
                         parseInt(e.target.value) || 0
                       )
                     }
+                    onFocus={(e) => {
+                      if (e.target.value === "0") {
+                        e.target.value = "";
+                      }
+                    }}
                     placeholder="Nhập giá người lớn"
                     min="0"
                   />
@@ -286,6 +301,11 @@ const TourPriceEditor: React.FC = () => {
                         parseInt(e.target.value) || 0
                       )
                     }
+                    onFocus={(e) => {
+                      if (e.target.value === "0") {
+                        e.target.value = "";
+                      }
+                    }}
                     placeholder="Nhập giá trẻ em"
                     min="0"
                   />
@@ -295,20 +315,17 @@ const TourPriceEditor: React.FC = () => {
               {/* Note Field */}
               <div className="space-y-2">
                 <Label htmlFor="note">Ghi Chú</Label>
-                <TinyMCEEditor
+                <textarea
+                  id="note"
                   value={formData.note}
-                  onChange={(content) => handleInputChange("note", content)}
+                  onChange={(e) => handleInputChange("note", e.target.value)}
                   placeholder="Nhập ghi chú về giá tour..."
+                  className="w-full min-h-[80px] rounded border border-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={loading}>
-                  <Save className="w-4 h-4 mr-2" />
-                  {loading ? "Đang lưu..." : isEditing ? "Cập nhật" : "Tạo mới"}
-                </Button>
-              </div>
+              {/* The save button is now in the header */}
             </CardContent>
           </Card>
         </div>

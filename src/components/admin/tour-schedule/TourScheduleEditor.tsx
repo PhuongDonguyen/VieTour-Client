@@ -86,31 +86,45 @@ const TourScheduleEditor: React.FC = () => {
     }
   }, [id, isEdit]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSave = async () => {
     if (!formData.tour_id || !formData.start_date || !formData.participant) {
       alert("Vui lòng điền đầy đủ thông tin.");
+      return;
+    }
+
+    // Only validate participant for new schedules, not when editing
+    if (!isEdit && parseInt(formData.participant) <= 0) {
+      alert("Số người tham gia phải lớn hơn 0.");
       return;
     }
 
     try {
       setSaving(true);
 
-      const scheduleData = {
-        tour_id: parseInt(formData.tour_id),
+      let scheduleData: any = {
         start_date: formData.start_date,
-        participant: parseInt(formData.participant),
-        status: formData.status as "available" | "full" | "cancelled",
       };
+
+      if (isEdit) {
+        scheduleData.status = formData.status as
+          | "available"
+          | "full"
+          | "cancelled";
+      } else {
+        // Only for new schedule, include tour_id and participant
+        scheduleData.tour_id = parseInt(formData.tour_id);
+        scheduleData.participant = parseInt(formData.participant);
+      }
 
       if (isEdit && id) {
         await providerTourScheduleService.updateTourSchedule(
           parseInt(id),
           scheduleData
         );
+        alert("Cập nhật lịch trình thành công!");
       } else {
         await providerTourScheduleService.createTourSchedule(scheduleData);
+        alert("Tạo lịch trình thành công!");
       }
 
       navigate("/admin/tours/schedules");
@@ -166,10 +180,14 @@ const TourScheduleEditor: React.FC = () => {
             </p>
           </div>
         </div>
+        <Button onClick={handleSave} disabled={saving}>
+          <Save className="w-4 h-4 mr-2" />
+          {saving ? "Đang lưu..." : isEdit ? "Cập Nhật" : "Tạo Mới"}
+        </Button>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit}>
+      <div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
@@ -190,6 +208,7 @@ const TourScheduleEditor: React.FC = () => {
                     onValueChange={(value) =>
                       handleInputChange("tour_id", value)
                     }
+                    disabled={isEdit}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn tour..." />
@@ -202,6 +221,11 @@ const TourScheduleEditor: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {isEdit && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Không được phép chỉnh sửa
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -225,78 +249,51 @@ const TourScheduleEditor: React.FC = () => {
                     </label>
                     <Input
                       type="number"
-                      placeholder="0"
-                      min="0"
                       value={formData.participant}
                       onChange={(e) =>
                         handleInputChange("participant", e.target.value)
                       }
                       className="w-full"
+                      placeholder="Nhập số người tham gia"
+                      min="1"
                       required
+                      disabled={isEdit}
                     />
+                    {isEdit && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Không được phép chỉnh sửa
+                      </p>
+                    )}
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Trạng Thái
-                  </label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      handleInputChange("status", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn trạng thái..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="available">Còn chỗ</SelectItem>
-                      <SelectItem value="full">Hết chỗ</SelectItem>
-                      <SelectItem value="cancelled">Đã hủy</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {isEdit && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Trạng Thái
+                    </label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) =>
+                        handleInputChange("status", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn trạng thái..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Còn chỗ</SelectItem>
+                        <SelectItem value="full">Hết chỗ</SelectItem>
+                        <SelectItem value="cancelled">Đã hủy</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  type="submit"
-                  disabled={saving}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  {saving ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Đang lưu...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Save className="w-4 h-4" />
-                      {isEdit ? "Cập Nhật" : "Tạo Mới"}
-                    </div>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/admin/tours/schedules")}
-                  className="w-full"
-                >
-                  Hủy
-                </Button>
-              </CardContent>
-            </Card>
-
             {/* Form Info */}
             <Card>
               <CardHeader>
@@ -310,7 +307,7 @@ const TourScheduleEditor: React.FC = () => {
             </Card>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

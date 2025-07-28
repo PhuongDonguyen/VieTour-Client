@@ -213,6 +213,11 @@ const TourDetails: React.FC = () => {
     navigate("/admin/tours/details/new");
   };
 
+  const handleTourChange = (tourId: string) => {
+    setSelectedTourId(tourId);
+    setLoading(true); // show loading until list update
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -254,7 +259,7 @@ const TourDetails: React.FC = () => {
               />
             </div>
             <div className="w-64">
-              <Select value={selectedTourId} onValueChange={setSelectedTourId}>
+              <Select value={selectedTourId} onValueChange={handleTourChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn tour..." />
                 </SelectTrigger>
@@ -278,88 +283,97 @@ const TourDetails: React.FC = () => {
           <CardTitle>Danh Sách Chi Tiết Tours</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tour</TableHead>
-                <TableHead>Tiêu Đề</TableHead>
-                <TableHead>Thứ Tự</TableHead>
-                <TableHead>Danh Mục</TableHead>
-                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.isArray(tourDetails) && tourDetails.length > 0 ? (
-                tourDetails.map((detail) => (
-                  <TableRow key={detail.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={getTourInfo(detail).poster_url}
-                          alt={getTourInfo(detail).title}
-                          className="w-12 h-8 object-cover rounded"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {getTourInfo(detail).title}
-                          </p>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-4"></div>
+              <span className="text-muted-foreground text-lg">
+                Đang tải danh sách chi tiết tour...
+              </span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tour</TableHead>
+                  <TableHead>Tiêu Đề</TableHead>
+                  <TableHead>Thứ Tự</TableHead>
+                  <TableHead>Danh Mục</TableHead>
+                  <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(tourDetails) && tourDetails.length > 0 ? (
+                  tourDetails.map((detail) => (
+                    <TableRow key={detail.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={getTourInfo(detail).poster_url}
+                            alt={getTourInfo(detail).title}
+                            className="w-12 h-8 object-cover rounded"
+                          />
+                          <div>
+                            <p className="font-medium text-sm">
+                              {getTourInfo(detail).title}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{detail.title}</p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">Ngày {detail.order}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {getTourInfo(detail).category_name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetail(detail)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {!isAdmin && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditDetail(detail)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteDetail(detail.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium">{detail.title}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Ngày {detail.order}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {getTourInfo(detail).category_name}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDetail(detail)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {!isAdmin && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditDetail(detail)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteDetail(detail.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      {loading
+                        ? "Đang tải..."
+                        : "Không có chi tiết tour nào được tìm thấy."}
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    {loading
-                      ? "Đang tải..."
-                      : "Không có chi tiết tour nào được tìm thấy."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           {/* Pagination */}
           {Array.isArray(tourDetails) && totalPages > 1 && (

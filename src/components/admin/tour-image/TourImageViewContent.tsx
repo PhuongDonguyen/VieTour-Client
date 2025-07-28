@@ -4,7 +4,16 @@ import { AuthContext } from "@/context/authContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, ExternalLink, ArrowLeft, ImageIcon, Edit } from "lucide-react";
+import {
+  Star,
+  ExternalLink,
+  ArrowLeft,
+  ImageIcon,
+  Edit,
+  Calendar,
+  Phone,
+  MessageCircle,
+} from "lucide-react";
 import { providerTourImageService } from "../../../services/provider/providerTourImage.service";
 import { adminTourImageService } from "../../../services/admin/adminTourImage.service";
 import { providerTourApi } from "../../../apis/provider/providerTour.api";
@@ -100,7 +109,7 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
             <ArrowLeft className="w-4 h-4" />
             <span>Quay lại</span>
           </Button>
-          <h1 className="text-3xl font-bold ml-4">Chi Tiết Hình Ảnh</h1>
+          <h1 className="text-3xl font-bold ml-4">Chi Tiết Hình Ảnh Tour</h1>
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -187,29 +196,26 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
-                variant="outline"
-                onClick={
-                  onBack ? onBack : () => navigate("/admin/tours/images")
-                }
-                className="w-full"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Quay lại danh sách
-              </Button>
-              <Button
-                variant="outline"
                 onClick={() => {
                   if (onEdit && image) onEdit(image.id);
                   else navigate(`/admin/tours/images/edit/${image.id}`);
                 }}
-                className="w-full"
+                className="w-full bg-gray-800 hover:bg-gray-900 text-white"
               >
                 <Edit className="w-4 h-4 mr-2" />
-                Chỉnh sửa hình ảnh
+                Chỉnh sửa chi tiết
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/admin/tours/view/${tour?.id}`)}
+                className="w-full"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Xem Tour
               </Button>
             </CardContent>
           </Card>
@@ -238,6 +244,38 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
             </Card>
           )}
         </div>
+      </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed right-6 top-1/2 transform -translate-y-1/2 space-y-4 z-50">
+        <Button
+          size="icon"
+          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
+          onClick={() => navigate(`/admin/tours/view/${tour?.id}`)}
+        >
+          <Calendar className="w-5 h-5 text-blue-600" />
+        </Button>
+        <Button
+          size="icon"
+          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
+          onClick={() => window.open("tel:+84123456789", "_blank")}
+        >
+          <Phone className="w-5 h-5 text-green-600" />
+        </Button>
+        <Button
+          size="icon"
+          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
+          onClick={() => window.open("https://m.me/yourpage", "_blank")}
+        >
+          <MessageCircle className="w-5 h-5 text-blue-600" />
+        </Button>
+        <Button
+          size="icon"
+          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
+          onClick={() => window.open("https://zalo.me/yourzalo", "_blank")}
+        >
+          <span className="text-blue-600 font-semibold text-sm">Zalo</span>
+        </Button>
       </div>
     </div>
   );

@@ -209,6 +209,11 @@ const TourPricesManagement: React.FC = () => {
     }
   };
 
+  const handleTourChange = (tourId: string) => {
+    setSelectedTourId(tourId);
+    setLoading(true); // show loading until list update
+  };
+
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
@@ -255,7 +260,7 @@ const TourPricesManagement: React.FC = () => {
               />
             </div>
             <div className="w-72">
-              <Select value={selectedTourId} onValueChange={setSelectedTourId}>
+              <Select value={selectedTourId} onValueChange={handleTourChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn tour" />
                 </SelectTrigger>
@@ -279,92 +284,101 @@ const TourPricesManagement: React.FC = () => {
           <CardTitle>Danh Sách Giá Tours</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tour</TableHead>
-                <TableHead>Giá Người Lớn</TableHead>
-                <TableHead>Giá Trẻ Em</TableHead>
-                <TableHead>Danh Mục</TableHead>
-                <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.isArray(tourPrices) && tourPrices.length > 0 ? (
-                tourPrices.map((price) => (
-                  <TableRow key={price.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={getTourInfo(price).poster_url}
-                          alt={getTourInfo(price).title}
-                          className="w-12 h-8 object-cover rounded"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {getTourInfo(price).title}
-                          </p>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mr-4"></div>
+              <span className="text-muted-foreground text-lg">
+                Đang tải danh sách giá tour...
+              </span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tour</TableHead>
+                  <TableHead>Giá Người Lớn</TableHead>
+                  <TableHead>Giá Trẻ Em</TableHead>
+                  <TableHead>Danh Mục</TableHead>
+                  <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(tourPrices) && tourPrices.length > 0 ? (
+                  tourPrices.map((price) => (
+                    <TableRow key={price.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={getTourInfo(price).poster_url}
+                            alt={getTourInfo(price).title}
+                            className="w-12 h-8 object-cover rounded"
+                          />
+                          <div>
+                            <p className="font-medium text-sm">
+                              {getTourInfo(price).title}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-green-600">
-                        {formatCurrency(price.adult_price)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-blue-600">
-                        {formatCurrency(getChildPrice(price))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {getTourInfo(price).category_name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewPrice(price)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {!isAdmin && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditPrice(price)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeletePrice(price.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-green-600">
+                          {formatCurrency(price.adult_price)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-blue-600">
+                          {formatCurrency(getChildPrice(price))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {getTourInfo(price).category_name}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewPrice(price)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {!isAdmin && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditPrice(price)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeletePrice(price.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      {loading
+                        ? "Đang tải..."
+                        : "Không có bảng giá nào được tìm thấy."}
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    {loading
-                      ? "Đang tải..."
-                      : "Không có bảng giá nào được tìm thấy."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           {/* Pagination */}
           {Array.isArray(tourPrices) && totalPages > 1 && (

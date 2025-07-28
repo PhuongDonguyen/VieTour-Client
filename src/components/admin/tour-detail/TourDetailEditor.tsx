@@ -401,31 +401,6 @@ const TourDetailEditor: React.FC = () => {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                onClick={handleSave}
-                disabled={loading}
-                className="w-full"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {loading ? "Đang lưu..." : "Lưu Chi Tiết Tour"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/admin/tours/details")}
-                className="w-full"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Hủy
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Form Status */}
-          <Card>
-            <CardHeader>
               <CardTitle>Trạng Thái Form</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">

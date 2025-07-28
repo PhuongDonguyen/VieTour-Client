@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Edit, Eye } from "lucide-react";
 import { AuthContext } from "@/context/authContext";
 import { providerTourScheduleService } from "../../../services/provider/providerTourSchedule.service";
 import { adminTourScheduleService } from "../../../services/admin/adminTourSchedule.service";
@@ -168,49 +168,47 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                onClick={() =>
-                  navigate(
-                    `/admin/tours/view/${
-                      tourInfo?.title ? (schedule as any).tour_id : ""
-                    }`
-                  )
-                }
-                className="w-full"
-              >
-                Xem Tour
-              </Button>
               {!isAdmin && (
                 <Button
-                  variant="outline"
+                  className="w-full"
+                  variant="default"
                   onClick={() =>
                     navigate(`/admin/tours/schedules/edit/${schedule.id}`)
                   }
-                  className="w-full"
                 >
-                  Chỉnh Sửa Lịch Trình
+                  <Edit className="w-4 h-4 mr-2" />
+                  Chỉnh sửa chi tiết
                 </Button>
               )}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() =>
+                  navigate(`/admin/tours/view/${(schedule as any).tour_id}`)
+                }
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Xem Tour
+              </Button>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Schedule Details</CardTitle>
+              <CardTitle>Thông Tin Lịch Trình</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Schedule ID
+                  ID Lịch Trình
                 </label>
                 <p className="font-mono text-sm">{schedule.id}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Tour ID
+                  ID Tour
                 </label>
                 <p className="font-mono text-sm">
                   {tourInfo?.title ? (schedule as any).tour_id : ""}

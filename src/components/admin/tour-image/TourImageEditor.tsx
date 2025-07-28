@@ -4,9 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Star, ArrowLeft, ImageIcon } from "lucide-react";
+import { Star, ArrowLeft, ImageIcon, Save } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { providerTourImageService } from "../../../services/provider/providerTourImage.service";
 import { adminTourImageService } from "../../../services/admin/adminTourImage.service";
+import { providerTourService } from "../../../services/provider/providerTour.service";
 import type { TourImage } from "../../../apis/provider/providerTourImage.api";
 import type { AdminTourImage } from "../../../apis/admin/adminTourImage.api";
 
@@ -34,8 +42,54 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [tourInfo, setTourInfo] = useState<any>(null);
+  const [availableTours, setAvailableTours] = useState<
+    { id: number; title: string }[]
+  >([]);
+  const [loadingTours, setLoadingTours] = useState(false);
+
+  // Load available tours
+  const loadAvailableTours = async () => {
+    try {
+      setLoadingTours(true);
+      const response = await providerTourService.getTours({
+        page: 1,
+        limit: 100,
+        status: "active",
+      });
+
+      let toursData: any[] = [];
+      if (response && typeof response === "object") {
+        if (response.data && Array.isArray(response.data)) {
+          toursData = response.data;
+        } else if (Array.isArray(response)) {
+          toursData = response;
+        } else if (
+          "success" in response &&
+          "data" in response &&
+          Array.isArray(response.data)
+        ) {
+          toursData = response.data;
+        }
+      }
+
+      // Sort tours by title
+      const sortedTours = toursData.sort((a, b) =>
+        a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
+      );
+
+      setAvailableTours(sortedTours);
+    } catch (error) {
+      console.error("Failed to load tours:", error);
+      setAvailableTours([]);
+    } finally {
+      setLoadingTours(false);
+    }
+  };
 
   useEffect(() => {
+    // Load available tours for both create and edit modes
+    loadAvailableTours();
+
     if (mode === "edit" && id) {
       setLoading(true);
       setError(null);
@@ -79,6 +133,13 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
     }));
   };
 
+  const handleTourChange = (tourId: string) => {
+    setForm((prev: any) => ({
+      ...prev,
+      tour_id: tourId,
+    }));
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
@@ -86,27 +147,48 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
+    if (!form.tour_id) {
+      setError("Vui lòng chọn Tour.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const formData = new FormData();
-      formData.append("tour_id", form.tour_id);
-      formData.append("alt_text", form.alt_text);
-      formData.append("is_featured", form.is_featured ? "true" : "false");
-      if (file) {
-        formData.append("image", file);
-      }
+
       if (mode === "edit" && id) {
+        // Khi edit, gửi tour_id để server validate
+        formData.append("tour_id", form.tour_id);
+        formData.append("alt_text", form.alt_text);
+        formData.append("is_featured", form.is_featured ? "true" : "false");
+        if (file) {
+          formData.append("image", file);
+        }
         await providerTourImageService.updateTourImage(Number(id), formData);
+        alert("Cập nhật hình ảnh thành công!");
       } else {
+        // Khi tạo mới, gửi tất cả trường
+        formData.append("tour_id", form.tour_id);
+        formData.append("alt_text", form.alt_text);
+        formData.append("is_featured", form.is_featured ? "true" : "false");
+        if (file) {
+          formData.append("image", file);
+        }
         await providerTourImageService.createTourImage(formData);
+        alert("Tạo hình ảnh thành công!");
       }
       navigate("/admin/tours/images");
       if (onBack) onBack();
-    } catch (err) {
-      setError("Có lỗi xảy ra khi lưu hình ảnh.");
+    } catch (err: any) {
+      console.error("Error saving tour image:", err);
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      
+      // Hiển thị lỗi chi tiết hơn
+      const errorMessage = err.response?.data?.message || err.message || "Có lỗi xảy ra khi lưu hình ảnh.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -114,21 +196,38 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header lớn */}
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="flex items-center space-x-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Quay lại</span>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Quay lại
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">
+              {mode === "edit"
+                ? "Chỉnh Sửa Hình Ảnh Tour"
+                : "Thêm Hình Ảnh Tour Mới"}
+            </h1>
+            <p className="text-muted-foreground">
+              {mode === "edit"
+                ? "Cập nhật thông tin hình ảnh tour"
+                : "Thêm hình ảnh mới cho tour"}
+            </p>
+          </div>
+        </div>
+        <Button onClick={handleSave} disabled={loading}>
+          <Save className="w-4 h-4 mr-2" />
+          {loading
+            ? "Đang lưu..."
+            : mode === "edit"
+            ? "Lưu thay đổi"
+            : "Tạo mới"}
         </Button>
-        <h1 className="text-3xl font-bold ml-4">
-          {mode === "edit"
-            ? "Chỉnh Sửa Hình Ảnh Tour"
-            : "Thêm Hình Ảnh Tour Mới"}
-        </h1>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form bên trái */}
@@ -140,18 +239,36 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    ID Tour
+                    Chọn Tour *
                   </label>
-                  <Input
-                    name="tour_id"
+                  <Select
                     value={form.tour_id}
-                    onChange={handleChange}
-                    required
-                    disabled={mode === "edit"}
-                  />
+                    onValueChange={handleTourChange}
+                    disabled={loadingTours || mode === "edit"}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          loadingTours ? "Đang tải..." : "Chọn tour..."
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTours.map((tour) => (
+                        <SelectItem key={tour.id} value={tour.id.toString()}>
+                          {tour.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {mode === "edit" && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Không được phép chỉnh sửa
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -190,14 +307,7 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
                   )}
                 </div>
                 {error && <div className="text-red-500 text-sm">{error}</div>}
-                <Button type="submit" disabled={loading} className="w-full">
-                  {loading
-                    ? "Đang lưu..."
-                    : mode === "edit"
-                    ? "Lưu thay đổi"
-                    : "Tạo mới"}
-                </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
         </div>
