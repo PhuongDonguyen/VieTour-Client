@@ -36,9 +36,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
         };
     }, []);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/admin-login');
+    const handleLogout = async () => {
+        await logout();
+        navigate('/admin/login');
     };
 
     const getUserDisplayName = () => {

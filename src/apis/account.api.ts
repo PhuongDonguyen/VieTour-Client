@@ -50,3 +50,6 @@ export const emailExists = (email: string) =>
 
 export const refreshToken = () =>
   axiosInstance.post('/auth/refresh-token');
+
+export const logout = () =>
+  axiosInstance.post('/auth/logout');

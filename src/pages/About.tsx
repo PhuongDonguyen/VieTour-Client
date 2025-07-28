@@ -15,7 +15,10 @@ export default function About() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-3xl mx-auto py-16 px-4 min-h-[60vh]">
+      <div className="max-w-4xl mx-auto py-16 px-4 min-h-[60vh] mt-10">
+      <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-start">
+        Về chúng tôi
+      </h1>
         {loading ? (
           <div className="text-center text-gray-500">Đang tải...</div>
         ) : (

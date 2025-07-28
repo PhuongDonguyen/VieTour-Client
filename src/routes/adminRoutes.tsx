@@ -12,6 +12,7 @@ import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
 import { RequireAdminAccess, RequireAdminOnly, RequireProviderOnly } from "../components/admin/AuthWrappers";
+import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -85,7 +86,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/tours/schedules", 
+    path: "/admin/tours/schedules",
     element: (
       <RequireAdminAccess>
         <AdminLayout title="Tour Schedules">

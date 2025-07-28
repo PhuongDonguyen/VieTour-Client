@@ -1,25 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchBlogs } from "../services/blog.service";
+import { fetchBlogBySlug } from "../services/blog.service";
 import Skeleton from 'react-loading-skeleton';
 
 const BlogDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!slug) return;
+      
       setLoading(true);
-      const res = await fetchBlogs();
-      if (res && res.success && Array.isArray(res.data)) {
-        const found = res.data.find((b: any) => String(b.id) === String(id));
-        setBlog(found);
+      try {
+        const blogData = await fetchBlogBySlug(slug);
+        setBlog(blogData);
+      } catch (error) {
+        console.error('Error fetching blog:', error);
+        setBlog(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchData();
-  }, [id]);
+  }, [slug]);
 
   if (loading) {
     return (
