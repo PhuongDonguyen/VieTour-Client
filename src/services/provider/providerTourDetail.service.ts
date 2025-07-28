@@ -1,4 +1,8 @@
-import { providerTourDetailApi, type TourDetail, type TourDetailsResponse } from '../../apis/provider/providerTourDetail.api';
+import {
+  providerTourDetailApi,
+  type TourDetail,
+  type TourDetailsResponse,
+} from "../../apis/provider/providerTourDetail.api";
 
 export const providerTourDetailService = {
   async getTourDetails(params?: {
@@ -8,11 +12,13 @@ export const providerTourDetailService = {
     tour_id?: number;
   }): Promise<TourDetailsResponse> {
     try {
-      const response = await providerTourDetailApi.getProviderTourDetails(params);
+      const response = await providerTourDetailApi.getProviderTourDetails(
+        params
+      );
       // Extract the actual data from axios response
       return response.data;
     } catch (error) {
-      console.error('Error fetching tour details:', error);
+      console.error("Error fetching tour details:", error);
       throw error;
     }
   },
@@ -20,19 +26,23 @@ export const providerTourDetailService = {
   async getTourDetail(id: number): Promise<TourDetail> {
     try {
       const response = await providerTourDetailApi.getTourDetail(id);
+      console.log("Provider service raw response:", response); // Debug log
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching tour detail:', error);
+      console.error("Error fetching tour detail:", error);
       throw error;
     }
   },
 
-  async updateTourDetail(id: number, data: Partial<TourDetail>): Promise<TourDetail> {
+  async updateTourDetail(
+    id: number,
+    data: Partial<TourDetail>
+  ): Promise<TourDetail> {
     try {
       const response = await providerTourDetailApi.updateTourDetail(id, data);
       return response.data.data;
     } catch (error) {
-      console.error('Error updating tour detail:', error);
+      console.error("Error updating tour detail:", error);
       throw error;
     }
   },
@@ -41,17 +51,19 @@ export const providerTourDetailService = {
     try {
       await providerTourDetailApi.deleteTourDetail(id);
     } catch (error) {
-      console.error('Error deleting tour detail:', error);
+      console.error("Error deleting tour detail:", error);
       throw error;
     }
   },
 
-  async createTourDetail(data: Omit<TourDetail, 'id' | 'tour'>): Promise<TourDetail> {
+  async createTourDetail(
+    data: Omit<TourDetail, "id" | "tour">
+  ): Promise<TourDetail> {
     try {
       const response = await providerTourDetailApi.createTourDetail(data);
       return response.data.data;
     } catch (error) {
-      console.error('Error creating tour detail:', error);
+      console.error("Error creating tour detail:", error);
       throw error;
     }
   },

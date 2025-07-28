@@ -2,6 +2,8 @@ import { Outlet, useLocation } from "react-router-dom";
 import { TopBar } from "../layouts/TopBar";
 import { NavBar } from "../layouts/NavBar";
 import { Footer } from "../layouts/Footer";
+import { Toaster } from "sonner";
+import FloatingContactButtons from "../components/FloatingContactButtons";
 
 export default function ClientLayout() {
   const location = useLocation();
@@ -15,6 +17,8 @@ export default function ClientLayout() {
         <Outlet />
       </div>
       <Footer />
+      <Toaster richColors position="top-right" />
+      <FloatingContactButtons />
     </div>
   );
 } 

@@ -1,123 +1,139 @@
-// import { getAllBlogCategories } from '../apis/blogCategory.api';
+import * as blogCategoryApi from '../apis/blogCategory.api';
+
+import type {
+  CreateBlogCategoryRequest,
+  UpdateBlogCategoryRequest,
+  BlogCategoryListResponse,
+  BlogCategoryResponse,
+  DeleteResponse
+} from '../apis/blogCategory.api';
 
 // Interface for blog categories
 export interface BlogCategory {
   id: number;
-  name: string;
-  slug?: string;
-  description?: string;
-  color?: string;
+  title: string;
+  desc?: string;
+  slug: string;
+  thumbnail?: string;
+  is_active: boolean;
   post_count?: number;
   created_at?: string;
-  is_active?: boolean;
+  updated_at?: string;
 }
 
-// Mock data for development - replace with actual API calls
-const mockCategories: BlogCategory[] = [
-  {
-    id: 1,
-    name: 'Travel Guides',
-    slug: 'travel-guides',
-    description: 'Comprehensive guides for travelers exploring different destinations',
-    color: '#3B82F6',
-    post_count: 12,
-    created_at: '2024-01-15',
-    is_active: true
-  },
-  {
-    id: 2,
-    name: 'Food & Culture',
-    slug: 'food-culture',
-    description: 'Exploring local cuisines and cultural experiences',
-    color: '#EF4444',
-    post_count: 8,
-    created_at: '2024-01-20',
-    is_active: true
-  },
-  {
-    id: 3,
-    name: 'Tips & Tricks',
-    slug: 'tips-tricks',
-    description: 'Helpful travel tips and insider secrets',
-    color: '#10B981',
-    post_count: 15,
-    created_at: '2024-02-01',
-    is_active: true
-  },
-  {
-    id: 4,
-    name: 'Destinations',
-    slug: 'destinations',
-    description: 'Featured destinations and hidden gems',
-    color: '#F59E0B',
-    post_count: 20,
-    created_at: '2024-02-10',
-    is_active: true
-  }
-];
-
-export const fetchBlogCategories = async (): Promise<BlogCategory[]> => {
+// Get all blog categories
+export const getAllCategories = async (params?: {
+  is_active?: boolean;
+}): Promise<BlogCategory[]> => {
   try {
-    // Replace with actual API call when ready
-    // return await getAllBlogCategories();
-
-    // For now, return mock data
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return mockCategories;
+    const response = await blogCategoryApi.getAllBlogCategories(params);
+    return response.data;
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return mockCategories; // Fallback to mock data
+    console.error('Error fetching blog categories:', error);
+    throw error;
   }
 };
 
-export const fetchActiveBlogCategories = async (): Promise<BlogCategory[]> => {
+// Get active blog categories only
+export const getActiveCategories = async (): Promise<BlogCategory[]> => {
   try {
-    const categories = await fetchBlogCategories();
-    return categories.filter(cat => cat.is_active !== false);
+    const response = await blogCategoryApi.getActiveBlogCategories();
+    return response.data;
   } catch (error) {
-    console.error('Error fetching active categories:', error);
-    return mockCategories.filter(cat => cat.is_active !== false);
+    console.error('Error fetching active blog categories:', error);
+    throw error;
   }
 };
 
-export const createBlogCategory = async (categoryData: Omit<BlogCategory, 'id' | 'created_at' | 'post_count'>): Promise<BlogCategory> => {
-  // TODO: Replace with actual API call
-  await new Promise(resolve => setTimeout(resolve, 200));
-  const newCategory: BlogCategory = {
-    ...categoryData,
-    id: Date.now(),
-    post_count: 0,
-    created_at: new Date().toISOString().split('T')[0]
-  };
-  mockCategories.push(newCategory);
-  return newCategory;
-};
-
-export const updateBlogCategory = async (id: number, categoryData: Partial<BlogCategory>): Promise<BlogCategory> => {
-  // TODO: Replace with actual API call
-  await new Promise(resolve => setTimeout(resolve, 200));
-  const index = mockCategories.findIndex(cat => cat.id === id);
-  if (index !== -1) {
-    mockCategories[index] = { ...mockCategories[index], ...categoryData };
-    return mockCategories[index];
-  }
-  throw new Error('Category not found');
-};
-
-export const deleteBlogCategory = async (id: number): Promise<void> => {
-  // TODO: Replace with actual API call
-  await new Promise(resolve => setTimeout(resolve, 200));
-  const index = mockCategories.findIndex(cat => cat.id === id);
-  if (index !== -1) {
-    mockCategories.splice(index, 1);
+// Get blog category by ID
+export const getCategoryById = async (id: number): Promise<BlogCategory> => {
+  try {
+    const response = await blogCategoryApi.getBlogCategoryById(id);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching blog category with ID ${id}:`, error);
+    throw error;
   }
 };
 
-export const generateSlug = (name: string): string => {
-  return name
+// Get blog category by slug
+export const getCategoryBySlug = async (slug: string): Promise<BlogCategory> => {
+  try {
+    const response = await blogCategoryApi.getBlogCategoryBySlug(slug);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching blog category with slug ${slug}:`, error);
+    throw error;
+  }
+};
+
+// Create a new blog category
+export const createCategory = async (categoryData: CreateBlogCategoryRequest): Promise<BlogCategory> => {
+  try {
+    const response = await blogCategoryApi.createBlogCategory(categoryData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating blog category:', error);
+    throw error;
+  }
+};
+
+// Update an existing blog category
+export const updateCategory = async (id: number, categoryData: UpdateBlogCategoryRequest): Promise<BlogCategory> => {
+  try {
+    const response = await blogCategoryApi.updateBlogCategory(id, categoryData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating blog category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+// Delete a blog category
+export const deleteCategory = async (id: number): Promise<void> => {
+  try {
+    await blogCategoryApi.deleteBlogCategory(id);
+  } catch (error) {
+    console.error(`Error deleting blog category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+// Generate slug from title
+export const generateSlug = (title: string): string => {
+  return title
     .toLowerCase()
-    .replace(/[^a-z0-9 -]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
-}; 
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+    .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+};
+
+// Validate slug format
+export const isValidSlug = (slug: string): boolean => {
+  const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  return slugRegex.test(slug);
+};
+
+// Format category for display
+export const formatCategoryForDisplay = (category: BlogCategory): BlogCategory & { displayName: string } => {
+  return {
+    ...category,
+    displayName: `${category.title}${category.post_count !== undefined ? ` (${category.post_count})` : ''}`
+  };
+};
+
+// Get categories formatted for select options
+export const getCategoriesForSelect = async (): Promise<Array<{ value: number; label: string }>> => {
+  try {
+    const categories = await getActiveCategories();
+    return categories.map(category => ({
+      value: category.id,
+      label: category.title
+    }));
+  } catch (error) {
+    console.error('Error fetching categories for select:', error);
+    return [];
+  }
+};
+

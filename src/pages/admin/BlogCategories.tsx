@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Edit, Trash2, FolderOpen, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,22 +22,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-
-interface BlogCategory {
-    id: number;
-    name: string;
-    slug: string;
-    description: string;
-    color: string;
-    post_count: number;
-    created_at: string;
-    is_active: boolean;
-}
+import { getActiveCategories } from '@/services/blogCategory.service';
+import type { BlogCategory } from '@/apis/blogCategory.api';
 
 interface CategoryFormData {
-    name: string;
-    description: string;
-    color: string;
+    title: string;
+    desc: string;
+    thumbnail: string;
     is_active: boolean;
 }
 
@@ -48,74 +39,35 @@ const BlogCategories: React.FC = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<BlogCategory | null>(null);
     const [formData, setFormData] = useState<CategoryFormData>({
-        name: '',
-        description: '',
-        color: '#3B82F6',
+        title: '',
+        desc: '',
+        thumbnail: '',
         is_active: true
     });
+    const [error, setError] = useState<string | null>(null);
 
-    // Mock data for categories
-    useEffect(() => {
-        const mockCategories: BlogCategory[] = [
-            {
-                id: 1,
-                name: 'Travel Guides',
-                slug: 'travel-guides',
-                description: 'Comprehensive guides for travelers exploring different destinations',
-                color: '#3B82F6',
-                post_count: 12,
-                created_at: '2024-01-15',
-                is_active: true
-            },
-            {
-                id: 2,
-                name: 'Food & Culture',
-                slug: 'food-culture',
-                description: 'Exploring local cuisines and cultural experiences',
-                color: '#EF4444',
-                post_count: 8,
-                created_at: '2024-01-20',
-                is_active: true
-            },
-            {
-                id: 3,
-                name: 'Tips & Tricks',
-                slug: 'tips-tricks',
-                description: 'Helpful travel tips and insider secrets',
-                color: '#10B981',
-                post_count: 15,
-                created_at: '2024-02-01',
-                is_active: true
-            },
-            {
-                id: 4,
-                name: 'Destinations',
-                slug: 'destinations',
-                description: 'Featured destinations and hidden gems',
-                color: '#F59E0B',
-                post_count: 20,
-                created_at: '2024-02-10',
-                is_active: true
-            },
-            {
-                id: 5,
-                name: 'Budget Travel',
-                slug: 'budget-travel',
-                description: 'Affordable travel options and money-saving tips',
-                color: '#8B5CF6',
-                post_count: 6,
-                created_at: '2024-02-15',
-                is_active: false
-            }
-        ];
-
-        setCategories(mockCategories);
-        setIsLoading(false);
+    // Fetch categories from API
+    const fetchCategories = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const categories = await getActiveCategories();
+            setCategories(categories);
+        } catch (err) {
+            setError('Failed to fetch blog categories');
+            console.error('Error fetching categories:', err);
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
 
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
     const filteredCategories = categories.filter(category =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        category.description.toLowerCase().includes(searchTerm.toLowerCase())
+        category.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (category.desc && category.desc.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleInputChange = (field: keyof CategoryFormData, value: string | boolean) => {
@@ -125,67 +77,87 @@ const BlogCategories: React.FC = () => {
         }));
     };
 
-    const generateSlug = (name: string) => {
-        return name
-            .toLowerCase()
-            .replace(/[^a-z0-9 -]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .trim();
-    };
+    const handleSubmit = async () => {
+        if (!formData.title.trim()) return;
 
-    const handleSubmit = () => {
-        if (!formData.name.trim()) return;
+        setIsLoading(true);
+        setError(null);
 
-        const newCategory: BlogCategory = {
-            id: editingCategory ? editingCategory.id : Date.now(),
-            name: formData.name,
-            slug: generateSlug(formData.name),
-            description: formData.description,
-            color: formData.color,
-            post_count: editingCategory ? editingCategory.post_count : 0,
-            created_at: editingCategory ? editingCategory.created_at : new Date().toISOString().split('T')[0],
-            is_active: formData.is_active
-        };
+        try {
+            if (editingCategory) {
+                // Update existing category
+                await BlogCategoryService.updateCategory(editingCategory.id, formData);
+            } else {
+                // Create new category
+                await BlogCategoryService.createCategory({
+                    ...formData,
+                    slug: BlogCategoryService.generateSlug(formData.title)
+                });
+            }
 
-        if (editingCategory) {
-            setCategories(prev => prev.map(cat =>
-                cat.id === editingCategory.id ? newCategory : cat
-            ));
-        } else {
-            setCategories(prev => [...prev, newCategory]);
+            await fetchCategories();
+            resetForm();
+            setIsDialogOpen(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to save category');
+        } finally {
+            setIsLoading(false);
         }
-
-        resetForm();
-        setIsDialogOpen(false);
     };
 
     const handleEdit = (category: BlogCategory) => {
         setEditingCategory(category);
         setFormData({
-            name: category.name,
-            description: category.description,
-            color: category.color,
+            title: category.title,
+            desc: category.desc || '',
+            thumbnail: category.thumbnail || '',
             is_active: category.is_active
         });
         setIsDialogOpen(true);
     };
 
-    const handleDelete = (categoryId: number) => {
-        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+    const handleDelete = async (categoryId: number) => {
+        if (!window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            await BlogCategoryService.deleteCategory(categoryId);
+            await fetchCategories();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to delete category');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const toggleStatus = (categoryId: number) => {
-        setCategories(prev => prev.map(cat =>
-            cat.id === categoryId ? { ...cat, is_active: !cat.is_active } : cat
-        ));
+    const toggleStatus = async (categoryId: number) => {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (!category) return;
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            await BlogCategoryService.updateCategory(categoryId, {
+                is_active: !category.is_active
+            });
+            await fetchCategories();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to update category status');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const resetForm = () => {
         setFormData({
-            name: '',
-            description: '',
-            color: '#3B82F6',
+            title: '',
+            desc: '',
+            thumbnail: '',
             is_active: true
         });
         setEditingCategory(null);
@@ -198,20 +170,9 @@ const BlogCategories: React.FC = () => {
 
     const totalCategories = categories.length;
     const activeCategories = categories.filter(cat => cat.is_active).length;
-    const totalPosts = categories.reduce((sum, cat) => sum + cat.post_count, 0);
+    const totalPosts = categories.reduce((sum, cat) => sum + (cat.post_count || 0), 0);
 
-    const colorOptions = [
-        { value: '#3B82F6', name: 'Blue' },
-        { value: '#EF4444', name: 'Red' },
-        { value: '#10B981', name: 'Green' },
-        { value: '#F59E0B', name: 'Yellow' },
-        { value: '#8B5CF6', name: 'Purple' },
-        { value: '#EC4899', name: 'Pink' },
-        { value: '#6B7280', name: 'Gray' },
-        { value: '#14B8A6', name: 'Teal' }
-    ];
-
-    if (isLoading) {
+    if (isLoading && categories.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -221,6 +182,12 @@ const BlogCategories: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-red-800">{error}</p>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -249,47 +216,35 @@ const BlogCategories: React.FC = () => {
 
                         <div className="space-y-4">
                             <div>
-                                <Label htmlFor="name">Category Name</Label>
+                                <Label htmlFor="title">Category Title</Label>
                                 <Input
-                                    id="name"
+                                    id="title"
                                     placeholder="e.g. Travel Tips"
-                                    value={formData.name}
-                                    onChange={(e) => handleInputChange('name', e.target.value)}
+                                    value={formData.title}
+                                    onChange={(e) => handleInputChange('title', e.target.value)}
                                 />
                             </div>
 
                             <div>
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="desc">Description</Label>
                                 <Textarea
-                                    id="description"
+                                    id="desc"
                                     placeholder="Brief description of this category..."
-                                    value={formData.description}
-                                    onChange={(e) => handleInputChange('description', e.target.value)}
+                                    value={formData.desc}
+                                    onChange={(e) => handleInputChange('desc', e.target.value)}
                                     rows={3}
                                 />
                             </div>
 
                             <div>
-                                <Label htmlFor="color">Category Color</Label>
-                                <div className="flex items-center space-x-2 mt-1">
-                                    <input
-                                        type="color"
-                                        value={formData.color}
-                                        onChange={(e) => handleInputChange('color', e.target.value)}
-                                        className="w-8 h-8 rounded border"
-                                    />
-                                    <select
-                                        value={formData.color}
-                                        onChange={(e) => handleInputChange('color', e.target.value)}
-                                        className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-sm"
-                                    >
-                                        {colorOptions.map(color => (
-                                            <option key={color.value} value={color.value}>
-                                                {color.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <Label htmlFor="thumbnail">Thumbnail URL</Label>
+                                <Input
+                                    id="thumbnail"
+                                    type="url"
+                                    placeholder="https://example.com/thumbnail.jpg"
+                                    value={formData.thumbnail}
+                                    onChange={(e) => handleInputChange('thumbnail', e.target.value)}
+                                />
                             </div>
 
                             <div className="flex items-center space-x-2">
@@ -308,8 +263,8 @@ const BlogCategories: React.FC = () => {
                             <Button variant="outline" onClick={handleDialogClose}>
                                 Cancel
                             </Button>
-                            <Button onClick={handleSubmit}>
-                                {editingCategory ? 'Update' : 'Create'} Category
+                            <Button onClick={handleSubmit} disabled={isLoading}>
+                                {isLoading ? 'Saving...' : (editingCategory ? 'Update' : 'Create')} Category
                             </Button>
                         </div>
                     </DialogContent>
@@ -373,6 +328,9 @@ const BlogCategories: React.FC = () => {
                                 className="pl-10"
                             />
                         </div>
+                        <Button variant="outline" onClick={fetchCategories} disabled={isLoading}>
+                            {isLoading ? 'Loading...' : 'Refresh'}
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -388,87 +346,104 @@ const BlogCategories: React.FC = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredCategories.map((category) => (
-                                <TableRow key={category.id}>
-                                    <TableCell>
-                                        <div className="flex items-center space-x-3">
-                                            <div
-                                                className="w-4 h-4 rounded-full"
-                                                style={{ backgroundColor: category.color }}
-                                            />
-                                            <div>
-                                                <div className="font-medium">{category.name}</div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    /{category.slug}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="max-w-xs">
-                                        <div className="truncate" title={category.description}>
-                                            {category.description}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">
-                                            {category.post_count} posts
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <button
-                                            onClick={() => toggleStatus(category.id)}
-                                            className={`px-2 py-1 rounded-full text-xs font-medium ${category.is_active
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
-                                                }`}
-                                        >
-                                            {category.is_active ? 'Active' : 'Inactive'}
-                                        </button>
-                                    </TableCell>
-                                    <TableCell>
-                                        {new Date(category.created_at).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEdit(category)}
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent>
-                                                    <DialogHeader>
-                                                        <DialogTitle>Delete Category</DialogTitle>
-                                                        <DialogDescription>
-                                                            Are you sure you want to delete "{category.name}"?
-                                                            This will affect {category.post_count} blog posts.
-                                                            This action cannot be undone.
-                                                        </DialogDescription>
-                                                    </DialogHeader>
-                                                    <div className="flex justify-end gap-2">
-                                                        <DialogTrigger asChild>
-                                                            <Button variant="outline">Cancel</Button>
-                                                        </DialogTrigger>
-                                                        <Button
-                                                            variant="destructive"
-                                                            onClick={() => handleDelete(category.id)}
-                                                        >
-                                                            Delete
-                                                        </Button>
-                                                    </div>
-                                                </DialogContent>
-                                            </Dialog>
-                                        </div>
+                            {filteredCategories.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                        {searchTerm ? 'No categories found matching your search' : 'No categories found'}
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                filteredCategories.map((category) => (
+                                    <TableRow key={category.id}>
+                                        <TableCell>
+                                            <div className="flex items-center space-x-3">
+                                                {category.thumbnail && (
+                                                    <img
+                                                        src={category.thumbnail}
+                                                        alt={category.title}
+                                                        className="w-8 h-8 rounded-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                        }}
+                                                    />
+                                                )}
+                                                <div>
+                                                    <div className="font-medium">{category.title}</div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        /{category.slug}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="max-w-xs">
+                                            <div className="truncate" title={category.desc}>
+                                                {category.desc || 'No description'}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary">
+                                                {category.post_count || 0} posts
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <button
+                                                onClick={() => toggleStatus(category.id)}
+                                                disabled={isLoading}
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${category.is_active
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                                    }`}
+                                            >
+                                                {category.is_active ? 'Active' : 'Inactive'}
+                                            </button>
+                                        </TableCell>
+                                        <TableCell>
+                                            {category.created_at ? new Date(category.created_at).toLocaleDateString() : 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end space-x-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleEdit(category)}
+                                                    disabled={isLoading}
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="ghost" size="sm" disabled={isLoading}>
+                                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Delete Category</DialogTitle>
+                                                            <DialogDescription>
+                                                                Are you sure you want to delete "{category.title}"?
+                                                                This will affect {category.post_count || 0} blog posts.
+                                                                This action cannot be undone.
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <div className="flex justify-end gap-2">
+                                                            <DialogTrigger asChild>
+                                                                <Button variant="outline">Cancel</Button>
+                                                            </DialogTrigger>
+                                                            <Button
+                                                                variant="destructive"
+                                                                onClick={() => handleDelete(category.id)}
+                                                                disabled={isLoading}
+                                                            >
+                                                                {isLoading ? 'Deleting...' : 'Delete'}
+                                                            </Button>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

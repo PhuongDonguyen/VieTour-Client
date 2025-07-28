@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
-import { fetchBlogCategories } from "../services/blogCategory.service";
+import { getAllCategories } from "../services/blogCategory.service";
 import { fetchBlogs } from "../services/blog.service";
 
 const BlogSection: React.FC = () => {
@@ -10,10 +10,14 @@ const BlogSection: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const catRes = await fetchBlogCategories();
-      if (catRes && catRes.success) setBlogCategories(catRes.data);
-      const blogRes = await fetchBlogs();
-      if (blogRes && blogRes.success) setBlogs(blogRes.data);
+      try {
+        const catRes = await getAllCategories();
+        setBlogCategories(catRes);
+        const blogRes = await fetchBlogs();
+        setBlogs(blogRes);
+      } catch (error) {
+        console.error('Error fetching blog data:', error);
+      }
     };
     fetchData();
   }, []);
@@ -68,13 +72,13 @@ const BlogSection: React.FC = () => {
             delay: 5000,
             disableOnInteraction: false,
           }}
-          loop={true}
+          loop={blogs.length > 3}
           className="px-2 py-4"
         >
-          {blogs.map((blog) => (
+          {blogs && blogs.map((blog) => (
             <SwiperSlide key={blog.id}>
               <a
-                href={`/blog/${blog.id}`}
+                href={`/blog/${blog.slug}`}
                 className="block group h-full"
                 tabIndex={0}
                 aria-label={blog.title}
@@ -92,7 +96,7 @@ const BlogSection: React.FC = () => {
                       {blog.title}
                     </h4>
                     <p className="text-sm text-gray-700 mb-3 line-clamp-3">
-                      {blog.content}
+                      {blog.excerpt}
                     </p>
                   </div>
                   <div className="px-4 pb-4">

@@ -1,0 +1,10 @@
+export { default as AdminDashboard } from "./AdminDashboard";
+export { default as AdminBlog } from "./AdminBlog";
+export { default as BlogEditor } from "./BlogEditor";
+export { default as BlogCategories } from "./BlogCategories";
+export { default as TourEditor } from "../../components/admin/tour/TourEditor";
+export { default as TourView } from "./TourView";
+export { default as TourDetailView } from "./TourDetailView";
+export { default as TourDetailEditor } from "../../components/admin/tour-detail/TourDetailEditor";
+export { default as TourPriceView } from "./TourPriceView";
+export { default as TourPriceEditor } from "../../components/admin/tour-price/TourPriceEditor";

@@ -1,12 +1,12 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from "../axiosInstance";
 
 export interface TourSchedule {
   id: number;
   start_date: string;
   participant: number;
-  status: 'available' | 'full' | 'cancelled';
+  status: "available" | "full" | "cancelled";
   tour_id: number;
-  tour: {
+  tour?: {
     id: number;
     title: string;
     poster_url: string;
@@ -39,19 +39,23 @@ export const providerTourScheduleApi = {
     start_date?: string;
   }): Promise<{ data: TourSchedulesResponse }> => {
     const searchParams = new URLSearchParams();
-    
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.search) searchParams.set('search', params.search);
-    if (params?.tour_id) searchParams.set('tour_id', params.tour_id.toString());
-    if (params?.status) searchParams.set('status', params.status);
-    if (params?.start_date) searchParams.set('start_date', params.start_date);
 
-    return axiosInstance.get(`/api/provider/tour-schedules?${searchParams.toString()}`);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.tour_id) searchParams.set("tour_id", params.tour_id.toString());
+    if (params?.status) searchParams.set("status", params.status);
+    if (params?.start_date) searchParams.set("start_date", params.start_date);
+
+    return axiosInstance.get(
+      `/api/provider/tour-schedules?${searchParams.toString()}`
+    );
   },
 
   // Lấy tour schedule theo ID
-  getTourSchedule: (id: number): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
+  getTourSchedule: (
+    id: number
+  ): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
     return axiosInstance.get(`/api/provider/tour-schedules/${id}`);
   },
 
@@ -60,19 +64,25 @@ export const providerTourScheduleApi = {
     tour_id: number;
     start_date: string;
     participant: number;
-    status: 'available' | 'full' | 'cancelled';
+    status: "available" | "full" | "cancelled";
   }): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
-    return axiosInstance.post('/api/provider/tour-schedules', scheduleData);
+    return axiosInstance.post("/api/provider/tour-schedules", scheduleData);
   },
 
   // Cập nhật tour schedule
-  updateTourSchedule: (id: number, scheduleData: {
-    tour_id?: number;
-    start_date?: string;
-    participant?: number;
-    status?: 'available' | 'full' | 'cancelled';
-  }): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
-    return axiosInstance.put(`/api/provider/tour-schedules/${id}`, scheduleData);
+  updateTourSchedule: (
+    id: number,
+    scheduleData: {
+      tour_id?: number;
+      start_date?: string;
+      participant?: number;
+      status?: "available" | "full" | "cancelled";
+    }
+  ): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
+    return axiosInstance.put(
+      `/api/provider/tour-schedules/${id}`,
+      scheduleData
+    );
   },
 
   // Xóa tour schedule

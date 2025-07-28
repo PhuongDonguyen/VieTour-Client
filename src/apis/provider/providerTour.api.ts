@@ -1,4 +1,4 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from "../axiosInstance";
 
 export interface TourCategory {
   id: number;
@@ -44,25 +44,27 @@ export const providerTourApi = {
     page?: number;
     limit?: number;
     search?: string;
-    category?: string;
+    // category?: string;
     status?: string;
+    tour_category_id?: number;
   }): Promise<ProviderToursResponse> => {
     const searchParams = new URLSearchParams();
-    
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.search) searchParams.set('search', params.search);
-    if (params?.category) searchParams.set('category', params.category);
-    if (params?.status) searchParams.set('status', params.status);
+
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.tour_category_id)
+      searchParams.set("tour_category_id", params.tour_category_id.toString());
+    if (params?.status) searchParams.set("status", params.status);
 
     return axiosInstance.get(`/api/provider/tours?${searchParams.toString()}`);
   },
 
   // Tạo tour mới
   createTour: (tourData: FormData) => {
-    return axiosInstance.post('/api/provider/tours', tourData, {
+    return axiosInstance.post("/api/provider/tours", tourData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
@@ -71,7 +73,7 @@ export const providerTourApi = {
   updateTour: (id: number, tourData: FormData) => {
     return axiosInstance.put(`/api/provider/tours/${id}`, tourData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
@@ -94,5 +96,5 @@ export const providerTourApi = {
   // Tăng view count tour
   incrementViewCount: (id: number) => {
     return axiosInstance.patch(`/api/provider/tours/${id}/increment-view`);
-  }
+  },
 };
