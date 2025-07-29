@@ -4,6 +4,7 @@ import { NavigationUser } from "@/components/NavigationProfile";
 import { ProfilePage } from "@/components/ProfileUser";
 import { ChangePasswordForm } from "@/components/ChangepwForm";
 import MyBooking from "@/components/MyBooking";
+import CancellationRequests from "@/components/CancellationRequests";
 import { fetchUserProfile } from "@/services/userProfile.service";
 
 interface user {
@@ -22,7 +23,7 @@ const AccountPage: React.FC = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetchUserProfile(); 
+        const response = await fetchUserProfile();
         const userData = response.data;
         console.log("Fetched user data:", userData);
         console.log("response:", response);
@@ -49,6 +50,8 @@ const AccountPage: React.FC = () => {
         return <ChangePasswordForm />;
       case "my-bookings":
         return <MyBooking />;
+      case "cancellation-requests":
+        return <CancellationRequests />;
       case "tours":
         return <p>🧳 Các chuyến đi bạn đã tham gia.</p>;
       case "settings":
@@ -64,7 +67,11 @@ const AccountPage: React.FC = () => {
         {/* Sidebar trái */}
         <div className="w-80 pt-20">
           <div className="sticky top-[80px] bg-white border border-gray-200 rounded-xl shadow-sm">
-            <NavigationUser user={userCurrent!} activeTab={activeTab} onChangeTab={setActiveTab} />
+            <NavigationUser
+              user={userCurrent!}
+              activeTab={activeTab}
+              onChangeTab={setActiveTab}
+            />
           </div>
         </div>
 
