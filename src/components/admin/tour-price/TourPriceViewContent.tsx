@@ -21,6 +21,7 @@ import { adminTourPriceService } from "@/services/admin/adminTourPrice.service";
 import { providerTourApi } from "@/apis/provider/providerTour.api";
 import type { TourPrice } from "@/apis/provider/providerTourPrice.api";
 import type { AdminTourPrice } from "@/apis/admin/adminTourPrice.api";
+import { adminTourService } from "@/services/admin/adminTour.service";
 
 interface TourPriceViewContentProps {
   priceId?: string;
@@ -96,16 +97,21 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
       setLoading(true);
       let response;
 
-      if (isAdmin) {
+      if (user?.role === "admin") {
         response = await adminTourPriceService.getTourPrice(
           parseInt(actualPriceId)
         );
         console.log("Admin tour price response:", response);
-      } else {
+      } else if (user?.role === "provider") {
         response = await providerTourPriceService.getTourPrice(
           parseInt(actualPriceId)
         );
         console.log("Provider tour price response:", response);
+      } else {
+        setTourPrice(null);
+        setTourInfo(null);
+        setLoading(false);
+        return;
       }
 
       // Extract the tour price data from response
@@ -128,15 +134,31 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
       // Fetch tour info if not available in the response
       if (!priceData.tour && priceData.tour_id) {
         try {
-          const tourResponse = await providerTourApi.getTourById(priceData.tour_id);
-          const tourData = tourResponse.data.data;
-          setTourInfo({
-            title: tourData.title,
-            poster_url: tourData.poster_url,
-            category_name: tourData.tour_category?.name || "Chưa phân loại",
-          });
+          if (user?.role === "admin") {
+            const tourRes = await adminTourService.getTour(priceData.tour_id);
+            setTourInfo({
+              title: tourRes.title,
+              poster_url: tourRes.poster_url,
+              category_name: tourRes.tour_category?.name || "Chưa phân loại",
+            });
+          } else if (user?.role === "provider") {
+            const tourResponse = await providerTourApi.getTourById(
+              priceData.tour_id
+            );
+            const tourData = tourResponse.data.data;
+            setTourInfo({
+              title: tourData.title,
+              poster_url: tourData.poster_url,
+              category_name: tourData.tour_category?.name || "Chưa phân loại",
+            });
+          } else {
+            setTourInfo({
+              title: `Tour ID: ${priceData.tour_id}`,
+              poster_url: "/public/VieTour-Logo.png",
+              category_name: "Chưa phân loại",
+            });
+          }
         } catch (tourError) {
-          console.error("Failed to fetch tour info:", tourError);
           setTourInfo({
             title: `Tour ID: ${priceData.tour_id}`,
             poster_url: "/public/VieTour-Logo.png",
@@ -159,11 +181,16 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">
-            Đang tải thông tin giá tour...
-          </p>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent mx-auto"></div>
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">
+              Đang tải...
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Vui lòng chờ trong khi chúng tôi tải thông tin giá tour.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -225,7 +252,14 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                 Giá Tour: {getTourInfo(tourPrice).title}
               </h1>
               <p className="text-muted-foreground">
-                Tour Price • {formatDate(tourPrice.created_at || "")}
+                Tour Price
+                {tourPrice.created_at &&
+                formatDate(tourPrice.created_at) !== "Invalid Date"
+                  ? ` • ${formatDate(tourPrice.created_at)}`
+                  : ""}
+                {getTourInfo(tourPrice).category_name
+                  ? ` • ${getTourInfo(tourPrice).category_name}`
+                  : ""}
               </p>
             </div>
           </div>

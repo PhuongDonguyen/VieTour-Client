@@ -1,4 +1,4 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from "../axiosInstance";
 
 export interface AdminTourCategory {
   id: number;
@@ -31,23 +31,28 @@ export const adminTourCategoryApi = {
     limit?: number;
     search?: string;
     is_active?: boolean;
-    sort_by?: 'name' | 'tour_count' | 'created_at';
-    sort_order?: 'asc' | 'desc';
+    sort_by?: "name" | "tour_count" | "created_at";
+    sort_order?: "asc" | "desc";
   }): Promise<{ data: AdminTourCategoriesResponse }> => {
     const searchParams = new URLSearchParams();
-    
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.search) searchParams.set('search', params.search);
-    if (params?.is_active !== undefined) searchParams.set('is_active', params.is_active.toString());
-    if (params?.sort_by) searchParams.set('sort_by', params.sort_by);
-    if (params?.sort_order) searchParams.set('sort_order', params.sort_order);
 
-    return axiosInstance.get(`/api/admin/tour-categories?${searchParams.toString()}`);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.is_active !== undefined)
+      searchParams.set("is_active", params.is_active.toString());
+    if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
+    if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
+
+    return axiosInstance.get(
+      `/api/admin/tour-categories?${searchParams.toString()}`
+    );
   },
 
   // Lấy tour category theo ID (Admin only)
-  getTourCategory: (id: number): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
+  getTourCategory: (
+    id: number
+  ): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
     return axiosInstance.get(`/api/admin/tour-categories/${id}`);
   },
 
@@ -58,16 +63,37 @@ export const adminTourCategoryApi = {
     image_url: string;
     is_active?: boolean;
   }): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
-    return axiosInstance.post('/api/admin/tour-categories', categoryData);
+    return axiosInstance.post("/api/admin/tour-categories", categoryData);
+  },
+
+  // Upload image khi tạo mới (FormData)
+  createTourCategoryWithImage: (
+    formData: FormData
+  ): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
+    return axiosInstance.post("/api/admin/tour-categories", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  // Upload image khi cập nhật (FormData)
+  updateTourCategoryWithImage: (
+    id: number,
+    formData: FormData
+  ): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
+    return axiosInstance.put(`/api/admin/tour-categories/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
 
   // Cập nhật tour category (Admin only)
-  updateTourCategory: (id: number, categoryData: {
-    name?: string;
-    description?: string;
-    image_url?: string;
-    is_active?: boolean;
-  }): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
+  updateTourCategory: (
+    id: number,
+    categoryData: {
+      name?: string;
+      description?: string;
+      image_url?: string;
+      is_active?: boolean;
+    }
+  ): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
     return axiosInstance.put(`/api/admin/tour-categories/${id}`, categoryData);
   },
 
@@ -77,21 +103,37 @@ export const adminTourCategoryApi = {
   },
 
   // Cập nhật trạng thái category (Admin only)
-  updateCategoryStatus: (id: number, is_active: boolean): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
-    return axiosInstance.patch(`/api/admin/tour-categories/${id}/status`, { is_active });
+  updateCategoryStatus: (
+    id: number,
+    is_active: boolean
+  ): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
+    return axiosInstance.patch(`/api/admin/tour-categories/${id}/status`, {
+      is_active,
+    });
+  },
+
+  // Toggle active status (bật/tắt trạng thái is_active)
+  toggleActive: (
+    id: number
+  ): Promise<{ data: { success: boolean; data: AdminTourCategory } }> => {
+    return axiosInstance.patch(
+      `/api/admin/tour-categories/${id}/toggle-active`
+    );
   },
 
   // Lấy thống kê tour categories
-  getTourCategoryStats: (): Promise<{ data: { 
-    success: boolean; 
+  getTourCategoryStats: (): Promise<{
     data: {
-      total_categories: number;
-      active_categories: number;
-      inactive_categories: number;
-      most_popular_category: string;
-      least_popular_category: string;
-    }
-  } }> => {
-    return axiosInstance.get('/api/admin/tour-categories/stats');
-  }
+      success: boolean;
+      data: {
+        total_categories: number;
+        active_categories: number;
+        inactive_categories: number;
+        most_popular_category: string;
+        least_popular_category: string;
+      };
+    };
+  }> => {
+    return axiosInstance.get("/api/admin/tour-categories/stats");
+  },
 };

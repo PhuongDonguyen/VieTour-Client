@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { providerTourPriceOverrideService } from "../../../services/provider/providerTourPriceOverride.service";
 import { adminTourPriceOverrideService } from "../../../services/admin/adminTourPriceOverride.service";
+import { adminTourService } from "../../../services/admin/adminTour.service";
 import type { TourPriceOverride } from "../../../apis/provider/providerTourPriceOverride.api";
 import type { AdminTourPriceOverride } from "../../../apis/admin/adminTourPriceOverride.api";
 import TourPriceOverrideViewContent from "./TourPriceOverrideViewContent";
@@ -51,7 +52,10 @@ const TourPriceOverridesManagement: React.FC = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
-  const [priceOverrides, setPriceOverrides] = useState<
+  const [allPriceOverrides, setAllPriceOverrides] = useState<
+    (TourPriceOverride | AdminTourPriceOverride)[]
+  >([]);
+  const [filteredPriceOverrides, setFilteredPriceOverrides] = useState<
     (TourPriceOverride | AdminTourPriceOverride)[]
   >([]);
   const [loading, setLoading] = useState(true);
@@ -76,111 +80,126 @@ const TourPriceOverridesManagement: React.FC = () => {
     null
   );
   const [loadingActiveIds, setLoadingActiveIds] = useState<number[]>([]);
+  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
+  const [selectedTourId, setSelectedTourId] = useState<string>("all");
+  const [searchParams] = useSearchParams();
 
   // Fetch price overrides data from API
   const fetchPriceOverrides = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      let response;
+      let data;
       if (isAdmin) {
-        // Admin uses admin service
-        response = await adminTourPriceOverrideService.getAllTourPriceOverrides(
-          {
+        const overrideType =
+          selectedOverrideType !== "all"
+            ? (selectedOverrideType as "single_date" | "date_range" | "weekly")
+            : undefined;
+        const res =
+          await adminTourPriceOverrideService.getAllTourPriceOverrides({
             page: currentPage,
-            limit: 10,
-            search: searchTerm || undefined,
-            override_type:
-              selectedOverrideType === "all"
-                ? undefined
-                : (selectedOverrideType as any),
+            search: searchTerm,
+            override_type: overrideType,
             is_active:
-              selectedStatus === "all" ? undefined : selectedStatus === "true",
-          }
-        );
+              selectedStatus !== "all" ? selectedStatus === "true" : undefined,
+            tour_id:
+              selectedTourId !== "all" ? parseInt(selectedTourId) : undefined,
+          });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       } else {
-        // Provider uses provider service
-        response = await providerTourPriceOverrideService.getTourPriceOverrides(
-          {
+        const res =
+          await providerTourPriceOverrideService.getTourPriceOverrides({
             page: currentPage,
-            limit: 10,
-            search: searchTerm || undefined,
+            search: searchTerm,
             override_type:
-              selectedOverrideType === "all" ? undefined : selectedOverrideType,
+              selectedOverrideType !== "all" ? selectedOverrideType : undefined,
             is_active:
-              selectedStatus === "all" ? undefined : selectedStatus === "true",
-          }
-        );
+              selectedStatus !== "all" ? selectedStatus === "true" : undefined,
+          });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       }
-
-      console.log("API response:", response);
-
-      const overridesData = response.data || [];
-      const paginationData = response.pagination || {
-        totalPages: 1,
-        totalItems: 0,
-      };
-
-      // Sort by tour title, then by override date
-      const sortedOverridesData = overridesData.sort(
-        (
-          a: TourPriceOverride | AdminTourPriceOverride,
-          b: TourPriceOverride | AdminTourPriceOverride
-        ) => {
-          const tourCompare = a.tour_price.tour.title.localeCompare(
-            b.tour_price.tour.title,
-            "vi",
-            { sensitivity: "base" }
-          );
-          if (tourCompare !== 0) return tourCompare;
-
-          // Compare dates (handle nulls)
-          const aDate = a.override_date || a.start_date || "9999-12-31";
-          const bDate = b.override_date || b.start_date || "9999-12-31";
-          return new Date(aDate).getTime() - new Date(bDate).getTime();
-        }
-      );
-
-      // Extract unique tours for dropdown
-      const uniqueTours = overridesData.reduce(
-        (
-          acc: { id: number; title: string }[],
-          override: TourPriceOverride | AdminTourPriceOverride
-        ) => {
-          if (!acc.find((tour) => tour.id === override.tour_price.tour.id)) {
-            acc.push({
-              id: override.tour_price.tour.id,
-              title: override.tour_price.tour.title,
-            });
-          }
-          return acc;
-        },
-        []
-      );
-
-      // Sort available tours by title
-      const sortedTours = uniqueTours.sort(
-        (a: { id: number; title: string }, b: { id: number; title: string }) =>
-          a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
-      );
-
-      setPriceOverrides(sortedOverridesData);
-      setAvailableTours(sortedTours);
-      setTotalPages(paginationData.totalPages || 1);
-      setTotalItems(paginationData.totalItems || 0);
+      setAllPriceOverrides(data);
     } catch (error) {
-      console.error("Failed to fetch price overrides:", error);
-      setPriceOverrides([]);
-      setTotalPages(1);
-      setTotalItems(0);
+      setAllPriceOverrides([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Filter price overrides based on selectedTourId, selectedOverrideType, selectedStatus, searchTerm
+  useEffect(() => {
+    let filtered = allPriceOverrides;
+    if (selectedTourId !== "all") {
+      filtered = filtered.filter(
+        (item) => item.tour_price.tour.id === parseInt(selectedTourId)
+      );
+    }
+    if (selectedOverrideType !== "all") {
+      filtered = filtered.filter(
+        (item) => item.override_type === selectedOverrideType
+      );
+    }
+    if (selectedStatus !== "all") {
+      filtered = filtered.filter(
+        (item) => String(item.is_active) === selectedStatus
+      );
+    }
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.tour_price.tour.title.toLowerCase().includes(lowerSearch) ||
+          (item.note && item.note.toLowerCase().includes(lowerSearch))
+      );
+    }
+    setFilteredPriceOverrides(filtered);
+  }, [
+    allPriceOverrides,
+    selectedTourId,
+    selectedOverrideType,
+    selectedStatus,
+    searchTerm,
+  ]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      // Lấy danh sách tour cho admin
+      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
+        if (res.data && Array.isArray(res.data)) {
+          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
+        }
+      });
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     fetchPriceOverrides();
-  }, [currentPage, searchTerm, selectedOverrideType, selectedStatus]);
+  }, [
+    isAdmin,
+    currentPage,
+    searchTerm,
+    selectedOverrideType,
+    selectedStatus,
+    selectedTourId,
+  ]);
+
+  // Khi priceOverrides đã cập nhật xong, mới tắt loading
+  useEffect(() => {
+    setLoading(false);
+  }, [allPriceOverrides]);
+
+  useEffect(() => {
+    // Nếu có tour_id trên URL, tự động set selectedTourId và show loading
+    const urlTourId = searchParams.get("tour_id");
+    if (urlTourId && urlTourId !== selectedTourId) {
+      setLoading(true);
+      setSelectedTourId(urlTourId);
+    }
+    // eslint-disable-next-line
+  }, []);
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -206,7 +225,14 @@ const TourPriceOverridesManagement: React.FC = () => {
     try {
       await providerTourPriceOverrideService.toggleActive(id);
       // Cập nhật local state thay vì reload toàn bộ list
-      setPriceOverrides((prevOverrides) =>
+      setAllPriceOverrides((prevOverrides) =>
+        prevOverrides.map((override) =>
+          override.id === id
+            ? { ...override, is_active: !override.is_active }
+            : override
+        )
+      );
+      setFilteredPriceOverrides((prevOverrides) =>
         prevOverrides.map((override) =>
           override.id === id
             ? { ...override, is_active: !override.is_active }
@@ -231,7 +257,10 @@ const TourPriceOverridesManagement: React.FC = () => {
       try {
         await providerTourPriceOverrideService.deleteTourPriceOverride(id);
         // Cập nhật local state thay vì reload toàn bộ list
-        setPriceOverrides((prevOverrides) =>
+        setAllPriceOverrides((prevOverrides) =>
+          prevOverrides.filter((override) => override.id !== id)
+        );
+        setFilteredPriceOverrides((prevOverrides) =>
           prevOverrides.filter((override) => override.id !== id)
         );
       } catch (error) {
@@ -362,7 +391,7 @@ const TourPriceOverridesManagement: React.FC = () => {
             {!isAdmin && (
               <Button
                 onClick={handleCreateOverride}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-black hover:bg-gray-800 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Thêm Ghi Đè Giá
@@ -388,6 +417,27 @@ const TourPriceOverridesManagement: React.FC = () => {
                 </div>
                 <div className="w-48">
                   <Select
+                    value={selectedTourId}
+                    onValueChange={(value) => {
+                      setSelectedTourId(value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn tour..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả tour</SelectItem>
+                      {tours.map((t) => (
+                        <SelectItem key={t.id} value={t.id.toString()}>
+                          {t.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-48">
+                  <Select
                     value={selectedOverrideType}
                     onValueChange={setSelectedOverrideType}
                   >
@@ -400,7 +450,7 @@ const TourPriceOverridesManagement: React.FC = () => {
                       <SelectItem value="date_range">
                         Khoảng thời gian
                       </SelectItem>
-                      <SelectItem value="day_of_week">Theo thứ</SelectItem>
+                      <SelectItem value="weekly">Theo thứ</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -450,9 +500,9 @@ const TourPriceOverridesManagement: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {Array.isArray(priceOverrides) &&
-                    priceOverrides.length > 0 ? (
-                      priceOverrides.map((override) => (
+                    {Array.isArray(filteredPriceOverrides) &&
+                    filteredPriceOverrides.length > 0 ? (
+                      filteredPriceOverrides.map((override) => (
                         <TableRow key={override.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -599,11 +649,13 @@ const TourPriceOverridesManagement: React.FC = () => {
               )}
 
               {/* Pagination */}
-              {Array.isArray(priceOverrides) && totalPages > 1 && (
+              {Array.isArray(filteredPriceOverrides) && totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <p className="text-sm text-muted-foreground">
                     Hiển thị{" "}
-                    {Array.isArray(priceOverrides) ? priceOverrides.length : 0}{" "}
+                    {Array.isArray(filteredPriceOverrides)
+                      ? filteredPriceOverrides.length
+                      : 0}{" "}
                     trong tổng số {totalItems} quy tắc
                   </p>
                   <div className="flex gap-2">

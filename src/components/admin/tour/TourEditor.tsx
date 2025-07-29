@@ -44,6 +44,14 @@ const TourEditor: React.FC = () => {
   const isEditing = !!id;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Chặn admin truy cập trang này
+  React.useEffect(() => {
+    if (user?.role === "admin") {
+      alert("Admin không có quyền truy cập chức năng này.");
+      navigate("/admin/tours");
+    }
+  }, [user, navigate]);
+
   const [formData, setFormData] = useState<TourFormData>({
     title: "",
     capacity: "",

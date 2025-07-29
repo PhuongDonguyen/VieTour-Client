@@ -41,6 +41,7 @@ import {
 import { providerTourImageService } from "../../../services/provider/providerTourImage.service";
 import { adminTourImageService } from "../../../services/admin/adminTourImage.service";
 import { providerTourService } from "../../../services/provider/providerTour.service";
+import { adminTourService } from "../../../services/admin/adminTour.service";
 import type { TourImage } from "../../../apis/provider/providerTourImage.api";
 import type { AdminTourImage } from "../../../apis/admin/adminTourImage.api";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -73,6 +74,7 @@ const TourImagesManagement: React.FC = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [viewImageId, setViewImageId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string>(
     tourIdFromUrl || "all"
   );
@@ -147,68 +149,43 @@ const TourImagesManagement: React.FC = () => {
     }
   };
 
-  // Fetch tour images data from API
+  // Fetch tour images data
   const fetchTourImages = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      // Prepare filter parameters (only tour_id and search, is_featured will be filtered on FE)
-      const filterParams = {
-        page: currentPage,
-        limit: 10,
-        search: searchTerm || undefined,
-        tour_id:
-          selectedTourId === "all" ? undefined : parseInt(selectedTourId),
-      };
-
-      console.log("Filter params:", filterParams);
-
-      let response;
+      let data;
       if (isAdmin) {
-        // Use admin service to get all tour images from all providers
-        response = await adminTourImageService.getAllTourImages(filterParams);
+        const res = await adminTourImageService.getAllTourImages({
+          page: currentPage,
+          search: searchTerm,
+          tour_id:
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
+          is_featured:
+            selectedFeatured !== "all"
+              ? selectedFeatured === "true"
+              : undefined,
+        });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       } else {
-        // Use provider service to get only provider's tour images
-        response = await providerTourImageService.getTourImages(filterParams);
+        const res = await providerTourImageService.getTourImages({
+          page: currentPage,
+          search: searchTerm,
+          tour_id:
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
+          is_featured:
+            selectedFeatured !== "all"
+              ? selectedFeatured === "true"
+              : undefined,
+        });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       }
-
-      console.log("API response:", response);
-      console.log("Response data:", response.data);
-      console.log("Response pagination:", response.pagination);
-
-      const imagesData = response.data || [];
-      const paginationData = response.pagination || {
-        totalPages: 1,
-        totalItems: 0,
-      };
-
-      // Sort by tour title, then by image ID
-      const sortedImagesData = imagesData.sort(
-        (a: TourImage | AdminTourImage, b: TourImage | AdminTourImage) => {
-          const tourCompare = a.tour.title.localeCompare(b.tour.title, "vi", {
-            sensitivity: "base",
-          });
-          return tourCompare !== 0 ? tourCompare : a.id - b.id;
-        }
-      );
-
-      console.log(
-        "Filtered images:",
-        sortedImagesData.map((img) => ({
-          id: img.id,
-          title: img.tour.title,
-          is_featured: img.is_featured,
-        }))
-      );
-
-      setAllTourImages(sortedImagesData);
-      setTotalPages(paginationData.totalPages || 1);
-      setTotalItems(paginationData.totalItems || 0);
+      setAllTourImages(data);
     } catch (error) {
-      console.error("Failed to fetch tour images:", error);
       setAllTourImages([]);
-      setTotalPages(1);
-      setTotalItems(0);
     } finally {
       setLoading(false);
     }
@@ -228,9 +205,20 @@ const TourImagesManagement: React.FC = () => {
   }, [allTourImages, selectedFeatured]);
 
   useEffect(() => {
+    if (isAdmin) {
+      // Lấy danh sách tour cho admin
+      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
+        if (res.data && Array.isArray(res.data)) {
+          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
+        }
+      });
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
     loadAvailableTours();
     fetchTourImages();
-  }, [currentPage, searchTerm, selectedTourId]);
+  }, [isAdmin, currentPage, searchTerm, selectedTourId, selectedFeatured]);
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -335,7 +323,7 @@ const TourImagesManagement: React.FC = () => {
             {!isAdmin && (
               <Button
                 onClick={handleCreateImage}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-black hover:bg-gray-800 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Thêm Hình Ảnh
@@ -375,9 +363,9 @@ const TourImagesManagement: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tất cả tours</SelectItem>
-                      {availableTours.map((tour) => (
-                        <SelectItem key={tour.id} value={tour.id.toString()}>
-                          {tour.title}
+                      {tours.map((t) => (
+                        <SelectItem key={t.id} value={t.id.toString()}>
+                          {t.title}
                         </SelectItem>
                       ))}
                     </SelectContent>

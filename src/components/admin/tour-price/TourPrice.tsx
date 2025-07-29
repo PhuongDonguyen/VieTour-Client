@@ -23,6 +23,7 @@ import {
 import { Search, Edit, Trash2, Eye, Plus, DollarSign } from "lucide-react";
 import { providerTourPriceService } from "../../../services/provider/providerTourPrice.service";
 import { adminTourPriceService } from "../../../services/admin/adminTourPrice.service";
+import { adminTourService } from "../../../services/admin/adminTour.service";
 import type { TourPrice } from "../../../apis/provider/providerTourPrice.api";
 import type { AdminTourPrice } from "../../../apis/admin/adminTourPrice.api";
 
@@ -43,6 +44,7 @@ const TourPricesManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string>(
     tourIdFromUrl || "all"
   );
@@ -82,95 +84,52 @@ const TourPricesManagement: React.FC = () => {
 
   // Fetch tour prices data from API
   const fetchTourPrices = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      let response;
+      let data;
       if (isAdmin) {
-        // Use admin service to get all tour prices from all providers
-        response = await adminTourPriceService.getAllTourPrices({
+        const res = await adminTourPriceService.getAllTourPrices({
           page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
+          search: searchTerm,
           tour_id:
-            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
         });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       } else {
-        // Use provider service to get only provider's tour prices
-        response = await providerTourPriceService.getTourPrices({
+        const res = await providerTourPriceService.getTourPrices({
           page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
+          search: searchTerm,
           tour_id:
-            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
         });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       }
-
-      console.log("API response:", response);
-
-      const pricesData = response.data || [];
-      const paginationData = response.pagination || {
-        totalPages: 1,
-        totalItems: 0,
-      };
-
-      // Sort by tour title (handle undefined tour)
-      const sortedPricesData = pricesData.sort(
-        (a: TourPrice | AdminTourPrice, b: TourPrice | AdminTourPrice) => {
-          const aTitle =
-            a.tour?.title ||
-            `Tour ID: ${"tour_id" in a ? a.tour_id : a.tour?.id || 0}`;
-          const bTitle =
-            b.tour?.title ||
-            `Tour ID: ${"tour_id" in b ? b.tour_id : b.tour?.id || 0}`;
-          return aTitle.localeCompare(bTitle, "vi", {
-            sensitivity: "base",
-          });
-        }
-      );
-
-      // Extract unique tours for dropdown (handle undefined tour)
-      const uniqueTours = pricesData.reduce(
-        (
-          acc: { id: number; title: string }[],
-          price: TourPrice | AdminTourPrice
-        ) => {
-          const tourId =
-            price.tour?.id || ("tour_id" in price ? price.tour_id : 0);
-          const tourTitle = price.tour?.title || `Tour ID: ${tourId}`;
-
-          if (!acc.find((tour) => tour.id === tourId)) {
-            acc.push({ id: tourId, title: tourTitle });
-          }
-          return acc;
-        },
-        []
-      );
-
-      // Sort available tours by title
-      const sortedTours = uniqueTours.sort(
-        (a: { id: number; title: string }, b: { id: number; title: string }) =>
-          a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
-      );
-
-      setTourPrices(sortedPricesData);
-      setAvailableTours(sortedTours);
-      setTotalPages(paginationData.totalPages || 1);
-      setTotalItems(paginationData.totalItems || 0);
+      setTourPrices(data);
     } catch (error) {
-      console.error("Failed to fetch tour prices:", error);
       setTourPrices([]);
-      setAvailableTours([]);
-      setTotalPages(1);
-      setTotalItems(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (isAdmin) {
+      // Lấy danh sách tour cho admin
+      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
+        if (res.data && Array.isArray(res.data)) {
+          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
+        }
+      });
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
     fetchTourPrices();
-  }, [currentPage, searchTerm, selectedTourId]);
+  }, [isAdmin, currentPage, searchTerm, selectedTourId]);
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -235,7 +194,7 @@ const TourPricesManagement: React.FC = () => {
         {!isAdmin && (
           <Button
             onClick={() => navigate("/admin/tours/prices/new")}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-black hover:bg-gray-800 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Thêm Giá Tour
@@ -266,9 +225,9 @@ const TourPricesManagement: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả tours</SelectItem>
-                  {availableTours.map((tour) => (
-                    <SelectItem key={tour.id} value={tour.id.toString()}>
-                      {tour.title}
+                  {tours.map((t) => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.title}
                     </SelectItem>
                   ))}
                 </SelectContent>

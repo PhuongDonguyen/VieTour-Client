@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -39,11 +39,16 @@ import { fetchActiveTourCategories } from "../../../services/tourCategory.servic
 import type { ProviderTour } from "../../../apis/provider/providerTour.api";
 import type { AdminTour } from "../../../apis/admin/adminTour.api";
 import { providerTourCategoryApi } from "../../../apis/provider/providerTourCategory.api";
+import { getAllProviders } from "../../../apis/admin/adminTour.api";
 
 const ProviderTours: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
+
+  // Get category_id from URL parameter
+  const categoryIdFromUrl = searchParams.get("category_id");
 
   const [tours, setTours] = useState<(ProviderTour | AdminTour)[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +58,25 @@ const ProviderTours: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [tourCategories, setTourCategories] = useState<any[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
+    categoryIdFromUrl || "all"
+  );
   const [filteredTours, setFilteredTours] = useState<
     (ProviderTour | AdminTour)[]
   >([]);
   const [loadingTourId, setLoadingTourId] = useState<number | null>(null);
+  // Sửa kiểu dữ liệu providers để chấp nhận cả company_name và business_name
+  const [providers, setProviders] = useState<
+    { id: number; business_name?: string; company_name?: string }[]
+  >([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>("all");
+
+  // Set category filter from URL parameter on mount
+  useEffect(() => {
+    if (categoryIdFromUrl) {
+      setSelectedCategoryId(categoryIdFromUrl);
+    }
+  }, [categoryIdFromUrl]);
 
   // Helper functions to normalize data between AdminTour and ProviderTour
   const getTourCapacity = (tour: ProviderTour | AdminTour): number => {
@@ -106,84 +125,81 @@ const ProviderTours: React.FC = () => {
   };
 
   // Fetch tours data
-  const fetchTours = async () => {
-    try {
-      setLoading(true);
-
-      let response;
-      if (isAdmin) {
-        // Use admin service to get all tours from all providers
-        response = await adminTourService.getAllTours({
-          page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
-          category_id:
-            selectedCategoryId === "all"
-              ? undefined
-              : parseInt(selectedCategoryId, 10),
-        });
-      } else {
-        // Use provider service to get only provider's tours
-        response = await providerTourService.getTours({
-          page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
-          tour_category_id:
-            selectedCategoryId === "all"
-              ? undefined
-              : parseInt(selectedCategoryId, 10),
-        });
-      }
-
-      console.log("Full response from service:", response); // Debug log
-
-      // Handle different response formats
-      let toursData: (ProviderTour | AdminTour)[] = [];
-      let paginationData = { totalPages: 1, totalItems: 0 };
-
-      if (response && typeof response === "object") {
-        // If response has a 'data' property (typical API format)
-        if (response.data && Array.isArray(response.data)) {
-          toursData = response.data;
-          paginationData = response.pagination || {
-            totalPages: 1,
-            totalItems: response.data.length,
-          };
-        }
-        // If response is directly an array
-        else if (Array.isArray(response)) {
-          toursData = response;
-          paginationData = { totalPages: 1, totalItems: response.length };
-        }
-        // If response has success property (from your JSON)
-        else if (
-          "success" in response &&
-          "data" in response &&
-          Array.isArray(response.data)
-        ) {
-          toursData = response.data;
-          paginationData = response.pagination || {
-            totalPages: 1,
-            totalItems: response.data.length,
-          };
-        }
-      }
-
-      console.log("Processed tours data:", toursData); // Debug log
-      console.log("Pagination data:", paginationData); // Debug log
-
-      setTours(toursData);
-      setTotalPages(paginationData.totalPages || 1);
-      setTotalItems(paginationData.totalItems || 0);
-    } catch (error) {
-      console.error("Failed to fetch tours:", error);
-      setTours([]); // Ensure tours is always an array
-      setTotalPages(1);
-      setTotalItems(0);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (isAdmin) {
+      // Lấy danh sách provider cho admin
+      getAllProviders().then((res) => {
+        if (res.data.success) setProviders(res.data.data);
+      });
     }
-  };
+  }, [isAdmin]);
+
+  useEffect(() => {
+    const fetchTours = async () => {
+      setLoading(true);
+      try {
+        let data;
+        if (isAdmin) {
+          // Chỉ dùng admin API khi là admin - không gửi category_id xuống BE
+          const res = await adminTourService.getAllTours({
+            page: currentPage,
+            search: searchTerm,
+            provider_id:
+              selectedProviderId !== "all"
+                ? Number(selectedProviderId)
+                : undefined,
+          });
+          data = res.data;
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
+        } else {
+          // ... giữ nguyên logic cũ cho provider
+          const res = await providerTourService.getTours({
+            page: currentPage,
+            limit: 10,
+            search: searchTerm || undefined,
+          });
+          data = res.data;
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
+        }
+        setTours(data);
+      } catch (error) {
+        console.error("Error fetching tours:", error);
+        setTours([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTours();
+  }, [isAdmin, currentPage, searchTerm, selectedProviderId]);
+
+  // FE search/filter - thêm lọc theo category
+  useEffect(() => {
+    let filtered = tours;
+
+    // Lọc theo category
+    if (selectedCategoryId !== "all") {
+      filtered = filtered.filter((tour) => {
+        const tourCategoryId = tour.tour_category?.id;
+        return tourCategoryId === Number(selectedCategoryId);
+      });
+    }
+
+    // Lọc theo search term
+    if (searchTerm) {
+      filtered = filtered.filter((tour) =>
+        tour.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredTours(filtered);
+  }, [searchTerm, tours, selectedCategoryId]);
+
+  // Debug: log selectedCategoryId when it changes
+  useEffect(() => {
+    console.log("selectedCategoryId changed to:", selectedCategoryId);
+  }, [selectedCategoryId]);
 
   // Fetch tour categories
   const fetchTourCategoriesData = async () => {
@@ -203,23 +219,6 @@ const ProviderTours: React.FC = () => {
     });
   }, []);
 
-  // FE search/filter
-  useEffect(() => {
-    if (!searchTerm) {
-      setFilteredTours(tours);
-    } else {
-      setFilteredTours(
-        tours.filter((tour) =>
-          tour.title.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-    }
-  }, [searchTerm, tours]);
-
-  useEffect(() => {
-    fetchTours();
-  }, [currentPage, selectedCategoryId]); // Không gửi searchTerm lên BE
-
   // Handle search
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -233,7 +232,7 @@ const ProviderTours: React.FC = () => {
 
   const handleCategoryChange = (value: string) => {
     setSelectedCategoryId(value);
-    setLoading(true); // show loading until list update
+    // Không cần set loading vì lọc trên Frontend
   };
 
   // Handle delete tour
@@ -245,7 +244,8 @@ const ProviderTours: React.FC = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa tour này?")) {
       try {
         await providerTourService.deleteTour(id);
-        fetchTours(); // Refresh list
+        // Xóa hoặc cập nhật các tham chiếu fetchTours không còn dùng nữa
+        // setTours(tours.filter(tour => tour.id !== id)); // This line was removed
       } catch (error) {
         console.error("Failed to delete tour:", error);
         alert("Không thể xóa tour. Vui lòng thử lại.");
@@ -312,8 +312,12 @@ const ProviderTours: React.FC = () => {
             )}
           </p>
         </div>
+        {/* Ẩn nút Thêm Tour Mới nếu là admin */}
         {!isAdmin && (
-          <Button onClick={handleCreateTour}>
+          <Button
+            onClick={handleCreateTour}
+            className="bg-black hover:bg-gray-800 text-white"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Thêm Tour Mới
           </Button>
@@ -354,6 +358,26 @@ const ProviderTours: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            {isAdmin && (
+              <div className="w-56">
+                <Select
+                  value={selectedProviderId}
+                  onValueChange={setSelectedProviderId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn nhà cung cấp" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
+                    {providers.map((p) => (
+                      <SelectItem key={p.id} value={p.id.toString()}>
+                        {p.company_name || p.business_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -466,6 +490,7 @@ const ProviderTours: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
+                          {/* Ẩn các nút Sửa, Xóa, Đổi trạng thái nếu là admin */}
                           {!isAdmin && (
                             <>
                               <Button

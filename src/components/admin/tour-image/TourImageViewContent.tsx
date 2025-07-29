@@ -15,7 +15,6 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { providerTourImageService } from "../../../services/provider/providerTourImage.service";
-import { adminTourImageService } from "../../../services/admin/adminTourImage.service";
 import { providerTourApi } from "../../../apis/provider/providerTour.api";
 import type { TourImage } from "../../../apis/provider/providerTourImage.api";
 import type { AdminTourImage } from "../../../apis/admin/adminTourImage.api";
@@ -52,16 +51,42 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
       setError(null);
       try {
         let response;
-        response = await providerTourImageService.getTourImageById(
-          Number(actualImageId)
-        );
+        if (user?.role === "admin") {
+          response = await import(
+            "../../../services/admin/adminTourImage.service"
+          ).then((m) =>
+            m.adminTourImageService.getTourImage(Number(actualImageId))
+          );
+        } else if (user?.role === "provider") {
+          response = await providerTourImageService.getTourImageById(
+            Number(actualImageId)
+          );
+        } else {
+          setError("Không có quyền truy cập hình ảnh này.");
+          setLoading(false);
+          return;
+        }
         setImage(response);
         // Nếu có tour_id, fetch thêm thông tin tour
-        const tourId = response.tour_id || (response.tour && response.tour.id);
+        let tourId = null;
+        if ("tour_id" in response) {
+          tourId = response.tour_id;
+        } else if (response.tour && response.tour.id) {
+          tourId = response.tour.id;
+        }
         if (tourId) {
           try {
-            const tourRes = await providerTourApi.getTourById(tourId);
-            setTour(tourRes.data.data);
+            let tourRes;
+            if (user?.role === "admin") {
+              tourRes = await import("../../../apis/admin/adminTour.api").then(
+                (m) => m.adminTourApi.getTour(Number(tourId))
+              );
+            } else if (user?.role === "provider") {
+              tourRes = await providerTourApi.getTourById(Number(tourId));
+            } else {
+              tourRes = null;
+            }
+            setTour(tourRes?.data?.data || null);
           } catch {
             setTour(null);
           }
@@ -75,9 +100,25 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
       }
     };
     fetchImage();
-  }, [actualImageId]);
+  }, [actualImageId, user?.role]);
 
-  if (loading) return <div>Đang tải...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent mx-auto"></div>
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">
+              Đang tải...
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Vui lòng chờ trong khi chúng tôi tải thông tin hình ảnh tour.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (error || !image)
     return (
       <div className="text-red-500">{error || "Không tìm thấy hình ảnh."}</div>
@@ -104,10 +145,10 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
           <Button
             variant="ghost"
             onClick={onBack ? onBack : () => navigate("/admin/tours/images")}
-            className="flex items-center space-x-2"
+            className="flex items-center"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Quay lại</span>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Quay lại
           </Button>
           <h1 className="text-3xl font-bold ml-4">Chi Tiết Hình Ảnh Tour</h1>
         </div>
@@ -199,16 +240,19 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
               <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button
-                onClick={() => {
-                  if (onEdit && image) onEdit(image.id);
-                  else navigate(`/admin/tours/images/edit/${image.id}`);
-                }}
-                className="w-full bg-gray-800 hover:bg-gray-900 text-white"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Chỉnh sửa chi tiết
-              </Button>
+              {user?.role !== "admin" && (
+                <Button
+                  onClick={() =>
+                    onEdit && image
+                      ? onEdit(image.id)
+                      : navigate(`/admin/tours/images/edit/${image.id}`)
+                  }
+                  className="w-full bg-gray-800 hover:bg-gray-900 text-white"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Cập nhật hình ảnh
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => navigate(`/admin/tours/view/${tour?.id}`)}
@@ -247,36 +291,7 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fixed right-6 top-1/2 transform -translate-y-1/2 space-y-4 z-50">
-        <Button
-          size="icon"
-          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
-          onClick={() => navigate(`/admin/tours/view/${tour?.id}`)}
-        >
-          <Calendar className="w-5 h-5 text-blue-600" />
-        </Button>
-        <Button
-          size="icon"
-          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
-          onClick={() => window.open("tel:+84123456789", "_blank")}
-        >
-          <Phone className="w-5 h-5 text-green-600" />
-        </Button>
-        <Button
-          size="icon"
-          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
-          onClick={() => window.open("https://m.me/yourpage", "_blank")}
-        >
-          <MessageCircle className="w-5 h-5 text-blue-600" />
-        </Button>
-        <Button
-          size="icon"
-          className="w-12 h-12 rounded-full bg-white shadow-lg hover:shadow-xl transition-shadow"
-          onClick={() => window.open("https://zalo.me/yourzalo", "_blank")}
-        >
-          <span className="text-blue-600 font-semibold text-sm">Zalo</span>
-        </Button>
-      </div>
+      {/* ĐÃ XÓA CÁC NÚT FLOATING ACTION BUTTONS DƯ THỪA */}
     </div>
   );
 };

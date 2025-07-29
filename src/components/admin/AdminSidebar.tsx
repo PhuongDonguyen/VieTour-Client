@@ -74,6 +74,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
             allowedRoles: ['admin', 'provider'],
             subItems: [
                 {
+                    label: 'Tour Categories',
+                    href: '/admin/tours/categories',
+                    icon: <Eye className="w-4 h-4" />,
+                    allowedRoles: ['admin'] // Only admins can manage categories
+                },
+                {
                     label: 'Tours',
                     href: '/admin/tours',
                     icon: <List className="w-4 h-4" />,
@@ -102,12 +108,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                     href: '/admin/tours/images',
                     icon: <Eye className="w-4 h-4" />,
                     allowedRoles: ['admin', 'provider']
-                },
-                {
-                    label: 'Tour Categories',
-                    href: '/admin/tours/categories',
-                    icon: <Eye className="w-4 h-4" />,
-                    allowedRoles: ['admin'] // Only admins can manage categories
                 },
                 {
                     label: 'Price Overrides',
