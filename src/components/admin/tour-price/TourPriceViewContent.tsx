@@ -273,7 +273,6 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
                 Thông Tin Giá
               </CardTitle>
             </CardHeader>
@@ -284,7 +283,6 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                     Giá Người Lớn
                   </p>
                   <p className="flex items-center gap-2 text-lg font-bold text-green-600">
-                    <DollarSign className="w-4 h-4" />
                     {formatPrice(tourPrice.adult_price)}
                   </p>
                 </div>

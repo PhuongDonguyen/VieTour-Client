@@ -137,10 +137,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         ],
       },
       {
-        label: "Bookings",
+        label: "Đặt tour",
         href: "/admin/bookings",
         icon: <Calendar className="w-4 h-4" />,
-        allowedRoles: ["admin", "provider"],
+        allowedRoles: ["admin"],
       },
       {
         label: "Yêu cầu hoàn tiền",
@@ -187,8 +187,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["provider"], // Only providers can see their own tours
       },
       {
-        label: "My Bookings",
-        href: "/admin/my-bookings",
+        label: "Đặt tour của tôi",
+        href: "/admin/provider-bookings",
         icon: <Calendar className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their bookings
       },

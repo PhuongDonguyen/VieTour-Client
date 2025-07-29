@@ -18,6 +18,7 @@ import Gallery from "../pages/TourImageGallery";
 import path from "path";
 import TourImageGallery from "../pages/TourImageGallery";
 import CancellationRequests from "../pages/admin/AdminCancellationRequests";
+import ProviderBookings from "../pages/provider/ProviderBookings";
 
 export const clientRoutes = [
   {
@@ -58,6 +59,14 @@ export const clientRoutes = [
         element: (
           <ProtectedRoute>
             <CancellationRequests />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "provider/bookings",
+        element: (
+          <ProtectedRoute>
+            <ProviderBookings />
           </ProtectedRoute>
         ),
       },

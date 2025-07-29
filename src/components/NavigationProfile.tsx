@@ -7,6 +7,7 @@ import {
   LogOut,
   XCircle,
   DollarSign,
+  BookOpen,
 } from "lucide-react";
 import type { FC } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -72,6 +73,13 @@ export const NavigationUser: FC<NavigationUserProps> = ({
       label: "Yêu cầu hoàn tiền",
       icon: DollarSign,
       description: "Quản lý yêu cầu hoàn tiền",
+      allowedRoles: ["provider"],
+    },
+    {
+      id: "provider-bookings",
+      label: "Đặt tour",
+      icon: BookOpen,
+      description: "Quản lý đặt tour",
       allowedRoles: ["provider"],
     },
     // { id: 'settings', label: 'Cài đặt', icon: Settings, description: 'Tùy chỉnh tài khoản' },

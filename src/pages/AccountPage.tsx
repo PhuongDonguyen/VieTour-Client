@@ -6,6 +6,7 @@ import { ChangePasswordForm } from "@/components/ChangepwForm";
 import MyBooking from "@/components/MyBooking";
 import CancellationRequests from "@/components/CancellationRequests";
 import CancellationRequestsProvider from "@/pages/admin/AdminCancellationRequests";
+import ProviderBookings from "@/pages/provider/ProviderBookings";
 import { fetchUserProfile } from "@/services/userProfile.service";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -52,6 +53,12 @@ const AccountPage: React.FC = () => {
       navigate("/provider/cancellation-requests");
       return;
     }
+
+    // Navigate to provider bookings page if needed
+    if (tab === "provider-bookings") {
+      navigate("/provider/bookings");
+      return;
+    }
   };
 
   const renderContent = () => {
@@ -68,6 +75,8 @@ const AccountPage: React.FC = () => {
         return <CancellationRequests />;
       case "provider-cancellation-requests":
         return <CancellationRequestsProvider />;
+      case "provider-bookings":
+        return <ProviderBookings />;
       case "tours":
         return <p>🧳 Các chuyến đi bạn đã tham gia.</p>;
       case "settings":

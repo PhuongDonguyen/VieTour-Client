@@ -29,6 +29,11 @@ export const providerTourService = {
     }
   },
 
+  // Lấy danh sách tours cho provider (alias cho getTours)
+  async getProviderTours(filters?: TourFilters): Promise<any> {
+    return this.getTours(filters);
+  },
+
   // Tạo tour mới
   async createTour(tourData: FormData): Promise<ProviderTour> {
     try {

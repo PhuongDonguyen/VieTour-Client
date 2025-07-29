@@ -20,6 +20,8 @@ import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
 import CancellationRequests from "../pages/admin/AdminCancellationRequests";
+import ProviderBookingsTable from "../components/provider/ProviderBookingsTable";
+import AdminBookings from "../pages/admin/AdminBookings";
 
 import {
   RequireAdminAccess,
@@ -298,21 +300,7 @@ export const adminRoutes = [
       </RequireAdminOnly>
     ),
   },
-  {
-    path: "/admin/bookings",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Bookings">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">Bookings Management</h1>
-            <p className="text-muted-foreground">
-              View and manage all bookings.
-            </p>
-          </div>
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
+
   // Blog routes
   {
     path: "/admin/blog",
@@ -388,26 +376,7 @@ export const adminRoutes = [
       </RequireProviderOnly>
     ),
   },
-  {
-    path: "/admin/my-bookings",
-    element: (
-      <RequireProviderOnly>
-        <AdminLayout title="My Bookings">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">My Tour Bookings</h1>
-            <p className="text-muted-foreground">
-              View bookings for your tour packages.
-            </p>
-            <div className="mt-4 p-4 bg-green-50 rounded-lg">
-              <p className="text-green-800 text-sm">
-                📅 Track customer bookings for your tours only
-              </p>
-            </div>
-          </div>
-        </AdminLayout>
-      </RequireProviderOnly>
-    ),
-  },
+
   {
     path: "/admin/earnings",
     element: (
@@ -457,6 +426,28 @@ export const adminRoutes = [
           <CancellationRequests />
         </AdminLayout>
       </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/bookings",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Quản lý đặt tour">
+          <AdminBookings />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/provider-bookings",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Đặt tour của tôi">
+          <div className="p-6">
+            <ProviderBookingsTable />
+          </div>
+        </AdminLayout>
+      </RequireProviderOnly>
     ),
   },
 ];

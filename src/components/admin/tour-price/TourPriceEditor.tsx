@@ -235,7 +235,6 @@ const TourPriceEditor: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
                 Thông Tin Giá Tour
               </CardTitle>
             </CardHeader>
