@@ -25,7 +25,13 @@ interface EnrichedCancellationRequest {
   start_date?: string;
 }
 
-export default function CancellationRequests() {
+interface CancellationRequestsListProps {
+  adminMode?: boolean;
+}
+
+export default function CancellationRequestsList({
+  adminMode = false,
+}: CancellationRequestsListProps) {
   const [cancellationRequests, setCancellationRequests] = useState<
     EnrichedCancellationRequest[]
   >([]);
@@ -39,8 +45,9 @@ export default function CancellationRequests() {
     const loadCancellationRequests = async () => {
       try {
         setLoadingCancellation(true);
-        const res =
-          await cancellationRequestService.getMyCancellationRequests();
+        const res = adminMode
+          ? await cancellationRequestService.getAllCancellationRequests()
+          : await cancellationRequestService.getMyCancellationRequests();
         const requests = res.data || [];
         // Enrich with schedule and tour info
         const scheduleCache: Record<number, any> = {};
@@ -78,7 +85,7 @@ export default function CancellationRequests() {
         );
         setCancellationRequests(enriched);
       } catch (error) {
-        console.error("Lỗi khi lấy yêu cầu hủy tour:", error);
+        console.error("Lỗi khi lấy yêu cầu hủy đặt tour:", error);
       } finally {
         setLoadingCancellation(false);
       }
@@ -160,6 +167,8 @@ export default function CancellationRequests() {
                         ? "bg-red-100 text-red-800"
                         : req.status === "refunded"
                         ? "bg-gray-200 text-gray-700"
+                        : req.status === "success"
+                        ? "bg-green-100 text-green-800"
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >
@@ -173,6 +182,8 @@ export default function CancellationRequests() {
                           return "Từ chối";
                         case "refunded":
                           return "Đã hoàn tiền";
+                        case "success":
+                          return "Hoàn tiền thành công";
                         default:
                           return "Không xác định";
                       }

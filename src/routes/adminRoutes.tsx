@@ -19,6 +19,7 @@ import TourCategory from "../components/admin/tour-category/TourCategory";
 import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
+import CancellationRequests from "../pages/admin/AdminCancellationRequests";
 
 import {
   RequireAdminAccess,
@@ -446,6 +447,16 @@ export const adminRoutes = [
           </div>
         </AdminLayout>
       </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/cancellation-requests",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Yêu cầu hoàn tiền">
+          <CancellationRequests />
+        </AdminLayout>
+      </RequireAdminAccess>
     ),
   },
 ];

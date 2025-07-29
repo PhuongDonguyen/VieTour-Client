@@ -5,4 +5,10 @@ export const cancellationRequestService = {
   getCancellationRequestById: cancellationRequestApi.getCancellationRequestById,
   createCancellationRequest: cancellationRequestApi.createCancellationRequest,
   updateCancellationRequest: cancellationRequestApi.updateCancellationRequest,
+  getAllCancellationRequests: (query?: string) =>
+    cancellationRequestApi.getAllCancellationRequests(query),
+  updateCancellationRequestStatus:
+    cancellationRequestApi.updateCancellationRequestStatus,
+  getProviderCancellationRequests: (query?: string) =>
+    cancellationRequestApi.getProviderCancellationRequests(query),
 };

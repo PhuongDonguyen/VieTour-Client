@@ -8,3 +8,4 @@ export { default as TourDetailView } from "./TourDetailView";
 export { default as TourDetailEditor } from "../../components/admin/tour-detail/TourDetailEditor";
 export { default as TourPriceView } from "./TourPriceView";
 export { default as TourPriceEditor } from "../../components/admin/tour-price/TourPriceEditor";
+export { default as CancellationRequestsList } from "../../components/CancellationRequests";

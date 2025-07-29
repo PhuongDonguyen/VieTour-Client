@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchTourIsActive, fetchTours } from "../services/tour.service";
 import { useNavigate } from "react-router-dom";
-import {Loading} from "./Loading"
+import { Loading } from "./Loading";
 type Tour = {
   id: number;
   title: string;
   price: string;
   duration: string;
   transportation: string;
-  slug:string;
+  slug: string;
 };
 
 export const TourPrices = () => {
@@ -215,7 +215,13 @@ export const TourPrices = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const handleGoDetail = (slug:string) => {
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const handleGoDetail = (slug: string) => {
     navigate(`/tour/${slug}`);
   };
   useEffect(() => {
@@ -234,7 +240,7 @@ export const TourPrices = () => {
             price: tour.price || "0VND",
             transportation: tour.transportation || "Không xác định",
             duration: tour.duration || "Không xác định",
-            slug: tour.slug
+            slug: tour.slug,
           }))
         );
         setLoading(false);
@@ -250,74 +256,76 @@ export const TourPrices = () => {
     console.log("Tour:", tours);
   }, [tours]);
 
-
   return (
     <div className="max-w-7xl mx-auto mt-20 p-4 bg-white">
       <div className="text-center mb-6">
         <h2 className="text-3xl font-bold text-blue-600 mb-2">BẢNG GIÁ</h2>
         <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
       </div>
-      {loading ? <Loading/> :(
-      <div className="overflow-x-auto shadow-lg rounded-lg">
-        <table className="w-full border-collapse bg-white">
-          <thead>
-            <tr className="bg-blue-600 text-white">
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                Mã
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                LỊCH TRÌNH TOUR
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                THỜI GIAN
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                PHƯƠNG TIỆN
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                GIÁ TOUR
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                HÀNH ĐỘNG
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {tours.map((tour, index) => (
-              <tr
-                key={tour.id}
-                className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
-              >
-                <td className="border border-gray-300 px-4 py-3 text-center">
-                  {tour.id}
-                </td>
-                <td className="border border-gray-300 px-4 py-3">
-                  {tour.title}
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-center">
-                  {tour.duration}
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-center">
-                  {tour.transportation}
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-red-600">
-                  {tour.price }
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-center">
-                  <button
-                    onClick={() => {
-                      handleGoDetail(tour.slug);
-                    }}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer"
-                  >
-                    XEM TOUR
-                  </button>
-                </td>
+      {loading ? (
+        <Loading />
+      ) : (
+        <div className="overflow-x-auto shadow-lg rounded-lg">
+          <table className="w-full border-collapse bg-white">
+            <thead>
+              <tr className="bg-blue-600 text-white">
+                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                  Mã
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                  LỊCH TRÌNH TOUR
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                  THỜI GIAN
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                  PHƯƠNG TIỆN
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                  GIÁ TOUR
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
+                  HÀNH ĐỘNG
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>)}
+            </thead>
+            <tbody>
+              {tours.map((tour, index) => (
+                <tr
+                  key={tour.id}
+                  className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                >
+                  <td className="border border-gray-300 px-4 py-3 text-center">
+                    {tour.id}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3">
+                    {tour.title}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-center">
+                    {tour.duration}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-center">
+                    {tour.transportation}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-red-600">
+                    {tour.price}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-center">
+                    <button
+                      onClick={() => {
+                        handleGoDetail(tour.slug);
+                      }}
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer"
+                    >
+                      XEM TOUR
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

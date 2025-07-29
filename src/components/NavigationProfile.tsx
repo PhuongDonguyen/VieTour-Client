@@ -1,13 +1,23 @@
 import { useEffect } from "react";
-import { User, Lock, MapPin, Calendar, LogOut, XCircle } from "lucide-react";
+import {
+  User,
+  Lock,
+  MapPin,
+  Calendar,
+  LogOut,
+  XCircle,
+  DollarSign,
+} from "lucide-react";
 import type { FC } from "react";
 import type { LucideIcon } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
 interface MenuItem {
   id: string;
   label: string;
   icon: LucideIcon;
   description: string;
+  allowedRoles?: string[];
 }
 
 interface NavigationUserProps {
@@ -29,6 +39,8 @@ export const NavigationUser: FC<NavigationUserProps> = ({
   onChangeTab,
   user,
 }) => {
+  const { user: authUser } = useAuth();
+
   const menuItems: MenuItem[] = [
     // { id: 'dashboard', label: 'Trang chủ', icon: Home, description: 'Tổng quan tài khoản' },
     {
@@ -56,17 +68,33 @@ export const NavigationUser: FC<NavigationUserProps> = ({
       description: "Theo dõi yêu cầu hủy tour",
     },
     {
-      id: "tours",
-      label: "Tour đã đặt",
-      icon: MapPin,
-      description: "Các chuyến đi đã book",
+      id: "provider-cancellation-requests",
+      label: "Yêu cầu hoàn tiền",
+      icon: DollarSign,
+      description: "Quản lý yêu cầu hoàn tiền",
+      allowedRoles: ["provider"],
     },
     // { id: 'settings', label: 'Cài đặt', icon: Settings, description: 'Tùy chỉnh tài khoản' },
   ];
 
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (!item.allowedRoles) return true;
+    const hasRole = item.allowedRoles.includes(authUser?.role || "");
+    console.log(
+      `Menu item "${item.label}": role=${authUser?.role}, allowedRoles=${item.allowedRoles}, hasRole=${hasRole}`
+    );
+    return hasRole;
+  });
+
   useEffect(() => {
     console.log("email:", user?.email);
-  }, []);
+    console.log("authUser role:", authUser?.role);
+    console.log(
+      "filteredMenuItems:",
+      filteredMenuItems.map((item) => item.label)
+    );
+  }, [user?.email, authUser?.role, filteredMenuItems]);
 
   return (
     <div className="w-80 max-h-screen bg-white rounded-2xl overflow-hidden flex flex-col border border-gray-100">
@@ -92,7 +120,7 @@ export const NavigationUser: FC<NavigationUserProps> = ({
 
       {/* Navigation Menu */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-white">
-        {menuItems.map(({ id, label, icon: Icon, description }) => {
+        {filteredMenuItems.map(({ id, label, icon: Icon, description }) => {
           const isActive = activeTab === id;
 
           return (

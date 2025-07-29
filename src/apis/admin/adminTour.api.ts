@@ -97,7 +97,8 @@ export const adminTourApi = {
 export const getAllProviders = (): Promise<{
   data: {
     success: boolean;
-    data: { id: number; business_name: string; email: string }[];
+    data: { id: number; company_name: string; email: string }[];
+    pagination?: any;
   };
 }> => {
   return axiosInstance.get("/api/admin/providers");

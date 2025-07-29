@@ -27,6 +27,11 @@ export const TourByCategory = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [categoryName, setCategoryName] = useState("");
 
+  // Scroll to top when component mounts or slug changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
+
   useEffect(() => {
     const fetchToursByCategory = async () => {
       if (!slug) return;
@@ -53,7 +58,7 @@ export const TourByCategory = () => {
             comments: "3.8M", // TODO: Replace with real data if available
             participants: "45M", // TODO: Replace with real data if available
             discount: 23, // TODO: Replace with real discount if available
-            slug: tour.slug
+            slug: tour.slug,
           }))
         );
       } catch (error) {
@@ -70,7 +75,7 @@ export const TourByCategory = () => {
       <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
         {categoryName}
       </h1>
-      
+
       {isLoading ? (
         <Loading />
       ) : tours.length > 0 ? (
@@ -93,7 +98,9 @@ export const TourByCategory = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Chưa có tour nào cho danh mục này.</p>
+          <p className="text-gray-500 text-lg">
+            Chưa có tour nào cho danh mục này.
+          </p>
         </div>
       )}
     </div>
