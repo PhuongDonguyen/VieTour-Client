@@ -56,23 +56,9 @@ export const getAllBlogCategories = async (params?: {
   return response.data;
 };
 
-// Get active blog categories only
-export const getActiveBlogCategories = async (): Promise<BlogCategoryListResponse> => {
-  const response = await axiosInstance.get('/api/blog-categories', { 
-    params: { is_active: true } 
-  });
-  return response.data;
-};
-
 // Get blog category by ID
 export const getBlogCategoryById = async (id: number): Promise<BlogCategoryResponse> => {
   const response = await axiosInstance.get(`/api/blog-categories/${id}`);
-  return response.data;
-};
-
-// Get blog category by slug
-export const getBlogCategoryBySlug = async (slug: string): Promise<BlogCategoryResponse> => {
-  const response = await axiosInstance.get(`/api/blog-categories/slug/${slug}`);
   return response.data;
 };
 
@@ -93,15 +79,3 @@ export const deleteBlogCategory = async (id: number): Promise<DeleteResponse> =>
   const response = await axiosInstance.delete(`/api/blog-categories/${id}`);
   return response.data;
 };
-
-// Check if slug is available (for validation)
-export const checkSlugAvailability = async (slug: string, excludeId?: number): Promise<boolean> => {
-  try {
-    const params = excludeId ? { exclude_id: excludeId } : {};
-    const response = await axiosInstance.get(`/api/blog-categories/check-slug/${slug}`, { params });
-    return response.data.available;
-  } catch {
-    // If endpoint doesn't exist, assume slug is available
-    return true;
-  }
-}; 

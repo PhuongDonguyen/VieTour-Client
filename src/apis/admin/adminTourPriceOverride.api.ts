@@ -11,7 +11,7 @@ export interface AdminTourPriceOverride {
   note?: string;
   is_active: boolean;
   tour_price_id: number;
-  override_type: "single_date" | "date_range" | "day_of_week" | "weekly";
+  override_type: "single_date" | "date_range" | "weekly";
   tour_price: {
     id: number;
     adult_price: number;
@@ -93,57 +93,5 @@ export const adminTourPriceOverrideApi = {
     };
   }> => {
     return axiosInstance.get("/api/admin/tour-price-overrides/stats");
-  },
-
-  // Cập nhật trạng thái override (Admin only)
-  updateOverrideStatus: (
-    id: number,
-    is_active: boolean
-  ): Promise<{ data: { success: boolean; data: AdminTourPriceOverride } }> => {
-    return axiosInstance.patch(`/api/admin/tour-price-overrides/${id}/status`, {
-      is_active,
-    });
-  },
-
-  // Tạo mới price override (Admin only)
-  createTourPriceOverride: (data: {
-    tour_price_id: number;
-    override_type: "single_date" | "date_range" | "day_of_week";
-    override_date?: string;
-    start_date?: string;
-    end_date?: string;
-    day_of_week?: string;
-    adult_price: number;
-    kid_price: number;
-    note?: string;
-    is_active: boolean;
-  }): Promise<{ data: { success: boolean; data: AdminTourPriceOverride } }> => {
-    return axiosInstance.post("/api/admin/tour-price-overrides", data);
-  },
-
-  // Cập nhật price override (Admin only)
-  updateTourPriceOverride: (
-    id: number,
-    data: {
-      tour_price_id?: number;
-      override_type?: "single_date" | "date_range" | "day_of_week";
-      override_date?: string;
-      start_date?: string;
-      end_date?: string;
-      day_of_week?: string;
-      adult_price?: number;
-      kid_price?: number;
-      note?: string;
-      is_active?: boolean;
-    }
-  ): Promise<{ data: { success: boolean; data: AdminTourPriceOverride } }> => {
-    return axiosInstance.put(`/api/admin/tour-price-overrides/${id}`, data);
-  },
-
-  // Xóa price override (Admin only)
-  deleteTourPriceOverride: (
-    id: number
-  ): Promise<{ data: { success: boolean } }> => {
-    return axiosInstance.delete(`/api/admin/tour-price-overrides/${id}`);
   },
 };

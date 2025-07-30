@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Heart,
   FileText,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,65 +126,29 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
   useEffect(() => {
     const loadTourData = async () => {
       if (!actualTourId) return;
-
+      setLoading(true);
       try {
-        setLoading(true);
         let tourData;
-
         if (isAdmin) {
-          // Use admin service to get tour details
-          const response = await adminTourService.getTourById(
-            parseInt(actualTourId)
-          );
-          // Handle different response structures
-          if (response && typeof response === "object") {
-            if (
-              "data" in response &&
-              "success" in response &&
-              response.success
-            ) {
-              tourData = (response as any).data;
-            } else if ("data" in response) {
-              tourData = (response as any).data;
-            } else {
-              tourData = response;
-            }
-          } else {
-            tourData = response;
-          }
+          tourData = await adminTourService.getTour(Number(actualTourId));
+          setTour(tourData);
         } else {
-          // Use provider service to get tour details
-          const response = await providerTourService.getTourById(
-            parseInt(actualTourId)
+          const res = await providerTourService.getTourById(
+            Number(actualTourId)
           );
-          console.log("Provider tour response:", response); // Debug log
-          // Handle different response structures
-          if (response && typeof response === "object") {
-            if (
-              "data" in response &&
-              "success" in response &&
-              response.success
-            ) {
-              tourData = (response as any).data;
-            } else if ("data" in response) {
-              tourData = (response as any).data;
-            } else {
-              tourData = response;
-            }
+          console.log("Provider tourData", res);
+          if (res && typeof res === "object" && "data" in res) {
+            setTour(res.data as ProviderTour);
           } else {
-            tourData = response;
+            setTour(res as ProviderTour);
           }
-          console.log("Processed tour data:", tourData); // Debug log
         }
-
-        setTour(tourData);
       } catch (error) {
-        console.error("Error loading tour data:", error);
+        setTour(null);
       } finally {
         setLoading(false);
       }
     };
-
     loadTourData();
   }, [actualTourId, isAdmin]);
 
@@ -462,6 +427,16 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
               >
                 <Eye className="w-4 h-4 mr-2" />
                 Quản lý ảnh
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  navigate(`/admin/tours/price-overrides?tour_id=${tour.id}`);
+                }}
+              >
+                <Tag className="w-4 h-4 mr-2" />
+                Quản lý ghi đè giá
               </Button>
             </CardContent>
           </Card>

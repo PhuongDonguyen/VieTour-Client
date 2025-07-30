@@ -11,7 +11,7 @@ export const adminTourPriceOverrideService = {
     limit?: number;
     search?: string;
     is_active?: boolean;
-    override_type?: "single_date" | "date_range" | "day_of_week";
+    override_type?: "single_date" | "date_range" | "weekly";
     tour_id?: number;
     sort_by?: "override_date" | "adult_price" | "created_at";
     sort_order?: "asc" | "desc";
@@ -53,7 +53,7 @@ export const adminTourPriceOverrideService = {
   // Tạo mới tour price override (Admin only)
   createTourPriceOverride: async (data: {
     tour_price_id: number;
-    override_type: "single_date" | "date_range" | "day_of_week";
+    override_type: "single_date" | "date_range" | "weekly";
     override_date?: string;
     start_date?: string;
     end_date?: string;
@@ -79,7 +79,7 @@ export const adminTourPriceOverrideService = {
     id: number,
     data: {
       tour_price_id?: number;
-      override_type?: "single_date" | "date_range" | "day_of_week";
+      override_type?: "single_date" | "date_range" | "weekly";
       override_date?: string;
       start_date?: string;
       end_date?: string;

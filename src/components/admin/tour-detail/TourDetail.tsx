@@ -22,6 +22,7 @@ import {
 import { Search, Edit, Trash2, Eye, Clock, Plus } from "lucide-react";
 import { providerTourDetailService } from "../../../services/provider/providerTourDetail.service";
 import { adminTourDetailService } from "../../../services/admin/adminTourDetail.service";
+import { adminTourService } from "../../../services/admin/adminTour.service";
 import type { TourDetail } from "../../../apis/provider/providerTourDetail.api";
 import type { AdminTourDetail } from "../../../apis/admin/adminTourDetail.api";
 import { AuthContext } from "../../../context/authContext";
@@ -43,6 +44,7 @@ const TourDetails: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string>(
     tourIdFromUrl || "all"
   );
@@ -74,98 +76,52 @@ const TourDetails: React.FC = () => {
 
   // Fetch tour details data
   const fetchTourDetails = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      let response;
+      let data;
       if (isAdmin) {
-        // Use admin service to get all tour details from all providers
-        response = await adminTourDetailService.getAllTourDetails({
+        const res = await adminTourDetailService.getAllTourDetails({
           page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
+          search: searchTerm,
           tour_id:
-            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
         });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       } else {
-        // Use provider service to get only provider's tour details
-        response = await providerTourDetailService.getTourDetails({
+        const res = await providerTourDetailService.getTourDetails({
           page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
+          search: searchTerm,
           tour_id:
-            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
         });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       }
-
-      console.log("Full response from service:", response);
-
-      // The service now returns the properly structured response
-      const detailsData = response.data || [];
-      const paginationData = response.pagination || {
-        totalPages: 1,
-        totalItems: 0,
-      };
-
-      console.log("Processed tour details data:", detailsData);
-      console.log("Pagination data:", paginationData);
-
-      // Sort by tour title (handle undefined tour)
-      const sortedDetailsData = detailsData.sort(
-        (a: TourDetail | AdminTourDetail, b: TourDetail | AdminTourDetail) => {
-          const aTitle =
-            a.tour?.title ||
-            `Tour ID: ${"tour_id" in a ? a.tour_id : a.tour?.id || 0}`;
-          const bTitle =
-            b.tour?.title ||
-            `Tour ID: ${"tour_id" in b ? b.tour_id : b.tour?.id || 0}`;
-          return aTitle.localeCompare(bTitle, "vi", {
-            sensitivity: "base",
-          });
-        }
-      );
-
-      // Extract unique tours for dropdown (handle undefined tour)
-      const uniqueTours = detailsData.reduce(
-        (
-          acc: { id: number; title: string }[],
-          detail: TourDetail | AdminTourDetail
-        ) => {
-          const tourId =
-            detail.tour?.id || ("tour_id" in detail ? detail.tour_id : 0);
-          const tourTitle = detail.tour?.title || `Tour ID: ${tourId}`;
-
-          if (!acc.find((tour) => tour.id === tourId)) {
-            acc.push({ id: tourId, title: tourTitle });
-          }
-          return acc;
-        },
-        []
-      );
-
-      // Sort available tours by title
-      const sortedTours = uniqueTours.sort(
-        (a: { id: number; title: string }, b: { id: number; title: string }) =>
-          a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
-      );
-
-      setTourDetails(sortedDetailsData);
-      setAvailableTours(sortedTours);
-      setTotalPages(paginationData.totalPages || 1);
-      setTotalItems(paginationData.totalItems || 0);
+      setTourDetails(data);
     } catch (error) {
-      console.error("Failed to fetch tour details:", error);
       setTourDetails([]);
-      setTotalPages(1);
-      setTotalItems(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (isAdmin) {
+      // Lấy danh sách tour cho admin
+      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
+        if (res.data && Array.isArray(res.data)) {
+          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
+        }
+      });
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
     fetchTourDetails();
-  }, [currentPage, searchTerm, selectedTourId]);
+  }, [isAdmin, currentPage, searchTerm, selectedTourId]);
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -234,7 +190,7 @@ const TourDetails: React.FC = () => {
         {!isAdmin && (
           <Button
             onClick={handleCreateDetail}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-black hover:bg-gray-800 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Thêm Chi Tiết Tour
@@ -265,9 +221,9 @@ const TourDetails: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả tours</SelectItem>
-                  {availableTours.map((tour) => (
-                    <SelectItem key={tour.id} value={tour.id.toString()}>
-                      {tour.title}
+                  {tours.map((t) => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.title}
                     </SelectItem>
                   ))}
                 </SelectContent>

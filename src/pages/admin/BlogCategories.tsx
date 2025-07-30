@@ -22,8 +22,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { getActiveCategories } from '@/services/blogCategory.service';
+import { getAllCategories, createCategory, updateCategory, deleteCategory, generateSlug } from '@/services/blogCategory.service';
 import type { BlogCategory } from '@/apis/blogCategory.api';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CategoryFormData {
     title: string;
@@ -45,13 +46,15 @@ const BlogCategories: React.FC = () => {
         is_active: true
     });
     const [error, setError] = useState<string | null>(null);
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
 
     // Fetch categories from API
     const fetchCategories = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const categories = await getActiveCategories();
+            const categories = await getAllCategories();
             setCategories(categories);
         } catch (err) {
             setError('Failed to fetch blog categories');
@@ -86,12 +89,12 @@ const BlogCategories: React.FC = () => {
         try {
             if (editingCategory) {
                 // Update existing category
-                await BlogCategoryService.updateCategory(editingCategory.id, formData);
+                await updateCategory(editingCategory.id, formData);
             } else {
                 // Create new category
-                await BlogCategoryService.createCategory({
+                await createCategory({
                     ...formData,
-                    slug: BlogCategoryService.generateSlug(formData.title)
+                    slug: generateSlug(formData.title)
                 });
             }
 
@@ -125,7 +128,7 @@ const BlogCategories: React.FC = () => {
         setError(null);
 
         try {
-            await BlogCategoryService.deleteCategory(categoryId);
+            await deleteCategory(categoryId);
             await fetchCategories();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete category');
@@ -142,7 +145,7 @@ const BlogCategories: React.FC = () => {
         setError(null);
 
         try {
-            await BlogCategoryService.updateCategory(categoryId, {
+            await updateCategory(categoryId, {
                 is_active: !category.is_active
             });
             await fetchCategories();
@@ -197,13 +200,14 @@ const BlogCategories: React.FC = () => {
                     </p>
                 </div>
 
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button onClick={() => setIsDialogOpen(true)} className="flex items-center space-x-2">
-                            <Plus className="w-4 h-4" />
-                            <span>Add Category</span>
-                        </Button>
-                    </DialogTrigger>
+                {isAdmin && (
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button onClick={() => setIsDialogOpen(true)} className="flex items-center space-x-2">
+                                <Plus className="w-4 h-4" />
+                                <span>Add Category</span>
+                            </Button>
+                        </DialogTrigger>
                     <DialogContent className="max-w-md">
                         <DialogHeader>
                             <DialogTitle>
@@ -269,6 +273,7 @@ const BlogCategories: React.FC = () => {
                         </div>
                     </DialogContent>
                 </Dialog>
+                )}
             </div>
 
             {/* Stats Cards */}

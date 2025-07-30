@@ -19,6 +19,9 @@ import TourCategory from "../components/admin/tour-category/TourCategory";
 import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
+import CancellationRequests from "../pages/admin/AdminCancellationRequests";
+import ProviderBookingsTable from "../components/provider/ProviderBookingsTable";
+import AdminBookings from "../pages/admin/AdminBookings";
 
 import {
   RequireAdminAccess,
@@ -313,6 +316,7 @@ export const adminRoutes = [
       </RequireAdminAccess>
     ),
   },
+
   // Blog routes
   {
     path: "/admin/blog",
@@ -408,6 +412,7 @@ export const adminRoutes = [
       </RequireProviderOnly>
     ),
   },
+
   {
     path: "/admin/earnings",
     element: (
@@ -450,11 +455,33 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/questions",
+    path: "/admin/cancellation-requests",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Yêu cầu hoàn tiền">
+          <CancellationRequests />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/bookings",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Quản lý đặt tour">
+          <AdminBookings />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/provider-bookings",
     element: (
       <RequireProviderOnly>
-        <AdminLayout title="Quản lý câu hỏi">
-          <AdminSupport />
+        <AdminLayout title="Đặt tour của tôi">
+          <div className="p-6">
+            <ProviderBookingsTable />
+          </div>
         </AdminLayout>
       </RequireProviderOnly>
     ),

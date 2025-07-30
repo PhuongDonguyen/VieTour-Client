@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { getAllCategories, type BlogCategory } from '@/services/blogCategory.service';
-import { fetchBlogsByAuthor, deleteBlog, type BlogPost } from '@/services/blog.service';
+import { fetchBlogs, deleteBlog, type BlogPost } from '@/services/blog.service';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminBlog: React.FC = () => {
@@ -31,6 +31,7 @@ const AdminBlog: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -66,30 +67,35 @@ const AdminBlog: React.FC = () => {
 
             try {
                 setIsLoading(true);
-                const response = await fetchBlogsByAuthor(
-                    user.account_id,
+                
+                // Build API parameters
+                const params: any = {
+                    author_id: user.account_id,
                     page,
-                    10
-                );
+                    limit: 1
+                };
 
-                // Filter by category and search if needed
-                let filteredBlogs = response.data;
-
+                // Add category filter if not "all"
                 if (selectedCategory !== 'all') {
-                    filteredBlogs = filteredBlogs.filter(blog =>
-                        blog.category_id === parseInt(selectedCategory)
-                    );
+                    params.category_id = parseInt(selectedCategory);
                 }
 
+                // Add status filter if not "all"
+                if (selectedStatus !== 'all') {
+                    params.status = selectedStatus as 'published' | 'draft' | 'archived';
+                }
+
+                // Add search filter if provided
                 if (debouncedSearchTerm) {
-                    filteredBlogs = filteredBlogs.filter(blog =>
-                        blog.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                        blog.content.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-                    );
+                    params.search = debouncedSearchTerm;
                 }
 
-                setBlogs(filteredBlogs);
-                setTotalPages(response.totalPages);
+                const response = await fetchBlogs(params);
+
+                // Extract data and pagination from response
+                const blogsData = response.data || [];
+                setBlogs(blogsData);
+                setTotalPages(response.pagination?.totalPages || 1);
             } catch (error) {
                 console.error('Error loading blogs:', error);
                 setBlogs([]);
@@ -100,7 +106,10 @@ const AdminBlog: React.FC = () => {
         };
 
         loadBlogs();
-    }, [page, selectedCategory, debouncedSearchTerm, user?.account_id]);
+    }, [page, selectedCategory, debouncedSearchTerm, user?.account_id, selectedStatus]);
+
+    // Remove client-side filtering since we're now doing server-side filtering
+    const filteredBlogs = blogs;
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -143,6 +152,11 @@ const AdminBlog: React.FC = () => {
 
     const handleCategoryChange = (value: string) => {
         setSelectedCategory(value);
+        setPage(1); // Reset to first page when filtering
+    };
+
+    const handleStatusChange = (value: string) => {
+        setSelectedStatus(value);
         setPage(1); // Reset to first page when filtering
     };
 
@@ -272,6 +286,16 @@ const AdminBlog: React.FC = () => {
                                 </option>
                             ))}
                         </select>
+                        <select
+                            value={selectedStatus}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                            className="px-3 py-2 border border-input bg-background rounded-md text-sm"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                            <option value="archived">Archived</option>
+                        </select>
                     </div>
 
                     {/* Blog Posts Table */}
@@ -288,7 +312,7 @@ const AdminBlog: React.FC = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {blogs.map((blog) => (
+                                {filteredBlogs.map((blog) => (
                                     <TableRow key={blog.id}>
                                         <TableCell>
                                             <div className="flex items-center space-x-3">
@@ -373,7 +397,7 @@ const AdminBlog: React.FC = () => {
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between mt-4">
                             <div className="text-sm text-muted-foreground">
-                                Page {page} of {totalPages}
+                                Showing {filteredBlogs.length} of {totalPages} pages
                             </div>
                             <div className="flex space-x-2">
                                 <Button

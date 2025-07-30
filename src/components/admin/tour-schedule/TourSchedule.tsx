@@ -26,6 +26,7 @@ import { adminTourScheduleService } from "../../../services/admin/adminTourSched
 import { providerTourApi } from "../../../apis/provider/providerTour.api";
 import type { TourSchedule } from "../../../apis/provider/providerTourSchedule.api";
 import type { AdminTourSchedule } from "../../../apis/admin/adminTourSchedule.api";
+import { adminTourService } from "../../../services/admin/adminTour.service";
 
 const TourSchedulesManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const TourSchedulesManagement: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string>(
     tourIdFromUrl || "all"
   );
@@ -136,127 +138,62 @@ const TourSchedulesManagement: React.FC = () => {
 
   // Fetch tour schedules data from API
   const fetchTourSchedules = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      let response;
+      let data;
       if (isAdmin) {
-        // Use admin service to get all tour schedules from all providers
-        response = await adminTourScheduleService.getAllTourSchedules({
+        const status =
+          selectedStatus !== "all"
+            ? (selectedStatus as "available" | "full" | "cancelled")
+            : undefined;
+        const res = await adminTourScheduleService.getAllTourSchedules({
           page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
+          search: searchTerm,
           tour_id:
-            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
-          status:
-            selectedStatus === "all"
-              ? undefined
-              : (selectedStatus as "cancelled" | "available" | "full"),
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
+          status,
         });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       } else {
-        // Use provider service to get only provider's tour schedules
-        response = await providerTourScheduleService.getTourSchedules({
+        const status =
+          selectedStatus !== "all"
+            ? (selectedStatus as "available" | "full" | "cancelled")
+            : undefined;
+        const res = await providerTourScheduleService.getTourSchedules({
           page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
+          search: searchTerm,
           tour_id:
-            selectedTourId === "all" ? undefined : parseInt(selectedTourId),
-          status:
-            selectedStatus === "all"
-              ? undefined
-              : (selectedStatus as "cancelled" | "available" | "full"),
+            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
+          status,
         });
+        data = res.data;
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       }
-
-      console.log("API response:", response);
-
-      const schedulesData = response.data || [];
-      const paginationData = response.pagination || {
-        totalPages: 1,
-        totalItems: 0,
-      };
-
-      // Sort by start date
-      const sortedSchedulesData = schedulesData.sort(
-        (
-          a: TourSchedule | AdminTourSchedule,
-          b: TourSchedule | AdminTourSchedule
-        ) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
-      );
-
-      // Extract unique tours for dropdown and build tour info map
-      const uniqueTours = schedulesData.reduce(
-        (
-          acc: { id: number; title: string }[],
-          schedule: TourSchedule | AdminTourSchedule
-        ) => {
-          let tourId: number;
-          let tourTitle: string;
-
-          if ("tour" in schedule && schedule.tour) {
-            tourId = schedule.tour.id;
-            tourTitle = schedule.tour.title;
-          } else {
-            tourId = (schedule as TourSchedule).tour_id;
-            tourTitle = `Tour ID: ${(schedule as TourSchedule).tour_id}`;
-          }
-
-          if (!acc.find((tour) => tour.id === tourId)) {
-            acc.push({ id: tourId, title: tourTitle });
-          }
-          return acc;
-        },
-        []
-      );
-
-      // Build tour info map for schedules without tour data and fetch tour info
-      const newTourInfoMap: {
-        [key: number]: {
-          title: string;
-          poster_url: string;
-          category_name: string;
-        };
-      } = {};
-
-      schedulesData.forEach((schedule: TourSchedule | AdminTourSchedule) => {
-        if (!("tour" in schedule) || !schedule.tour) {
-          const tourId = (schedule as TourSchedule).tour_id;
-          if (!newTourInfoMap[tourId] && !tourInfoMap[tourId]) {
-            newTourInfoMap[tourId] = {
-              title: `Tour ID: ${tourId}`,
-              poster_url: "/public/VieTour-Logo.png",
-              category_name: "Chưa phân loại",
-            };
-            // Fetch tour info for this tour
-            fetchTourInfo(tourId);
-          }
-        }
-      });
-
-      // Sort available tours by title
-      const sortedTours = uniqueTours.sort(
-        (a: { id: number; title: string }, b: { id: number; title: string }) =>
-          a.title.localeCompare(b.title, "vi", { sensitivity: "base" })
-      );
-
-      setTourSchedules(sortedSchedulesData);
-      setAvailableTours(sortedTours);
-      setTourInfoMap(newTourInfoMap);
-      setTotalPages(paginationData.totalPages || 1);
-      setTotalItems(paginationData.totalItems || 0);
+      setTourSchedules(data);
     } catch (error) {
-      console.error("Failed to fetch tour schedules:", error);
       setTourSchedules([]);
-      setTotalPages(1);
-      setTotalItems(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (isAdmin) {
+      // Lấy danh sách tour cho admin
+      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
+        if (res.data && Array.isArray(res.data)) {
+          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
+        }
+      });
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
     fetchTourSchedules();
-  }, [currentPage, searchTerm, selectedTourId, selectedStatus]);
+  }, [isAdmin, currentPage, searchTerm, selectedTourId, selectedStatus]);
 
   // Handle search
   const handleSearch = (value: string) => {
@@ -353,7 +290,7 @@ const TourSchedulesManagement: React.FC = () => {
         {!isAdmin && (
           <Button
             onClick={() => navigate("/admin/tours/schedules/new")}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-black hover:bg-gray-800 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Thêm Lịch Trình
@@ -384,9 +321,9 @@ const TourSchedulesManagement: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả tours</SelectItem>
-                  {availableTours.map((tour) => (
-                    <SelectItem key={tour.id} value={tour.id.toString()}>
-                      {tour.title}
+                  {tours.map((t) => (
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.title}
                     </SelectItem>
                   ))}
                 </SelectContent>

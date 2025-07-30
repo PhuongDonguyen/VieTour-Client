@@ -4,6 +4,7 @@ import { fetchMyBookings } from "@/services/booking.service";
 import { Loading } from "./Loading";
 import { ReviewForm } from "./ReviewForm";
 import { submitReview } from "@/services/review.service";
+import { cancellationRequestService } from "@/services/cancellationRequest.service";
 
 export interface Tour {
   id: number;
@@ -70,6 +71,11 @@ export default function MyBooking() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const navigate = useNavigate();
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -82,7 +88,6 @@ export default function MyBooking() {
         setLoading(false);
       }
     };
-
     loadData();
   }, []);
 
@@ -115,11 +120,34 @@ export default function MyBooking() {
     }
   };
 
-  // Kiểm tra xem booking có thể hủy không (chỉ những tour chưa diễn ra và status success)
+  // Update status badge and text
+  const getStatusBadge = (status: string) => {
+    const normalized = status ? status.trim().toLowerCase() : "";
+    console.log("Booking status:", status);
+    switch (normalized) {
+      case "pending":
+        return { color: "bg-yellow-100 text-yellow-800", text: "Đang xử lý" };
+      case "success":
+        return { color: "bg-green-100 text-green-800", text: "Thành công" };
+      case "failed":
+        return { color: "bg-red-100 text-red-800", text: "Thất bại" };
+      case "refund_requested":
+        return {
+          color: "bg-blue-100 text-blue-800",
+          text: "Đã yêu cầu hoàn tiền",
+        };
+      case "refunded":
+        return { color: "bg-gray-200 text-gray-700", text: "Đã hoàn tiền" };
+      default:
+        return { color: "bg-gray-100 text-gray-800", text: "Không xác định" };
+    }
+  };
+
+  // Chỉ cho phép hủy khi status là 'success' và ngày tour chưa diễn ra
   const canCancelBooking = (booking: Booking): boolean => {
     const today = new Date();
     const tourDate = new Date(booking.schedule.start_date);
-    return tourDate > today && booking.status === "success";
+    return booking.status === "success" && tourDate > today;
   };
 
   // Xử lý hủy booking
@@ -168,24 +196,16 @@ export default function MyBooking() {
                       {booking.schedule.tour.title}
                     </h3>
                     <div className="flex items-center space-x-4">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium uppercase tracking-wide
-                    ${
-                      booking.status === "pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : booking.status === "success"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                      >
-                        {booking.status === "success"
-                          ? "Thành công"
-                          : booking.status === "pending"
-                          ? "Đang xử lý"
-                          : booking.status === "fail"
-                          ? "Lỗi"
-                          : "Không xác định"}
-                      </span>
+                      {(() => {
+                        const badge = getStatusBadge(booking.status);
+                        return (
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium uppercase tracking-wide ${badge.color}`}
+                          >
+                            {badge.text}
+                          </span>
+                        );
+                      })()}
                       <button
                         onClick={() =>
                           setExpandedBookingId(
@@ -320,7 +340,7 @@ export default function MyBooking() {
                         onClick={() => handleCancelBooking(booking.id)}
                         className="bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2 cursor-pointer rounded-lg shadow-md uppercase tracking-wide text-sm"
                       >
-                        Hủy tour
+                        HỦY ĐẶT TOUR
                       </button>
                     )}
                   </div>

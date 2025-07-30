@@ -6,7 +6,7 @@ import LoginForm from '../components/authentication/LoginForm';
 import SignupForm from '../components/authentication/SignupForm';
 import { useAuth } from '../hooks/useAuth';
 import { fetchActiveTourCategories } from '../services/tourCategory.service';
-import { getActiveCategories } from '../services/blogCategory.service';
+import { getAllCategories } from '../services/blogCategory.service';
 
 export const NavBar = ({ textDark = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -35,7 +35,7 @@ export const NavBar = ({ textDark = false }) => {
     fetchActiveTourCategories().then(res => {
       setTourCategories(res);
     });
-    getActiveCategories().then(res => {
+    getAllCategories({ is_active: true }).then(res => {
       console.log(res);
       setBlogCategories(res);
     });
@@ -117,7 +117,7 @@ export const NavBar = ({ textDark = false }) => {
                     {blogCategories.map(cat => (
                       <Link
                         key={cat.id}
-                        to={`/blog-category/${cat.id}`}
+                        to={`/blog-category/${cat.slug}`}
                         className={`block px-4 py-2 transition-colors ${isScrolled || textDark ? 'text-gray-700 hover:bg-orange-50 hover:text-orange-500' : 'text-white hover:bg-white/20 hover:text-orange-300'}`}
                       >
                         {cat.title}
@@ -237,7 +237,7 @@ export const NavBar = ({ textDark = false }) => {
                     {blogCategories.map(cat => (
                       <Link
                         key={cat.id}
-                        to={`/blog-category/${cat.id}`}
+                        to={`/blog-category/${cat.slug}`}
                         className="block py-1 text-gray-600 hover:text-orange-500"
                       >
                         {cat.name}
@@ -250,56 +250,56 @@ export const NavBar = ({ textDark = false }) => {
                 <Link to="/blog" className="block px-3 py-2 text-gray-700 hover:text-orange-500">BLOG</Link>
                 <Link to="/gallery" className="block px-3 py-2 text-gray-700 hover:text-orange-500">HÌNH ẢNH</Link>
                 <Link to="/contact" className="block px-3 py-2 text-gray-700 hover:text-orange-500">LIÊN HỆ</Link>
-                {/* Mobile User Menu */
-                  <div className="border-t pt-2 mt-2">
-                    {(user && user.role === 'user') ? (
-                      <div className="px-3 py-2">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
-                            {user?.avatar ? (
-                              <img
-                                src={user.avatar}
-                                alt={`${user.first_name} ${user.last_name}`}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              user?.first_name?.charAt(0)
-                            )}
-                          </div>
-                          <span className="text-gray-700 font-medium">{user?.first_name || 'Unknown'}</span>
+                {/* Mobile User Menu */}
+                <div className="border-t pt-2 mt-2">
+                  {(user && user.role === 'user') ? (
+                    <div className="px-3 py-2">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
+                          {user?.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={`${user.first_name} ${user.last_name}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            user?.first_name?.charAt(0)
+                          )}
                         </div>
-                        <div className="pl-4 space-y-1">
-                          <Link to="/user/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</Link>
-                          <Link to="/user/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</Link>
-                          <Link to="/user/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</Link>
-                          <a href="#" onClick={async (e) => { 
-                            e.preventDefault(); 
-                            try {
-                              await logout(); 
-                            } catch (error) {
-                              console.error('Logout failed:', error);
-                            }
-                          }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
-                        </div>
+                        <span className="text-gray-700 font-medium">{user?.first_name || 'Unknown'}</span>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => { setShowLoginModal(true); setShowSignupModal(false); }}
-                          className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
-                        >
-                          Đăng nhập
-                        </button>
-                        <span className="text-gray-400 select-none">/</span>
-                        <button
-                          onClick={() => { setShowSignupModal(true); setShowLoginModal(false); }}
-                          className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
-                        >
-                          Đăng ký
-                        </button>
+                      <div className="pl-4 space-y-1">
+                        <Link to="/user/profile" className="block py-1 text-gray-600 hover:text-orange-500">Hồ sơ</Link>
+                        <Link to="/user/my-bookings" className="block py-1 text-gray-600 hover:text-orange-500">Đặt tour của tôi</Link>
+                        <Link to="/user/password" className="block py-1 text-gray-600 hover:text-orange-500">Thay đổi mật khẩu</Link>
+                        <a href="#" onClick={async (e) => { 
+                          e.preventDefault(); 
+                          try {
+                            await logout(); 
+                          } catch (error) {
+                            console.error('Logout failed:', error);
+                          }
+                        }} className="block py-1 text-gray-600 hover:text-orange-500">Đăng xuất</a>
                       </div>
-                    )}
-                  </div>}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setShowLoginModal(true); setShowSignupModal(false); }}
+                        className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
+                      >
+                        Đăng nhập
+                      </button>
+                      <span className="text-gray-400 select-none">/</span>
+                      <button
+                        onClick={() => { setShowSignupModal(true); setShowLoginModal(false); }}
+                        className="px-2 py-2 text-sm text-gray-700 hover:text-orange-500"
+                      >
+                        Đăng ký
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

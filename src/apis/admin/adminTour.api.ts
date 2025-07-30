@@ -91,17 +91,15 @@ export const adminTourApi = {
   }> => {
     return axiosInstance.get("/api/admin/tours/stats");
   },
+};
 
-  // Cập nhật trạng thái tour (Admin only)
-  updateTourStatus: (
-    id: number,
-    is_active: boolean
-  ): Promise<{ data: { success: boolean; data: AdminTour } }> => {
-    return axiosInstance.patch(`/api/admin/tours/${id}/status`, { is_active });
-  },
-
-  // Xóa tour (Admin only)
-  deleteTour: (id: number): Promise<{ data: { success: boolean } }> => {
-    return axiosInstance.delete(`/api/admin/tours/${id}`);
-  },
+// Lấy danh sách providers (Admin only)
+export const getAllProviders = (): Promise<{
+  data: {
+    success: boolean;
+    data: { id: number; company_name: string; email: string }[];
+    pagination?: any;
+  };
+}> => {
+  return axiosInstance.get("/api/admin/providers");
 };

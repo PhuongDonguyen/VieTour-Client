@@ -48,14 +48,20 @@ export interface BlogQueryParams {
   limit?: number;
   search?: string;
   author_id?: number;
+  slug?: string;
 }
 
 export interface BlogResponse {
+  success: boolean;
   data: BlogPost[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  pagination: {
+    page: number;
+    limit: number;
+    totalPages: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
 }
 
 export interface BlogDetailResponse {
@@ -77,36 +83,6 @@ export const getAllBlogs = async (params?: BlogQueryParams): Promise<BlogRespons
  */
 export const getBlogById = async (id: number): Promise<BlogDetailResponse> => {
   const response = await axiosInstance.get(`/api/blogs/${id}`);
-  return response.data;
-};
-
-/**
- * Get blog by slug
- */
-export const getBlogBySlug = async (slug: string): Promise<BlogDetailResponse> => {
-  const response = await axiosInstance.get(`/api/blogs/slug/${slug}`);
-  return response.data;
-};
-
-/**
- * Get blogs by category
- */
-export const getBlogsByCategory = async (
-  categoryId: number,
-  params?: { page?: number; limit?: number }
-): Promise<BlogResponse> => {
-  const response = await axiosInstance.get(`/api/blogs/category/${categoryId}`, { params });
-  return response.data;
-};
-
-/**
- * Get blogs by author
- */
-export const getBlogsByAuthor = async (
-  authorId: number,
-  params?: { page?: number; limit?: number }
-): Promise<BlogResponse> => {
-  const response = await axiosInstance.get(`/api/blogs/author/${authorId}`, { params });
   return response.data;
 };
 
@@ -139,77 +115,5 @@ export const updateBlog = async (id: number, blogData: FormData): Promise<BlogDe
  */
 export const deleteBlog = async (id: number): Promise<{ message: string }> => {
   const response = await axiosInstance.delete(`/api/blogs/${id}`);
-  return response.data;
-};
-
-/**
- * Get published blogs (public endpoint)
- */
-export const getPublishedBlogs = async (params?: { 
-  category_id?: number; 
-  page?: number; 
-  limit?: number; 
-  search?: string;
-}): Promise<BlogResponse> => {
-  const response = await axiosInstance.get('/api/blogs', { 
-    params: { ...params, status: 'published' } 
-  });
-  return response.data;
-};
-
-/**
- * Get popular blogs (most viewed)
- */
-export const getPopularBlogs = async (limit = 5): Promise<BlogResponse> => {
-  const response = await axiosInstance.get('/api/blogs/popular', { 
-    params: { limit } 
-  });
-  return response.data;
-};
-
-/**
- * Get recent blogs
- */
-export const getRecentBlogs = async (limit = 10): Promise<BlogResponse> => {
-  const response = await axiosInstance.get('/api/blogs/recent', { 
-    params: { limit } 
-  });
-  return response.data;
-};
-
-/**
- * Search blogs
- */
-export const searchBlogs = async (query: string, params?: {
-  category_id?: number;
-  page?: number;
-  limit?: number;
-}): Promise<BlogResponse> => {
-  const response = await axiosInstance.get('/api/blogs/search', {
-    params: { q: query, ...params }
-  });
-  return response.data;
-};
-
-/**
- * Increment blog view count
- */
-export const incrementBlogViews = async (id: number): Promise<{ view_count: number }> => {
-  const response = await axiosInstance.post(`/api/blogs/${id}/view`);
-  return response.data;
-};
-
-/**
- * Get blog statistics
- */
-export const getBlogStats = async (): Promise<{
-  total_blogs: number;
-  published_blogs: number;
-  draft_blogs: number;
-  archived_blogs: number;
-  total_views: number;
-  total_likes: number;
-}> => {
-  const response = await axiosInstance.get('/api/blogs/stats');
   return response.data;
 };

@@ -296,7 +296,6 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
                   Thông Tin Cơ Bản
                 </CardTitle>
               </CardHeader>

@@ -24,6 +24,7 @@ import { providerTourApi } from "@/apis/provider/providerTour.api";
 import type { TourPriceOverride } from "@/apis/provider/providerTourPriceOverride.api";
 import type { AdminTourPriceOverride } from "@/apis/admin/adminTourPriceOverride.api";
 import { format } from "date-fns";
+import { providerTourPriceService } from "@/services/provider/providerTourPrice.service";
 
 interface TourPriceOverrideViewContentProps {
   overrideId?: string;
@@ -49,6 +50,7 @@ const TourPriceOverrideViewContent: React.FC<
     category_name: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tourIdForView, setTourIdForView] = useState<number | null>(null);
 
   const actualOverrideId = overrideId;
 
@@ -88,37 +90,55 @@ const TourPriceOverrideViewContent: React.FC<
         setLoading(true);
         let overrideData;
 
-        if (isAdmin) {
+        if (user?.role === "admin") {
           // Use admin service to get price override
-          const response =
+          overrideData =
             await adminTourPriceOverrideService.getTourPriceOverride(
               parseInt(actualOverrideId)
             );
-          overrideData = response;
-        } else {
+        } else if (user?.role === "provider") {
           // Use provider service to get price override
-          const response =
+          overrideData =
             await providerTourPriceOverrideService.getTourPriceOverrideById(
               parseInt(actualOverrideId)
             );
-          overrideData = response;
+        } else {
+          setPriceOverride(null);
+          setTourInfo(null);
+          setLoading(false);
+          return;
         }
 
         console.log("Loaded price override data:", overrideData);
         setPriceOverride(overrideData);
 
         // Fetch tour info if available
-        if (overrideData.tour_price?.tour_id) {
+        if (overrideData.tour_price?.tour?.id) {
           try {
-            const tourRes = await providerTourApi.getTourById(
-              overrideData.tour_price.tour_id
-            );
-            setTourInfo({
-              title: tourRes.data.data.title,
-              poster_url: tourRes.data.data.poster_url,
-              category_name:
-                tourRes.data.data.tour_category?.name || "Chưa phân loại",
-            });
+            let tourRes;
+            if (user?.role === "admin") {
+              tourRes = await import("@/apis/admin/adminTour.api").then((m) =>
+                m.adminTourApi.getTour(overrideData.tour_price.tour.id)
+              );
+              setTourInfo({
+                title: tourRes.data.data.title,
+                poster_url: tourRes.data.data.poster_url,
+                category_name:
+                  tourRes.data.data.tour_category?.name || "Chưa phân loại",
+              });
+            } else if (user?.role === "provider") {
+              tourRes = await providerTourApi.getTourById(
+                overrideData.tour_price.tour.id
+              );
+              setTourInfo({
+                title: tourRes.data.data.title,
+                poster_url: tourRes.data.data.poster_url,
+                category_name:
+                  tourRes.data.data.tour_category?.name || "Chưa phân loại",
+              });
+            } else {
+              setTourInfo(null);
+            }
           } catch {
             setTourInfo(null);
           }
@@ -134,7 +154,24 @@ const TourPriceOverrideViewContent: React.FC<
     };
 
     loadPriceOverrideData();
-  }, [actualOverrideId, isAdmin]);
+  }, [actualOverrideId, user?.role]);
+
+  useEffect(() => {
+    if (
+      user?.role === "provider" &&
+      priceOverride &&
+      priceOverride.tour_price_id &&
+      !tourIdForView
+    ) {
+      providerTourPriceService
+        .getTourPrice(priceOverride.tour_price_id)
+        .then((price) => setTourIdForView(price.tour_id))
+        .catch(() => setTourIdForView(null));
+    }
+  }, [user?.role, priceOverride, tourIdForView]);
+
+  // Ẩn/disable các nút thao tác nếu là admin
+  const isReadOnly = isAdmin;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -157,10 +194,12 @@ const TourPriceOverrideViewContent: React.FC<
   };
 
   const getOverrideTypeVariant = (type: string) => {
-    const variantMap: { [key: string]: string } = {
+    const variantMap: {
+      [key: string]: "default" | "outline" | "secondary" | "destructive";
+    } = {
       single_date: "default",
       date_range: "secondary",
-      day_of_week: "outline",
+      weekly: "outline",
     };
     return variantMap[type] || "outline";
   };
@@ -194,6 +233,18 @@ const TourPriceOverrideViewContent: React.FC<
       )}`;
     }
     return "Không có thông tin";
+  };
+
+  // Helper lấy tourId để xem tour (ưu tiên đúng thứ tự provider)
+  const getTourIdForView = () => {
+    if (!priceOverride) return "";
+    // Kiểm tra tồn tại field tour_id trong tour_price
+    const tourPrice = priceOverride.tour_price;
+    if (tourPrice && typeof tourPrice === "object" && "tour_id" in tourPrice) {
+      // @ts-ignore
+      return tourPrice.tour_id;
+    }
+    return tourPrice?.tour?.id || priceOverride.tour_price_id;
   };
 
   if (loading) {
@@ -262,7 +313,6 @@ const TourPriceOverrideViewContent: React.FC<
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
                 Thông Tin Giá Đặc Biệt
               </CardTitle>
             </CardHeader>
@@ -375,7 +425,7 @@ const TourPriceOverrideViewContent: React.FC<
                   </h3>
                   <Badge variant="outline">{tourInfo.category_name}</Badge>
                   <div className="text-sm text-muted-foreground mt-1">
-                    Tour ID: {priceOverride.tour_price?.tour_id}
+                    Tour ID: {priceOverride.tour_price?.tour?.id}
                   </div>
                 </div>
               </CardContent>
@@ -408,12 +458,16 @@ const TourPriceOverrideViewContent: React.FC<
               )}
               <Button
                 variant="outline"
-                onClick={() =>
-                  navigate(
-                    `/admin/tours/view/${priceOverride.tour_price?.tour_id}`
-                  )
-                }
+                onClick={() => {
+                  if (user?.role === "provider") {
+                    if (tourIdForView)
+                      navigate(`/admin/tours/view/${tourIdForView}`);
+                  } else {
+                    navigate(`/admin/tours/view/${getTourIdForView()}`);
+                  }
+                }}
                 className="w-full"
+                disabled={user?.role === "provider" && !tourIdForView}
               >
                 <Eye className="w-4 h-4 mr-2" />
                 Xem Tour
@@ -458,25 +512,25 @@ const TourPriceOverrideViewContent: React.FC<
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span>Áp dụng: {getDateDisplay(priceOverride)}</span>
               </div>
-              {priceOverride.created_at && (
+              {isAdmin && (priceOverride as any).created_at && (
                 <div className="flex items-center gap-3 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <span>
                     Tạo:{" "}
                     {format(
-                      new Date(priceOverride.created_at),
+                      new Date((priceOverride as any).created_at),
                       "dd/MM/yyyy HH:mm"
                     )}
                   </span>
                 </div>
               )}
-              {priceOverride.updated_at && (
+              {isAdmin && (priceOverride as any).updated_at && (
                 <div className="flex items-center gap-3 text-sm">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                   <span>
                     Cập nhật:{" "}
                     {format(
-                      new Date(priceOverride.updated_at),
+                      new Date((priceOverride as any).updated_at),
                       "dd/MM/yyyy HH:mm"
                     )}
                   </span>

@@ -14,7 +14,7 @@ const BlogSection: React.FC = () => {
         const catRes = await getAllCategories();
         setBlogCategories(catRes);
         const blogRes = await fetchBlogs();
-        setBlogs(blogRes);
+        setBlogs(blogRes.data);
       } catch (error) {
         console.error('Error fetching blog data:', error);
       }
