@@ -80,6 +80,11 @@ export const TourByCategory = () => {
     }
   };
 
+  // Scroll to top when component mounts or slug changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
+
   useEffect(() => {
     setPage(1);
     fetchData(1);
@@ -141,7 +146,9 @@ export const TourByCategory = () => {
         </>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Chưa có tour nào cho danh mục này.</p>
+          <p className="text-gray-500 text-lg">
+            Chưa có tour nào cho danh mục này.
+          </p>
         </div>
       )}
     </div>

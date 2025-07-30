@@ -1,5 +1,5 @@
-import type { AxiosResponse } from 'axios';
-import axiosInstance from '../axiosInstance';
+import type { AxiosResponse } from "axios";
+import axiosInstance from "../axiosInstance";
 
 // TypeScript interfaces for Tour Image data
 export interface TourImage {
@@ -55,32 +55,46 @@ export interface UpdateTourImageData {
 // API functions
 export const providerTourImageApi = {
   // Get all tour images
-  getTourImages: (params?: TourImageParams): Promise<AxiosResponse<TourImageResponse>> => {
-    return axiosInstance.get('/api/provider/tour-images', { params });
+  getTourImages: (
+    params?: TourImageParams
+  ): Promise<AxiosResponse<TourImageResponse>> => {
+    return axiosInstance.get("/api/provider/tour-images", { params });
   },
 
   // Get tour image by ID
-  getTourImageById: (id: number): Promise<AxiosResponse<{ success: boolean; data: TourImage }>> => {
+  getTourImageById: (
+    id: number
+  ): Promise<AxiosResponse<{ success: boolean; data: TourImage }>> => {
     return axiosInstance.get(`/api/provider/tour-images/${id}`);
   },
 
   // Create new tour image
-  createTourImage: (data: CreateTourImageData): Promise<AxiosResponse<{ success: boolean; data: TourImage }>> => {
-    return axiosInstance.post('/api/provider/tour-images', data);
+  createTourImage: (formData: FormData) => {
+    return axiosInstance.post("/api/provider/tour-images", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
 
   // Update tour image
-  updateTourImage: (id: number, data: UpdateTourImageData): Promise<AxiosResponse<{ success: boolean; data: TourImage }>> => {
-    return axiosInstance.put(`/api/provider/tour-images/${id}`, data);
+  updateTourImage: (id: number, formData: FormData) => {
+    return axiosInstance.put(`/api/provider/tour-images/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
 
   // Delete tour image
-  deleteTourImage: (id: number): Promise<AxiosResponse<{ success: boolean }>> => {
+  deleteTourImage: (
+    id: number
+  ): Promise<AxiosResponse<{ success: boolean }>> => {
     return axiosInstance.delete(`/api/provider/tour-images/${id}`);
   },
 
   // Toggle featured status
-  toggleFeatured: (id: number): Promise<AxiosResponse<{ success: boolean; data: TourImage }>> => {
-    return axiosInstance.patch(`/api/provider/tour-images/${id}/toggle-featured`);
-  }
+  toggleFeatured: (
+    id: number
+  ): Promise<AxiosResponse<{ success: boolean; data: TourImage }>> => {
+    return axiosInstance.patch(
+      `/api/provider/tour-images/${id}/toggle-featured`
+    );
+  },
 };

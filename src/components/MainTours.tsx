@@ -5,6 +5,23 @@ import { useNavigate } from "react-router-dom";
 import { Clock, Users, Eye } from "lucide-react";
 import { Loading } from "./Loading";
 
+// Hàm format giá theo định dạng xxx.xxx.000 VND
+const formatPrice = (price: string | number): string => {
+  // Nếu price là string có chứa "đ" hoặc "VND", lấy số từ string
+  let numericPrice: number;
+
+  if (typeof price === "string") {
+    // Loại bỏ "đ", "VND" và các ký tự không phải số
+    const cleanPrice = price.replace(/[^\d]/g, "");
+    numericPrice = parseInt(cleanPrice) || 0;
+  } else {
+    numericPrice = price;
+  }
+
+  // Format theo định dạng xxx.xxx.000 VND
+  return numericPrice.toLocaleString("vi-VN") + " VND";
+};
+
 type TourCardProps = {
   id: number;
   title: string;
@@ -118,10 +135,10 @@ const TourCard: React.FC<TourCardProps> = ({
               </span>
             )} */}
             <span className="text-2xl font-bold text-orange-600">
-              {price.toLocaleString()}đ
+              {formatPrice(price)}
             </span>
             <span className="text-sm text-gray-500 line-through">
-              {price.toLocaleString()}đ
+              {formatPrice(price)}
             </span>
           </div>
           {/* <p className="text-sm text-gray-600">/ người</p> */}
@@ -242,22 +259,26 @@ const MainTours: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br bg-white py-12 px-4">
-
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-[#015294] mb-4">TOUR CHÍNH</h2>
           <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
         </div>
-        {loading ? <Loading /> : (
+        {loading ? (
+          <Loading />
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {tours.map((tour, index) => (
               <TourCard key={index} {...tour} />
             ))}
-          </div>)}
+          </div>
+        )}
 
         {existTourMore && (
           <div className="text-center mt-12">
-            {loadingMore ? <Loading /> : (
+            {loadingMore ? (
+              <Loading />
+            ) : (
               <button
                 onClick={handleMoreTours}
                 className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"

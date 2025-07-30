@@ -1,4 +1,4 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from "../axiosInstance";
 
 export interface AdminTourImage {
   id: number;
@@ -42,43 +42,46 @@ export const adminTourImageApi = {
     tour_id?: number;
     provider_id?: number;
     is_featured?: boolean;
-    sort_by?: 'created_at' | 'description';
-    sort_order?: 'asc' | 'desc';
+    sort_by?: "created_at" | "description";
+    sort_order?: "asc" | "desc";
   }): Promise<{ data: AdminTourImagesResponse }> => {
     const searchParams = new URLSearchParams();
-    
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.search) searchParams.set('search', params.search);
-    if (params?.tour_id) searchParams.set('tour_id', params.tour_id.toString());
-    if (params?.provider_id) searchParams.set('provider_id', params.provider_id.toString());
-    if (params?.is_featured !== undefined) searchParams.set('is_featured', params.is_featured.toString());
-    if (params?.sort_by) searchParams.set('sort_by', params.sort_by);
-    if (params?.sort_order) searchParams.set('sort_order', params.sort_order);
 
-    return axiosInstance.get(`/api/admin/tour-images?${searchParams.toString()}`);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.tour_id) searchParams.set("tour_id", params.tour_id.toString());
+    if (params?.provider_id)
+      searchParams.set("provider_id", params.provider_id.toString());
+    if (params?.is_featured !== undefined)
+      searchParams.set("is_featured", params.is_featured.toString());
+    if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
+    if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
+
+    return axiosInstance.get(
+      `/api/admin/tour-images?${searchParams.toString()}`
+    );
   },
 
   // Lấy tour image theo ID (Admin only)
-  getTourImage: (id: number): Promise<{ data: { success: boolean; data: AdminTourImage } }> => {
+  getTourImage: (
+    id: number
+  ): Promise<{ data: { success: boolean; data: AdminTourImage } }> => {
     return axiosInstance.get(`/api/admin/tour-images/${id}`);
   },
 
   // Lấy thống kê tour images
-  getTourImageStats: (): Promise<{ data: { 
-    success: boolean; 
+  getTourImageStats: (): Promise<{
     data: {
-      total_images: number;
-      featured_images: number;
-      regular_images: number;
-      images_by_tour: { [key: string]: number };
-    }
-  } }> => {
-    return axiosInstance.get('/api/admin/tour-images/stats');
+      success: boolean;
+      data: {
+        total_images: number;
+        featured_images: number;
+        regular_images: number;
+        images_by_tour: { [key: string]: number };
+      };
+    };
+  }> => {
+    return axiosInstance.get("/api/admin/tour-images/stats");
   },
-
-  // Cập nhật trạng thái featured (Admin only)
-  updateFeaturedStatus: (id: number, is_featured: boolean): Promise<{ data: { success: boolean; data: AdminTourImage } }> => {
-    return axiosInstance.patch(`/api/admin/tour-images/${id}/featured`, { is_featured });
-  }
 };

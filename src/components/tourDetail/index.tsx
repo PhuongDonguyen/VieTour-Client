@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import TourNamePrice from "./TourNamePrice";
 import TourImage from "./TourImage";
 import TourDetailContent from "./TourDetailContent";
@@ -8,26 +8,24 @@ import TabInfo from "./TabInfo";
 import TabOverview from "./TabOverview";
 import TabCondition from "./TabCondition";
 import TabGallery from "./TabGallery";
-import { fetchTourBySlug } from '../../services/tour.service';
-import { fetchTourDetail } from '../../services/tourDetail.service';
-import { fetchTourImages } from '../../services/tourImage.service';
-import { useTourViewTracking } from '../../hooks/useTourViewTracking';
-import { TabReview } from '../tourDetail/TabReview'
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
-import { CommentSection } from "../question"
+import { fetchTourBySlug } from "../../services/tour.service";
+import { fetchTourDetail } from "../../services/tourDetail.service";
+import { fetchTourImages } from "../../services/tourImage.service";
+import { useTourViewTracking } from "../../hooks/useTourViewTracking";
+import { TabReview } from "../tourDetail/TabReview";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import { CommentSection } from "../question";
 
 const TABS = [
-  { key: 'program', label: 'Chương trình tour' },
-  { key: 'price', label: 'Bảng giá' },
-  { key: 'info', label: 'Thông tin tour' },
-  { key: 'overview', label: 'Tổng quan tour' },
-  { key: 'condition', label: 'Điều kiện tour' },
-  { key: 'gallery', label: 'Hình ảnh tour' },
-  { key: 'review', label: 'Đánh giá' }
+  { key: "program", label: "Chương trình tour" },
+  { key: "price", label: "Bảng giá" },
+  { key: "info", label: "Thông tin tour" },
+  { key: "overview", label: "Tổng quan tour" },
+  { key: "condition", label: "Điều kiện tour" },
+  { key: "gallery", label: "Hình ảnh tour" },
+  { key: "review", label: "Đánh giá" },
 ];
-
-
 
 const TourDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -36,27 +34,32 @@ const TourDetail: React.FC = () => {
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('program');
+  const [activeTab, setActiveTab] = useState("program");
   const [showCommentSection, setShowCommentSection] = useState(false);
 
   // Track tour view count with session strategy
   useTourViewTracking(tour?.id, loading, !!error);
+
+  // Scroll to top when component mounts or slug changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
 
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
     setError(null);
     fetchTourBySlug(slug)
-      .then(data => {
+      .then((data) => {
         if (data && data.length > 0) {
           const tourData = data[0];
           setTour(tourData);
           return Promise.all([
             fetchTourDetail(tourData.id),
-            fetchTourImages(tourData.id)
+            fetchTourImages(tourData.id),
           ]);
         } else {
-          throw new Error('Không tìm thấy tour.');
+          throw new Error("Không tìm thấy tour.");
         }
       })
       .then(([detail, imgs]) => {
@@ -70,28 +73,34 @@ const TourDetail: React.FC = () => {
         }, 500);
       })
       .catch((err) => {
-        setError(err.message || 'Lỗi khi tải dữ liệu tour.');
+        setError(err.message || "Lỗi khi tải dữ liệu tour.");
         setLoading(false);
       });
   }, [slug]);
 
-  if (loading) return (
-    <div className="pt-24 px-4">
-      <div className="max-w-7xl mx-auto rounded-xl bg-transparent h-[750px] md:h-[80vh] flex flex-col md:flex-row overflow-hidden animate-pulse">
-        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 pt-4 flex flex-col bg-white hide-scrollbar">
-          <Skeleton height={400} className="mb-6" />
-        </div>
-        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 hide-scrollbar">
-          <Skeleton height={40} width={300} style={{ marginBottom: 24, marginTop: 24 }} />
-          <Skeleton count={10} height={20} style={{ marginBottom: 8 }} />
+  if (loading)
+    return (
+      <div className="pt-24 px-4">
+        <div className="max-w-7xl mx-auto rounded-xl bg-transparent h-[750px] md:h-[80vh] flex flex-col md:flex-row overflow-hidden animate-pulse">
+          <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 pt-4 flex flex-col bg-white hide-scrollbar">
+            <Skeleton height={400} className="mb-6" />
+          </div>
+          <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 hide-scrollbar">
+            <Skeleton
+              height={40}
+              width={300}
+              style={{ marginBottom: 24, marginTop: 24 }}
+            />
+            <Skeleton count={10} height={20} style={{ marginBottom: 8 }} />
+          </div>
         </div>
       </div>
-    </div>
-  );
-  if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
+    );
+  if (error)
+    return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!tour) return null;
 
-  const displayPrice = tour.price || '1.750.000VND';
+  const displayPrice = tour.price || "1.750.000VND";
 
   return (
     <>
@@ -129,13 +138,21 @@ const TourDetail: React.FC = () => {
       `}</style>
       <div className="pt-24 px-4">
         {/* Phần trên: tên + giá + nút đặt */}
-        <TourNamePrice title={tour.title} price={displayPrice} tourSlug={tour.slug} />
+        <TourNamePrice
+          title={tour.title}
+          price={displayPrice}
+          tourSlug={tour.slug}
+        />
         {/* Nav bar chuyển tab */}
         <div className="max-w-7xl mx-auto flex space-x-4 border-b border-gray-200 mt-10 mb-8">
-          {TABS.map(tab => (
+          {TABS.map((tab) => (
             <button
               key={tab.key}
-              className={`px-4 py-2 font-semibold border-b-2 transition-colors duration-200 ${activeTab === tab.key ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-600 hover:text-orange-500'}`}
+              className={`px-4 py-2 font-semibold border-b-2 transition-colors duration-200 ${
+                activeTab === tab.key
+                  ? "border-orange-500 text-orange-600"
+                  : "border-transparent text-gray-600 hover:text-orange-500"
+              }`}
               onClick={() => setActiveTab(tab.key)}
             >
               {tab.label}
@@ -144,18 +161,31 @@ const TourDetail: React.FC = () => {
         </div>
         {/* Nội dung tab */}
         <div>
-          {activeTab === 'program' && (
+          {activeTab === "program" && (
             <div className="w-full max-w-7xl mx-auto rounded-xl bg-transparent h-[750px] md:h-[80vh] flex flex-col md:flex-row overflow-hidden">
               <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 pt-4 flex flex-col bg-white hide-scrollbar">
-                <TourImage images={(images.length > 0 ? images.filter(img => img.is_featured) : [{ id: 0, image_url: tour.poster_url, alt_text: tour.title }])} altDefault={tour.title} />
+                <TourImage
+                  images={
+                    images.length > 0
+                      ? images.filter((img) => img.is_featured)
+                      : [
+                          {
+                            id: 0,
+                            image_url: tour.poster_url,
+                            alt_text: tour.title,
+                          },
+                        ]
+                  }
+                  altDefault={tour.title}
+                />
               </div>
               <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-y-auto p-4 hide-scrollbar">
                 <TourDetailContent days={days} />
               </div>
             </div>
           )}
-          {activeTab === 'price' && <TabPrice tourId={tour.id} />}
-          {activeTab === 'info' && (
+          {activeTab === "price" && <TabPrice tourId={tour.id} />}
+          {activeTab === "info" && (
             <TabInfo
               id={tour.id}
               live_commentary={tour.live_commentary}
@@ -164,16 +194,24 @@ const TourDetail: React.FC = () => {
               accommodation={tour.accommodation}
             />
           )}
-          {activeTab === 'overview' && <TabOverview destination_intro={tour.destination_intro} />}
-          {activeTab === 'condition' && <TabCondition tour_info={tour.tour_info} />}
-          {activeTab === 'gallery' && <TabGallery images={images} />}
-          {activeTab === 'review' && <TabReview tourId={tour.id} totalStar={tour.total_star} reviewCount={tour.review_count} />}
+          {activeTab === "overview" && (
+            <TabOverview destination_intro={tour.destination_intro} />
+          )}
+          {activeTab === "condition" && (
+            <TabCondition tour_info={tour.tour_info} />
+          )}
+          {activeTab === "gallery" && <TabGallery images={images} />}
+          {activeTab === "review" && (
+            <TabReview
+              tourId={tour.id}
+              totalStar={tour.total_star}
+              reviewCount={tour.review_count}
+            />
+          )}
         </div>
-        
-
       </div>
     </>
   );
 };
 
-export default TourDetail; 
+export default TourDetail;

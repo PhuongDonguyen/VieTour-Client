@@ -1,10 +1,14 @@
 import React, { use, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { NavigationUser } from "@/components/NavigationProfile";
 import { ProfilePage } from "@/components/ProfileUser";
 import { ChangePasswordForm } from "@/components/ChangepwForm";
 import MyBooking from "@/components/MyBooking";
+import CancellationRequests from "@/components/CancellationRequests";
+import CancellationRequestsProvider from "@/pages/admin/AdminCancellationRequests";
+import ProviderBookings from "@/pages/provider/ProviderBookings";
 import { fetchUserProfile } from "@/services/userProfile.service";
+import { useAuth } from "@/hooks/useAuth";
 
 interface user {
   id: number;
@@ -15,14 +19,16 @@ interface user {
 }
 
 const AccountPage: React.FC = () => {
-  const [userCurrent, setUserCurrent] = useState<user | null>(null); // Giả sử bạn có state này từ context hoặc props
+  const [userCurrent, setUserCurrent] = useState<user | null>(null);
   const { active } = useParams<{ active: string }>();
   const [activeTab, setActiveTab] = useState<string>(active ?? "profile");
+  const { user: authUser } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetchUserProfile(); 
+        const response = await fetchUserProfile();
         const userData = response.data;
         console.log("Fetched user data:", userData);
         console.log("response:", response);
@@ -39,6 +45,22 @@ const AccountPage: React.FC = () => {
     console.log("Current user:", userCurrent);
   }, [userCurrent]);
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+
+    // Navigate to provider cancellation requests page if needed
+    if (tab === "provider-cancellation-requests") {
+      navigate("/provider/cancellation-requests");
+      return;
+    }
+
+    // Navigate to provider bookings page if needed
+    if (tab === "provider-bookings") {
+      navigate("/provider/bookings");
+      return;
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
@@ -49,6 +71,12 @@ const AccountPage: React.FC = () => {
         return <ChangePasswordForm />;
       case "my-bookings":
         return <MyBooking />;
+      case "cancellation-requests":
+        return <CancellationRequests />;
+      case "provider-cancellation-requests":
+        return <CancellationRequestsProvider />;
+      case "provider-bookings":
+        return <ProviderBookings />;
       case "tours":
         return <p>🧳 Các chuyến đi bạn đã tham gia.</p>;
       case "settings":
@@ -64,7 +92,11 @@ const AccountPage: React.FC = () => {
         {/* Sidebar trái */}
         <div className="w-80 pt-20">
           <div className="sticky top-[80px] bg-white border border-gray-200 rounded-xl shadow-sm">
-            <NavigationUser user={userCurrent!} activeTab={activeTab} onChangeTab={setActiveTab} />
+            <NavigationUser
+              user={userCurrent!}
+              activeTab={activeTab}
+              onChangeTab={handleTabChange}
+            />
           </div>
         </div>
 

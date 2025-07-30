@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { tourScheduleService } from '../../services/tourSchedule.service';
-import { fetchUserProfile } from '../../services/userProfile.service';
-import { bookingService } from '../../services/booking.service';
-import { paymentService } from '../../services/payment.service';
-import { processPayment, getPaymentMethodDisplayName } from '../../services/paymentGateway.service';
-import { getTourPricesByTourIdAndDate } from '../../apis/tourPrice.api';
-import { useAuth } from '../../hooks/useAuth';
-import Modal from '../Modal';
-import LoginForm from '../authentication/LoginForm';
-import SignupForm from '../authentication/SignupForm';
-import { TourCalendar } from './TourCalendar';
-import type { BookingRequest, BookingDetail } from '../../apis/booking.api';
-import type { PaymentMethod } from '../../apis/payment.api';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { tourScheduleService } from "../../services/tourSchedule.service";
+import { fetchUserProfile } from "../../services/userProfile.service";
+import { bookingService } from "../../services/booking.service";
+import { paymentService } from "../../services/payment.service";
+import {
+  processPayment,
+  getPaymentMethodDisplayName,
+} from "../../services/paymentGateway.service";
+import { getTourPricesByTourIdAndDate } from "../../apis/tourPrice.api";
+import { useAuth } from "../../hooks/useAuth";
+import Modal from "../Modal";
+import LoginForm from "../authentication/LoginForm";
+import SignupForm from "../authentication/SignupForm";
+import { TourCalendar } from "./TourCalendar";
+import type { BookingRequest, BookingDetail } from "../../apis/booking.api";
+import type { PaymentMethod } from "../../apis/payment.api";
+import { toast } from "sonner";
 
 // Constants - có thể tùy chỉnh theo business logic
 const BOOKING_CONSTANTS = {
@@ -21,7 +24,7 @@ const BOOKING_CONSTANTS = {
   MIN_BOOKING_DAYS_AHEAD: 2, // Đặt tour trước ít nhất 2 ngày
   LOCALSTORAGE_EXPIRY_HOURS: 24, // 24 giờ
   RESTORE_MESSAGE_TIMEOUT: 5000, // 5 giây
-  TOTAL_STEPS: 5
+  TOTAL_STEPS: 5,
 };
 
 interface TabBookingProps {
@@ -51,7 +54,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   tourId,
   tourTitle,
   tourCapacity,
-  duration = BOOKING_CONSTANTS.DEFAULT_DURATION
+  duration = BOOKING_CONSTANTS.DEFAULT_DURATION,
 }) => {
   const { user } = useAuth();
 
@@ -78,24 +81,27 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   const [priceOptions, setPriceOptions] = useState<PriceOption[]>([]);
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<number | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    number | null
+  >(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
   const [wasLoggedOut, setWasLoggedOut] = useState(false);
   const [formData, setFormData] = useState({
     // Bước 1: Thông tin tour
-    startDate: '',
+    startDate: "",
     numDays: duration,
     selectedPrices: {} as Record<number, { adults: number; children: number }>,
 
     // Bước 3: Thông tin khách hàng
-    customerName: '',
-    phone: '',
+    customerName: "",
+    phone: "",
 
     // Bước 4: Ghi chú và yêu cầu đặc biệt
-    specialRequests: ''
+    specialRequests: "",
   });
+  const [showPaymentLoading, setShowPaymentLoading] = useState(false);
 
   // Key cho localStorage
   const getStorageKey = () => `booking_form_${tourId}`;
@@ -107,8 +113,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
   // Xóa tất cả dữ liệu booking (khi logout)
   const clearAllBookingStorage = () => {
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('booking_form_')) {
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("booking_form_")) {
         localStorage.removeItem(key);
       }
     });
@@ -119,15 +125,15 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     if (user) {
       // Nếu user vừa login lại sau khi logout, reset về bước 1
       if (wasLoggedOut) {
-        console.log('User logged back in after logout, resetting to step 1');
+        console.log("User logged back in after logout, resetting to step 1");
         setCurrentStep(1);
         setFormData({
-          startDate: '',
+          startDate: "",
           numDays: duration,
           selectedPrices: {},
-          customerName: '',
-          phone: '',
-          specialRequests: ''
+          customerName: "",
+          phone: "",
+          specialRequests: "",
         });
         setSelectedPaymentMethod(null);
         setErrors({});
@@ -138,15 +144,15 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       }
 
       // Luôn bắt đầu từ bước 1 khi reload trang (không khôi phục dữ liệu)
-      console.log('Page loaded/reloaded, starting from step 1');
+      console.log("Page loaded/reloaded, starting from step 1");
       setCurrentStep(1);
       setFormData({
-        startDate: '',
+        startDate: "",
         numDays: duration,
         selectedPrices: {},
-        customerName: '',
-        phone: '',
-        specialRequests: ''
+        customerName: "",
+        phone: "",
+        specialRequests: "",
       });
       setSelectedPaymentMethod(null);
       setErrors({});
@@ -158,16 +164,16 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       clearAllBookingStorage();
       setCurrentStep(1);
       setFormData({
-        startDate: '',
+        startDate: "",
         numDays: duration,
         selectedPrices: {},
-        customerName: '',
-        phone: '',
-        specialRequests: ''
+        customerName: "",
+        phone: "",
+        specialRequests: "",
       });
       setSelectedPaymentMethod(null);
       setErrors({});
-      console.log('User logged out, cleared all booking form data');
+      console.log("User logged out, cleared all booking form data");
     }
 
     // Cleanup function để xóa dữ liệu khi component unmount nếu user không đăng nhập
@@ -180,9 +186,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
   // Effect để cập nhật numDays khi duration prop thay đổi
   useEffect(() => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      numDays: duration
+      numDays: duration,
     }));
   }, [duration]);
 
@@ -196,7 +202,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
       // Chỉ cảnh báo nếu user đã đăng nhập và có dữ liệu trong form
       if (user && hasFormData()) {
-        const message = 'Bạn có chắc muốn rời khỏi trang? Dữ liệu đặt tour của bạn sẽ bị mất.';
+        const message =
+          "Bạn có chắc muốn rời khỏi trang? Dữ liệu đặt tour của bạn sẽ bị mất.";
         event.preventDefault();
         event.returnValue = message;
         return message;
@@ -204,35 +211,62 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     };
 
     // Thêm event listener
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     // Cleanup
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [user, formData.startDate, currentStep, formData.selectedPrices, formData.customerName, formData.phone, formData.specialRequests, isRedirectingToPayment]);
+  }, [
+    user,
+    formData.startDate,
+    currentStep,
+    formData.selectedPrices,
+    formData.customerName,
+    formData.phone,
+    formData.specialRequests,
+    isRedirectingToPayment,
+  ]);
 
   // Function để check xem có dữ liệu trong form không
   const hasFormData = () => {
-    return formData.startDate ||
+    return (
+      formData.startDate ||
       currentStep > 1 ||
       Object.keys(formData.selectedPrices).length > 0 ||
       formData.customerName ||
       formData.phone ||
-      formData.specialRequests;
+      formData.specialRequests
+    );
   };
 
   // Function to check if date is valid (at least MIN_BOOKING_DAYS_AHEAD days from today)
   const isValidBookingDate = (dateString: string) => {
     const today = new Date();
-    const bookingDate = new Date(dateString + 'T00:00:00'); // Ensure proper parsing in local timezone
-    const minDaysFromNow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + BOOKING_CONSTANTS.MIN_BOOKING_DAYS_AHEAD);
+    const bookingDate = new Date(dateString + "T00:00:00"); // Ensure proper parsing in local timezone
+    const minDaysFromNow = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + BOOKING_CONSTANTS.MIN_BOOKING_DAYS_AHEAD
+    );
 
     // Reset time components for accurate date-only comparison
-    const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
-    const minDateOnly = new Date(minDaysFromNow.getFullYear(), minDaysFromNow.getMonth(), minDaysFromNow.getDate());
+    const bookingDateOnly = new Date(
+      bookingDate.getFullYear(),
+      bookingDate.getMonth(),
+      bookingDate.getDate()
+    );
+    const minDateOnly = new Date(
+      minDaysFromNow.getFullYear(),
+      minDaysFromNow.getMonth(),
+      minDaysFromNow.getDate()
+    );
 
-    console.log(`isValidBookingDate: ${dateString} -> booking: ${bookingDateOnly.toLocaleDateString()}, min: ${minDateOnly.toLocaleDateString()}, valid: ${bookingDateOnly >= minDateOnly}`);
+    console.log(
+      `isValidBookingDate: ${dateString} -> booking: ${bookingDateOnly.toLocaleDateString()}, min: ${minDateOnly.toLocaleDateString()}, valid: ${
+        bookingDateOnly >= minDateOnly
+      }`
+    );
 
     return bookingDateOnly >= minDateOnly;
   };
@@ -241,9 +275,11 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   useEffect(() => {
     const loadTourSchedules = async () => {
       try {
-        console.log('Loading tour schedules for tourId:', tourId);
-        const schedulesData = await tourScheduleService.getTourSchedules(tourId);
-        console.log('Tour schedules data:', schedulesData);
+        console.log("Loading tour schedules for tourId:", tourId);
+        const schedulesData = await tourScheduleService.getTourSchedules(
+          tourId
+        );
+        console.log("Tour schedules data:", schedulesData);
 
         if (schedulesData.success) {
           // Filter chỉ lấy những ngày từ 2 ngày sau ngày hiện tại
@@ -251,13 +287,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({
             isValidBookingDate(date.start_date)
           );
           setAvailableDates(validDates);
-          console.log('Available dates set (filtered):', validDates);
+          console.log("Available dates set (filtered):", validDates);
         } else {
-          console.log('No success in schedules response');
+          console.log("No success in schedules response");
           setAvailableDates([]);
         }
       } catch (error) {
-        console.error('Error loading tour schedules:', error);
+        console.error("Error loading tour schedules:", error);
         setAvailableDates([]);
       }
     };
@@ -270,10 +306,18 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     const loadTourPrices = async () => {
       if (currentStep === 2 && formData.startDate) {
         try {
-          console.log('Loading tour prices for tourId:', tourId, 'date:', formData.startDate);
-          const response: any = await getTourPricesByTourIdAndDate(tourId, formData.startDate);
-          console.log('Tour prices response:', response);
-          console.log('Response data:', response.data);
+          console.log(
+            "Loading tour prices for tourId:",
+            tourId,
+            "date:",
+            formData.startDate
+          );
+          const response: any = await getTourPricesByTourIdAndDate(
+            tourId,
+            formData.startDate
+          );
+          console.log("Tour prices response:", response);
+          console.log("Response data:", response.data);
 
           // Handle both wrapped response and direct data from axios
           let priceData: PriceOption[] = [];
@@ -294,25 +338,28 @@ export const TabBooking: React.FC<TabBookingProps> = ({
             }
           }
 
-          console.log('Parsed price data:', priceData);
+          console.log("Parsed price data:", priceData);
 
           if (priceData && priceData.length > 0) {
-            console.log('Setting price options:', priceData);
+            console.log("Setting price options:", priceData);
             setPriceOptions(priceData);
 
             // Initialize selectedPrices với default values
-            const initialPrices: Record<number, { adults: number; children: number }> = {};
+            const initialPrices: Record<
+              number,
+              { adults: number; children: number }
+            > = {};
             priceData.forEach((_, index) => {
               initialPrices[index] = { adults: 0, children: 0 };
             });
-            setFormData(prev => ({ ...prev, selectedPrices: initialPrices }));
-            console.log('Price options set, length:', priceData.length);
+            setFormData((prev) => ({ ...prev, selectedPrices: initialPrices }));
+            console.log("Price options set, length:", priceData.length);
           } else {
-            console.log('No data found in response');
+            console.log("No data found in response");
             setPriceOptions([]);
           }
         } catch (error) {
-          console.error('Error loading tour prices:', error);
+          console.error("Error loading tour prices:", error);
           setPriceOptions([]);
         }
       }
@@ -329,14 +376,14 @@ export const TabBooking: React.FC<TabBookingProps> = ({
           const userProfile = await fetchUserProfile();
           if (userProfile.success) {
             const { first_name, last_name, phone } = userProfile.data;
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
               customerName: `${first_name} ${last_name}`.trim(),
-              phone: phone || ''
+              phone: phone || "",
             }));
           }
         } catch (error) {
-          console.error('Error loading user profile:', error);
+          console.error("Error loading user profile:", error);
           // Không cần làm gì nếu không load được profile
         }
       };
@@ -350,23 +397,23 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     if (currentStep === 5) {
       const loadPaymentMethods = async () => {
         try {
-          console.log('Loading payment methods...');
+          console.log("Loading payment methods...");
           const response = await paymentService.getPaymentMethods();
-          console.log('Payment methods response:', response);
+          console.log("Payment methods response:", response);
 
           if (response.success) {
             setPaymentMethods(response.data);
-            console.log('Payment methods loaded:', response.data);
+            console.log("Payment methods loaded:", response.data);
             // Auto select first payment method if available
             if (response.data.length > 0 && !selectedPaymentMethod) {
               setSelectedPaymentMethod(response.data[0].id);
             }
           } else {
-            console.log('Payment methods API returned success: false');
+            console.log("Payment methods API returned success: false");
             setPaymentMethods([]);
           }
         } catch (error) {
-          console.error('Error loading payment methods:', error);
+          console.error("Error loading payment methods:", error);
           setPaymentMethods([]);
         }
       };
@@ -376,14 +423,14 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   }, [currentStep, selectedPaymentMethod]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleDateSelect = (dateString: string) => {
-    handleInputChange('startDate', dateString);
+    handleInputChange("startDate", dateString);
   };
 
   const handleNext = () => {
@@ -394,7 +441,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     if (currentStep === 1) {
       // Bước 1: Phải chọn ngày khởi hành
       if (!formData.startDate) {
-        setErrors({ startDate: 'Vui lòng chọn ngày khởi hành!' });
+        setErrors({ startDate: "Vui lòng chọn ngày khởi hành!" });
         return;
       }
     }
@@ -403,18 +450,23 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       // Bước 2: Phải có ít nhất 1 người lớn
       const totalPeople = getTotalPeople();
       if (totalPeople.totalAdults === 0) {
-        setErrors({ quantity: 'Phải có ít nhất 1 người lớn!' });
+        setErrors({ quantity: "Phải có ít nhất 1 người lớn!" });
         return;
       }
 
       // Kiểm tra capacity
-      const selectedDate = availableDates.find(date => date.start_date === formData.startDate);
+      const selectedDate = availableDates.find(
+        (date) => date.start_date === formData.startDate
+      );
       if (selectedDate) {
-        const totalSelected = totalPeople.totalAdults + totalPeople.totalChildren;
+        const totalSelected =
+          totalPeople.totalAdults + totalPeople.totalChildren;
         const remainingCapacity = tourCapacity - selectedDate.participant;
 
         if (totalSelected > remainingCapacity) {
-          setErrors({ capacity: `Số lượng khách đã chọn (${totalSelected}) vượt quá số vé còn lại (${remainingCapacity})!` });
+          setErrors({
+            capacity: `Số lượng khách đã chọn (${totalSelected}) vượt quá số vé còn lại (${remainingCapacity})!`,
+          });
           return;
         }
       }
@@ -425,13 +477,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       const newErrors: Record<string, string> = {};
 
       if (!formData.customerName.trim()) {
-        newErrors.customerName = 'Vui lòng nhập họ và tên!';
+        newErrors.customerName = "Vui lòng nhập họ và tên!";
       }
 
       if (!formData.phone.trim()) {
-        newErrors.phone = 'Vui lòng nhập số điện thoại!';
-      } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-        newErrors.phone = 'Số điện thoại không hợp lệ!';
+        newErrors.phone = "Vui lòng nhập số điện thoại!";
+      } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ""))) {
+        newErrors.phone = "Số điện thoại không hợp lệ!";
       }
 
       if (Object.keys(newErrors).length > 0) {
@@ -448,7 +500,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     if (currentStep === 5) {
       // Bước 5: Kiểm tra phương thức thanh toán
       if (!selectedPaymentMethod) {
-        setErrors({ paymentMethod: 'Vui lòng chọn phương thức thanh toán!' });
+        setErrors({ paymentMethod: "Vui lòng chọn phương thức thanh toán!" });
         return;
       }
     }
@@ -469,38 +521,46 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
     // Final validation before submission
     if (!selectedPaymentMethod) {
-      setErrors({ paymentMethod: 'Vui lòng chọn phương thức thanh toán!' });
-      toast.error('Vui lòng chọn phương thức thanh toán!');
+      setErrors({ paymentMethod: "Vui lòng chọn phương thức thanh toán!" });
+      toast.error("Vui lòng chọn phương thức thanh toán!");
       return;
     }
 
     // Đánh dấu đang chuyển hướng ngay từ đầu để tránh cảnh báo beforeunload
     setIsRedirectingToPayment(true);
     setIsSubmitting(true);
+    setShowPaymentLoading(true);
 
     try {
       // Tìm schedule_id từ ngày đã chọn
-      const selectedDate = availableDates.find(date => date.start_date === formData.startDate);
+      const selectedDate = availableDates.find(
+        (date) => date.start_date === formData.startDate
+      );
       if (!selectedDate) {
-        toast.error('Không tìm thấy lịch trình cho ngày đã chọn!');
+        toast.error("Không tìm thấy lịch trình cho ngày đã chọn!");
         setIsRedirectingToPayment(false); // Reset state khi có lỗi
         return;
       }
 
       // Tạo booking_details từ selectedPrices
       const bookingDetails: BookingDetail[] = [];
-      Object.entries(formData.selectedPrices).forEach(([priceIndex, quantities]) => {
-        const priceOption = priceOptions[parseInt(priceIndex)];
-        if (priceOption && (quantities.adults > 0 || quantities.children > 0)) {
-          bookingDetails.push({
-            adult_quanti: quantities.adults,
-            kid_quanti: quantities.children,
-            adult_price: priceOption.adult_price,
-            kid_price: priceOption.kid_price,
-            note: priceOption.note
-          });
+      Object.entries(formData.selectedPrices).forEach(
+        ([priceIndex, quantities]) => {
+          const priceOption = priceOptions[parseInt(priceIndex)];
+          if (
+            priceOption &&
+            (quantities.adults > 0 || quantities.children > 0)
+          ) {
+            bookingDetails.push({
+              adult_quanti: quantities.adults,
+              kid_quanti: quantities.children,
+              adult_price: priceOption.adult_price,
+              kid_price: priceOption.kid_price,
+              note: priceOption.note,
+            });
+          }
         }
-      });
+      );
 
       // Tạo booking request data
       const bookingData: BookingRequest = {
@@ -508,23 +568,25 @@ export const TabBooking: React.FC<TabBookingProps> = ({
         total: calculateTotalPrice(),
         client_name: formData.customerName,
         client_phone: formData.phone,
-        note: formData.specialRequests || '',
+        note: formData.specialRequests || "",
         payment_id: selectedPaymentMethod, // Add payment method ID
-        booking_details: bookingDetails
+        booking_details: bookingDetails,
       };
 
-      console.log('Sending booking data:', bookingData);
+      console.log("Sending booking data:", bookingData);
 
       // Gửi API request
       const response = await bookingService.createBooking(bookingData);
 
-      console.log('Booking response:', response);
+      console.log("Booking response:", response);
 
       // Get the selected payment method details
-      const selectedMethod = paymentMethods.find(m => m.id === selectedPaymentMethod);
+      const selectedMethod = paymentMethods.find(
+        (m) => m.id === selectedPaymentMethod
+      );
 
       if (!selectedMethod) {
-        toast.error('Không tìm thấy phương thức thanh toán!');
+        toast.error("Không tìm thấy phương thức thanh toán!");
         setIsRedirectingToPayment(false); // Reset state khi có lỗi
         return;
       }
@@ -533,21 +595,23 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       const paymentResult = await processPayment(selectedMethod, {
         amount: bookingData.total,
         orderInfo: `Đặt tour: ${tourTitle} - ${formData.customerName} - ${formData.phone}`,
-        bookingId: response.data?.id
+        bookingId: response.data?.id,
       });
 
       if (paymentResult.success && paymentResult.payUrl) {
-        // Redirect to payment URL
+        toast.success("Đang chuyển hướng đến cổng thanh toán...");
         window.location.href = paymentResult.payUrl;
+        // Không tắt loading ở đây, chỉ tắt nếu có lỗi
       } else {
+        setShowPaymentLoading(false);
         // Show error message with toast instead of alert
-        const errorMessage = paymentResult.error || 'Đã có lỗi xảy ra trong quá trình thanh toán.';
+        const errorMessage =
+          paymentResult.error || "Đã có lỗi xảy ra trong quá trình thanh toán.";
         toast.error(errorMessage);
-        console.error('Payment processing failed:', paymentResult.error);
+        console.error("Payment processing failed:", paymentResult.error);
         setIsRedirectingToPayment(false); // Reset state khi có lỗi thanh toán
         return;
       }
-
 
       // Xóa dữ liệu form khỏi localStorage khi thành công
       clearFormStorage();
@@ -555,18 +619,18 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       // Reset form về trạng thái ban đầu
       setCurrentStep(1);
       setFormData({
-        startDate: '',
+        startDate: "",
         numDays: duration,
         selectedPrices: {},
-        customerName: '',
-        phone: '',
-        specialRequests: ''
+        customerName: "",
+        phone: "",
+        specialRequests: "",
       });
       setSelectedPaymentMethod(null);
-
     } catch (error) {
-      console.error('Error creating booking:', error);
-      toast.error('Đã có lỗi xảy ra. Vui lòng thử lại');
+      setShowPaymentLoading(false);
+      console.error("Error creating booking:", error);
+      toast.error("Đã có lỗi xảy ra. Vui lòng thử lại");
     } finally {
       setIsSubmitting(false);
       // Reset redirect state nếu có lỗi
@@ -574,34 +638,42 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     }
   };
 
-  const handlePriceChange = (priceIndex: number, type: 'adults' | 'children', value: number) => {
-    setFormData(prev => ({
+  const handlePriceChange = (
+    priceIndex: number,
+    type: "adults" | "children",
+    value: number
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       selectedPrices: {
         ...prev.selectedPrices,
         [priceIndex]: {
           ...prev.selectedPrices[priceIndex],
-          [type]: value
-        }
-      }
+          [type]: value,
+        },
+      },
     }));
   };
 
   const calculateTotalPrice = () => {
     let total = 0;
-    Object.entries(formData.selectedPrices).forEach(([priceIndex, quantities]) => {
-      const priceOption = priceOptions[parseInt(priceIndex)];
-      if (priceOption) {
-        total += (quantities.adults * priceOption.adult_price) + (quantities.children * priceOption.kid_price);
+    Object.entries(formData.selectedPrices).forEach(
+      ([priceIndex, quantities]) => {
+        const priceOption = priceOptions[parseInt(priceIndex)];
+        if (priceOption) {
+          total +=
+            quantities.adults * priceOption.adult_price +
+            quantities.children * priceOption.kid_price;
+        }
       }
-    });
+    );
     return total;
   };
 
   const getTotalPeople = () => {
     let totalAdults = 0;
     let totalChildren = 0;
-    Object.values(formData.selectedPrices).forEach(quantities => {
+    Object.values(formData.selectedPrices).forEach((quantities) => {
       totalAdults += quantities.adults;
       totalChildren += quantities.children;
     });
@@ -631,19 +703,24 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       case 2:
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Chọn số lượng khách</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              Chọn số lượng khách
+            </h3>
 
             {formData.startDate && (
               <div className="bg-blue-50 p-4 rounded-lg mb-4">
                 <p className="text-sm text-gray-600">
-                  <span className="font-semibold">Ngày khởi hành:</span> {formData.startDate}
+                  <span className="font-semibold">Ngày khởi hành:</span>{" "}
+                  {formData.startDate}
                 </p>
               </div>
             )}
 
             {/* Bảng giá cho từng loại */}
             <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-800">Chọn số lượng khách cho từng loại giá:</h4>
+              <h4 className="text-lg font-semibold text-gray-800">
+                Chọn số lượng khách cho từng loại giá:
+              </h4>
 
               {errors.quantity && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -661,7 +738,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                 <div className="space-y-4">
                   {/* Skeleton Loading */}
                   {[1, 2].map((skeleton) => (
-                    <div key={skeleton} className="bg-gray-50 p-4 rounded-lg border animate-pulse">
+                    <div
+                      key={skeleton}
+                      className="bg-gray-50 p-4 rounded-lg border animate-pulse"
+                    >
                       {/* Title skeleton */}
                       <div className="h-5 bg-gray-300 rounded w-32 mb-3"></div>
 
@@ -690,12 +770,24 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               ) : (
                 priceOptions.map((option, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg border">
-                    <h5 className="font-semibold text-gray-800 mb-3 capitalize">{option.note}</h5>
+                    <h5 className="font-semibold text-gray-800 mb-3 capitalize">
+                      {option.note}
+                    </h5>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                       <div>
-                        <div className="text-sm text-gray-600">Giá người lớn: <span className="font-semibold">{option.adult_price.toLocaleString()} VND</span></div>
-                        <div className="text-sm text-gray-600">Giá trẻ em: <span className="font-semibold">{option.kid_price.toLocaleString()} VND</span></div>
+                        <div className="text-sm text-gray-600">
+                          Giá người lớn:{" "}
+                          <span className="font-semibold">
+                            {option.adult_price.toLocaleString()} VND
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Giá trẻ em:{" "}
+                          <span className="font-semibold">
+                            {option.kid_price.toLocaleString()} VND
+                          </span>
+                        </div>
                       </div>
 
                       <div>
@@ -706,7 +798,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                           type="number"
                           min="0"
                           value={formData.selectedPrices[index]?.adults || 0}
-                          onChange={(e) => handlePriceChange(index, 'adults', parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            handlePriceChange(
+                              index,
+                              "adults",
+                              parseInt(e.target.value) || 0
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
                       </div>
@@ -719,19 +817,32 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                           type="number"
                           min="0"
                           value={formData.selectedPrices[index]?.children || 0}
-                          onChange={(e) => handlePriceChange(index, 'children', parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            handlePriceChange(
+                              index,
+                              "children",
+                              parseInt(e.target.value) || 0
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
                       </div>
                     </div>
 
                     {/* Tính tổng cho loại giá này */}
-                    {(formData.selectedPrices[index]?.adults > 0 || formData.selectedPrices[index]?.children > 0) && (
+                    {(formData.selectedPrices[index]?.adults > 0 ||
+                      formData.selectedPrices[index]?.children > 0) && (
                       <div className="mt-3 p-2 bg-white rounded border">
                         <div className="text-sm">
-                          Tổng cho {option.note}: <span className="font-semibold text-orange-600">
-                            {((formData.selectedPrices[index]?.adults || 0) * option.adult_price +
-                              (formData.selectedPrices[index]?.children || 0) * option.kid_price).toLocaleString()} VND
+                          Tổng cho {option.note}:{" "}
+                          <span className="font-semibold text-orange-600">
+                            {(
+                              (formData.selectedPrices[index]?.adults || 0) *
+                                option.adult_price +
+                              (formData.selectedPrices[index]?.children || 0) *
+                                option.kid_price
+                            ).toLocaleString()}{" "}
+                            VND
                           </span>
                         </div>
                       </div>
@@ -746,7 +857,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Tổng số khách:</span>
-                  <span className="font-semibold">{getTotalPeople().totalAdults} người lớn, {getTotalPeople().totalChildren} trẻ em</span>
+                  <span className="font-semibold">
+                    {getTotalPeople().totalAdults} người lớn,{" "}
+                    {getTotalPeople().totalChildren} trẻ em
+                  </span>
                 </div>
                 <div className="border-t pt-2 mt-2">
                   <div className="flex justify-between text-lg font-bold text-orange-600">
@@ -762,7 +876,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Thông tin liên hệ</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              Thông tin liên hệ
+            </h3>
 
             <div className="space-y-4">
               <div>
@@ -772,13 +888,18 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                 <input
                   type="text"
                   value={formData.customerName}
-                  onChange={(e) => handleInputChange('customerName', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${errors.customerName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  onChange={(e) =>
+                    handleInputChange("customerName", e.target.value)
+                  }
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                    errors.customerName ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="Họ và tên sẽ được tự động điền từ profile của bạn"
                 />
                 {errors.customerName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.customerName}
+                  </p>
                 )}
               </div>
 
@@ -789,9 +910,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                    errors.phone ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="Số điện thoại sẽ được tự động điền từ profile của bạn"
                 />
                 {errors.phone && (
@@ -801,8 +923,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-sm text-blue-700">
-                  <strong>Lưu ý:</strong> Thông tin họ tên và số điện thoại sẽ được tự động điền từ profile của bạn.
-                  Bạn có thể chỉnh sửa nếu cần thiết.
+                  <strong>Lưu ý:</strong> Thông tin họ tên và số điện thoại sẽ
+                  được tự động điền từ profile của bạn. Bạn có thể chỉnh sửa nếu
+                  cần thiết.
                 </p>
               </div>
             </div>
@@ -812,7 +935,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       case 4:
         return (
           <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Ghi chú và yêu cầu đặc biệt</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              Ghi chú và yêu cầu đặc biệt
+            </h3>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -820,7 +945,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               </label>
               <textarea
                 value={formData.specialRequests}
-                onChange={(e) => handleInputChange('specialRequests', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("specialRequests", e.target.value)
+                }
                 rows={6}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="Nhập ghi chú và yêu cầu đặc biệt (nếu có)..."
@@ -832,23 +959,46 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       case 5:
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Xác nhận thông tin đặt tour</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              Xác nhận thông tin đặt tour
+            </h3>
 
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
               <h4 className="font-semibold text-gray-800">Thông tin tour:</h4>
-              <p><span className="font-medium">Tour ID:</span> {tourId}</p>
-              <p><span className="font-medium">Tour:</span> {tourTitle}</p>
-              <p><span className="font-medium">Ngày khởi hành:</span> {formData.startDate}</p>
-              <p><span className="font-medium">Thời gian:</span> {formData.numDays}</p>
+              <p>
+                <span className="font-medium">Tour ID:</span> {tourId}
+              </p>
+              <p>
+                <span className="font-medium">Tour:</span> {tourTitle}
+              </p>
+              <p>
+                <span className="font-medium">Ngày khởi hành:</span>{" "}
+                {formData.startDate}
+              </p>
+              <p>
+                <span className="font-medium">Thời gian:</span>{" "}
+                {formData.numDays}
+              </p>
 
               <div className="mt-4">
-                <h5 className="font-medium text-gray-800 mb-2">Chi tiết đặt chỗ:</h5>
+                <h5 className="font-medium text-gray-800 mb-2">
+                  Chi tiết đặt chỗ:
+                </h5>
                 {priceOptions.map((option, index) => {
                   const quantities = formData.selectedPrices[index];
-                  if (quantities && (quantities.adults > 0 || quantities.children > 0)) {
+                  if (
+                    quantities &&
+                    (quantities.adults > 0 || quantities.children > 0)
+                  ) {
                     return (
                       <div key={index} className="ml-4 text-sm">
-                        <p><span className="font-medium capitalize">{option.note}:</span> {quantities.adults} người lớn, {quantities.children} trẻ em</p>
+                        <p>
+                          <span className="font-medium capitalize">
+                            {option.note}:
+                          </span>{" "}
+                          {quantities.adults} người lớn, {quantities.children}{" "}
+                          trẻ em
+                        </p>
                       </div>
                     );
                   }
@@ -856,26 +1006,47 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                 })}
               </div>
 
-              <p><span className="font-medium">Tổng số khách:</span> {getTotalPeople().totalAdults} người lớn, {getTotalPeople().totalChildren} trẻ em</p>
-              <p><span className="font-medium">Tổng giá tour:</span> <span className="text-xl font-bold text-orange-600">{calculateTotalPrice().toLocaleString()} VND</span></p>
+              <p>
+                <span className="font-medium">Tổng số khách:</span>{" "}
+                {getTotalPeople().totalAdults} người lớn,{" "}
+                {getTotalPeople().totalChildren} trẻ em
+              </p>
+              <p>
+                <span className="font-medium">Tổng giá tour:</span>{" "}
+                <span className="text-xl font-bold text-orange-600">
+                  {calculateTotalPrice().toLocaleString()} VND
+                </span>
+              </p>
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-              <h4 className="font-semibold text-gray-800">Thông tin liên hệ:</h4>
-              <p><span className="font-medium">Họ tên:</span> {formData.customerName}</p>
-              <p><span className="font-medium">Số điện thoại:</span> {formData.phone}</p>
+              <h4 className="font-semibold text-gray-800">
+                Thông tin liên hệ:
+              </h4>
+              <p>
+                <span className="font-medium">Họ tên:</span>{" "}
+                {formData.customerName}
+              </p>
+              <p>
+                <span className="font-medium">Số điện thoại:</span>{" "}
+                {formData.phone}
+              </p>
             </div>
 
             {formData.specialRequests && (
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <h4 className="font-semibold text-gray-800">Ghi chú và yêu cầu đặc biệt:</h4>
+                <h4 className="font-semibold text-gray-800">
+                  Ghi chú và yêu cầu đặc biệt:
+                </h4>
                 <p>{formData.specialRequests}</p>
               </div>
             )}
 
             {/* Payment Method Selection */}
             <div className="bg-white border border-gray-200 p-4 rounded-lg space-y-4">
-              <h4 className="font-semibold text-gray-800 text-lg">Chọn phương thức thanh toán:</h4>
+              <h4 className="font-semibold text-gray-800 text-lg">
+                Chọn phương thức thanh toán:
+              </h4>
 
               {errors.paymentMethod && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -886,7 +1057,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               {paymentMethods.length === 0 ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((skeleton) => (
-                    <div key={skeleton} className="flex items-center p-3 border border-gray-200 rounded-lg animate-pulse">
+                    <div
+                      key={skeleton}
+                      className="flex items-center p-3 border border-gray-200 rounded-lg animate-pulse"
+                    >
                       <div className="flex items-center space-x-3 flex-1">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-gray-300 rounded"></div>
@@ -906,10 +1080,11 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                   {paymentMethods.map((method) => (
                     <label
                       key={method.id}
-                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${selectedPaymentMethod === method.id
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200'
-                        }`}
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                        selectedPaymentMethod === method.id
+                          ? "border-orange-500 bg-orange-50"
+                          : "border-gray-200"
+                      }`}
                     >
                       <input
                         type="radio"
@@ -934,10 +1109,11 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                         </div>
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-4 h-4 rounded-full border-2 ${selectedPaymentMethod === method.id
-                              ? 'border-orange-500 bg-orange-500'
-                              : 'border-gray-300'
-                              }`}
+                            className={`w-4 h-4 rounded-full border-2 ${
+                              selectedPaymentMethod === method.id
+                                ? "border-orange-500 bg-orange-500"
+                                : "border-gray-300"
+                            }`}
                           >
                             {selectedPaymentMethod === method.id && (
                               <div className="w-full h-full rounded-full bg-white scale-50"></div>
@@ -986,11 +1162,21 @@ export const TabBooking: React.FC<TabBookingProps> = ({
           {hasFormData() && (
             <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg">
               <div className="flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <span className="text-sm">
-                  <strong>Lưu ý:</strong> Dữ liệu đặt tour sẽ bị mất nếu bạn tải lại trang (F5) hoặc đóng trình duyệt. Hãy hoàn thành đặt tour để tránh mất dữ liệu.
+                  <strong>Lưu ý:</strong> Dữ liệu đặt tour sẽ bị mất nếu bạn tải
+                  lại trang (F5) hoặc đóng trình duyệt. Hãy hoàn thành đặt tour
+                  để tránh mất dữ liệu.
                 </span>
               </div>
             </div>
@@ -999,20 +1185,25 @@ export const TabBooking: React.FC<TabBookingProps> = ({
           {/* Progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
-              {Array.from({ length: BOOKING_CONSTANTS.TOTAL_STEPS }, (_, i) => i + 1).map((step) => (
+              {Array.from(
+                { length: BOOKING_CONSTANTS.TOTAL_STEPS },
+                (_, i) => i + 1
+              ).map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step <= currentStep
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                      }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      step <= currentStep
+                        ? "bg-orange-500 text-white"
+                        : "bg-gray-200 text-gray-600"
+                    }`}
                   >
                     {step}
                   </div>
                   {step < BOOKING_CONSTANTS.TOTAL_STEPS && (
                     <div
-                      className={`w-12 h-1 mx-1 ${step < currentStep ? 'bg-orange-500' : 'bg-gray-200'
-                        }`}
+                      className={`w-12 h-1 mx-1 ${
+                        step < currentStep ? "bg-orange-500" : "bg-gray-200"
+                      }`}
                     />
                   )}
                 </div>
@@ -1028,19 +1219,18 @@ export const TabBooking: React.FC<TabBookingProps> = ({
           </div>
 
           {/* Step content */}
-          <div className="mb-8">
-            {renderStep()}
-          </div>
+          <div className="mb-8">{renderStep()}</div>
 
           {/* Navigation buttons */}
           <div className="flex justify-between">
             <button
               onClick={handlePrevious}
               disabled={currentStep === 1}
-              className={`px-6 py-2 rounded-md font-medium ${currentStep === 1
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                }`}
+              className={`px-6 py-2 rounded-md font-medium ${
+                currentStep === 1
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+              }`}
             >
               Quay lại
             </button>
@@ -1056,12 +1246,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`px-6 py-2 rounded-md font-medium transition-colors ${isSubmitting
-                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  isSubmitting
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700"
+                }`}
               >
-                {isSubmitting ? 'Đang xử lý...' : 'Đặt tour ngay'}
+                {isSubmitting ? "Đang xử lý..." : "Đặt tour ngay"}
               </button>
             )}
           </div>
@@ -1082,6 +1273,19 @@ export const TabBooking: React.FC<TabBookingProps> = ({
           />
         )}
       </Modal>
+
+      {/* Overlay loading khi chờ giao dịch */}
+      {showPaymentLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mb-6"></div>
+          <div className="text-lg font-semibold text-orange-600">
+            Đang chuyển hướng đến cổng thanh toán...
+          </div>
+          <div className="text-gray-500 mt-2">
+            Vui lòng không tắt trình duyệt hoặc rời khỏi trang này.
+          </div>
+        </div>
+      )}
     </>
   );
 };

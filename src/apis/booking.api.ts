@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
 
 export interface BookingDetail {
   adult_quanti: number;
@@ -19,7 +19,12 @@ export interface BookingRequest {
 }
 
 export const createBooking = (bookingData: BookingRequest) =>
-  axiosInstance.post('/api/bookings', bookingData);
+  axiosInstance.post("/api/bookings", bookingData);
 
-export const getMyBookings = () =>
-  axiosInstance.get('/api/bookings');
+export const getMyBookings = () => axiosInstance.get("/api/bookings");
+
+export const getBookingById = (id: number) =>
+  axiosInstance.get(`/api/bookings/${id}`);
+
+export const updateBookingStatus = (id: number, status: string) =>
+  axiosInstance.put(`/api/bookings/${id}/status`, { status });

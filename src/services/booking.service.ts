@@ -1,7 +1,12 @@
-import { createBooking, getMyBookings } from "../apis/booking.api";
-import type { BookingRequest } from "../apis/booking.api";  
+import {
+  createBooking,
+  getMyBookings,
+  getBookingById,
+  updateBookingStatus,
+} from "../apis/booking.api";
+import type { BookingRequest } from "../apis/booking.api";
 import { getTourScheduleById } from "@/apis/tourSchedule.api";
-import {getTourById} from '../apis/tour.api'
+import { getTourById } from "../apis/tour.api";
 
 export const bookingService = {
   async createBooking(bookingData: BookingRequest) {
@@ -13,9 +18,16 @@ export const bookingService = {
       throw error;
     }
   },
-
+  async updateBookingStatus(id: number, status: string) {
+    try {
+      const res = await updateBookingStatus(id, status);
+      return res.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trạng thái booking:", error);
+      throw error;
+    }
+  },
 };
-
 
 export const fetchMyBookings = async () => {
   try {
@@ -47,3 +59,27 @@ export const fetchMyBookings = async () => {
   }
 };
 
+export const fetchBookingById = async (id: number) => {
+  try {
+    const res = await getBookingById(id);
+    const booking = res.data.data;
+    // Nếu có schedule_id, enrich thêm schedule và tour
+    if (booking.schedule_id) {
+      const resSchedule = await getTourScheduleById(booking.schedule_id);
+      const schedule = resSchedule.data.data;
+      let tour = null;
+      if (schedule.tour_id) {
+        const resTour = await getTourById(schedule.tour_id);
+        tour = resTour.data.data;
+      }
+      booking.schedule = {
+        ...schedule,
+        tour: tour ? { ...tour } : undefined,
+      };
+    }
+    return { data: booking };
+  } catch (error) {
+    console.error("Lỗi khi lấy booking theo id:", error);
+    throw error;
+  }
+};

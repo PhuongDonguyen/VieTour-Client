@@ -2,7 +2,6 @@ import React from "react";
 import { MapPin, Eye, MessageCircle, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-
 interface TourCardProps {
   id: string;
   title: string;
@@ -40,9 +39,8 @@ export const TourCard: React.FC<TourCardProps> = ({
     navigate(`/tour/${slug}`);
   };
 
-
   const formatPrice = (price: number) => {
-    return price.toLocaleString("vi-VN") + "VNĐ";
+    return price.toLocaleString("vi-VN") + " VND";
   };
 
   return (
