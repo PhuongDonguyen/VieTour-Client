@@ -14,6 +14,7 @@ import PaymentFailed from '../pages/PaymentFailed';
 import CancelBooking from '../pages/CancelBooking';
 import { ProtectedRoute } from '@/components/authentication/ProtectedRoute';
 import AccountPage from "@/pages/AccountPage";
+import BlogCategory from '../pages/BlogCategory';
 
 export const clientRoutes = [
   {
@@ -30,6 +31,7 @@ export const clientRoutes = [
       { path: 'tour-category/:slug', element: <TourCategory /> },
       { path: 'about', element: <About /> },
       { path: 'blog/:slug', element: <BlogDetail /> },
+      { path: 'blog-category/:slug', element: <BlogCategory /> },
       { path: 'payment/success', element: <PaymentSuccess /> },
       { path: 'payment/failed', element: <PaymentFailed /> },
       {

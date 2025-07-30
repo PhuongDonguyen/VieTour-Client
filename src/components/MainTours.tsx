@@ -173,7 +173,7 @@ const MainTours: React.FC = () => {
     const loadTours = async () => {
       try {
         setLoading(true);
-        const tourRes = await fetchTours(1, 6);
+        const tourRes = await fetchTours({ page: 1, limit: 6, is_active: true });
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
 
@@ -208,7 +208,7 @@ const MainTours: React.FC = () => {
       try {
         setLoadingMore(true);
         const nextPage = pagination.currentPage + 1;
-        const tourRes = await fetchTours(nextPage, 6);
+        const tourRes = await fetchTours({ page: nextPage, limit: 6, is_active: true });
         const toursData = tourRes.data;
         const newPagination = tourRes.pagination;
 

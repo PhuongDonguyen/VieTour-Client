@@ -7,7 +7,20 @@ import {
   getToursByCatId,
   getToursByIsActive,
   incrementTourViewCount,
+  getAllTours,
+  type TourResponse,
+  type TourQueryParams,
 } from "../apis/tour.api";
+
+export const fetchTours = async (params?: TourQueryParams): Promise<TourResponse> => {
+  try {
+    const tourData = await getAllTours(params);
+    return tourData;
+  } catch (error) {
+    console.error('Error fetching tours:', error);
+    throw error;
+  }
+};
 
 export const fetchTourBySlug = async (slug: string) => {
   const res = await getTourBySlug(slug);
@@ -31,12 +44,6 @@ export const fetchTopBookedTours = async (limit: number = 5) => {
   const res = await getTopBookedTours(limit);
   if (res.data && res.data.success) return res.data.data;
   throw new Error("Không lấy được tour nổi bật");
-};
-
-export const fetchTours = async (page: number, limit: number) => {
-  const res = await getTours(page, limit);
-  if (res.data && res.data.success) return res.data;
-  throw new Error("Không lấy được tour");
 };
 
 export const fetchToursByCategoryId = async (categoryId: number) => {

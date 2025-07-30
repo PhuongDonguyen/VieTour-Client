@@ -22,25 +22,12 @@ export interface BlogCategory {
 }
 
 // Get all blog categories
-export const getAllCategories = async (params?: {
-  is_active?: boolean;
-}): Promise<BlogCategory[]> => {
+export const getAllCategories = async (params?: any): Promise<BlogCategory[]> => {
   try {
     const response = await blogCategoryApi.getAllBlogCategories(params);
     return response.data;
   } catch (error) {
     console.error('Error fetching blog categories:', error);
-    throw error;
-  }
-};
-
-// Get active blog categories only
-export const getActiveCategories = async (): Promise<BlogCategory[]> => {
-  try {
-    const response = await blogCategoryApi.getActiveBlogCategories();
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching active blog categories:', error);
     throw error;
   }
 };
@@ -52,17 +39,6 @@ export const getCategoryById = async (id: number): Promise<BlogCategory> => {
     return response.data;
   } catch (error) {
     console.error(`Error fetching blog category with ID ${id}:`, error);
-    throw error;
-  }
-};
-
-// Get blog category by slug
-export const getCategoryBySlug = async (slug: string): Promise<BlogCategory> => {
-  try {
-    const response = await blogCategoryApi.getBlogCategoryBySlug(slug);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching blog category with slug ${slug}:`, error);
     throw error;
   }
 };
@@ -122,18 +98,3 @@ export const formatCategoryForDisplay = (category: BlogCategory): BlogCategory &
     displayName: `${category.title}${category.post_count !== undefined ? ` (${category.post_count})` : ''}`
   };
 };
-
-// Get categories formatted for select options
-export const getCategoriesForSelect = async (): Promise<Array<{ value: number; label: string }>> => {
-  try {
-    const categories = await getActiveCategories();
-    return categories.map(category => ({
-      value: category.id,
-      label: category.title
-    }));
-  } catch (error) {
-    console.error('Error fetching categories for select:', error);
-    return [];
-  }
-};
-

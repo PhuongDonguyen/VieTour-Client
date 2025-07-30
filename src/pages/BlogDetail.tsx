@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchBlogBySlug } from "../services/blog.service";
+import { fetchBlogs } from "../services/blog.service";
 import Skeleton from 'react-loading-skeleton';
 
 const BlogDetail: React.FC = () => {
@@ -9,12 +9,13 @@ const BlogDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log({ slug });
     const fetchData = async () => {
-      if (!slug) return;
-      
       setLoading(true);
       try {
-        const blogData = await fetchBlogBySlug(slug);
+        const response = await fetchBlogs({ slug: slug });
+        // Since we're fetching by slug, we expect only one blog
+        const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
       } catch (error) {
         console.error('Error fetching blog:', error);

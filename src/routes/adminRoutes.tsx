@@ -12,7 +12,6 @@ import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
 import { RequireAdminAccess, RequireAdminOnly, RequireProviderOnly } from "../components/admin/AuthWrappers";
-import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -165,11 +164,11 @@ export const adminRoutes = [
   {
     path: "/admin/blog/new",
     element: (
-      <RequireAdminAccess>
+      <RequireProviderOnly>
         <AdminLayout title="Create Blog Post">
           <BlogEditor />
         </AdminLayout>
-      </RequireAdminAccess>
+      </RequireProviderOnly>
     ),
   },
   {

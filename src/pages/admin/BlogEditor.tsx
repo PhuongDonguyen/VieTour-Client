@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import TinyMCEEditor from '@/components/TinyMCEEditor';
-import { getActiveCategories, type BlogCategory } from '@/services/blogCategory.service';
+import { getAllCategories, type BlogCategory } from '@/services/blogCategory.service';
 import { fetchBlogById, createBlog, updateBlog, type CreateBlogRequest } from '@/services/blog.service';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -115,7 +115,7 @@ const BlogEditor: React.FC = () => {
         const loadData = async () => {
             try {
                 // Always load categories first
-                const categoryList = await getActiveCategories();
+                const categoryList = await getAllCategories();
                 setCategories(categoryList);
                 
                 // Then load blog data if editing
@@ -227,18 +227,6 @@ const BlogEditor: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <Button variant="outline" onClick={handlePreview}>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Preview
-                    </Button>
-                    <Button 
-                        variant="outline" 
-                        onClick={handleSubmit((data) => onSubmit(data, 'draft'))} 
-                        disabled={isSubmitting || (isEditing && !hasChanges)}
-                    >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Draft
-                    </Button>
                     <Button 
                         onClick={handleSubmit((data) => onSubmit(data, 'published'))} 
                         disabled={isSubmitting || (isEditing && !hasChanges)}

@@ -138,7 +138,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
                     label: 'Add New Post',
                     href: '/admin/blog/new',
                     icon: <Plus className="w-4 h-4" />,
-                    allowedRoles: ['admin', 'provider']
+                    allowedRoles: ['provider']
                 },
                 {
                     label: 'Blog Categories',
@@ -153,19 +153,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
             href: '/admin/settings',
             icon: <Settings className="w-4 h-4" />,
             allowedRoles: ['admin'] // Only admins can access settings
-        },
-        // Provider-only sections
-        {
-            label: 'My Tours',
-            href: '/admin/my-tours',
-            icon: <MapPin className="w-4 h-4" />,
-            allowedRoles: ['provider'] // Only providers can see their own tours
-        },
-        {
-            label: 'My Bookings',
-            href: '/admin/my-bookings',
-            icon: <Calendar className="w-4 h-4" />,
-            allowedRoles: ['provider'] // Only providers can see their bookings
         },
         {
             label: 'Earnings',
