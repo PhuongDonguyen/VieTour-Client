@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, Plus, List, Eye, DollarSign, Building, FileText, MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
-=======
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
@@ -23,12 +14,12 @@ import {
   DollarSign,
   Building,
   FileText,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
->>>>>>> 9ec80b206036600326762343710adeca8dd3e781
 
 interface AdminSidebarProps {
   className?: string;
@@ -124,23 +115,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
             label: "Tour Prices",
             href: "/admin/tours/prices",
             icon: <DollarSign className="w-4 h-4" />,
-<<<<<<< HEAD
-            allowedRoles: ['provider'] // Only providers can see their earnings
-        },
-        {
-            label: 'Company Profile',
-            href: '/admin/profile',
-            icon: <Building className="w-4 h-4" />,
-            allowedRoles: ['provider'] // Only providers can manage their profile
-        },
-        {
-            label: 'Quản lý câu hỏi',
-            href: '/admin/questions',
-            icon: <MessageCircle className="w-4 h-4" />,
-            allowedRoles: ['provider'] // Only providers can manage questions
-        },
-    ], []);
-=======
             allowedRoles: ["admin", "provider"],
           },
           {
@@ -231,10 +205,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         icon: <Building className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can manage their profile
       },
+      {
+        label: "Questions",
+        href: "/admin/questions",
+        icon: <HelpCircle className="w-4 h-4" />,
+        allowedRoles: ["provider"], // Only providers can see their questions
+      }
     ],
     []
   );
->>>>>>> 9ec80b206036600326762343710adeca8dd3e781
 
   // Auto-expand parent items when their sub-items are active
   useEffect(() => {

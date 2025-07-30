@@ -486,4 +486,16 @@ export const adminRoutes = [
       </RequireProviderOnly>
     ),
   },
+    {
+    path: "/admin/questions",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Câu hỏi của tôi">
+          <div className="p-6">
+            <AdminSupport />
+          </div>
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
 ];
