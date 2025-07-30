@@ -301,21 +301,6 @@ export const adminRoutes = [
       </RequireAdminOnly>
     ),
   },
-  {
-    path: "/admin/bookings",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Bookings">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">Bookings Management</h1>
-            <p className="text-muted-foreground">
-              View and manage all bookings.
-            </p>
-          </div>
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
 
   // Blog routes
   {
@@ -486,7 +471,7 @@ export const adminRoutes = [
       </RequireProviderOnly>
     ),
   },
-    {
+  {
     path: "/admin/questions",
     element: (
       <RequireProviderOnly>
