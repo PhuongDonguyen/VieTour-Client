@@ -26,3 +26,6 @@ export const getTourById = (id: number) =>
 
 export const incrementTourViewCount = (id: number) =>
   axiosInstance.patch(`/api/tours/${id}/increment-view`)
+
+export const getAllToursByProviderId = (providerId: number | null) =>
+  axiosInstance.get(`/api/tours?provider_id=${providerId}`);

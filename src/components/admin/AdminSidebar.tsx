@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, Plus, List, Eye, DollarSign, Building, FileText } from 'lucide-react';
+import { Home, Users, MapPin, Calendar, Settings, ChevronDown, ChevronRight, Plus, List, Eye, DollarSign, Building, FileText, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -178,6 +178,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
             href: '/admin/profile',
             icon: <Building className="w-4 h-4" />,
             allowedRoles: ['provider'] // Only providers can manage their profile
+        },
+        {
+            label: 'Quản lý câu hỏi',
+            href: '/admin/questions',
+            icon: <MessageCircle className="w-4 h-4" />,
+            allowedRoles: ['provider'] // Only providers can manage questions
         },
     ], []);
 

@@ -29,6 +29,7 @@ import TourImageViewContent from "../components/admin/tour-image/TourImageViewCo
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
 import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
+import AdminSupport from "@/pages/admin/AdminSupport";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -444,6 +445,16 @@ export const adminRoutes = [
               </p>
             </div>
           </div>
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/questions",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Quản lý câu hỏi">
+          <AdminSupport />
         </AdminLayout>
       </RequireProviderOnly>
     ),

@@ -8,7 +8,7 @@ import {
 import { fetchTourBySlug } from "../services/tour.service";
 import { Loading } from "./Loading";
 import {
-  fetchQuestionByTuorId,
+  fetchQuestionsByTourId,
   sendQuestion,
   delQuestion,
 } from "../services/question.service";
@@ -68,7 +68,7 @@ export const CommentSection = () => {
     const loadQuestions = async () => {
       try {
         setLoadingQuestion(true);
-        const res = await fetchQuestionByTuorId(tourId);
+        const res = await fetchQuestionsByTourId(tourId);
         setCountQuestion(res.data.length);
         const questionsWithUser = await addUsersToQuestions(res.data);
         const nested = nestQuestions(questionsWithUser);

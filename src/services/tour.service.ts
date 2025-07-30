@@ -7,6 +7,7 @@ import {
   getToursByCatId,
   getToursByIsActive,
   incrementTourViewCount,
+  getAllToursByProviderId
 } from "../apis/tour.api";
 
 export const fetchTourBySlug = async (slug: string) => {
@@ -50,6 +51,12 @@ export const fetchTourIsActive = async (is_active: boolean) => {
   if (res.data && res.data.success) return res.data;
   throw new Error("Không lấy được tour theo category");
 };
+
+export const fetchAllToursByProviderId = async (providerId: number | null) => {
+  const res = await getAllToursByProviderId(providerId);
+  if (res.data && res.data.success) return res.data;
+  throw new Error("Không lấy được tất cả tour");
+}
 
 // Session-based view count increment
 // 
