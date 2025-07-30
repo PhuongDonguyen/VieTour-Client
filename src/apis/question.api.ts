@@ -8,3 +8,6 @@ export const submitQuestion = (user_id: number|null, tour_id: number, parent_que
 
 export const deleteQuestion = (id: number) => 
     axiosInstance.delete(`/api/questions/${id}`)
+
+export const updateReported = (reported: boolean, id: number) =>
+    axiosInstance.put(`/api/questions/${id}/reported`, {reported})

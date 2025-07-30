@@ -402,12 +402,12 @@ const AdminSupport: React.FC = () => {
                 )}
                 <div className="font-medium flex-1">
                   {reply.user.first_name} {reply.user.last_name}
-                  {reply.user_id === 23 && (
+                  {/* {reply.user_id === 23 && (
                     <span className="ml-1 text-primary">(Admin)</span>
-                  )}
+                  )} */}
                 </div>
                 {/* Badge trạng thái cho reply */}
-                {reply.questions && countTotalReplies(reply.questions) > 0 ? (
+                {reply.reported ? (
                   <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
                     Đã trả lời
                   </Badge>
@@ -605,8 +605,9 @@ const AdminSupport: React.FC = () => {
                           </div>
                         </div>
                         {/* Badge trạng thái */}
-                        {q.questions && countTotalReplies(q.questions) > 0 ? (
-                          <Badge variant="secondary">Đã trả lời</Badge>
+
+                        {q.reported ? (
+                          <Badge variant="secondary">Đã trả lời {q.reported}</Badge>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300">
                             <svg
@@ -696,11 +697,11 @@ const AdminSupport: React.FC = () => {
                       <div className="text-xs text-muted-foreground">
                         {formatDate(selectedReply.created_at)}
                       </div>
-                      {selectedReply.user_id === 23 && (
+                      {/* {selectedReply.user_id === 23 && (
                         <Badge variant="secondary" className="mt-1">
                           Admin
                         </Badge>
-                      )}
+                      )} */}
                     </div>
                   </div>
                   <Separator />
