@@ -31,7 +31,6 @@ import {
 import TourImageViewContent from "../components/admin/tour-image/TourImageViewContent";
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
-import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
