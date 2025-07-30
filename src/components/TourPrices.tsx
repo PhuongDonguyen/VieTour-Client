@@ -228,10 +228,11 @@ export const TourPrices = () => {
     const fetchTours = async () => {
       try {
         setLoading(true);
-        const tourRes = await fetchTourIsActive(true);
-        const toursData = tourRes.data;
-        const pagination = tourRes.pagination;
-        console.log("Pagination data:", pagination);
+        const tourRes = await fetchTours({ is_active: true });
+        console.log("Tour response:", tourRes);
+
+        // Handle different response structures
+        const toursData = Array.isArray(tourRes) ? tourRes : tourRes.data || [];
 
         setTours(
           toursData.map((tour: any) => ({
@@ -246,6 +247,7 @@ export const TourPrices = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching tour prices:", error);
+        setLoading(false);
       }
     };
 
