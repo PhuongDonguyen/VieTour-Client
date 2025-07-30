@@ -7,7 +7,7 @@ export const fetchQuestionsByTourId = async (tourId: number) => {
 };
 
 export const sendQuestion = async (
-  user_id: number,
+  user_id: number | null,
   tour_id: number,
   parent_question_id: number | null,
   text: string,

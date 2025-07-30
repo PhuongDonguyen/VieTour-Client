@@ -4,7 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { fetchQuestionsByTourId, sendQuestion } from "@/services/question.service";
+import {
+  fetchQuestionsByTourId,
+  sendQuestion,
+} from "@/services/question.service";
 import {
   User,
   MessageCircle,
@@ -287,13 +290,19 @@ const AdminSupport: React.FC = () => {
     setReplyText("");
   };
 
-  const handleReplyToQuestion = async() => {
+  const handleReplyToQuestion = async () => {
     // Logic trả lời câu hỏi gốc
     console.log("Trả lời câu hỏi gốc:", selected, replyText);
     try {
       if (!selected || !replyText.trim()) return;
 
-      const res = await sendQuestion(providerId, selected.tour_id, selected.id, replyText, true);
+      const res = await sendQuestion(
+        null,
+        selected.tour_id,
+        selected.id,
+        replyText,
+        true
+      );
       console.log("Reply to question response:", res);
     } catch (error) {
       console.error("Error replying to question:", error);
@@ -302,9 +311,25 @@ const AdminSupport: React.FC = () => {
     setReplyText("");
   };
 
-  const handleReplyToReply = (replyId: number) => {
+  const handleReplyToReply = async (replyId: number) => {
     // Logic trả lời reply con
-    console.log("Trả lời reply:", replyId, replyText);
+    console.log("Trả lời reply:", replyId, replyText, selectedReply);
+    try {
+      if (!replyId || !replyText.trim()) {
+        console.log("selected", selected);
+        return;
+      }
+      const res = await sendQuestion(
+        null,
+        selectedReply!.tour_id,
+        replyId,
+        replyText,
+        true
+      );
+      console.log("Reply to question response:", res);
+    } catch (error) {
+      console.error("Error replying to question:", error);
+    }
     setReplyText("");
   };
 
@@ -321,7 +346,7 @@ const AdminSupport: React.FC = () => {
   // Hàm đếm tổng số replies (bao gồm nested)
   const countTotalReplies = (questions: Question[]): number => {
     let count = 0;
-    questions.forEach(q => {
+    questions.forEach((q) => {
       count += 1; // Đếm reply hiện tại
       if (q.questions && q.questions.length > 0) {
         count += countTotalReplies(q.questions); // Đếm replies con
@@ -340,65 +365,89 @@ const AdminSupport: React.FC = () => {
     setExpandedReplies(newExpanded);
   };
 
-     // Component recursive để hiển thị nested replies
-   const RenderNestedReplies = ({ replies, level = 0 }: { replies: Question[], level?: number }) => {
-     if (!replies || replies.length === 0) return null;
+  // Component recursive để hiển thị nested replies
+  const RenderNestedReplies = ({
+    replies,
+    level = 0,
+  }: {
+    replies: Question[];
+    level?: number;
+  }) => {
+    if (!replies || replies.length === 0) return null;
 
-     return (
-       <div className="space-y-1 mt-1">
-         {replies.map((reply) => (
-           <div key={reply.id}>
-             <div
-               className={`ml-${Math.min(level * 4, 12)} p-2 rounded text-xs cursor-pointer transition-colors ${
-                 selectedReply?.id === reply.id
-                   ? "bg-primary/20 border border-primary"
-                   : "bg-muted/50 hover:bg-muted/70"
-               }`}
-               onClick={() => handleSelectReply(reply)}
-             >
-               <div className="flex items-center gap-2 mb-1">
-                 {reply.user.avatar ? (
-                   <img
-                     src={reply.user.avatar}
-                     alt="avatar"
-                     className="w-4 h-4 rounded-full object-cover"
-                   />
-                 ) : (
-                   <User className="w-4 h-4 text-primary" />
-                 )}
-                 <div className="font-medium flex-1">
-                   {reply.user.first_name} {reply.user.last_name}
-                   {reply.user_id === 23 && (
-                     <span className="ml-1 text-primary">(Admin)</span>
-                   )}
-                 </div>
-                 {/* Badge trạng thái cho reply */}
-                 {reply.questions && countTotalReplies(reply.questions) > 0 ? (
-                   <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
-                     Đã trả lời
-                   </Badge>
-                 ) : (
-                   <span className="inline-flex items-center gap-1 px-1 py-0 h-4 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300">
-                     <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                     </svg>
-                     Chưa trả lời
-                   </span>
-                 )}
-               </div>
-               <div className="text-muted-foreground ml-6">{reply.text}</div>
-               <div className="text-muted-foreground text-xs ml-6">{formatDate(reply.created_at)}</div>
-             </div>
+    return (
+      <div className="space-y-1 mt-1">
+        {replies.map((reply) => (
+          <div key={reply.id}>
+            <div
+              className={`ml-${Math.min(
+                level * 4,
+                12
+              )} p-2 rounded text-xs cursor-pointer transition-colors ${
+                selectedReply?.id === reply.id
+                  ? "bg-primary/20 border border-primary"
+                  : "bg-muted/50 hover:bg-muted/70"
+              }`}
+              onClick={() => handleSelectReply(reply)}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {reply.user.avatar ? (
+                  <img
+                    src={reply.user.avatar}
+                    alt="avatar"
+                    className="w-4 h-4 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-primary" />
+                )}
+                <div className="font-medium flex-1">
+                  {reply.user.first_name} {reply.user.last_name}
+                  {reply.user_id === 23 && (
+                    <span className="ml-1 text-primary">(Admin)</span>
+                  )}
+                </div>
+                {/* Badge trạng thái cho reply */}
+                {reply.questions && countTotalReplies(reply.questions) > 0 ? (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                    Đã trả lời
+                  </Badge>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-1 py-0 h-4 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300">
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    Chưa trả lời
+                  </span>
+                )}
+              </div>
+              <div className="text-muted-foreground ml-6">{reply.text}</div>
+              <div className="text-muted-foreground text-xs ml-6">
+                {formatDate(reply.created_at)}
+              </div>
+            </div>
 
-             {/* Hiển thị replies con nếu có */}
-             {reply.questions && reply.questions.length > 0 && (
-               <RenderNestedReplies replies={reply.questions} level={level + 1} />
-             )}
-           </div>
-         ))}
-       </div>
-     );
-   };
+            {/* Hiển thị replies con nếu có */}
+            {reply.questions && reply.questions.length > 0 && (
+              <RenderNestedReplies
+                replies={reply.questions}
+                level={level + 1}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -419,42 +468,6 @@ const AdminSupport: React.FC = () => {
           Làm mới
         </Button>
       </div>
-
-      {/* Tour Selection */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label
-                htmlFor="tour-select"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Chọn tour
-              </label>
-              <select
-                id="tour-select"
-                value={selectedTour}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const newValue: number | "all" =
-                    value === "all" ? "all" : Number(value);
-                  setSelectedTour(newValue);
-                  handleTourChange(newValue);
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Tất cả tour</option>
-                {Array.isArray(tours) &&
-                  tours.map((tour) => (
-                    <option key={tour.id} value={tour.id}>
-                      {tour.title}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Filters */}
       <Card>
@@ -490,233 +503,292 @@ const AdminSupport: React.FC = () => {
         </CardContent>
       </Card>
 
-             {/* Main Content */}
-       <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-200px)]">
-         {/* Sidebar: Danh sách câu hỏi */}
-         <div className="md:w-1/3 flex flex-col">
-                     {filteredQuestions.length === 0 ? (
-             <Card className="flex-1">
-               <CardContent className="p-8 text-center">
-                 <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                 <p className="text-gray-500 text-lg">
-                   {selectedTour !== "all"
-                     ? "Chưa có câu hỏi nào cho tour này"
-                     : "Chưa có câu hỏi nào"}
-                 </p>
-                 <p className="text-gray-400 text-sm">
-                   {selectedTour !== "all"
-                     ? "Khách hàng sẽ gửi câu hỏi về tour này tại đây"
-                     : "Khách hàng sẽ gửi câu hỏi về tour của bạn tại đây"}
-                 </p>
-                 {selectedTour !== "all" && (
-                   <Button
-                     onClick={() => handleTourChange("all")}
-                     variant="outline"
-                     className="mt-4"
-                   >
-                     Xem tất cả tour
-                   </Button>
-                 )}
-               </CardContent>
-             </Card>
-           ) : (
-             <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-              {filteredQuestions.map((q) => (
-                <div key={q.id}>
-                  {/* Câu hỏi chính */}
-                  <Card
-                    className={`cursor-pointer ${
-                      selected?.id === q.id ? "border-primary" : ""
+      {/* Main Content */}
+      <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-200px)]">
+        <Card className="w-full max-w-xs">
+          <CardContent className="p-4">
+            <h2 className="text-base font-semibold mb-3">Danh sách tour</h2>
+
+            {/* Khung cuộn */}
+            <div className="max-h-110 overflow-y-auto pr-1">
+              <div className="flex flex-col divide-y divide-gray-200">
+                {tours.map((tour) => (
+                  <div
+                    key={tour.id}
+                    onClick={() => {
+                      const value = tour.id;
+                      setSelectedTour(value);
+                      handleTourChange(value);
+                    }}
+                    className={`flex items-center gap-3 py-2 cursor-pointer hover:bg-gray-100 rounded-lg px-2 ${
+                      selectedTour === tour.id ? "bg-blue-50" : ""
                     }`}
-                    onClick={() => handleSelectQuestion(q)}
                   >
-                    <CardContent className="flex gap-3 items-center p-3">
-                      {q.user.avatar ? (
-                        <img
-                          src={q.user.avatar}
-                          alt="avatar"
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-8 h-8 text-primary" />
-                      )}
-                      <div className="flex-1">
-                        <div className="font-semibold">
-                          {q.user.first_name} {q.user.last_name}
-                        </div>
-                        <div className="text-sm text-muted-foreground truncate">
-                          {q.text}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {mockTours.find((t) => t.id === q.tour_id)?.title ||
-                            `Tour #${q.tour_id}`}
-                        </div>
-                      </div>
-                                             {/* Badge trạng thái */}
-                       {q.questions && countTotalReplies(q.questions) > 0 ? (
-                         <Badge variant="secondary">Đã trả lời</Badge>
-                       ) : (
-                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300">
-                           <svg
-                             className="w-4 h-4"
-                             fill="none"
-                             stroke="currentColor"
-                             strokeWidth="2"
-                             viewBox="0 0 24 24"
-                           >
-                             <path
-                               strokeLinecap="round"
-                               strokeLinejoin="round"
-                               d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                             />
-                           </svg>
-                           Chưa trả lời
-                         </span>
-                       )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Replies mở rộng bên dưới câu hỏi */}
-                  {q.questions && q.questions.length > 0 && (
-                    <div className="ml-4 mt-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleReplies(q.id);
-                        }}
-                        className="w-full justify-start gap-1 text-xs"
-                      >
-                                                 {expandedReplies.has(q.id) ? (
-                           <>
-                             <ChevronUp className="w-3 h-3" />
-                             Thu gọn ({countTotalReplies(q.questions || [])} trả lời)
-                           </>
-                         ) : (
-                           <>
-                             <ChevronDown className="w-3 h-3" />
-                             Mở rộng ({countTotalReplies(q.questions || [])} trả lời)
-                           </>
-                         )}
-                      </Button>
-
-                                             {expandedReplies.has(q.id) && (
-                         <RenderNestedReplies replies={q.questions || []} />
-                       )}
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-xs">
+                      {tour.title[0]}
                     </div>
-                  )}
-                </div>
-              ))}
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {tour.title}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Mã tour: {tour.id}
+                      </p>
+                    </div>
+                    <div className="text-xs text-gray-400">➔</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
 
-                 {/* Main: Chi tiết câu hỏi hoặc reply đang chọn */}
-         <div className="md:w-2/3 flex flex-col">
-                     {selectedReply ? (
-             <Card className="flex-1">
-               <CardContent className="p-6 space-y-4">
-                 <div className="flex items-center gap-3">
-                   {selectedReply.user.avatar ? (
-                     <img
-                       src={selectedReply.user.avatar}
-                       alt="avatar"
-                       className="w-10 h-10 rounded-full object-cover"
-                     />
-                   ) : (
-                     <User className="w-10 h-10 text-primary" />
-                   )}
-                   <div>
-                     <div className="font-bold">
-                       {selectedReply.user.first_name}{" "}
-                       {selectedReply.user.last_name}
-                     </div>
-                     <div className="text-xs text-muted-foreground">
-                       Reply #{selectedReply.id}
-                     </div>
-                     <div className="text-xs text-muted-foreground">
-                       {formatDate(selectedReply.created_at)}
-                     </div>
-                     {selectedReply.user_id === 23 && (
-                       <Badge variant="secondary" className="mt-1">
-                         Admin
-                       </Badge>
-                     )}
-                   </div>
-                 </div>
-                 <Separator />
-                 <div className="text-lg">{selectedReply.text}</div>
-               </CardContent>
-             </Card>
-           ) : selected ? (
-             <Card className="flex-1">
-               <CardContent className="p-6 space-y-4">
-                 <div className="flex items-center gap-3">
-                   {selected.user.avatar ? (
-                     <img
-                       src={selected.user.avatar}
-                       alt="avatar"
-                       className="w-10 h-10 rounded-full object-cover"
-                     />
-                   ) : (
-                     <User className="w-10 h-10 text-primary" />
-                   )}
-                   <div>
-                     <div className="font-bold">
-                       {selected.user.first_name} {selected.user.last_name}
-                     </div>
-                     <div className="text-xs text-muted-foreground">
-                       {mockTours.find((t) => t.id === selected.tour_id)
-                         ?.title || `Tour #${selected.tour_id}`}
-                     </div>
-                     <div className="text-xs text-muted-foreground">
-                       {formatDate(selected.created_at)}
-                     </div>
-                   </div>
-                 </div>
-                 <Separator />
-                 <div className="text-lg">{selected.text}</div>
-               </CardContent>
-             </Card>
-           ) : (
-             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-               <MessageCircle className="w-16 h-16 mb-4" />
-               <div>Chọn một câu hỏi hoặc reply để xem chi tiết và trả lời</div>
-             </div>
-           )}
+        <div className="flex flex-col gap-4 md:flex-row md:gap-10">
+          {/* Sidebar danh sách câu hỏi */}
+          <div className="w-full md:w-2/3 flex flex-col h-[300px] md:h-auto">
+            {filteredQuestions.length === 0 ? (
+              <Card className="flex-1">
+                <CardContent className="p-8 text-center">
+                  <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg">
+                    {selectedTour !== "all"
+                      ? "Chưa có câu hỏi nào cho tour này"
+                      : "Chưa có câu hỏi nào"}
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    {selectedTour !== "all"
+                      ? "Khách hàng sẽ gửi câu hỏi về tour này tại đây"
+                      : "Khách hàng sẽ gửi câu hỏi về tour của bạn tại đây"}
+                  </p>
+                  {selectedTour !== "all" && (
+                    <Button
+                      onClick={() => handleTourChange("all")}
+                      variant="outline"
+                      className="mt-4"
+                    >
+                      Xem tất cả tour
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                {filteredQuestions.map((q) => (
+                  <div key={q.id}>
+                    {/* Câu hỏi chính */}
+                    <Card
+                      className={`cursor-pointer ${
+                        selected?.id === q.id ? "border-primary" : ""
+                      }`}
+                      onClick={() => handleSelectQuestion(q)}
+                    >
+                      <CardContent className="flex gap-3 items-center p-3">
+                        {q.user.avatar ? (
+                          <img
+                            src={q.user.avatar}
+                            alt="avatar"
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-8 h-8 text-primary" />
+                        )}
+                        <div className="flex-1">
+                          <div className="font-semibold">
+                            {q.user.first_name} {q.user.last_name}
+                          </div>
+                          <div className="text-sm text-muted-foreground truncate">
+                            {q.text}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {mockTours.find((t) => t.id === q.tour_id)?.title ||
+                              `Tour #${q.tour_id}`}
+                          </div>
+                        </div>
+                        {/* Badge trạng thái */}
+                        {q.questions && countTotalReplies(q.questions) > 0 ? (
+                          <Badge variant="secondary">Đã trả lời</Badge>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            Chưa trả lời
+                          </span>
+                        )}
+                      </CardContent>
+                    </Card>
 
-           {/* Form reply cố định */}
-           {(selected || selectedReply) && (
-             <Card className="mt-4">
-               <CardContent className="p-4">
-                 <div className="space-y-3">
-                   <div>
-                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                       Trả lời {selectedReply ? `cho reply #${selectedReply.id}` : `cho câu hỏi #${selected?.id}`}
-                     </label>
-                     <textarea
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                       rows={4}
-                       placeholder={selectedReply ? "Nhập câu trả lời cho reply này..." : "Nhập câu trả lời cho câu hỏi này..."}
-                       value={replyText}
-                       onChange={(e) => setReplyText(e.target.value)}
-                     />
-                   </div>
-                   <div className="flex justify-end">
-                     <Button
-                       className="gap-2 px-6"
-                       onClick={selectedReply ? () => handleReplyToReply(selectedReply.id) : handleReplyToQuestion}
-                       disabled={!replyText.trim()}
-                     >
-                       <Send className="w-4 h-4" />
-                       Gửi trả lời
-                     </Button>
-                   </div>
-                 </div>
-               </CardContent>
-             </Card>
-           )}
+                    {/* Replies mở rộng bên dưới câu hỏi */}
+                    {q.questions && q.questions.length > 0 && (
+                      <div className="ml-4 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleReplies(q.id);
+                          }}
+                          className="w-full justify-start gap-1 text-xs"
+                        >
+                          {expandedReplies.has(q.id) ? (
+                            <>
+                              <ChevronUp className="w-3 h-3" />
+                              Thu gọn ({countTotalReplies(
+                                q.questions || []
+                              )}{" "}
+                              trả lời)
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-3 h-3" />
+                              Mở rộng ({countTotalReplies(
+                                q.questions || []
+                              )}{" "}
+                              trả lời)
+                            </>
+                          )}
+                        </Button>
+
+                        {expandedReplies.has(q.id) && (
+                          <RenderNestedReplies replies={q.questions || []} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Phần chi tiết câu hỏi */}
+          <div className="md:w-2/3 flex flex-col">
+            {selectedReply ? (
+              <Card className="flex-1">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    {selectedReply.user.avatar ? (
+                      <img
+                        src={selectedReply.user.avatar}
+                        alt="avatar"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-primary" />
+                    )}
+                    <div>
+                      <div className="font-bold">
+                        {selectedReply.user.first_name}{" "}
+                        {selectedReply.user.last_name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Reply #{selectedReply.id}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(selectedReply.created_at)}
+                      </div>
+                      {selectedReply.user_id === 23 && (
+                        <Badge variant="secondary" className="mt-1">
+                          Admin
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="text-lg">{selectedReply.text}</div>
+                </CardContent>
+              </Card>
+            ) : selected ? (
+              <Card className="flex-1">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    {selected.user.avatar ? (
+                      <img
+                        src={selected.user.avatar}
+                        alt="avatar"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-primary" />
+                    )}
+                    <div>
+                      <div className="font-bold">
+                        {selected.user.first_name} {selected.user.last_name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {mockTours.find((t) => t.id === selected.tour_id)
+                          ?.title || `Tour #${selected.tour_id}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(selected.created_at)}
+                      </div>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="text-lg">{selected.text}</div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <MessageCircle className="w-16 h-16 mb-4" />
+                <div>
+                  Chọn một câu hỏi hoặc reply để xem chi tiết và trả lời
+                </div>
+              </div>
+            )}
+
+            {/* Form reply cố định */}
+            {(selected || selectedReply) && (
+              <Card className="mt-4">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Trả lời{" "}
+                        {selectedReply
+                          ? `cho reply #${selectedReply.id}`
+                          : `cho câu hỏi #${selected?.id}`}
+                      </label>
+                      <textarea
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        rows={4}
+                        placeholder={
+                          selectedReply
+                            ? "Nhập câu trả lời cho reply này..."
+                            : "Nhập câu trả lời cho câu hỏi này..."
+                        }
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        className="gap-2 px-6"
+                        onClick={
+                          selectedReply
+                            ? () => handleReplyToReply(selectedReply.id)
+                            : handleReplyToQuestion
+                        }
+                        disabled={!replyText.trim()}
+                      >
+                        <Send className="w-4 h-4" />
+                        Gửi trả lời
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

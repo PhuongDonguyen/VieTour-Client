@@ -5,7 +5,7 @@ import { Loading } from "./Loading";
 type Tour = {
   id: number;
   title: string;
-  price: string;
+  price: number;
   duration: string;
   transportation: string;
   slug: string;
@@ -237,7 +237,7 @@ export const TourPrices = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            price: tour.price || "0VND",
+            price: tour.price || 0,
             transportation: tour.transportation || "Không xác định",
             duration: tour.duration || "Không xác định",
             slug: tour.slug,
