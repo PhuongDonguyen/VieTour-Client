@@ -50,9 +50,8 @@ const TourDetail: React.FC = () => {
     setLoading(true);
     setError(null);
     fetchTourBySlug(slug)
-      .then((data) => {
-        if (data && data.length > 0) {
-          const tourData = data[0];
+      .then((tourData) => {
+        if (tourData) {
           setTour(tourData);
           return Promise.all([
             fetchTourDetail(tourData.id),
