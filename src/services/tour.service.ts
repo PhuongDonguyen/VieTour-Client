@@ -60,17 +60,6 @@ export const fetchTourById = async (tour_id: number) => {
   throw new Error("Không tìm thấy tour");
 };
 
-// Session-based view count increment
-//
-// This implementation prevents duplicate view count increments by tracking viewed tours
-// in sessionStorage with a 30-minute expiry window. This means:
-// - Each tour can only increment the view count once per 30-minute session
-// - View records are stored per browser session (not persistent across browser restarts)
-// - Expired records are automatically cleaned up
-// - Failed API calls don't prevent page loading
-//
-// Usage: Call incrementTourViewCountWithSession(tourId) when a tour page loads
-//
 const VIEW_COUNT_SESSION_KEY = "tour_views_session";
 const VIEW_COUNT_EXPIRY = 30 * 60 * 1000; // 30 minutes in milliseconds
 

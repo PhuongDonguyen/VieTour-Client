@@ -8,7 +8,7 @@ import TabInfo from "./TabInfo";
 import TabOverview from "./TabOverview";
 import TabCondition from "./TabCondition";
 import TabGallery from "./TabGallery";
-import { fetchTourBySlug } from "../../services/tour.service";
+import { fetchTours } from "../../services/tour.service";
 import { fetchTourDetail } from "../../services/tourDetail.service";
 import { fetchTourImages } from "../../services/tourImage.service";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
@@ -46,36 +46,44 @@ const TourDetail: React.FC = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (!slug) return;
-    setLoading(true);
-    setError(null);
-    fetchTourBySlug(slug)
-      .then((data) => {
-        if (data && data.length > 0) {
-          const tourData = data[0];
+    const fetchTourData = async () => {
+      if (!slug) return;
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const response = await fetchTours({ slug: slug });
+        console.log(response);
+        
+        // Handle the TourResponse structure with data and pagination
+        if (response && response.data && response.data.length > 0) {
+          const tourData = response.data[0];
           setTour(tourData);
-          return Promise.all([
+          
+          const [detail, imgs] = await Promise.all([
             fetchTourDetail(tourData.id),
             fetchTourImages(tourData.id),
           ]);
+          
+          setDays(detail);
+          setImages(imgs);
+          setLoading(false);
+
+          // Delay hiển thị comment section để mượt mà hơn
+          setTimeout(() => {
+            setShowCommentSection(true);
+          }, 500);
         } else {
           throw new Error("Không tìm thấy tour.");
         }
-      })
-      .then(([detail, imgs]) => {
-        setDays(detail);
-        setImages(imgs);
+      } catch (err) {
+        console.error("Error fetching tour data:", err);
+        setError(err instanceof Error ? err.message : "Lỗi khi tải dữ liệu tour.");
         setLoading(false);
+      }
+    };
 
-        // Delay hiển thị comment section để mượt mà hơn
-        setTimeout(() => {
-          setShowCommentSection(true);
-        }, 500);
-      })
-      .catch((err) => {
-        setError(err.message || "Lỗi khi tải dữ liệu tour.");
-        setLoading(false);
-      });
+    fetchTourData();
   }, [slug]);
 
   if (loading)
@@ -210,6 +218,7 @@ const TourDetail: React.FC = () => {
           )}
         </div>
       </div>
+      <CommentSection />
     </>
   );
 };
