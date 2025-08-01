@@ -1,333 +1,593 @@
-import { useState, useEffect, useRef } from "react";
-import { fetchTourIsActive, fetchTours } from "../services/tour.service";
+import { useState, useEffect } from "react";
+import { fetchTours } from "../services/tour.service";
+import { fetchActiveTourCategories } from "../services/tourCategory.service";
 import { useNavigate } from "react-router-dom";
-import { Loading } from "./Loading";
+import { MapPin, Clock, Car, Star, Eye, Filter, DollarSign, Hotel } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+
 type Tour = {
   id: number;
   title: string;
   price: number;
   duration: string;
   transportation: string;
+  accommodation?: string;
   slug: string;
+  poster_url?: string;
+  total_star?: number;
+  review_count?: number;
+  view_count?: string;
+};
+
+type TourCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
+};
+
+// Range Slider Component using shadcn/ui
+const RangeSlider = ({ 
+  min, 
+  max, 
+  value, 
+  onChange, 
+  step = 100000 
+}: {
+  min: number;
+  max: number;
+  value: [number, number];
+  onChange: (value: [number, number]) => void;
+  step?: number;
+}) => {
+  return (
+    <div className="w-full px-4">
+      <Slider
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onValueChange={onChange}
+        minStepsBetweenThumbs={1}
+        className="py-4"
+      />
+      <div className="mt-2 flex justify-between items-center text-sm text-gray-600 px-1">
+        <span>{formatPrice(value[0])}</span>
+        <span>{formatPrice(value[1])}</span>
+      </div>
+    </div>
+  );
+};
+
+// Skeleton component for table rows
+const TableSkeleton = () => {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="text-white" style={{ backgroundColor: '#015294' }}>
+              <th className="px-6 py-4 text-left font-semibold w-20">
+                <div className="flex items-center">
+                  <span className="bg-white/20 rounded w-6 h-6 flex items-center justify-center mr-2 text-sm">
+                    #
+                  </span>
+                  Mã Tour
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left font-semibold w-80">
+                <div className="flex items-center">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Lịch Trình Tour
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left font-semibold w-32">
+                <div className="flex items-center">
+                  <Clock className="w-4 h-4 mr-2" />
+                  Thời Gian
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left font-semibold w-32">
+                <div className="flex items-center">
+                  <Car className="w-4 h-4 mr-2" />
+                  Phương Tiện
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left font-semibold w-24">
+                <div className="flex items-center">
+                  <Eye className="w-4 h-4 mr-2" />
+                  Lượt Xem
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left font-semibold w-32">
+                <div className="flex items-center">
+                  <Star className="w-4 h-4 mr-2" />
+                  Đánh Giá
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left font-semibold w-40">
+                Giá Tour
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(5)].map((_, index) => (
+              <tr
+                key={index}
+                className={`border-b border-gray-100 ${
+                  index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                }`}
+              >
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-8"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="space-y-1">
+                    <div className="h-5 bg-gray-200 rounded animate-pulse w-24"></div>
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-20"></div>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
 };
 
 export const TourPrices = () => {
-  // const tourData = [
-  //   {
-  //     id: 1,
-  //     code: "CC1",
-  //     name: "Tour địa đạo Củ Chi",
-  //     duration: "1/2 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "350.000VNĐ"
-  //   },
-  //   {
-  //     id: 2,
-  //     code: "MK1",
-  //     name: "Tour 1 ngày Mỹ Tho - Bến Tre",
-  //     duration: "1 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "480.000VNĐ"
-  //   },
-  //   {
-  //     id: 3,
-  //     code: "MK2",
-  //     name: "Tour 2 ngày 1 đêm Mỹ Tho - Bến Tre - Cần Thơ",
-  //     duration: "2 Ngày 1 Đêm",
-  //     schedule: "Hàng ngày | Theo yêu cầu",
-  //     transport: "",
-  //     price: "1.550.000VNĐ"
-  //   },
-  //   {
-  //     id: 4,
-  //     code: "MK3CM",
-  //     name: "Tour 3 ngày 2 đêm Cần Thơ - Đất Mũi Cà Mau",
-  //     duration: "3 Ngày 2 Đêm",
-  //     schedule: "Thứ 3 - Thứ 6 | Theo yêu cầu",
-  //     transport: "",
-  //     price: "2.890.000VNĐ"
-  //   },
-  //   {
-  //     id: 5,
-  //     code: "TN1",
-  //     name: "Tour núi Bà Đen - 1 ngày",
-  //     duration: "1 Ngày",
-  //     schedule: "Thứ 6 | Thứ 7 | Chủ nhật",
-  //     transport: "",
-  //     price: "1.150.000VNĐ"
-  //   },
-  //   {
-  //     id: 6,
-  //     code: "CC- MK1",
-  //     name: "Tour Củ Chi Mỹ Tho 1 ngày",
-  //     duration: "1 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "1.450.000VNĐ"
-  //   },
-  //   {
-  //     id: 7,
-  //     code: "MK1.1",
-  //     name: "Tour 1 ngày Mỹ Tho - Bến Tre tất tướng bất cứ",
-  //     duration: "1 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "950.000VNĐ"
-  //   },
-  //   {
-  //     id: 8,
-  //     code: "CG1",
-  //     name: "Tour Cần Giờ 1 ngày",
-  //     duration: "1 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "750.000VNĐ"
-  //   },
-  //   {
-  //     id: 9,
-  //     code: "CT CC 01",
-  //     name: "Tour thành phố Hồ Chí Minh - Địa đạo Củ Chi 1 ngày",
-  //     duration: "1 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "1.450.000VNĐ"
-  //   },
-  //   {
-  //     id: 10,
-  //     code: "SGAT 01",
-  //     name: "Ăn tối trên du thuyền Đông Dương Indochine cruise",
-  //     duration: "1 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "650.000VNĐ"
-  //   },
-  //   {
-  //     id: 11,
-  //     code: "PT0101",
-  //     name: "Tour 1 ngày jeep tour - Khám phá cung đường biển đẹp nhất Việt Nam",
-  //     duration: "1 Ngày",
-  //     schedule: "Theo yêu cầu",
-  //     transport: "",
-  //     price: "1.450.000VNĐ"
-  //   },
-  //   {
-  //     id: 12,
-  //     code: "PT0201",
-  //     name: "Tour 2 ngày 1 đêm: Phan Thiết - Jeep tour",
-  //     duration: "2 Ngày 1 Đêm",
-  //     schedule: "Thứ 7 hàng tuần",
-  //     transport: "",
-  //     price: "1.986.000VNĐ"
-  //   },
-  //   {
-  //     id: 13,
-  //     code: "MK1-CB",
-  //     name: "Tour 1 ngày Cái Bè - Cù Lao Tân Phong - Vĩnh Long",
-  //     duration: "1 Ngày",
-  //     schedule: "Hàng ngày",
-  //     transport: "",
-  //     price: "1.200.000VNĐ"
-  //   },
-  //   {
-  //     id: 14,
-  //     code: "PT2N1D-02",
-  //     name: "Tour 3 ngày 2 đêm Phan Thiết KDL Tà Cú - Mango Beach",
-  //     duration: "2 ngày 1 đêm",
-  //     schedule: "T7 Hàng tuần",
-  //     transport: "",
-  //     price: "1.986.000VNĐ"
-  //   },
-  //   {
-  //     id: 15,
-  //     code: "MK4CM",
-  //     name: "Tour 4 ngày 3 đêm Tiền Giang - Bến Tre - Cần Thơ - Sóc Trăng - Bạc Liêu - Cà Mau",
-  //     duration: "4 Ngày 3 Đêm",
-  //     schedule: "Thứ 2 & Thứ 5 | Theo yêu cầu",
-  //     transport: "",
-  //     price: "4.180.000VNĐ"
-  //   },
-  //   {
-  //     id: 16,
-  //     code: "PT3N2D-02",
-  //     name: "TOUR 3 NGÀY 2 ĐÊM PHAN THIẾT KDL TÀ CÚ - MANGO BEACH",
-  //     duration: "3 ngày 2 đêm",
-  //     schedule: "T6 Hàng tuần",
-  //     transport: "",
-  //     price: "2.886.000VNĐ"
-  //   },
-  //   {
-  //     id: 17,
-  //     code: "PT3N2D-01",
-  //     name: "Tour 3 ngày 2 đêm Phan Thiết - Jeep tour - Bàu Sen",
-  //     duration: "3 Ngày 2 Đêm",
-  //     schedule: "Thứ 6 hàng tuần",
-  //     transport: "",
-  //     price: "2.886.000VNĐ"
-  //   },
-  //   {
-  //     id: 18,
-  //     code: "MK4CD",
-  //     name: "Tour 4 ngày 3 đêm Mỹ Tho - Bến Tre - Châu Đốc - Cần Thơ - Cà Mau - Bạc Liêu - Sóc Trăng",
-  //     duration: "4 Ngày 3 Đêm",
-  //     schedule: "T2 và T5 hàng tuần / theo yêu cầu",
-  //     transport: "",
-  //     price: "4.180.000VNĐ"
-  //   },
-  //   {
-  //     id: 19,
-  //     code: "MK3CD",
-  //     name: "Tour miền tây 3 ngày 2 đêm: Mỹ Tho - Bến Tre - Cần Thơ - Châu Đốc",
-  //     duration: "3 Ngày 2 Đêm",
-  //     schedule: "Theo yêu cầu",
-  //     transport: "",
-  //     price: "3.080.000VNĐ"
-  //   },
-  //   {
-  //     id: 20,
-  //     code: "DN4N3D-01",
-  //     name: "Tour 4 ngày 3 đêm Đà Nẵng - Hội An - Quảng Bình - Huế",
-  //     duration: "4 Ngày 3 Đêm",
-  //     schedule: "T5 hàng tuần",
-  //     transport: "+",
-  //     price: "6.290.000VNĐ"
-  //   },
-  //   {
-  //     id: 21,
-  //     code: "NT3N3D-02",
-  //     name: "Tour 3 ngày 3 đêm Nha Trang - KDL Diamond Bay - Vĩnh San Hô",
-  //     duration: "3 ngày 3 đêm",
-  //     schedule: "Tối Thứ 5 hàng tuần",
-  //     transport: "",
-  //     price: "2.786.000VNĐ"
-  //   },
-  //   {
-  //     id: 22,
-  //     code: "DL3N3D-03",
-  //     name: "Tour 3 ngày 3 đêm Đà Lạt - Tea Resort",
-  //     duration: "3 ngày 3 đêm",
-  //     schedule: "T5 hàng tuần",
-  //     transport: "",
-  //     price: "2.786.000VNĐ"
-  //   }
-  // ];
   const [tours, setTours] = useState<Tour[]>([]);
-  const navigate = useNavigate();
+  const [categories, setCategories] = useState<TourCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
   const [loading, setLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPrevPage, setHasPrevPage] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
+  const navigate = useNavigate();
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleGoDetail = (slug: string) => {
-    navigate(`/tour/${slug}`);
-  };
+  // Fetch tour categories
   useEffect(() => {
-    const fetchTours = async () => {
+    const fetchCategories = async () => {
       try {
-        setLoading(true);
-        const tourRes = await fetchTours({ is_active: true });
-        console.log("Tour response:", tourRes);
-
-        // Handle different response structures
-        const toursData = Array.isArray(tourRes) ? tourRes : tourRes.data || [];
-
-        setTours(
-          toursData.map((tour: any) => ({
-            id: tour.id,
-            title: tour.title,
-            price: tour.price || 0,
-            transportation: tour.transportation || "Không xác định",
-            duration: tour.duration || "Không xác định",
-            slug: tour.slug,
-          }))
-        );
-        setLoading(false);
+        setCategoriesLoading(true);
+        const categoriesData = await fetchActiveTourCategories();
+        setCategories(categoriesData);
       } catch (error) {
-        console.error("Error fetching tour prices:", error);
-        setLoading(false);
+        console.error("Error fetching tour categories:", error);
+      } finally {
+        setCategoriesLoading(false);
       }
     };
 
-    fetchTours();
+    fetchCategories();
   }, []);
 
+  const handleGoDetail = (slug: string) => {
+    navigate(`/tour/${slug}`);
+  };
+
+  const fetchToursData = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const tourRes = await fetchTours({
+        page,
+        limit: 10,
+        is_active: true,
+        tour_category_id: selectedCategory || undefined,
+        min_price: priceRange[0] > 0 ? priceRange[0] : undefined,
+        max_price: priceRange[1] < 10000000 ? priceRange[1] : undefined
+      });
+      
+      const toursData = tourRes.data;
+      const pagination = tourRes.pagination;
+      
+      console.log("Pagination data:", pagination);
+
+      setTours(
+        toursData.map((tour: any) => ({
+          id: tour.id,
+          title: tour.title,
+          price: tour.price || 0,
+          transportation: tour.transportation || "Không xác định",
+          duration: tour.duration || "Không xác định",
+          accommodation: tour.accommodation || "Không xác định",
+          slug: tour.slug,
+          poster_url: tour.poster_url,
+          total_star: tour.total_star || 0,
+          review_count: tour.review_count || 0,
+          view_count: tour.view_count || "0",
+        }))
+      );
+
+      // Update pagination state
+      setCurrentPage(pagination.page);
+      setTotalPages(pagination.totalPages);
+      setHasNextPage(pagination.hasNextPage);
+      setHasPrevPage(pagination.hasPrevPage);
+      setTotalItems(pagination.totalItems);
+      
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching tour prices:", error);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    console.log("Tour:", tours);
-  }, [tours]);
+    setCurrentPage(1); // Reset to first page when filters change
+    fetchToursData(1);
+  }, [selectedCategory, priceRange]);
+
+  useEffect(() => {
+    fetchToursData(currentPage);
+  }, [currentPage]);
+
+  const handleNextPage = () => {
+    if (hasNextPage) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (hasPrevPage) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleCategoryChange = (categoryId: number | null) => {
+    setSelectedCategory(categoryId);
+  };
+
+  const handlePriceRangeChange = (values: [number, number]) => {
+    setPriceRange(values);
+  };
+
+  const clearPriceFilter = () => {
+    setPriceRange([0, 10000000]);
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`w-3 h-3 ${
+          i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
+        }`}
+      />
+    ));
+  };
 
   return (
-    <div className="max-w-7xl mx-auto mt-20 p-4 bg-white">
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-blue-600 mb-2">BẢNG GIÁ</h2>
-        <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
-      </div>
-      {loading ? (
-        <Loading />
-      ) : (
-        <div className="overflow-x-auto shadow-lg rounded-lg">
-          <table className="w-full border-collapse bg-white">
-            <thead>
-              <tr className="bg-blue-600 text-white">
-                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                  Mã
-                </th>
-                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                  LỊCH TRÌNH TOUR
-                </th>
-                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                  THỜI GIAN
-                </th>
-                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                  PHƯƠNG TIỆN
-                </th>
-                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                  GIÁ TOUR
-                </th>
-                <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                  HÀNH ĐỘNG
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {tours.map((tour, index) => (
-                <tr
-                  key={tour.id}
-                  className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
-                >
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    {tour.id}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3">
-                    {tour.title}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    {tour.duration}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    {tour.transportation}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-red-600">
-                    {tour.price}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <button
-                      onClick={() => {
-                        handleGoDetail(tour.slug);
-                      }}
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer"
-                    >
-                      XEM TOUR
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg mb-4" style={{ backgroundColor: '#015294' }}>
+            <MapPin className="w-6 h-6 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+            Bảng Giá Tour
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Khám phá các gói tour du lịch hấp dẫn với giá cả hợp lý và chất lượng dịch vụ tốt nhất
+          </p>
+          <div className="w-16 h-0.5 mx-auto mt-6" style={{ backgroundColor: '#015294' }}></div>
         </div>
-      )}
+
+        {/* Filter Section */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row gap-6 mb-4">
+            {/* Category Filter */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex-1">
+              <div className="flex items-center gap-3">
+                <Filter className="w-5 h-5 text-gray-600" />
+                <span className="text-gray-700 font-medium">Danh mục:</span>
+                <select
+                  value={selectedCategory || ""}
+                  onChange={(e) => handleCategoryChange(e.target.value ? Number(e.target.value) : null)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700 flex-1"
+                  disabled={categoriesLoading}
+                >
+                  <option value="">Tất cả</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Price Filter */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <DollarSign className="w-5 h-5 text-gray-600" />
+                <span className="text-gray-700 font-medium">Khoảng giá:</span>
+                {(priceRange[0] > 0 || priceRange[1] < 10000000) && (
+                  <button
+                    onClick={clearPriceFilter}
+                    className="ml-auto px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                  >
+                    Xóa
+                  </button>
+                )}
+              </div>
+              
+              <RangeSlider
+                min={0}
+                max={10000000}
+                value={priceRange}
+                onChange={handlePriceRangeChange}
+                step={50000}
+              />
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {(selectedCategory || priceRange[0] > 0 || priceRange[1] < 10000000) && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex flex-wrap gap-3 text-sm">
+                {selectedCategory && (
+                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                    <Filter className="w-4 h-4 text-blue-600" />
+                    <span className="text-blue-800">
+                      Danh mục: <span className="font-semibold">
+                        {categories.find(cat => cat.id === selectedCategory)?.name}
+                      </span>
+                    </span>
+                  </div>
+                )}
+                {(priceRange[0] > 0 || priceRange[1] < 10000000) && (
+                  <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    <span className="text-green-800">
+                      Giá: <span className="font-semibold">
+                        {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
+                      </span>
+                    </span>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    handleCategoryChange(null);
+                    clearPriceFilter();
+                  }}
+                  className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-xs">Xóa tất cả</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Table Section */}
+        {loading ? (
+          <TableSkeleton />
+        ) : (
+          <>
+            {/* Simple Modern Table */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-white" style={{ backgroundColor: '#015294' }}>
+                      <th className="px-6 py-4 text-left font-semibold w-20">
+                        <div className="flex items-center">
+                          <span className="bg-white/20 rounded w-6 h-6 flex items-center justify-center mr-2 text-sm">
+                            #
+                          </span>
+                          Mã Tour
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold w-80">
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Lịch Trình Tour
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold w-32">
+                        <div className="flex items-center">
+                          <Clock className="w-4 h-4 mr-2" />
+                          Thời Gian
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold w-32">
+                        <div className="flex items-center">
+                          <Car className="w-4 h-4 mr-2" />
+                          Phương Tiện
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold w-24">
+                        <div className="flex items-center">
+                          <Hotel className="w-4 h-4 mr-2" />
+                          Chỗ ở
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold w-32">
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 mr-2" />
+                          Đánh Giá
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold w-40">
+                        Giá Tour
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tours.map((tour, index) => (
+                      <tr
+                        key={tour.id}
+                        className={`group hover:bg-blue-50 transition-colors duration-200 border-b border-gray-100 ${
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                        }`}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <span className="text-gray-700 font-medium text-sm">
+                              {tour.id}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <h3 
+                              className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors cursor-pointer hover:underline leading-relaxed"
+                              onClick={() => handleGoDetail(tour.slug)}
+                            >
+                              {tour.title}
+                            </h3>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center text-gray-700">
+                            <Clock className="w-4 h-4 mr-2" style={{ color: '#015294' }} />
+                            <span className="text-sm">{tour.duration}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center text-gray-700">
+                            <Car className="w-4 h-4 mr-2 text-green-500" />
+                            <span className="text-sm">{tour.transportation}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center text-gray-600">
+                            <Hotel className="w-4 h-4 mr-2 text-purple-500" />
+                            <span className="text-sm">{tour.accommodation || "Không xác định"}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {tour.total_star && tour.total_star > 0 ? (
+                            <div className="flex items-center">
+                              <div className="flex mr-2">
+                                {renderStars(tour.total_star)}
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                ({tour.review_count})
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs">Chưa có đánh giá</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="text-lg font-semibold text-red-600">
+                              từ {formatPrice(tour.price)}
+                            </p>
+                            <p className="text-xs text-gray-500">Giá cho 1 người</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Simple Pagination */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-8">
+                <div className="text-gray-600 text-sm">
+                  <span className="font-medium" style={{ color: '#015294' }}>{tours.length}</span> trong tổng số{" "}
+                  <span className="font-medium" style={{ color: '#015294' }}>{totalItems}</span> tours
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={!hasPrevPage}
+                    className={`flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-200 ${
+                      hasPrevPage
+                        ? "text-white hover:opacity-90"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                    style={hasPrevPage ? { backgroundColor: '#015294' } : {}}
+                  >
+                    ← Trước
+                  </button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = i + 1;
+                      const isActive = pageNum === currentPage;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-8 h-8 rounded-md font-medium transition-colors duration-200 ${
+                            isActive
+                              ? "text-white"
+                              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                          }`}
+                          style={isActive ? { backgroundColor: '#015294' } : {}}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    {totalPages > 5 && (
+                      <span className="text-gray-500">...</span>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={handleNextPage}
+                    disabled={!hasNextPage}
+                    className={`flex items-center px-3 py-2 rounded-md font-medium transition-colors duration-200 ${
+                      hasNextPage
+                        ? "text-white hover:opacity-90"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                    style={hasNextPage ? { backgroundColor: '#015294' } : {}}
+                  >
+                    Sau →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

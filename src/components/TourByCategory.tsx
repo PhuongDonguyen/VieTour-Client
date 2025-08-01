@@ -56,22 +56,22 @@ export const TourByCategory = () => {
 
       const toursRes = await fetchTours({ tour_category_id: category.id, page: pageNum, limit: 3 });
       const newTours = toursRes.data.map((tour: any) => ({
-        id: tour.id,
+        id: tour.id.toString(),
         title: tour.title,
-        image: tour.poster_url,
+        image: tour.poster_url || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80",
         originalPrice: tour.price || 0,
-        discountedPrice: 680000, // TODO: Replace with real data
-        discount: 23, // TODO: Replace with real data
+        discountedPrice: tour.price ? Math.floor(tour.price * 0.85) : 0, // 15% discount
+        discount: 15, // Fixed 15% discount for now
         views: tour.view_count?.toString() || "0",
-        comments: "3.8M", // TODO: Replace with real data
-        participants: "45M", // TODO: Replace with real data
+        comments: tour.review_count?.toString() || "0",
+        participants: tour.booked_count?.toString() || "0",
         totalStar: tour.total_star || 0,
         reviewCount: tour.review_count || 0,
         slug: tour.slug,
       }));
 
       setTours(prev => (append ? [...prev, ...newTours] : newTours));
-      setHasNextPage(toursRes.pagination.hasNextPage);
+      setHasNextPage(toursRes.pagination?.hasNextPage || false);
     } catch (err) {
       console.error("Error fetching tours:", err);
       setError("Không tìm thấy danh mục hoặc tour.");
@@ -90,11 +90,11 @@ export const TourByCategory = () => {
     fetchData(1);
   }, [slug]);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = async () => {
     if (hasNextPage && !isLoading) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchData(nextPage, true);
+      await fetchData(nextPage, true);
     }
   };
 

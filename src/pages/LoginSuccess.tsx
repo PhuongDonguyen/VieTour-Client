@@ -11,8 +11,7 @@ const LoginSuccess = () => {
         
         if (userData) {
             try {
-                const user = JSON.parse(decodeURIComponent(userData))
-                
+                const user = JSON.parse(decodeURIComponent(userData));
                 /* The below code is for testing open with popup */
                 // Send message to parent window
                 // if (window.opener) {

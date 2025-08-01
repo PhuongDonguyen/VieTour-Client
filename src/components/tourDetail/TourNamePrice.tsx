@@ -5,6 +5,7 @@ type TourNamePriceProps = {
   title: string;
   price: string;
   tourSlug: string;
+  loading?: boolean;
 };
 
 // Hàm format giá theo định dạng xxx.xxx.000 VND
@@ -28,12 +29,23 @@ const TourNamePrice: React.FC<TourNamePriceProps> = ({
   title,
   price,
   tourSlug,
+  loading = false,
 }) => {
   const navigate = useNavigate();
 
   const handleBookNow = () => {
     navigate(`/booking/${tourSlug}`);
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto mb-10 px-4">
+        <div className="h-12 bg-gray-200 rounded animate-pulse mb-4 w-3/4"></div>
+        <div className="h-8 bg-gray-200 rounded animate-pulse mb-6 w-1/3"></div>
+        <div className="h-12 bg-gray-200 rounded animate-pulse w-32"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto mb-10 px-4">

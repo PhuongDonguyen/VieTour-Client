@@ -46,35 +46,37 @@ const TourDetail: React.FC = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (!slug) return;
-    setLoading(true);
-    setError(null);
-    fetchTourBySlug(slug)
-      .then((tourData) => {
+    const loadTourData = async () => {
+      if (!slug) return;
+      setLoading(true);
+      setError(null);
+
+      try {
+        const tourData = await fetchTourBySlug(slug);
         if (tourData) {
           setTour(tourData);
-          return Promise.all([
+          const [detail, imgs] = await Promise.all([
             fetchTourDetailsByTourId(tourData.id),
             fetchTourImagesByTourId(tourData.id),
           ]);
+          setDays(detail.data || []);
+          setImages(imgs.data || []);
+          setLoading(false);
+
+          // Delay hiển thị comment section để mượt mà hơn
+          setTimeout(() => {
+            setShowCommentSection(true);
+          }, 500);
         } else {
           throw new Error("Không tìm thấy tour.");
         }
-      })
-      .then(([detail, imgs]) => {
-        setDays(detail.data || []);
-        setImages(imgs.data || []);
-        setLoading(false);
-
-        // Delay hiển thị comment section để mượt mà hơn
-        setTimeout(() => {
-          setShowCommentSection(true);
-        }, 500);
-      })
-      .catch((err) => {
+      } catch (err: any) {
         setError(err.message || "Lỗi khi tải dữ liệu tour.");
         setLoading(false);
-      });
+      }
+    };
+
+    loadTourData();
   }, [slug]);
 
   if (loading)
@@ -141,6 +143,7 @@ const TourDetail: React.FC = () => {
           title={tour.title}
           price={displayPrice}
           tourSlug={tour.slug}
+          loading={loading}
         />
         {/* Nav bar chuyển tab */}
         <div className="max-w-7xl mx-auto flex space-x-4 border-b border-gray-200 mt-10 mb-8">
@@ -209,6 +212,7 @@ const TourDetail: React.FC = () => {
           )}
         </div>
       </div>
+      <CommentSection />
     </>
   );
 };

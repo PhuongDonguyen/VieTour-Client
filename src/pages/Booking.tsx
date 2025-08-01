@@ -32,19 +32,6 @@ export default function Booking() {
     loadTourData();
   }, [slug]);
 
-  if (!slug) {
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600">Lỗi</h1>
-            <p className="text-gray-600 mt-2">Không tìm thấy thông tin tour</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -52,19 +39,6 @@ export default function Booking() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
             <p className="text-gray-600 mt-4">Vui lòng chờ trong giây lát...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !tour) {
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600">Lỗi</h1>
-            <p className="text-gray-600 mt-2">{error || 'Không tìm thấy thông tin tour'}</p>
           </div>
         </div>
       </div>

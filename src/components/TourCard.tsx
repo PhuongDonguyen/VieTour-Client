@@ -62,7 +62,7 @@ export const TourCard: React.FC<TourCardProps> = ({
       {/* Content Section */}
       <div className="p-4">
         {/* Title */}
-        <h3 className="text-sm min-h-12 font-semibold text-gray-800 mb-2 line-clamp-2">
+        <h3 className="text-lg min-h-12 font-semibold text-gray-800 mb-2 line-clamp-2">
           {title}
         </h3>
 

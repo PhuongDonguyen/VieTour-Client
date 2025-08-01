@@ -16,6 +16,7 @@ import { ProtectedRoute } from '@/components/authentication/ProtectedRoute';
 import AccountPage from "@/pages/AccountPage";
 import BlogCategory from '../pages/BlogCategory';
 import TourImageGallery from '@/pages/TourImageGallery';
+import VerifyEmail from '../pages/VerifyEmail';
 
 export const clientRoutes = [
   {
@@ -52,6 +53,7 @@ export const clientRoutes = [
           </ProtectedRoute> 
         )
       },
+      { path: "verify-email", element: <VerifyEmail /> },
     ]
   },
   { path: "reset-password", element: <ForgotPassword /> },

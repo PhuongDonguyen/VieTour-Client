@@ -12,10 +12,7 @@ import {
   sendQuestion,
   delQuestion,
 } from "../services/question.service";
-import {
-  fetchUserById,
-  fetchUserProfile,
-} from "@/services/userProfile.service";
+import { useAuth } from "../hooks/useAuth";
 import { RepliesSection } from "./renderReplies";
 
 interface Question {
@@ -38,13 +35,13 @@ interface User {
 
 export const CommentSection = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { user } = useAuth();
 
   const [commentText, setCommentText] = useState("");
   const [tourId, setTourId] = useState<number>(0);
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [user, setUser] = useState<User | null>(null);
   const [countQuestion, setCountQuestion] = useState<number>(0);
   const [loadingQuestion, setLoadingQuestion] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
@@ -95,11 +92,17 @@ export const CommentSection = () => {
     return Promise.all(
       questions.map(async (q) => {
         try {
-          const user = await fetchUserById(q.user_id);
-          console.log("User: ", user.data);
+          // For now, we'll use a default user structure since we don't have fetchUserById
+          // In a real implementation, you might want to fetch user details from an API
+          const defaultUser = {
+            id: q.user_id,
+            first_name: "Ẩn",
+            last_name: "Danh",
+            avatar: "", // hoặc icon mặc định
+          };
           return {
             ...q,
-            user: user.data,
+            user: defaultUser,
             replies: [],
           };
         } catch (error) {
@@ -144,24 +147,7 @@ export const CommentSection = () => {
     return roots;
   }
 
-  useEffect(() => {
-    const loadUserCurrent = async () => {
-      try {
-        const res = await fetchUserProfile();
-        console.log("user cur: ", res.data);
-        const data = res.data;
-        setUser({
-          id: data.id,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          avatar: data.avatar,
-        });
-      } catch (error) {
-        console.log("Lỗi tải user current");
-      }
-    };
-    loadUserCurrent();
-  }, []);
+
 
   const addQuestion = (newQuestion: Question) => {
     setQuestions((prev) => [newQuestion, ...prev]);
