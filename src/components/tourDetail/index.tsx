@@ -8,7 +8,7 @@ import TabInfo from "./TabInfo";
 import TabOverview from "./TabOverview";
 import TabCondition from "./TabCondition";
 import TabGallery from "./TabGallery";
-import { fetchTours } from "../../services/tour.service";
+import { fetchTourBySlug } from "../../services/tour.service";
 import { fetchTourDetail } from "../../services/tourDetail.service";
 import { fetchTourImages } from "../../services/tourImage.service";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
@@ -46,25 +46,19 @@ const TourDetail: React.FC = () => {
   }, [slug]);
 
   useEffect(() => {
-    const fetchTourData = async () => {
+    const loadTourData = async () => {
       if (!slug) return;
       setLoading(true);
       setError(null);
       
       try {
-        const response = await fetchTours({ slug: slug });
-        console.log(response);
-        
-        // Handle the TourResponse structure with data and pagination
-        if (response && response.data && response.data.length > 0) {
-          const tourData = response.data[0];
+        const tourData = await fetchTourBySlug(slug);
+        if (tourData) {
           setTour(tourData);
-          
           const [detail, imgs] = await Promise.all([
             fetchTourDetail(tourData.id),
             fetchTourImages(tourData.id),
           ]);
-          
           setDays(detail);
           setImages(imgs);
           setLoading(false);
@@ -76,14 +70,13 @@ const TourDetail: React.FC = () => {
         } else {
           throw new Error("Không tìm thấy tour.");
         }
-      } catch (err) {
-        console.error("Error fetching tour data:", err);
-        setError(err instanceof Error ? err.message : "Lỗi khi tải dữ liệu tour.");
+      } catch (err: any) {
+        setError(err.message || "Lỗi khi tải dữ liệu tour.");
         setLoading(false);
       }
     };
 
-    fetchTourData();
+    loadTourData();
   }, [slug]);
 
   if (loading)
@@ -150,17 +143,17 @@ const TourDetail: React.FC = () => {
           title={tour.title}
           price={displayPrice}
           tourSlug={tour.slug}
+          loading={loading}
         />
         {/* Nav bar chuyển tab */}
         <div className="max-w-7xl mx-auto flex space-x-4 border-b border-gray-200 mt-10 mb-8">
           {TABS.map((tab) => (
             <button
               key={tab.key}
-              className={`px-4 py-2 font-semibold border-b-2 transition-colors duration-200 ${
-                activeTab === tab.key
+              className={`px-4 py-2 font-semibold border-b-2 transition-colors duration-200 ${activeTab === tab.key
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-600 hover:text-orange-500"
-              }`}
+                }`}
               onClick={() => setActiveTab(tab.key)}
             >
               {tab.label}
@@ -177,12 +170,12 @@ const TourDetail: React.FC = () => {
                     images.length > 0
                       ? images.filter((img) => img.is_featured)
                       : [
-                          {
-                            id: 0,
-                            image_url: tour.poster_url,
-                            alt_text: tour.title,
-                          },
-                        ]
+                        {
+                          id: 0,
+                          image_url: tour.poster_url,
+                          alt_text: tour.title,
+                        },
+                      ]
                   }
                   altDefault={tour.title}
                 />

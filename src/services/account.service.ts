@@ -70,3 +70,21 @@ export const checkEmailExists = async (email: string) => {
     throw new Error(error.response?.data?.message || 'Lỗi kiểm tra email');
   }
 };
+
+export const sendEmailVerificationUser = async () => {
+  try {
+    const response = await accountApi.sendEmailVerification();
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Lỗi gửi email xác thực');
+  }
+};
+
+export const verifyEmailUser = async (token: string) => {
+  try {
+    const response = await accountApi.verifyEmail(token);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Lỗi xác thực email');
+  }
+};

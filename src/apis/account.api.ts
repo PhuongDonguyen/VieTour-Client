@@ -53,3 +53,9 @@ export const refreshToken = () =>
 
 export const logout = () =>
   axiosInstance.post('/auth/logout');
+
+export const sendEmailVerification = () =>
+  axiosInstance.post('/auth/send-email-verification');
+
+export const verifyEmail = (token: string) =>
+  axiosInstance.get(`/auth/verify-email?token=${token}`);

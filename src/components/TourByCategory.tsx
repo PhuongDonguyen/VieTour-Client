@@ -90,11 +90,11 @@ export const TourByCategory = () => {
     fetchData(1);
   }, [slug]);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = async () => {
     if (hasNextPage && !isLoading) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchData(nextPage, true);
+      await fetchData(nextPage, true);
     }
   };
 
