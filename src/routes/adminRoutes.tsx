@@ -31,6 +31,8 @@ import {
 import TourImageViewContent from "../components/admin/tour-image/TourImageViewContent";
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
+import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
+import AdminSupport from "@/pages/admin/AdminSupport";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -375,6 +377,26 @@ export const adminRoutes = [
       </RequireProviderOnly>
     ),
   },
+  {
+    path: "/admin/my-bookings",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="My Bookings">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold">My Tour Bookings</h1>
+            <p className="text-muted-foreground">
+              View bookings for your tour packages.
+            </p>
+            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+              <p className="text-green-800 text-sm">
+                📅 Track customer bookings for your tours only
+              </p>
+            </div>
+          </div>
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
 
   {
     path: "/admin/earnings",
@@ -444,6 +466,18 @@ export const adminRoutes = [
         <AdminLayout title="Đặt tour của tôi">
           <div className="p-6">
             <ProviderBookingsTable />
+          </div>
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/questions",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Câu hỏi của tôi">
+          <div className="p-6">
+            <AdminSupport />
           </div>
         </AdminLayout>
       </RequireProviderOnly>

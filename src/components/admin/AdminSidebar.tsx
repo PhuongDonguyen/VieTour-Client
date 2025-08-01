@@ -14,6 +14,7 @@ import {
   DollarSign,
   Building,
   FileText,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -204,6 +205,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         icon: <Building className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can manage their profile
       },
+      {
+        label: "Questions",
+        href: "/admin/questions",
+        icon: <HelpCircle className="w-4 h-4" />,
+        allowedRoles: ["provider"], // Only providers can see their questions
+      }
     ],
     []
   );

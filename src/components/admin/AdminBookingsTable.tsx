@@ -5,7 +5,6 @@ import { getAllProviders } from "../../apis/admin/adminTour.api";
 import { adminTourApi } from "../../apis/admin/adminTour.api";
 import { toast } from "sonner";
 import type { AdminBooking } from "../../apis/admin/adminBooking.api";
-import type { ProviderTour } from "../../apis/provider/providerTour.api";
 
 import {
   Table,
@@ -45,8 +44,8 @@ const AdminBookingsTable: React.FC = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
   const [providers, setProviders] = useState<any[]>([]);
-  const [tours, setTours] = useState<ProviderTour[]>([]);
-  const [filteredTours, setFilteredTours] = useState<ProviderTour[]>([]);
+  const [tours, setTours] = useState<any[]>([]);
+  const [filteredTours, setFilteredTours] = useState<any[]>([]);
 
   // Debounce search
   useEffect(() => {
