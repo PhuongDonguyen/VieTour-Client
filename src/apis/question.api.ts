@@ -10,4 +10,4 @@ export const deleteQuestion = (id: number) =>
     axiosInstance.delete(`/api/questions/${id}`)
 
 export const updateReported = (reported: boolean, id: number) =>
-    axiosInstance.put(`/api/questions/${id}/reported`, {reported})
+    axiosInstance.put(`/api/questions/${id}`, {reported})

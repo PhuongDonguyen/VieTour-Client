@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
+  delQuestion,
   fetchQuestionsByTourId,
   sendQuestion,
 } from "@/services/question.service";
@@ -17,21 +18,24 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from "lucide-react";
 import { fetchAllToursByProviderId } from "@/services/tour.service";
 import { AuthContext } from "@/context/authContext";
+import { updateReported } from "@/apis/question.api";
+import { set } from "date-fns";
 
 // Interface theo cấu trúc API thực tế
 interface User {
   id: number;
   first_name: string;
   last_name: string;
-  avatar: string;
+  avatar: string | null; // Có thể là null nếu không có avatar
 }
 
 interface Question {
   id: number;
-  user_id: number;
+  user_id: number | null;
   tour_id: number;
   parent_question_id: number | null;
   text: string;
@@ -46,130 +50,6 @@ interface Tour {
   title: string;
   poster_url: string;
 }
-
-// Mock data theo cấu trúc API thực tế với nested replies
-const mockQuestions: Question[] = [
-  {
-    id: 47,
-    user_id: 27,
-    tour_id: 1,
-    parent_question_id: null,
-    text: "Alo",
-    created_at: "2025-07-22T10:34:02.748Z",
-    reported: false,
-    user: {
-      id: 27,
-      first_name: "Phi",
-      last_name: "Duong",
-      avatar:
-        "https://res.cloudinary.com/dxiuxuivf/image/upload/v1753291188/vietour/bjmiqfxa5imzgns1u8h6.jpg",
-    },
-    questions: [
-      {
-        id: 50,
-        user_id: 23,
-        tour_id: 1,
-        parent_question_id: 47,
-        text: "Nghe",
-        created_at: "2025-07-22T10:40:00.000Z",
-        reported: false,
-        user: {
-          id: 23,
-          first_name: "Đỗ Nguyên",
-          last_name: "Hoàng Phương",
-          avatar:
-            "https://res.cloudinary.com/dxiuxuivf/image/upload/v1753064159/vietour/qcke0mul85qdme87obmo.jpg",
-        },
-        questions: [
-          {
-            id: 51,
-            user_id: 27,
-            tour_id: 1,
-            parent_question_id: 50,
-            text: "Cảm ơn bạn đã trả lời!",
-            created_at: "2025-07-22T10:45:00.000Z",
-            reported: false,
-            user: {
-              id: 27,
-              first_name: "Phi",
-              last_name: "Duong",
-              avatar:
-                "https://res.cloudinary.com/dxiuxuivf/image/upload/v1753291188/vietour/bjmiqfxa5imzgns1u8h6.jpg",
-            },
-            questions: [
-              {
-                id: 52,
-                user_id: 23,
-                tour_id: 1,
-                parent_question_id: 51,
-                text: "Không có gì!",
-                created_at: "2025-07-22T10:50:00.000Z",
-                reported: false,
-                user: {
-                  id: 23,
-                  first_name: "Đỗ Nguyên",
-                  last_name: "Hoàng Phương",
-                  avatar:
-                    "https://res.cloudinary.com/dxiuxuivf/image/upload/v1753064159/vietour/qcke0mul85qdme87obmo.jpg",
-                },
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 48,
-    user_id: 28,
-    tour_id: 2,
-    parent_question_id: null,
-    text: "Tour này có bao gồm vé máy bay không?",
-    created_at: "2025-07-22T11:00:00.000Z",
-    reported: false,
-    user: {
-      id: 28,
-      first_name: "Nguyễn",
-      last_name: "Văn A",
-      avatar: "",
-    },
-    questions: [
-      {
-        id: 53,
-        user_id: 23,
-        tour_id: 2,
-        parent_question_id: 48,
-        text: "Chào bạn! Tour này không bao gồm vé máy bay, bạn cần tự mua riêng.",
-        created_at: "2025-07-22T11:05:00.000Z",
-        reported: false,
-        user: {
-          id: 23,
-          first_name: "Đỗ Nguyên",
-          last_name: "Hoàng Phương",
-          avatar:
-            "https://res.cloudinary.com/dxiuxuivf/image/upload/v1753064159/vietour/qcke0mul85qdme87obmo.jpg",
-        },
-        questions: [
-          {
-            id: 54,
-            user_id: 28,
-            tour_id: 2,
-            parent_question_id: 53,
-            text: "Vậy giá vé máy bay khoảng bao nhiêu?",
-            created_at: "2025-07-22T11:10:00.000Z",
-            reported: false,
-            user: {
-              id: 28,
-              first_name: "Nguyễn",
-              last_name: "Văn A",
-              avatar: "",
-            },
-          },
-        ],
-      },
-    ],
-  },
-];
 
 // Mock tours data
 const mockTours: Tour[] = [
@@ -190,6 +70,48 @@ const mockTours: Tour[] = [
   },
 ];
 
+export const LoadingChat = () => {
+  return (
+    <div className="w-12 text-orange-600">
+      <svg
+        fill="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="4" cy="12" r="3" opacity="1">
+          <animate
+            id="spinner_qYjJ"
+            begin="0;spinner_t4KZ.end-0.25s"
+            attributeName="opacity"
+            dur="0.75s"
+            values="1;.2"
+            fill="freeze"
+          ></animate>
+        </circle>
+        <circle cx="12" cy="12" r="3" opacity=".4">
+          <animate
+            begin="spinner_qYjJ.begin+0.15s"
+            attributeName="opacity"
+            dur="0.75s"
+            values="1;.2"
+            fill="freeze"
+          ></animate>
+        </circle>
+        <circle cx="20" cy="12" r="3" opacity=".3">
+          <animate
+            id="spinner_t4KZ"
+            begin="spinner_qYjJ.begin+0.3s"
+            attributeName="opacity"
+            dur="0.75s"
+            values="1;.2"
+            fill="freeze"
+          ></animate>
+        </circle>
+      </svg>
+    </div>
+  );
+};
+
 const AdminSupport: React.FC = () => {
   const { user } = useContext(AuthContext);
 
@@ -205,9 +127,27 @@ const AdminSupport: React.FC = () => {
   const [expandedReplies, setExpandedReplies] = useState<Set<number>>(
     new Set()
   );
+  const expandReply = (id: number) => {
+    setExpandedReplies((prev) => {
+      if (prev.has(id)) return prev; // đã mở → không làm gì
+      const newSet = new Set(prev);
+      newSet.add(id); // thêm id vào danh sách đang mở
+      return newSet;
+    });
+  };
+  const collapseReply = (id: number) => {
+    setExpandedReplies((prev) => {
+      if (!prev.has(id)) return prev; // chưa mở → không làm gì
+      const newSet = new Set(prev);
+      newSet.delete(id); // xóa id khỏi danh sách mở
+      return newSet;
+    });
+  };
 
   const [tours, setTours] = useState<Tour[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Lấy provider_id từ user context
   const providerId = user?.id || null;
@@ -227,6 +167,7 @@ const AdminSupport: React.FC = () => {
 
   useEffect(() => {
     const fetchQuestions = async () => {
+      setLoading(true);
       try {
         if (selectedTour === "all") {
           // setQuestions(mockQuestions);
@@ -235,8 +176,10 @@ const AdminSupport: React.FC = () => {
         const res = await fetchQuestionsByTourId(selectedTour);
         console.log("Fetched questions:", res);
         setQuestions(res.data || []);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching questions:", error);
+        setLoading(false);
       }
     };
 
@@ -290,12 +233,54 @@ const AdminSupport: React.FC = () => {
     setReplyText("");
   };
 
+  function addReplyImmutable(
+    questions: Question[],
+    parentId: number,
+    newReply: Question
+  ): Question[] {
+    return questions.map((q) => {
+      if (q.id === parentId) {
+        return {
+          ...q,
+          questions: [...(q.questions || []), newReply],
+        };
+      }
+
+      if (q.questions && q.questions.length > 0) {
+        return {
+          ...q,
+          questions: addReplyImmutable(q.questions, parentId, newReply),
+        };
+      }
+
+      return q;
+    });
+  }
+
+  function deleteReplyImmutable(
+    questions: Question[],
+    idToDelete: number
+  ): Question[] {
+    return questions
+      .filter((q) => q.id !== idToDelete)
+      .map((q) => {
+        if (q.questions && q.questions.length > 0) {
+          return {
+            ...q,
+            questions: deleteReplyImmutable(q.questions, idToDelete),
+          };
+        }
+        return q;
+      });
+  }
+
   const handleReplyToQuestion = async () => {
     // Logic trả lời câu hỏi gốc
     console.log("Trả lời câu hỏi gốc:", selected, replyText);
     try {
       if (!selected || !replyText.trim()) return;
-
+      setReplyLoading(true);
+      console.log("Selected question response:", selected);
       const res = await sendQuestion(
         null,
         selected.tour_id,
@@ -303,9 +288,16 @@ const AdminSupport: React.FC = () => {
         replyText,
         true
       );
-      console.log("Reply to question response:", res);
+
+      const updatedTree = addReplyImmutable(questions, selected.id, res.data);
+      setQuestions(updatedTree);
+      console.log("rerendered questions:", updatedTree);
+      const resReported = await updateReported(true, selected.id);
+      expandReply(selected.id);
+      setReplyLoading(false);
     } catch (error) {
       console.error("Error replying to question:", error);
+      setReplyLoading(false);
     }
 
     setReplyText("");
@@ -319,6 +311,7 @@ const AdminSupport: React.FC = () => {
         console.log("selected", selected);
         return;
       }
+      setReplyLoading(true);
       const res = await sendQuestion(
         null,
         selectedReply!.tour_id,
@@ -326,9 +319,19 @@ const AdminSupport: React.FC = () => {
         replyText,
         true
       );
-      console.log("Reply to question response:", res);
+
+      const updatedTree = addReplyImmutable(
+        questions,
+        selectedReply!.id,
+        res.data
+      );
+      setQuestions(updatedTree);
+      const resReported = await updateReported(true, replyId);
+      expandReply(selectedReply!.id);
+      setReplyLoading(false);
     } catch (error) {
       console.error("Error replying to question:", error);
+      setReplyLoading(false);
     }
     setReplyText("");
   };
@@ -341,6 +344,25 @@ const AdminSupport: React.FC = () => {
   const handleSelectQuestion = (question: Question) => {
     setSelected(question);
     setSelectedReply(null);
+  };
+  const handleDeleteReply = async (replyId?: number) => {
+    if (!replyId) {
+      console.error("No reply ID provided for deletion");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Bạn có chắc chắn muốn xóa bình luận này?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await delQuestion(replyId);
+      const newState = deleteReplyImmutable(questions, replyId);
+      setQuestions(newState);
+    } catch (error) {
+      console.error("Error deleting reply:", error);
+    }
   };
 
   // Hàm đếm tổng số replies (bao gồm nested)
@@ -363,6 +385,32 @@ const AdminSupport: React.FC = () => {
       newExpanded.add(questionId);
     }
     setExpandedReplies(newExpanded);
+  };
+
+  const handleToggleReported = async (id: number, currentReported: boolean) => {
+    try {
+      await updateReported(!currentReported, id); // API cập nhật server
+
+      // Cập nhật local state theo kiểu immutable
+      setQuestions((prevQuestions) =>
+        prevQuestions.map((q) =>
+          q.id === id
+            ? { ...q, reported: !currentReported }
+            : {
+                ...q,
+                questions: q.questions
+                  ? q.questions.map((subQ) =>
+                      subQ.id === id
+                        ? { ...subQ, reported: !currentReported }
+                        : subQ
+                    )
+                  : q.questions,
+              }
+        )
+      );
+    } catch (error) {
+      console.error("Lỗi khi toggle trạng thái trả lời:", error);
+    }
   };
 
   // Component recursive để hiển thị nested replies
@@ -391,9 +439,9 @@ const AdminSupport: React.FC = () => {
               onClick={() => handleSelectReply(reply)}
             >
               <div className="flex items-center gap-2 mb-1">
-                {reply.user.avatar ? (
+                {reply.user != null ? (
                   <img
-                    src={reply.user.avatar}
+                    src={reply.user!.avatar || "/public/avatar-default.jpg"}
                     alt="avatar"
                     className="w-4 h-4 rounded-full object-cover"
                   />
@@ -401,20 +449,30 @@ const AdminSupport: React.FC = () => {
                   <User className="w-4 h-4 text-primary" />
                 )}
                 <div className="font-medium flex-1">
-                  {reply.user.first_name} {reply.user.last_name}
+                  {reply.user
+                    ? `${reply.user.first_name} ${reply.user.last_name}`
+                    : "Quản trị viên"}
+
                   {/* {reply.user_id === 23 && (
                     <span className="ml-1 text-primary">(Admin)</span>
                   )} */}
                 </div>
                 {/* Badge trạng thái cho reply */}
                 {reply.reported ? (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                  <Badge
+                    variant="secondary"
+                    onClick={() => handleToggleReported(reply.id, reply.reported)}
+                    className="cursor-pointer"
+                  >
                     Đã trả lời
                   </Badge>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-1 py-0 h-4 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300">
+                  <span
+                    onClick={() => handleToggleReported(reply.id, reply.reported)}
+                    className="cursor-pointer inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300"
+                  >
                     <svg
-                      className="w-3 h-3"
+                      className="w-4 h-4"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -428,6 +486,16 @@ const AdminSupport: React.FC = () => {
                     </svg>
                     Chưa trả lời
                   </span>
+                )}
+
+                {!reply.user_id && (
+                  <button
+                    onClick={() => handleDeleteReply(reply.id)}
+                    className="p-2 rounded-full hover:bg-red-100 text-red-600 hover:text-red-800 transition-colors"
+                    title="Xóa phản hồi"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 )}
               </div>
               <div className="text-muted-foreground ml-6">{reply.text}</div>
@@ -445,6 +513,7 @@ const AdminSupport: React.FC = () => {
             )}
           </div>
         ))}
+        {replyLoading ? <LoadingChat /> : null}
       </div>
     );
   };
@@ -582,15 +651,15 @@ const AdminSupport: React.FC = () => {
                       }`}
                       onClick={() => handleSelectQuestion(q)}
                     >
-                      <CardContent className="flex gap-3 items-center p-3">
-                        {q.user.avatar ? (
+                      <CardContent className="flex gap-3 items-center p-2">
+                        {q.user!.avatar ? (
                           <img
-                            src={q.user.avatar}
+                            src={q.user!.avatar || "/public/avatar-default.jpg"}
                             alt="avatar"
-                            className="w-8 h-8 rounded-full object-cover"
+                            className="w-6 h-6 rounded-full object-cover"
                           />
                         ) : (
-                          <User className="w-8 h-8 text-primary" />
+                          <User className="w-6 h-6 text-primary" />
                         )}
                         <div className="flex-1">
                           <div className="font-semibold">
@@ -599,17 +668,30 @@ const AdminSupport: React.FC = () => {
                           <div className="text-sm text-muted-foreground truncate">
                             {q.text}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          {/* <div className="text-xs text-muted-foreground">
                             {mockTours.find((t) => t.id === q.tour_id)?.title ||
                               `Tour #${q.tour_id}`}
-                          </div>
+                          </div> */}
                         </div>
                         {/* Badge trạng thái */}
 
                         {q.reported ? (
-                          <Badge variant="secondary">Đã trả lời {q.reported}</Badge>
+                          <Badge
+                            variant="secondary"
+                            onClick={() =>
+                              handleToggleReported(q.id, q.reported)
+                            }
+                            className="cursor-pointer"
+                          >
+                            Đã trả lời
+                          </Badge>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300">
+                          <span
+                            onClick={() =>
+                              handleToggleReported(q.id, q.reported)
+                            }
+                            className="cursor-pointer inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300"
+                          >
                             <svg
                               className="w-4 h-4"
                               fill="none"
@@ -663,6 +745,11 @@ const AdminSupport: React.FC = () => {
                         {expandedReplies.has(q.id) && (
                           <RenderNestedReplies replies={q.questions || []} />
                         )}
+                        {replyLoading && selected?.id === q.id && (
+                          <div className="flex items-center justify-center py-2">
+                            <LoadingChat />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -677,9 +764,12 @@ const AdminSupport: React.FC = () => {
               <Card className="flex-1">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center gap-3">
-                    {selectedReply.user.avatar ? (
+                    {selectedReply.user != null ? (
                       <img
-                        src={selectedReply.user.avatar}
+                        src={
+                          selectedReply.user!.avatar ||
+                          "/public/avatar-default.jpg"
+                        }
                         alt="avatar"
                         className="w-10 h-10 rounded-full object-cover"
                       />
@@ -688,8 +778,9 @@ const AdminSupport: React.FC = () => {
                     )}
                     <div>
                       <div className="font-bold">
-                        {selectedReply.user.first_name}{" "}
-                        {selectedReply.user.last_name}
+                        {selectedReply.user
+                          ? `${selectedReply.user.first_name} ${selectedReply.user.last_name}`
+                          : "Quản trị viên"}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Reply #{selectedReply.id}
@@ -712,9 +803,11 @@ const AdminSupport: React.FC = () => {
               <Card className="flex-1">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center gap-3">
-                    {selected.user.avatar ? (
+                    {selected.user != null ? (
                       <img
-                        src={selected.user.avatar}
+                        src={
+                          selected.user!.avatar || "/public/avatar-default.jpg"
+                        }
                         alt="avatar"
                         className="w-10 h-10 rounded-full object-cover"
                       />

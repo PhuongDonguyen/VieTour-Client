@@ -40,7 +40,7 @@ export const fetchMyBookings = async () => {
         const schedule = resSchedule.data.data;
 
         const resTour = await getTourById(schedule.tour_id);
-        const tour = resTour.data.data;
+        const tour = resTour.data;
 
         return {
           ...booking,
@@ -70,7 +70,7 @@ export const fetchBookingById = async (id: number) => {
       let tour = null;
       if (schedule.tour_id) {
         const resTour = await getTourById(schedule.tour_id);
-        tour = resTour.data.data;
+        tour = resTour.data;
       }
       booking.schedule = {
         ...schedule,

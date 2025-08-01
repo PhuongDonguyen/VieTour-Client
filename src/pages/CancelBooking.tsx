@@ -219,11 +219,21 @@ const CancelBooking: React.FC = () => {
             >
               <div className="flex justify-between items-center">
                 <span className="font-medium">
-                  Hủy {policy.label} trước ngày khởi hành:
+                  Hủy{" "}
+                  {policy.from_day === 0 && policy.to_day === 3
+                    ? "dưới 4 ngày"
+                    : policy.from_day === 4 && policy.to_day === 6
+                    ? "4-6 ngày"
+                    : policy.from_day === 7 && policy.to_day === 14
+                    ? "7-14 ngày"
+                    : policy.from_day === 15 && policy.to_day === 365
+                    ? "15 ngày hoặc hơn"
+                    : `${policy.from_day}-${policy.to_day} ngày`}{" "}
+                  trước ngày khởi hành:
                 </span>
                 <span
                   className={`font-bold text-lg ${
-                    policy.refund_percentage > 0
+                    parseFloat(policy.refund_percentage) > 0
                       ? "text-green-600"
                       : "text-red-600"
                   }`}

@@ -17,7 +17,6 @@ export default function Booking() {
         setLoading(true);
         const tourData = await fetchTourBySlug(slug);
         if (tourData) {
-          console.log(tourData);
           setTour(tourData);
         } else {
           setError('Không tìm thấy thông tin tour');
