@@ -29,10 +29,11 @@ export const bookingService = {
   },
 };
 
-export const fetchMyBookings = async () => {
+export const fetchMyBookings = async (page: number = 1, limit: number = 5, status?: string) => {
   try {
-    const resBooking = await getMyBookings();
+    const resBooking = await getMyBookings(page, limit, status);
     const bookings = resBooking.data.data; // Đây là mảng
+    const pagination = resBooking.data.pagination; // Pagination info
 
     const enrichedBookings = await Promise.all(
       bookings.map(async (booking: any) => {
@@ -52,7 +53,10 @@ export const fetchMyBookings = async () => {
       })
     );
 
-    return { bookings: enrichedBookings };
+    return { 
+      bookings: enrichedBookings,
+      pagination 
+    };
   } catch (error) {
     console.error("Lỗi khi lấy danh sách booking:", error);
     throw error;

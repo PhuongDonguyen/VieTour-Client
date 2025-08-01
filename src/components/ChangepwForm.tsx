@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { changeUserPassword } from '@/services/userProfile.service';
+import { Lock, Eye, EyeOff } from 'lucide-react';
+import { AccountPageSkeleton } from './AccountSkeleton';
 
 export const ChangePasswordForm: React.FC = () => {
   const [passwords, setPasswords] = useState({
@@ -8,12 +10,32 @@ export const ChangePasswordForm: React.FC = () => {
     confirm: '',
   });
 
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  useEffect(() => {
+    // Simulate initialization time
+    const timer = setTimeout(() => {
+      setInitializing(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswords(prev => ({ ...prev, [name]: value }));
+  };
+
+  const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
+    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
   const handleSubmit = async () => {
@@ -26,7 +48,6 @@ export const ChangePasswordForm: React.FC = () => {
     setStatus('idle');
 
     try {
-      // Gọi API thực tế
       await changeUserPassword(passwords.current, passwords.new);
       alert('✅ Mật khẩu đã được thay đổi thành công!');
 
@@ -50,49 +71,74 @@ export const ChangePasswordForm: React.FC = () => {
   };
 
   const getButtonClass = () => {
-    let base =
-      'mt-6 px-8 py-3 rounded-lg font-medium uppercase tracking-wide transition-all duration-200 hover:-translate-y-1 hover:shadow-lg';
+    let base = 'w-full px-6 py-3 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
 
-    if (loading) return `${base} bg-gray-400 cursor-not-allowed`;
-    if (status === 'success') return `${base} bg-green-500 text-white`;
-    if (status === 'error') return `${base} bg-red-500 text-white`;
+    if (loading) return `${base} bg-gray-400 cursor-not-allowed focus:ring-gray-400`;
+    if (status === 'success') return `${base} bg-green-600 text-white hover:bg-green-700 focus:ring-green-500`;
+    if (status === 'error') return `${base} bg-red-600 text-white hover:bg-red-700 focus:ring-red-500`;
 
-    return `${base} bg-[#FF6B35] text-white hover:bg-[#FF6B35]/80`;
+    return `${base} bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500`;
   };
 
-  return (
-    <div className="ms-5 mb-12 mt-25 animate-fadeInUp">
-      <h2 className="text-3xl font-semibold text-gray-800 mb-8 pl-6 relative">
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#FF6B35] rounded-full"></span>
-        Thay đổi mật khẩu
-      </h2>
+  if (initializing) {
+    return <AccountPageSkeleton />;
+  }
 
-      <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-        <div className="space-y-6">
-          {['current', 'new', 'confirm'].map(field => (
-            <div className="space-y-2" key={field}>
-              <label className="block text-sm font-medium text-gray-600 uppercase tracking-wide">
-                {field === 'current'
-                  ? 'Mật khẩu hiện tại'
-                  : field === 'new'
-                    ? 'Mật khẩu mới'
-                    : 'Xác nhận mật khẩu mới'}
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-1">Bảo mật</h2>
+        <p className="text-gray-600 text-sm">Thay đổi mật khẩu và bảo mật tài khoản</p>
+      </div>
+
+      {/* Security Info Card */}
+      <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+            <Lock className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-blue-800">Bảo mật tài khoản</div>
+            <div className="text-xs text-blue-600">Đảm bảo mật khẩu của bạn an toàn và khó đoán</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="space-y-4">
+          {[
+            { field: 'current', label: 'Mật khẩu hiện tại', placeholder: 'Nhập mật khẩu hiện tại' },
+            { field: 'new', label: 'Mật khẩu mới', placeholder: 'Nhập mật khẩu mới' },
+            { field: 'confirm', label: 'Xác nhận mật khẩu mới', placeholder: 'Xác nhận mật khẩu mới' }
+          ].map(({ field, label, placeholder }) => (
+            <div key={field} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {label}
               </label>
-              <input
-                type="password"
-                name={field}
-                value={passwords[field as keyof typeof passwords]}
-                onChange={handleChange}
-                autoComplete='new-password'
-                placeholder={
-                  field === 'current'
-                    ? 'Nhập mật khẩu hiện tại'
-                    : field === 'new'
-                      ? 'Nhập mật khẩu mới'
-                      : 'Xác nhận mật khẩu mới'
-                }
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
-              />
+              <div className="relative">
+                <input
+                  type={showPasswords[field as keyof typeof showPasswords] ? 'text' : 'password'}
+                  name={field}
+                  value={passwords[field as keyof typeof passwords]}
+                  onChange={handleChange}
+                  autoComplete={field === 'current' ? 'current-password' : 'new-password'}
+                  placeholder={placeholder}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility(field as keyof typeof showPasswords)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPasswords[field as keyof typeof showPasswords] ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             </div>
           ))}
         </div>

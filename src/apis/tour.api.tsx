@@ -5,10 +5,10 @@ export interface Tour {
   id: number;
   title: string;
   description: string;
-  thumbnail: string;
+  poster_url: string;
   slug: string;
   tour_category_id: number;
-  originalPrice: number;
+  price: number;
   discountedPrice?: number;
   duration: number;
   is_active: boolean;
