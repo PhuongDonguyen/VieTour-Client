@@ -21,7 +21,18 @@ export interface BookingRequest {
 export const createBooking = (bookingData: BookingRequest) =>
   axiosInstance.post("/api/bookings", bookingData);
 
-export const getMyBookings = () => axiosInstance.get("/api/bookings");
+export const getMyBookings = (page: number = 1, limit: number = 5, status?: string) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  
+  if (status && status !== "all") {
+    params.append("status", status);
+  }
+  
+  return axiosInstance.get(`/api/bookings/my-bookings?${params.toString()}`);
+};
 
 export const getBookingById = (id: number) =>
   axiosInstance.get(`/api/bookings/${id}`);

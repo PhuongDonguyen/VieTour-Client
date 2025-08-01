@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useNavigate, Link } from 'react-router-dom';
 import Modal from '../components/Modal';
 import LoginForm from '../components/authentication/LoginForm';
@@ -7,6 +7,7 @@ import SignupForm from '../components/authentication/SignupForm';
 import { useAuth } from '../hooks/useAuth';
 import { fetchActiveTourCategories } from '../services/tourCategory.service';
 import { getAllCategories } from '../services/blogCategory.service';
+import SearchBar from '../components/SearchBar';
 
 export const NavBar = ({ textDark = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -133,17 +134,12 @@ export const NavBar = ({ textDark = false }) => {
 
             {/* Search and User Menu */}
             <div className="flex items-center space-x-4">
-              <div className="relative hidden md:block">
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm tour..."
-                  className={`pl-10 pr-3 py-2 rounded-full border focus:outline-none focus:border-orange-500 ${isScrolled || textDark
-                    ? 'border-gray-300 bg-white text-gray-800 placeholder-gray-500'
-                    : 'border-white/30 bg-white/10 backdrop-blur-sm text-white placeholder-white/70'
-                    }`}
+              <div className="hidden md:block">
+                <SearchBar 
+                  isScrolled={isScrolled}
+                  textDark={textDark}
+                  className="w-80"
                 />
-                <Search className={`absolute left-3 top-2.5 w-4 h-4 ${isScrolled || textDark ? 'text-gray-400' : 'text-white/70'
-                  }`} />
               </div>
               {/* User Menu */}
               <div className="relative hidden md:block flex items-center gap-2">
@@ -215,6 +211,14 @@ export const NavBar = ({ textDark = false }) => {
           {isMenuOpen && (
             <div className="md:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
+                {/* Mobile Search Bar */}
+                <div className="px-3 py-2">
+                  <SearchBar 
+                    isScrolled={true}
+                    textDark={true}
+                    placeholder="Tìm kiếm tour..."
+                  />
+                </div>
                 <Link to="/" className="block px-3 py-2 text-gray-700 hover:text-orange-500">TRANG CHỦ</Link>
                 <Link to="/about" className="block px-3 py-2 text-gray-700 hover:text-orange-500">GIỚI THIỆU</Link>
                 <div className="px-3 py-2">

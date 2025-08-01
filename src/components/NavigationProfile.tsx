@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import {
   User,
   Lock,
-  MapPin,
   Calendar,
   LogOut,
   XCircle,
   DollarSign,
   BookOpen,
+  Settings,
+  Bell,
+  Shield,
 } from "lucide-react";
 import type { FC } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -18,13 +20,14 @@ interface MenuItem {
   label: string;
   icon: LucideIcon;
   description: string;
+  badge?: string;
   allowedRoles?: string[];
 }
 
 interface NavigationUserProps {
   activeTab: string;
   onChangeTab: (tab: string) => void;
-  user?: user; // Optional user prop for profile info
+  user?: user;
 }
 
 interface user {
@@ -43,30 +46,43 @@ export const NavigationUser: FC<NavigationUserProps> = ({
   const { user: authUser } = useAuth();
 
   const menuItems: MenuItem[] = [
-    // { id: 'dashboard', label: 'Trang chủ', icon: Home, description: 'Tổng quan tài khoản' },
     {
       id: "profile",
       label: "Thông tin cá nhân",
       icon: User,
-      description: "Quản lý hồ sơ của bạn",
+      description: "Quản lý hồ sơ và thông tin cá nhân",
     },
     {
       id: "password",
-      label: "Thay đổi mật khẩu",
-      icon: Lock,
-      description: "Bảo mật tài khoản",
+      label: "Bảo mật",
+      icon: Shield,
+      description: "Thay đổi mật khẩu và bảo mật tài khoản",
     },
     {
       id: "my-bookings",
-      label: "Đặt vé của tôi",
+      label: "Đặt tour của tôi",
       icon: Calendar,
-      description: "Lịch sử đặt tour",
+      description: "Xem lịch sử và quản lý đặt tour",
+      badge: "3",
     },
     {
       id: "cancellation-requests",
       label: "Yêu cầu hủy tour",
       icon: XCircle,
-      description: "Theo dõi yêu cầu hủy tour",
+      description: "Theo dõi trạng thái yêu cầu hủy tour",
+      badge: "1",
+    },
+    {
+      id: "notifications",
+      label: "Thông báo",
+      icon: Bell,
+      description: "Quản lý thông báo và cập nhật",
+    },
+    {
+      id: "settings",
+      label: "Cài đặt",
+      icon: Settings,
+      description: "Tùy chỉnh cài đặt tài khoản",
     },
     {
       id: "provider-cancellation-requests",
@@ -77,111 +93,130 @@ export const NavigationUser: FC<NavigationUserProps> = ({
     },
     {
       id: "provider-bookings",
-      label: "Đặt tour",
+      label: "Quản lý đặt tour",
       icon: BookOpen,
-      description: "Quản lý đặt tour",
+      description: "Quản lý đặt tour của khách hàng",
       allowedRoles: ["provider"],
     },
-    // { id: 'settings', label: 'Cài đặt', icon: Settings, description: 'Tùy chỉnh tài khoản' },
   ];
 
-  // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter((item) => {
     if (!item.allowedRoles) return true;
-    const hasRole = item.allowedRoles.includes(authUser?.role || "");
-    console.log(
-      `Menu item "${item.label}": role=${authUser?.role}, allowedRoles=${item.allowedRoles}, hasRole=${hasRole}`
-    );
-    return hasRole;
+    return item.allowedRoles.includes(authUser?.role || "");
   });
 
-  useEffect(() => {
-    console.log("email:", user?.email);
-    console.log("authUser role:", authUser?.role);
-    console.log(
-      "filteredMenuItems:",
-      filteredMenuItems.map((item) => item.label)
-    );
-  }, [user?.email, authUser?.role, filteredMenuItems]);
-
   return (
-    <div className="w-80 max-h-screen bg-white rounded-2xl overflow-hidden flex flex-col border border-gray-100">
-      {/* Profile Header */}
-      <div className="p-6 bg-gradient-to-r bg-[#FF6B35] text-white relative">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-white bg-opacity-20 mx-auto mb-3 flex items-center justify-center text-white font-bold text-xl shadow-md">
-            <img
-              src={user?.avatar || "/public/avatar-default.jpg"}
-              alt="Profile Avatar"
-              className="w-full h-full object-cover rounded-full border-[#FF6B35] border-2"
-            />
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Tài khoản</h1>
+            <p className="text-gray-600">Quản lý thông tin và cài đặt tài khoản của bạn</p>
           </div>
-          <h3 className="font-semibold text-lg">
-            {user?.first_name} {user?.last_name}
-          </h3>
-          {/* <p className="text-sm text-gray-200">{user?.email}</p> */}
-          {/* <div className="mt-2 inline-block px-3 py-1 text-xs rounded-full bg-green-100 text-green-700 font-medium">
-            Thành viên VIP
-          </div> */}
-        </div>
-      </div>
 
-      {/* Navigation Menu */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-white">
-        {filteredMenuItems.map(({ id, label, icon: Icon, description }) => {
-          const isActive = activeTab === id;
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Sidebar Navigation */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                {/* User Profile */}
+                <div className="text-center mb-6 pb-6 border-b border-gray-100">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt="Avatar"
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span>{user?.first_name?.charAt(0) || "U"}</span>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    {user?.first_name} {user?.last_name}
+                  </h3>
+                  <p className="text-sm text-gray-500">{user?.email}</p>
+                </div>
 
-          return (
-            <button
-              key={id}
-              onClick={() => onChangeTab(id)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                isActive
-                  ? "bg-[#FF6B35] text-white shadow-lg scale-[1.02]"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              <div
-                className={`p-2 rounded-lg transition-colors duration-200 ${
-                  isActive
-                    ? "bg-white bg-opacity-20"
-                    : "bg-gray-100 group-hover:bg-gray-200"
-                }`}
-              >
-                <Icon
-                  size={18}
-                  className={`${isActive ? "text-black" : "text-gray-600"}`}
-                />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="font-medium text-sm">{label}</div>
-                <div
-                  className={`text-xs ${
-                    isActive ? "text-white/80" : "text-gray-400"
-                  }`}
-                >
-                  {description}
+                {/* Navigation Menu */}
+                <nav className="space-y-2">
+                  {filteredMenuItems.map(({ id, label, icon: Icon, description, badge }) => {
+                    const isActive = activeTab === id;
+                    
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => onChangeTab(id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative ${
+                          isActive
+                            ? "bg-blue-50 border border-blue-200 text-blue-700"
+                            : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg transition-colors ${
+                          isActive
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-500 group-hover:bg-gray-200 group-hover:text-gray-600"
+                        }`}>
+                          <Icon size={18} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{label}</span>
+                            {badge && (
+                              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium bg-red-100 text-red-600 rounded-full">
+                                {badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-xs mt-0.5 ${
+                            isActive ? "text-blue-600" : "text-gray-500"
+                          }`}>
+                            {description}
+                          </p>
+                        </div>
+                        {isActive && (
+                          <div className="w-1 h-8 bg-blue-500 rounded-full absolute right-2"></div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
+
+                {/* Logout */}
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all group">
+                    <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-red-100 transition-colors">
+                      <LogOut size={18} className="group-hover:text-red-600" />
+                    </div>
+                    <span className="font-medium text-sm">Đăng xuất</span>
+                  </button>
                 </div>
               </div>
-              {isActive && (
-                <div className="w-2 h-2 rounded-full bg-white animate-ping" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+            </div>
 
-      {/* Footer */}
-      <div className="p-4 bg-gray-50 border-t border-gray-100">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all group">
-          <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-red-100 transition">
-            <LogOut size={16} className="group-hover:text-red-600" />
+            {/* Main Content Area */}
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <User size={24} className="text-gray-400" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                    Chào mừng bạn trở lại!
+                  </h2>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    Chọn một tùy chọn từ menu bên trái để bắt đầu quản lý tài khoản của bạn
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <span className="font-medium text-sm">Đăng xuất</span>
-        </button>
-        <div className="mt-3 text-center text-xs text-gray-400">
-          <p>VieTour v2.0</p>
-          <p>© 2024 All rights reserved</p>
+
+          {/* Footer */}
+          <div className="mt-12 text-center text-sm text-gray-500">
+            <p>VieTour v2.0 • © 2024 All rights reserved</p>
+          </div>
         </div>
       </div>
     </div>

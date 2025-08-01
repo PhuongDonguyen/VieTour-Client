@@ -34,10 +34,10 @@ export interface Tour {
   id: number;
   title: string;
   description: string;
-  poster_url: string; // Changed from thumbnail to poster_url
+  poster_url: string;
   slug: string;
   tour_category_id: number;
-  originalPrice: number;
+  price: number;
   discountedPrice?: number;
   duration: number;
   is_active: boolean;
