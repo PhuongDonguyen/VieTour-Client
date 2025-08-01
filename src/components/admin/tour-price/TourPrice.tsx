@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthContext } from "@/context/authContext";
@@ -13,19 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Edit, Trash2, Eye, Plus, ArrowLeft } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Edit, Trash2, Eye, Plus, DollarSign } from "lucide-react";
-import { providerTourPriceService } from "../../../services/provider/providerTourPrice.service";
-import { adminTourPriceService } from "../../../services/admin/adminTourPrice.service";
-import { adminTourService } from "../../../services/admin/adminTour.service";
-import type { TourPrice } from "../../../apis/provider/providerTourPrice.api";
-import type { AdminTourPrice } from "../../../apis/admin/adminTourPrice.api";
+  fetchAllTourPrices,
+  deleteTourPriceService,
+} from "@/services/tourPrice.service";
+import type { TourPrice } from "@/apis/tourPrice.api";
 
 const TourPricesManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -36,25 +28,14 @@ const TourPricesManagement: React.FC = () => {
   // Get tour_id from URL query parameter
   const tourIdFromUrl = searchParams.get("tour_id");
 
-  const [tourPrices, setTourPrices] = useState<(TourPrice | AdminTourPrice)[]>(
-    []
-  );
+  const [tourPrices, setTourPrices] = useState<TourPrice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
-  const [selectedTourId, setSelectedTourId] = useState<string>(
-    tourIdFromUrl || "all"
-  );
-  const [availableTours, setAvailableTours] = useState<
-    { id: number; title: string }[]
-  >([]);
 
-  // Helper functions to normalize data between TourPrice and AdminTourPrice
-  const getTourInfo = (price: TourPrice | AdminTourPrice) => {
-    // Handle case where tour property might be undefined
+  // Helper function to get tour info
+  const getTourInfo = (price: TourPrice) => {
     if (price.tour) {
       return {
         id: price.tour.id,
@@ -63,19 +44,13 @@ const TourPricesManagement: React.FC = () => {
         category_name: price.tour.tour_category.name,
       };
     } else {
-      // Fallback for when tour info is not available
-      const tourId = "tour_id" in price ? price.tour_id : 0;
       return {
-        id: tourId,
-        title: `Tour ID: ${tourId}`,
+        id: price.tour_id,
+        title: `Tour ID: ${price.tour_id}`,
         poster_url: "/avatar-default.jpg",
         category_name: "Unknown",
       };
     }
-  };
-
-  const getChildPrice = (price: TourPrice | AdminTourPrice): number => {
-    return "kid_price" in price ? price.kid_price : price.child_price;
   };
 
   const formatPrice = (price: number): string => {
@@ -86,64 +61,67 @@ const TourPricesManagement: React.FC = () => {
   const fetchTourPrices = async () => {
     setLoading(true);
     try {
-      let data;
-      if (isAdmin) {
-        const res = await adminTourPriceService.getAllTourPrices({
-          page: currentPage,
-          search: searchTerm,
-          tour_id:
-            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
-        });
-        data = res.data;
-        setTotalPages(res.pagination.totalPages);
-        setTotalItems(res.pagination.totalItems);
+      const res = await fetchAllTourPrices({
+        page: currentPage,
+        tour_id: tourIdFromUrl ? Number(tourIdFromUrl) : undefined,
+      });
+
+      setTourPrices(res.data);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.totalItems);
+    } catch (error: any) {
+      console.error("Error fetching tour prices:", error);
+
+      // Show user-friendly error message
+      if (error.response?.status === 400) {
+        console.error(
+          "API Error 400: Bad Request - The API endpoint may not be implemented yet"
+        );
+        // Show mock data for testing UI
+        console.log("Showing mock data for UI testing...");
+        setTourPrices([]);
+        setTotalPages(1);
+        setTotalItems(0);
+      } else if (error.response?.status === 404) {
+        console.error(
+          "API Error 404: Not Found - The API endpoint does not exist"
+        );
+        setTourPrices([]);
+        setTotalPages(1);
+        setTotalItems(0);
+      } else if (error.response?.status === 500) {
+        console.error(
+          "API Error 500: Internal Server Error - Backend server error"
+        );
+        setTourPrices([]);
+        setTotalPages(1);
+        setTotalItems(0);
+      } else if (error.code === "ERR_NETWORK") {
+        console.error("Network Error: Cannot connect to the server");
+        setTourPrices([]);
+        setTotalPages(1);
+        setTotalItems(0);
       } else {
-        const res = await providerTourPriceService.getTourPrices({
-          page: currentPage,
-          search: searchTerm,
-          tour_id:
-            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
-        });
-        data = res.data;
-        setTotalPages(res.pagination.totalPages);
-        setTotalItems(res.pagination.totalItems);
+        setTourPrices([]);
+        setTotalPages(1);
+        setTotalItems(0);
       }
-      setTourPrices(data);
-    } catch (error) {
-      setTourPrices([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      // Lấy danh sách tour cho admin
-      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
-        if (res.data && Array.isArray(res.data)) {
-          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
-        }
-      });
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
     fetchTourPrices();
-  }, [isAdmin, currentPage, searchTerm, selectedTourId]);
-
-  // Handle search
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
+  }, [currentPage, tourIdFromUrl]);
 
   // Handle view price
-  const handleViewPrice = (price: TourPrice | AdminTourPrice) => {
+  const handleViewPrice = (price: TourPrice) => {
     navigate(`/admin/tours/prices/view/${price.id}`);
   };
 
   // Handle edit price
-  const handleEditPrice = (price: TourPrice | AdminTourPrice) => {
+  const handleEditPrice = (price: TourPrice) => {
     if (isAdmin) {
       alert("Admin không có quyền chỉnh sửa.");
       return;
@@ -159,18 +137,37 @@ const TourPricesManagement: React.FC = () => {
     }
     if (window.confirm("Bạn có chắc chắn muốn xóa giá tour này?")) {
       try {
-        await providerTourPriceService.deleteTourPrice(id);
+        await deleteTourPriceService(id);
         fetchTourPrices();
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to delete tour price:", error);
-        alert("Không thể xóa giá tour. Vui lòng thử lại.");
+
+        // Show user-friendly error message
+        if (error.response?.status === 400) {
+          console.error(
+            "API Error 400: Bad Request - The delete API endpoint may not be implemented yet"
+          );
+          alert("API endpoint chưa được implement. Vui lòng thử lại sau.");
+        } else if (error.response?.status === 404) {
+          console.error(
+            "API Error 404: Not Found - The tour price does not exist"
+          );
+          alert("Không tìm thấy thông tin giá tour. Vui lòng kiểm tra lại.");
+        } else if (error.response?.status === 500) {
+          console.error(
+            "API Error 500: Internal Server Error - Backend server error"
+          );
+          alert("Lỗi server. Vui lòng thử lại sau.");
+        } else if (error.code === "ERR_NETWORK") {
+          console.error("Network Error: Cannot connect to the server");
+          alert(
+            "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng."
+          );
+        } else {
+          alert("Không thể xóa giá tour. Vui lòng thử lại.");
+        }
       }
     }
-  };
-
-  const handleTourChange = (tourId: string) => {
-    setSelectedTourId(tourId);
-    setLoading(true); // show loading until list update
   };
 
   // Format currency
@@ -182,18 +179,35 @@ const TourPricesManagement: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Quản Lý Giá Tours</h1>
-          <p className="text-muted-foreground">
-            Quản lý bảng giá cho các tours ({totalItems} bảng giá)
-            {isAdmin && (
-              <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
-            )}
-          </p>
+        <div className="flex items-center gap-4">
+          {tourIdFromUrl && (
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/admin/tours/view/${tourIdFromUrl}`)}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Quay lại Tour
+            </Button>
+          )}
+          <div>
+            <h1 className="text-3xl font-bold">Quản Lý Giá Tours</h1>
+            <p className="text-muted-foreground">
+              Quản lý bảng giá cho các tours ({totalItems} bảng giá)
+              {isAdmin && (
+                <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+              )}
+            </p>
+          </div>
         </div>
         {!isAdmin && (
           <Button
-            onClick={() => navigate("/admin/tours/prices/new")}
+            onClick={() =>
+              navigate(
+                tourIdFromUrl
+                  ? `/admin/tours/prices/new?tour_id=${tourIdFromUrl}`
+                  : "/admin/tours/prices/new"
+              )
+            }
             className="bg-black hover:bg-gray-800 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -201,41 +215,6 @@ const TourPricesManagement: React.FC = () => {
           </Button>
         )}
       </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tìm Kiếm & Bộ Lọc</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm theo tên tour hoặc ghi chú..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10 max-w-sm"
-              />
-            </div>
-            <div className="w-72">
-              <Select value={selectedTourId} onValueChange={handleTourChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn tour" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả tours</SelectItem>
-                  {tours.map((t) => (
-                    <SelectItem key={t.id} value={t.id.toString()}>
-                      {t.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tour Prices Table */}
       <Card>
@@ -254,10 +233,9 @@ const TourPricesManagement: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tour</TableHead>
+                  <TableHead>Ghi Chú</TableHead>
                   <TableHead>Giá Người Lớn</TableHead>
                   <TableHead>Giá Trẻ Em</TableHead>
-                  <TableHead>Danh Mục</TableHead>
                   <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -266,17 +244,10 @@ const TourPricesManagement: React.FC = () => {
                   tourPrices.map((price) => (
                     <TableRow key={price.id}>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={getTourInfo(price).poster_url}
-                            alt={getTourInfo(price).title}
-                            className="w-12 h-8 object-cover rounded"
-                          />
-                          <div>
-                            <p className="font-medium text-sm">
-                              {getTourInfo(price).title}
-                            </p>
-                          </div>
+                        <div className="max-w-xs">
+                          <p className="text-sm text-muted-foreground">
+                            {price.note || "Không có ghi chú"}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -286,13 +257,8 @@ const TourPricesManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="font-semibold text-blue-600">
-                          {formatCurrency(getChildPrice(price))}
+                          {formatCurrency(price.kid_price)}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {getTourInfo(price).category_name}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -328,7 +294,7 @@ const TourPricesManagement: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       {loading
                         ? "Đang tải..."
                         : "Không có bảng giá nào được tìm thấy."}

@@ -1,30 +1,75 @@
-import { getTourPrices, getTourPricesByTourId, getAllSortedTourPrices } from "../apis/tourPrice.api";
+import {
+  getAllTourPrices,
+  getTourPriceById,
+  getTourPricesByTourId,
+  getAllSortedTourPrices,
+  createTourPrice,
+  updateTourPrice,
+  deleteTourPrice,
+  type TourPrice,
+  type TourPriceQueryParams,
+  type TourPriceResponse,
+  type TourPriceCreateResponse,
+  type TourPriceUpdateResponse,
+  type TourPriceDeleteResponse,
+} from "@/apis/tourPrice.api";
 
-export const tourPriceService = {
-    async getAllTourPrices() {
-        try {
-            const response = await getTourPrices();
-            return response;
-        } catch (error) {
-            console.error("Error fetching tour prices:", error);
-            throw error;
-        }
-    },
-    async getTourPricesByTourId(tourId: number) {
-        try {
-            const response = await getTourPricesByTourId(tourId);
-            return response;
-        } catch (error) {
-            console.error("Error fetching tour prices by tour_id:", error);
-        }
-    },
+// Service wrapper functions
+export const fetchAllTourPrices = async (
+  params: TourPriceQueryParams = {}
+): Promise<TourPriceResponse> => {
+  return await getAllTourPrices(params);
+};
 
-    async getAllSortedTourPrices() {
-        try {
-            const response = await getAllSortedTourPrices();
-            return response;
-        } catch (error) {
-            throw error;
-        }
-    }
+export const fetchTourPriceById = async (id: number): Promise<TourPrice> => {
+  return await getTourPriceById(id);
+};
+
+export const fetchTourPricesByTourId = async (
+  tourId: number
+): Promise<TourPriceResponse> => {
+  return await getTourPricesByTourId(tourId);
+};
+
+export const fetchAllSortedTourPrices =
+  async (): Promise<TourPriceResponse> => {
+    return await getAllSortedTourPrices();
+  };
+
+export const createTourPriceService = async (data: {
+  tour_id: number;
+  adult_price: number;
+  kid_price: number;
+  note?: string;
+  price_type?: string;
+}): Promise<TourPriceCreateResponse> => {
+  return await createTourPrice(data);
+};
+
+export const updateTourPriceService = async (
+  id: number,
+  data: {
+    adult_price: number;
+    kid_price: number;
+    note?: string;
+    price_type?: string;
+  }
+): Promise<TourPriceUpdateResponse> => {
+  return await updateTourPrice(id, data);
+};
+
+export const deleteTourPriceService = async (
+  id: number
+): Promise<TourPriceDeleteResponse> => {
+  return await deleteTourPrice(id);
+};
+
+// Export types for use in components
+export type {
+  TourPrice,
+  TourPriceQueryParams,
+  TourPriceResponse,
+  TourPriceCreateResponse,
+  TourPriceUpdateResponse,
+  TourPriceDeleteResponse,
 };

@@ -15,10 +15,14 @@ import {
 } from "@/components/ui/select";
 import TinyMCEEditor from "@/components/TinyMCEEditor";
 import { AuthContext } from "@/context/authContext";
-import { providerTourDetailService } from "@/services/provider/providerTourDetail.service";
-import { providerTourService } from "@/services/provider/providerTour.service";
-import type { TourDetail } from "@/apis/provider/providerTourDetail.api";
-import type { ProviderTour } from "@/apis/provider/providerTour.api";
+import {
+  fetchTourDetailById,
+  createTourDetailService,
+  updateTourDetailService,
+} from "@/services/tourDetail.service";
+import { fetchTours } from "@/services/tour.service";
+import type { TourDetail } from "@/apis/tourDetail.api";
+import type { Tour } from "@/apis/tour.api";
 
 interface TourDetailFormData {
   tour_id: string;
@@ -44,13 +48,13 @@ const TourDetailEditor: React.FC = () => {
     afternoon_description: "",
   });
 
-  const [availableTours, setAvailableTours] = useState<ProviderTour[]>([]);
+  const [availableTours, setAvailableTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(false);
   const [isLoadingTour, setIsLoadingTour] = useState(false);
   const [currentTourDetail, setCurrentTourDetail] = useState<TourDetail | null>(
     null
   );
-  const [selectedTour, setSelectedTour] = useState<ProviderTour | null>(null);
+  const [selectedTour, setSelectedTour] = useState<Tour | null>(null);
 
   const isEditing = !!id;
 
@@ -58,12 +62,12 @@ const TourDetailEditor: React.FC = () => {
   useEffect(() => {
     const loadAvailableTours = async () => {
       try {
-        const response = await providerTourService.getTours({
+        const response = await fetchTours({
           page: 1,
           limit: 100,
         });
 
-        let toursData: ProviderTour[] = [];
+        let toursData: Tour[] = [];
         if (response && typeof response === "object") {
           if (response.data && Array.isArray(response.data)) {
             toursData = response.data;
@@ -98,33 +102,8 @@ const TourDetailEditor: React.FC = () => {
       const loadTourDetailData = async () => {
         try {
           setIsLoadingTour(true);
-          const response = await providerTourDetailService.getTourDetail(
-            parseInt(id)
-          );
-          console.log("TourDetailEditor - Raw response:", response);
-
-          // Handle different response structures
-          let tourDetail;
-          if (response && typeof response === "object") {
-            if (
-              "data" in response &&
-              "success" in response &&
-              response.success
-            ) {
-              tourDetail = (response as any).data;
-            } else if ("data" in response) {
-              tourDetail = (response as any).data;
-            } else {
-              tourDetail = response;
-            }
-          } else {
-            tourDetail = response;
-          }
-
-          console.log(
-            "TourDetailEditor - Processed tour detail data:",
-            tourDetail
-          );
+          const tourDetail = await fetchTourDetailById(parseInt(id));
+          console.log("TourDetailEditor - Tour detail data:", tourDetail);
 
           if (!tourDetail) {
             console.error("No tour detail data found");
@@ -199,17 +178,15 @@ const TourDetailEditor: React.FC = () => {
       };
 
       if (isEditing && id) {
-        await providerTourDetailService.updateTourDetail(
-          parseInt(id),
-          tourDetailData
-        );
+        await updateTourDetailService(parseInt(id), tourDetailData);
         alert("Cập nhật chi tiết tour thành công!");
       } else {
-        await providerTourDetailService.createTourDetail(tourDetailData);
+        await createTourDetailService(tourDetailData);
         alert("Tạo chi tiết tour thành công!");
       }
 
-      navigate("/admin/tours/details");
+      // Navigate back to list with tour_id filter to maintain the selected tour
+      navigate(`/admin/tours/details?tour_id=${formData.tour_id}`);
     } catch (error) {
       console.error("Error saving tour detail:", error);
       alert("Có lỗi xảy ra khi lưu chi tiết tour. Vui lòng thử lại.");
@@ -238,7 +215,9 @@ const TourDetailEditor: React.FC = () => {
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
-            onClick={() => navigate("/admin/tours/details")}
+            onClick={() =>
+              navigate(`/admin/tours/details?tour_id=${formData.tour_id}`)
+            }
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay lại
@@ -330,9 +309,6 @@ const TourDetailEditor: React.FC = () => {
                   />
                   <div>
                     <h3 className="font-semibold">{selectedTour.title}</h3>
-                    <p className="text-muted-foreground">
-                      {selectedTour.tour_category.name}
-                    </p>
                     <Badge variant="outline" className="mt-1">
                       {selectedTour.duration}
                     </Badge>

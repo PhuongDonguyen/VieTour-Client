@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { tourPriceService } from "../../services/tourPrice.service";
+import { fetchTourPricesByTourId } from "../../services/tourPrice.service";
 
 interface TabPriceProps {
   tourId: number;
@@ -14,13 +14,14 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
     if (!tourId) return;
     setLoading(true);
     setError(null);
-    tourPriceService
-      .getTourPricesByTourId(tourId)
+
+    fetchTourPricesByTourId(tourId)
       .then((res) => {
-        setPrices(res.data?.data || []);
+        setPrices(res.data || []);
         setLoading(false);
       })
       .catch((err) => {
+        console.error("Error fetching tour prices:", err);
         setError("Không thể tải bảng giá.");
         setLoading(false);
       });

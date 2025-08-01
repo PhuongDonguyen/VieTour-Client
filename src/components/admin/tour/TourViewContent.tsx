@@ -21,11 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import TinyMCEEditor from "@/components/TinyMCEEditor";
 import { AuthContext } from "@/context/authContext";
-import { providerTourService } from "@/services/provider/providerTour.service";
-import { adminTourService } from "@/services/admin/adminTour.service";
-import type { ProviderTour } from "@/apis/provider/providerTour.api";
-import type { AdminTour } from "@/apis/admin/adminTour.api";
-import { providerTourCategoryApi } from "@/apis/provider/providerTourCategory.api";
+import { fetchTourById } from "@/services/tour.service";
+import type { Tour } from "@/apis/tour.api";
 
 interface TourViewContentProps {
   tourId?: string;
@@ -45,81 +42,61 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
-  const [tour, setTour] = useState<ProviderTour | AdminTour | null>(null);
+  const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState<string>("Không xác định");
 
   const actualTourId = tourId || id;
 
-  // Helper functions to normalize data between AdminTour and ProviderTour
-  const getTourCapacity = (tour: ProviderTour | AdminTour): number => {
-    return "capacity" in tour ? tour.capacity : tour.max_participants || 0;
+  // Helper functions to normalize data
+  const getTourCapacity = (tour: Tour): number => {
+    return tour.capacity || 0;
   };
 
-  const getTourRating = (tour: ProviderTour | AdminTour): number => {
-    if ("total_star" in tour) {
-      // ProviderTour: calculate average from total_star / review_count
-      return tour.review_count > 0 ? tour.total_star / tour.review_count : 0;
-    } else {
-      // AdminTour: use average_rating directly
-      return tour.average_rating || 0;
+  const getTourRating = (tour: Tour): number => {
+    if (tour.total_star && tour.review_count && tour.review_count > 0) {
+      return tour.total_star / tour.review_count;
     }
+    return 0;
   };
 
-  const getTourReviewCount = (tour: ProviderTour | AdminTour): number => {
-    return "review_count" in tour ? tour.review_count : tour.total_reviews || 0;
+  const getTourReviewCount = (tour: Tour): number => {
+    return tour.review_count || 0;
   };
 
-  const getTourBookedCount = (tour: ProviderTour | AdminTour): number => {
-    return "booked_count" in tour ? tour.booked_count : tour.booking_count || 0;
+  const getTourBookedCount = (tour: Tour): number => {
+    return tour.booked_count || 0;
   };
 
-  const getTourViewCount = (tour: ProviderTour | AdminTour): string => {
+  const getTourViewCount = (tour: Tour): string => {
     const viewCount = tour.view_count;
     return typeof viewCount === "string"
       ? viewCount
       : viewCount?.toString() || "0";
   };
 
-  const getTourTransportation = (tour: ProviderTour | AdminTour): string => {
-    return "transportation" in tour
-      ? tour.transportation
-      : tour.location || "Không có thông tin";
+  const getTourTransportation = (tour: Tour): string => {
+    return tour.transportation || "Không có thông tin";
   };
 
-  const getTourAccommodation = (tour: ProviderTour | AdminTour): string => {
-    return "accommodation" in tour ? tour.accommodation : "Không có thông tin";
+  const getTourAccommodation = (tour: Tour): string => {
+    return tour.accommodation || "Không có thông tin";
   };
 
-  const getTourDestinationIntro = (
-    tour: ProviderTour | AdminTour
-  ): string | null => {
-    return "destination_intro" in tour
-      ? tour.destination_intro
-      : tour.description || null;
+  const getTourDestinationIntro = (tour: Tour): string | null => {
+    return tour.destination_intro || null;
   };
 
-  const getTourInfo = (tour: ProviderTour | AdminTour): string | null => {
-    return "tour_info" in tour ? tour.tour_info : tour.description || null;
+  const getTourInfo = (tour: Tour): string | null => {
+    return tour.tour_info || null;
   };
 
-  const getTourLiveCommentary = (
-    tour: ProviderTour | AdminTour
-  ): string | null => {
-    return "live_commentary" in tour ? tour.live_commentary : null;
+  const getTourLiveCommentary = (tour: Tour): string | null => {
+    return tour.live_commentary || null;
   };
 
-  const getTourDuration = (tour: ProviderTour | AdminTour): string => {
-    if ("duration" in tour) {
-      // ProviderTour has duration as string
-      return tour.duration as string;
-    } else {
-      // AdminTour has duration as number
-      const adminTour = tour as AdminTour;
-      return adminTour.duration
-        ? `${adminTour.duration} ngày`
-        : "Không có thông tin";
-    }
+  const getTourDuration = (tour: Tour): string => {
+    return tour.duration ? `${tour.duration} ngày` : "Không có thông tin";
   };
 
   // Load tour data
@@ -128,21 +105,9 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
       if (!actualTourId) return;
       setLoading(true);
       try {
-        let tourData;
-        if (isAdmin) {
-          tourData = await adminTourService.getTour(Number(actualTourId));
-          setTour(tourData);
-        } else {
-          const res = await providerTourService.getTourById(
-            Number(actualTourId)
-          );
-          console.log("Provider tourData", res);
-          if (res && typeof res === "object" && "data" in res) {
-            setTour(res.data as ProviderTour);
-          } else {
-            setTour(res as ProviderTour);
-          }
-        }
+        const tourData = await fetchTourById(Number(actualTourId));
+        console.log("Tour data", tourData);
+        setTour(tourData);
       } catch (error) {
         setTour(null);
       } finally {
@@ -150,17 +115,14 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
       }
     };
     loadTourData();
-  }, [actualTourId, isAdmin]);
+  }, [actualTourId]);
 
   useEffect(() => {
     if (!tour) return;
-    if ((tour as any).tour_category?.name) {
-      setCategoryName((tour as any).tour_category.name);
-    } else if ((tour as any).tour_category_id) {
-      providerTourCategoryApi
-        .getCategoryById((tour as any).tour_category_id)
-        .then((cat) => setCategoryName(cat?.name || "Không xác định"))
-        .catch(() => setCategoryName("Không xác định"));
+    if (tour.tour_category?.name) {
+      setCategoryName(tour.tour_category.name);
+    } else if (tour.tour_category_id) {
+      setCategoryName(`Category ${tour.tour_category_id}`);
     } else {
       setCategoryName("Không xác định");
     }

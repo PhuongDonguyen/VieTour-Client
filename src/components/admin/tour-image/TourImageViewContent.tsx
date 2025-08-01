@@ -14,10 +14,9 @@ import {
   Phone,
   MessageCircle,
 } from "lucide-react";
-import { providerTourImageService } from "../../../services/provider/providerTourImage.service";
-import { providerTourApi } from "../../../apis/provider/providerTour.api";
-import type { TourImage } from "../../../apis/provider/providerTourImage.api";
-import type { AdminTourImage } from "../../../apis/admin/adminTourImage.api";
+import { fetchTourImageById } from "@/services/tourImage.service";
+import { fetchTourById } from "@/services/tour.service";
+import type { TourImage } from "@/apis/tourImage.api";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 
@@ -37,7 +36,7 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
   const { id: idFromParams } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const [image, setImage] = useState<TourImage | AdminTourImage | null>(null);
+  const [image, setImage] = useState<TourImage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tour, setTour] = useState<any>(null);
@@ -50,43 +49,14 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
       setLoading(true);
       setError(null);
       try {
-        let response;
-        if (user?.role === "admin") {
-          response = await import(
-            "../../../services/admin/adminTourImage.service"
-          ).then((m) =>
-            m.adminTourImageService.getTourImage(Number(actualImageId))
-          );
-        } else if (user?.role === "provider") {
-          response = await providerTourImageService.getTourImageById(
-            Number(actualImageId)
-          );
-        } else {
-          setError("Không có quyền truy cập hình ảnh này.");
-          setLoading(false);
-          return;
-        }
+        const response = await fetchTourImageById(Number(actualImageId));
         setImage(response);
+
         // Nếu có tour_id, fetch thêm thông tin tour
-        let tourId = null;
-        if ("tour_id" in response) {
-          tourId = response.tour_id;
-        } else if (response.tour && response.tour.id) {
-          tourId = response.tour.id;
-        }
-        if (tourId) {
+        if (response.tour_id) {
           try {
-            let tourRes;
-            if (user?.role === "admin") {
-              tourRes = await import("../../../apis/admin/adminTour.api").then(
-                (m) => m.adminTourApi.getTour(Number(tourId))
-              );
-            } else if (user?.role === "provider") {
-              tourRes = await providerTourApi.getTourById(Number(tourId));
-            } else {
-              tourRes = null;
-            }
-            setTour(tourRes?.data?.data || null);
+            const tourRes = await fetchTourById(response.tour_id);
+            setTour(tourRes);
           } catch {
             setTour(null);
           }
@@ -100,7 +70,7 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
       }
     };
     fetchImage();
-  }, [actualImageId, user?.role]);
+  }, [actualImageId]);
 
   if (loading) {
     return (
@@ -124,19 +94,6 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
       <div className="text-red-500">{error || "Không tìm thấy hình ảnh."}</div>
     );
 
-  // Helper lấy alt text
-  const getAltText = (img: TourImage | AdminTourImage) =>
-    "alt_text" in img ? img.alt_text : (img as any).description || "Tour image";
-  // Helper lấy tour_id
-  const getTourId = (img: TourImage | AdminTourImage) =>
-    "tour_id" in img ? img.tour_id : img.tour?.id;
-  // Helper lấy created_at
-  const getCreatedAt = (img: TourImage | AdminTourImage) =>
-    "created_at" in img ? img.created_at : (img as any).created_at;
-  // Helper lấy updated_at
-  const getUpdatedAt = (img: TourImage | AdminTourImage) =>
-    "updated_at" in img ? img.updated_at : (img as any).updated_at;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -144,7 +101,11 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
         <div className="flex items-center mb-4">
           <Button
             variant="ghost"
-            onClick={onBack ? onBack : () => navigate("/admin/tours/images")}
+            onClick={
+              onBack
+                ? onBack
+                : () => navigate(`/admin/tours/images?tour_id=${image.tour_id}`)
+            }
             className="flex items-center"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -164,7 +125,7 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
             <CardContent className="flex flex-col items-center gap-4">
               <img
                 src={image.image_url}
-                alt={getAltText(image)}
+                alt={image.alt_text || "Tour image"}
                 className="w-full max-w-xl h-64 object-cover rounded-lg border"
               />
               <Button
@@ -206,26 +167,26 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Tour ID</div>
-                  <div className="font-mono">{getTourId(image)}</div>
+                  <div className="font-mono">{image.tour_id}</div>
                 </div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Alt text</div>
-                <div>{getAltText(image)}</div>
+                <div>{image.alt_text || "Không có mô tả"}</div>
               </div>
-              {getCreatedAt(image) && (
+              {image.created_at && (
                 <div>
                   <div className="text-sm text-muted-foreground">Ngày tạo</div>
                   <div>
-                    {format(new Date(getCreatedAt(image)), "dd/MM/yyyy HH:mm")}
+                    {format(new Date(image.created_at), "dd/MM/yyyy HH:mm")}
                   </div>
                 </div>
               )}
-              {getUpdatedAt(image) && (
+              {image.updated_at && (
                 <div>
                   <div className="text-sm text-muted-foreground">Cập nhật</div>
                   <div>
-                    {format(new Date(getUpdatedAt(image)), "dd/MM/yyyy HH:mm")}
+                    {format(new Date(image.updated_at), "dd/MM/yyyy HH:mm")}
                   </div>
                 </div>
               )}
@@ -255,7 +216,7 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
               )}
               <Button
                 variant="outline"
-                onClick={() => navigate(`/admin/tours/view/${tour?.id}`)}
+                onClick={() => navigate(`/admin/tours/view/${image.tour_id}`)}
                 className="w-full"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />

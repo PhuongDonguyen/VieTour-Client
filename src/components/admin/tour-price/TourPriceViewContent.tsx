@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Edit,
@@ -16,12 +16,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AuthContext } from "@/context/authContext";
-import { providerTourPriceService } from "@/services/provider/providerTourPrice.service";
-import { adminTourPriceService } from "@/services/admin/adminTourPrice.service";
-import { providerTourApi } from "@/apis/provider/providerTour.api";
-import type { TourPrice } from "@/apis/provider/providerTourPrice.api";
-import type { AdminTourPrice } from "@/apis/admin/adminTourPrice.api";
-import { adminTourService } from "@/services/admin/adminTour.service";
+import { fetchTourPriceById } from "@/services/tourPrice.service";
+import { fetchTourById } from "@/services/tour.service";
+import type { TourPrice } from "@/apis/tourPrice.api";
 
 interface TourPriceViewContentProps {
   priceId?: string;
@@ -36,12 +33,14 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
 }) => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
-  const [tourPrice, setTourPrice] = useState<TourPrice | AdminTourPrice | null>(
-    null
-  );
+  // Get tour_id from URL query parameter
+  const tourIdFromUrl = searchParams.get("tour_id");
+
+  const [tourPrice, setTourPrice] = useState<TourPrice | null>(null);
   const [tourInfo, setTourInfo] = useState<{
     title: string;
     poster_url: string;
@@ -51,12 +50,10 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
 
   const actualPriceId = priceId || id;
 
-  // Helper functions to normalize data between TourPrice and AdminTourPrice
-  const getChildPrice = (price: TourPrice | AdminTourPrice): number => {
-    return "kid_price" in price ? price.kid_price : price.child_price;
-  };
-
-  const formatPrice = (price: number): string => {
+  const formatPrice = (price: number | undefined | null): string => {
+    if (price === undefined || price === null) {
+      return "0 VND";
+    }
     return `${price.toLocaleString()} VND`;
   };
 
@@ -71,7 +68,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
   };
 
   // Helper function to get tour information safely
-  const getTourInfo = (price: TourPrice | AdminTourPrice) => {
+  const getTourInfo = (price: TourPrice) => {
     if (price.tour) {
       return {
         title: price.tour.title,
@@ -83,7 +80,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
     } else {
       return {
         title: `Tour ID: ${price.tour_id}`,
-        poster_url: "/public/VieTour-Logo.png",
+        poster_url: "/avatar-default.jpg",
         category_name: "Chưa phân loại",
       };
     }
@@ -95,79 +92,57 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
 
     try {
       setLoading(true);
-      let response;
+      console.log("Loading tour price with ID:", actualPriceId);
 
-      if (user?.role === "admin") {
-        response = await adminTourPriceService.getTourPrice(
-          parseInt(actualPriceId)
-        );
-        console.log("Admin tour price response:", response);
-      } else if (user?.role === "provider") {
-        response = await providerTourPriceService.getTourPrice(
-          parseInt(actualPriceId)
-        );
-        console.log("Provider tour price response:", response);
-      } else {
-        setTourPrice(null);
-        setTourInfo(null);
-        setLoading(false);
-        return;
-      }
+      const response = await fetchTourPriceById(parseInt(actualPriceId));
+      console.log("Tour price response:", response);
+      console.log("Response type:", typeof response);
+      console.log("Response keys:", Object.keys(response));
 
-      // Extract the tour price data from response
-      let priceData: TourPrice | AdminTourPrice;
-      if (response && typeof response === "object") {
-        if (response.data && response.data.data) {
-          priceData = response.data.data;
-        } else if (response.data) {
-          priceData = response.data;
-        } else {
-          priceData = response;
-        }
-      } else {
-        throw new Error("Invalid response format");
-      }
+      setTourPrice(response);
 
-      console.log("Processed tour price data:", priceData);
-      setTourPrice(priceData);
-
-      // Fetch tour info if not available in the response
-      if (!priceData.tour && priceData.tour_id) {
+      // Always fetch tour info since the API doesn't include tour data
+      if (response.tour_id) {
+        console.log("Fetching tour info for tour_id:", response.tour_id);
         try {
-          if (user?.role === "admin") {
-            const tourRes = await adminTourService.getTour(priceData.tour_id);
-            setTourInfo({
-              title: tourRes.title,
-              poster_url: tourRes.poster_url,
-              category_name: tourRes.tour_category?.name || "Chưa phân loại",
-            });
-          } else if (user?.role === "provider") {
-            const tourResponse = await providerTourApi.getTourById(
-              priceData.tour_id
-            );
-            const tourData = tourResponse.data.data;
-            setTourInfo({
-              title: tourData.title,
-              poster_url: tourData.poster_url,
-              category_name: tourData.tour_category?.name || "Chưa phân loại",
-            });
-          } else {
-            setTourInfo({
-              title: `Tour ID: ${priceData.tour_id}`,
-              poster_url: "/public/VieTour-Logo.png",
-              category_name: "Chưa phân loại",
-            });
-          }
-        } catch (tourError) {
+          const tourRes = await fetchTourById(response.tour_id);
+          console.log("Tour info response:", tourRes);
           setTourInfo({
-            title: `Tour ID: ${priceData.tour_id}`,
-            poster_url: "/public/VieTour-Logo.png",
+            title: tourRes.title,
+            poster_url: tourRes.poster_url,
+            category_name: tourRes.tour_category?.name || "Chưa phân loại",
+          });
+        } catch (tourError: any) {
+          console.error("Failed to load tour info:", tourError);
+          setTourInfo({
+            title: `Tour ID: ${response.tour_id}`,
+            poster_url: "/avatar-default.jpg",
             category_name: "Chưa phân loại",
           });
         }
+      } else {
+        console.log("No tour_id found in response");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load tour price:", error);
+
+      // Show user-friendly error message
+      if (error.response?.status === 400) {
+        console.error(
+          "API Error 400: Bad Request - The API endpoint may not be implemented yet"
+        );
+      } else if (error.response?.status === 404) {
+        console.error(
+          "API Error 404: Not Found - The tour price does not exist"
+        );
+      } else if (error.response?.status === 500) {
+        console.error(
+          "API Error 500: Internal Server Error - Backend server error"
+        );
+      } else if (error.code === "ERR_NETWORK") {
+        console.error("Network Error: Cannot connect to the server");
+      }
+
       setTourPrice(null);
     } finally {
       setLoading(false);
@@ -176,7 +151,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
 
   useEffect(() => {
     loadTourPriceData();
-  }, [actualPriceId, isAdmin]);
+  }, [actualPriceId]);
 
   if (loading) {
     return (
@@ -212,7 +187,17 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
               Quay lại
             </Button>
           ) : (
-            <Button onClick={() => navigate("/admin/tours/prices")}>
+            <Button
+              onClick={() =>
+                navigate(
+                  tourIdFromUrl || tourPrice?.tour_id
+                    ? `/admin/tours/prices?tour_id=${
+                        tourIdFromUrl || tourPrice?.tour_id
+                      }`
+                    : "/admin/tours/prices"
+                )
+              }
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại danh sách
             </Button>
@@ -230,21 +215,29 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
           <div className="flex items-center space-x-4">
             {onBack ? (
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={onBack}
                 className="flex items-center space-x-2"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span>Quay lại</span>
               </Button>
             ) : (
               <Button
-                variant="ghost"
-                onClick={() => navigate("/admin/tours/prices")}
+                variant="outline"
+                onClick={() =>
+                  navigate(
+                    tourIdFromUrl || tourPrice?.tour_id
+                      ? `/admin/tours/prices?tour_id=${
+                          tourIdFromUrl || tourPrice?.tour_id
+                        }`
+                      : "/admin/tours/prices"
+                  )
+                }
                 className="flex items-center space-x-2"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Tour Prices</span>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span>Quay lại</span>
               </Button>
             )}
             <div>
@@ -253,12 +246,9 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
               </h1>
               <p className="text-muted-foreground">
                 Tour Price
-                {tourPrice.created_at &&
+                {tourPrice?.created_at &&
                 formatDate(tourPrice.created_at) !== "Invalid Date"
                   ? ` • ${formatDate(tourPrice.created_at)}`
-                  : ""}
-                {getTourInfo(tourPrice).category_name
-                  ? ` • ${getTourInfo(tourPrice).category_name}`
                   : ""}
               </p>
             </div>
@@ -283,7 +273,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                     Giá Người Lớn
                   </p>
                   <p className="flex items-center gap-2 text-lg font-bold text-green-600">
-                    {formatPrice(tourPrice.adult_price)}
+                    {formatPrice(tourPrice?.adult_price)}
                   </p>
                 </div>
                 <div>
@@ -292,7 +282,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                   </p>
                   <p className="flex items-center gap-2 text-lg font-bold text-blue-600">
                     <Users className="w-4 h-4" />
-                    {formatPrice(getChildPrice(tourPrice))}
+                    {formatPrice(tourPrice?.kid_price)}
                   </p>
                 </div>
                 <div>
@@ -301,7 +291,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                   </p>
                   <Badge variant="secondary">
                     <Tag className="w-3 h-3 mr-1" />
-                    {tourPrice.price_type || "Standard"}
+                    {tourPrice?.price_type || "Standard"}
                   </Badge>
                 </div>
                 <div>
@@ -326,40 +316,25 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
-                <img
-                  src={getTourInfo(tourPrice).poster_url}
-                  alt={getTourInfo(tourPrice).title}
-                  className="w-16 h-12 object-cover rounded-lg"
-                />
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {getTourInfo(tourPrice).title}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {getTourInfo(tourPrice).category_name}
-                  </p>
-                </div>
+              <div>
+                <h3 className="font-semibold text-lg">
+                  {getTourInfo(tourPrice).title}
+                </h3>
               </div>
             </CardContent>
           </Card>
 
           {/* Price Details */}
-          {tourPrice.description && (
+          {tourPrice?.note && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Tag className="w-5 h-5" />
-                  Mô Tả Giá
+                  Ghi Chú
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div
-                  className="text-foreground [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mb-2 [&>p]:mb-3 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-3 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-3 [&>li]:mb-1 [&>strong]:font-semibold [&>em]:italic [&>a]:text-primary [&>a]:underline [&>a]:hover:text-primary/80 [&>blockquote]:border-l-4 [&>blockquote]:border-border [&>blockquote]:pl-4 [&>blockquote]:my-3 [&>blockquote]:italic [&>blockquote]:text-muted-foreground"
-                  dangerouslySetInnerHTML={{
-                    __html: tourPrice.description || "Chưa có mô tả",
-                  }}
-                />
+                <div className="text-foreground">{tourPrice.note}</div>
               </CardContent>
             </Card>
           )}
@@ -376,7 +351,11 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
               {!isAdmin && (
                 <Button
                   onClick={() =>
-                    navigate(`/admin/tours/prices/edit/${tourPrice.id}`)
+                    navigate(
+                      tourIdFromUrl
+                        ? `/admin/tours/prices/edit/${tourPrice?.id}?tour_id=${tourIdFromUrl}`
+                        : `/admin/tours/prices/edit/${tourPrice?.id}`
+                    )
                   }
                   className="w-full"
                 >
@@ -387,7 +366,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
               <Button
                 variant="outline"
                 onClick={() =>
-                  navigate(`/admin/tours/view/${tourPrice.tour_id}`)
+                  navigate(`/admin/tours/view/${tourPrice?.tour_id}`)
                 }
                 className="w-full"
               >
@@ -407,15 +386,15 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                 <label className="text-sm font-medium text-muted-foreground">
                   Price ID
                 </label>
-                <p className="font-mono text-sm">{tourPrice.id}</p>
+                <p className="font-mono text-sm">{tourPrice?.id}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
                   Tour ID
                 </label>
-                <p className="font-mono text-sm">{tourPrice.tour_id}</p>
+                <p className="font-mono text-sm">{tourPrice?.tour_id}</p>
               </div>
-              {tourPrice.created_at && (
+              {tourPrice?.created_at && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Created
@@ -423,7 +402,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                   <p className="text-sm">{formatDate(tourPrice.created_at)}</p>
                 </div>
               )}
-              {tourPrice.updated_at && (
+              {tourPrice?.updated_at && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Updated

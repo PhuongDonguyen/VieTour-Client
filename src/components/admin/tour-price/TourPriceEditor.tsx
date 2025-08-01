@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,10 +13,15 @@ import {
 } from "@/components/ui/select";
 import { AuthContext } from "@/context/authContext";
 import { ArrowLeft, Save, DollarSign, Users } from "lucide-react";
-import { providerTourPriceService } from "../../../services/provider/providerTourPrice.service";
-import { providerTourService } from "../../../services/provider/providerTour.service";
+import {
+  fetchTourPriceById,
+  createTourPriceService,
+  updateTourPriceService,
+} from "@/services/tourPrice.service";
+import { fetchTours, fetchTourById } from "@/services/tour.service";
 import TinyMCEEditor from "../../TinyMCEEditor";
 import { Badge } from "@/components/ui/badge";
+import type { TourPrice } from "@/apis/tourPrice.api";
 
 interface TourPriceFormData {
   tour_id: number;
@@ -28,11 +33,15 @@ interface TourPriceFormData {
 const TourPriceEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
+  // Get tour_id from URL query parameter
+  const tourIdFromUrl = searchParams.get("tour_id");
+
   const [formData, setFormData] = useState<TourPriceFormData>({
-    tour_id: 0,
+    tour_id: tourIdFromUrl ? parseInt(tourIdFromUrl) : 0,
     adult_price: 0,
     kid_price: 0,
     note: "",
@@ -43,16 +52,31 @@ const TourPriceEditor: React.FC = () => {
   >([]);
   const [loading, setLoading] = useState(false);
   const [isLoadingTour, setIsLoadingTour] = useState(false);
-  const [currentTourPrice, setCurrentTourPrice] = useState<any>(null);
+  const [currentTourPrice, setCurrentTourPrice] = useState<TourPrice | null>(
+    null
+  );
   const [selectedTour, setSelectedTour] = useState<any>(null);
 
   const isEditing = !!id;
+  const isCreateMode = !isEditing;
+
+  // Load tour info for the assigned tour
+  const loadTourInfo = async () => {
+    if (!tourIdFromUrl) return;
+
+    try {
+      const tourRes = await fetchTourById(parseInt(tourIdFromUrl));
+      setSelectedTour(tourRes);
+    } catch (error) {
+      console.error("Failed to load tour info:", error);
+    }
+  };
 
   // Load available tours
   const loadAvailableTours = async () => {
     try {
       setIsLoadingTour(true);
-      const response = await providerTourService.getTours({
+      const response = await fetchTours({
         page: 1,
         limit: 100,
       });
@@ -78,8 +102,26 @@ const TourPriceEditor: React.FC = () => {
       );
 
       setAvailableTours(sortedTours);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load tours:", error);
+
+      // Show user-friendly error message
+      if (error.response?.status === 400) {
+        console.error(
+          "API Error 400: Bad Request - The tours API endpoint may not be implemented yet"
+        );
+      } else if (error.response?.status === 404) {
+        console.error(
+          "API Error 404: Not Found - The tours API endpoint does not exist"
+        );
+      } else if (error.response?.status === 500) {
+        console.error(
+          "API Error 500: Internal Server Error - Backend server error"
+        );
+      } else if (error.code === "ERR_NETWORK") {
+        console.error("Network Error: Cannot connect to the server");
+      }
+
       setAvailableTours([]);
     } finally {
       setIsLoadingTour(false);
@@ -92,34 +134,58 @@ const TourPriceEditor: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await providerTourPriceService.getTourPrice(
-        parseInt(id)
-      );
+      const response = await fetchTourPriceById(parseInt(id));
 
-      const priceData: any = response;
-      if (priceData) {
+      if (response) {
         setFormData({
-          tour_id: priceData.tour_id,
-          adult_price: priceData.adult_price,
-          kid_price: priceData.kid_price,
-          note: priceData.note || "",
+          tour_id: response.tour_id,
+          adult_price: response.adult_price,
+          kid_price: response.kid_price,
+          note: response.note || "",
         });
-        setCurrentTourPrice(priceData);
-        setSelectedTour(priceData.tour);
+        setCurrentTourPrice(response);
+        setSelectedTour(response.tour);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load tour price:", error);
+
+      // Show user-friendly error message
+      if (error.response?.status === 400) {
+        console.error(
+          "API Error 400: Bad Request - The API endpoint may not be implemented yet"
+        );
+        alert("API endpoint chưa được implement. Vui lòng thử lại sau.");
+      } else if (error.response?.status === 404) {
+        console.error(
+          "API Error 404: Not Found - The tour price does not exist"
+        );
+        alert("Không tìm thấy thông tin giá tour. Vui lòng kiểm tra lại.");
+      } else if (error.response?.status === 500) {
+        console.error(
+          "API Error 500: Internal Server Error - Backend server error"
+        );
+        alert("Lỗi server. Vui lòng thử lại sau.");
+      } else if (error.code === "ERR_NETWORK") {
+        console.error("Network Error: Cannot connect to the server");
+        alert("Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.");
+      } else {
+        alert("Có lỗi xảy ra khi tải thông tin giá tour. Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAvailableTours();
-    if (isEditing) {
+    if (isCreateMode && tourIdFromUrl) {
+      loadTourInfo();
+    } else if (isEditing) {
+      loadAvailableTours();
       loadTourPriceData();
+    } else {
+      loadAvailableTours();
     }
-  }, [id]);
+  }, [id, tourIdFromUrl]);
 
   // Handle input changes
   const handleInputChange = (
@@ -154,13 +220,13 @@ const TourPriceEditor: React.FC = () => {
       setLoading(true);
 
       if (isEditing) {
-        await providerTourPriceService.updateTourPrice(parseInt(id!), {
+        await updateTourPriceService(parseInt(id!), {
           adult_price: formData.adult_price,
           kid_price: formData.kid_price,
           note: formData.note,
         });
       } else {
-        await providerTourPriceService.createTourPrice({
+        await createTourPriceService({
           tour_id: formData.tour_id,
           adult_price: formData.adult_price,
           kid_price: formData.kid_price,
@@ -168,10 +234,36 @@ const TourPriceEditor: React.FC = () => {
         });
       }
 
-      navigate("/admin/tours/prices");
-    } catch (error) {
+      navigate(
+        tourIdFromUrl || formData.tour_id
+          ? `/admin/tours/prices?tour_id=${tourIdFromUrl || formData.tour_id}`
+          : "/admin/tours/prices"
+      );
+    } catch (error: any) {
       console.error("Failed to save tour price:", error);
-      alert("Không thể lưu thông tin giá tour. Vui lòng thử lại.");
+
+      // Show user-friendly error message
+      if (error.response?.status === 400) {
+        console.error(
+          "API Error 400: Bad Request - The API endpoint may not be implemented yet"
+        );
+        alert("API endpoint chưa được implement. Vui lòng thử lại sau.");
+      } else if (error.response?.status === 404) {
+        console.error(
+          "API Error 404: Not Found - The tour price does not exist"
+        );
+        alert("Không tìm thấy thông tin giá tour. Vui lòng kiểm tra lại.");
+      } else if (error.response?.status === 500) {
+        console.error(
+          "API Error 500: Internal Server Error - Backend server error"
+        );
+        alert("Lỗi server. Vui lòng thử lại sau.");
+      } else if (error.code === "ERR_NETWORK") {
+        console.error("Network Error: Cannot connect to the server");
+        alert("Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.");
+      } else {
+        alert("Không thể lưu thông tin giá tour. Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }
@@ -201,7 +293,15 @@ const TourPriceEditor: React.FC = () => {
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
-            onClick={() => navigate("/admin/tours/prices")}
+            onClick={() =>
+              navigate(
+                tourIdFromUrl || formData.tour_id
+                  ? `/admin/tours/prices?tour_id=${
+                      tourIdFromUrl || formData.tour_id
+                    }`
+                  : "/admin/tours/prices"
+              )
+            }
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay lại
@@ -242,22 +342,37 @@ const TourPriceEditor: React.FC = () => {
               {/* Tour Selection */}
               <div className="space-y-2">
                 <Label htmlFor="tour_id">Chọn Tour *</Label>
-                <Select
-                  value={formData.tour_id.toString()}
-                  onValueChange={handleTourChange}
-                  disabled={isLoadingTour || isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn tour..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTours.map((tour) => (
-                      <SelectItem key={tour.id} value={tour.id.toString()}>
-                        {tour.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isCreateMode && tourIdFromUrl ? (
+                  <div className="flex items-center gap-3 p-3 border rounded-md bg-muted">
+                    <img
+                      src={selectedTour?.poster_url || "/avatar-default.jpg"}
+                      alt={selectedTour?.title || "Tour"}
+                      className="w-12 h-8 object-cover rounded"
+                    />
+                    <div>
+                      <p className="font-medium text-sm">
+                        {selectedTour?.title || `Tour ID: ${tourIdFromUrl}`}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <Select
+                    value={formData.tour_id.toString()}
+                    onValueChange={handleTourChange}
+                    disabled={isLoadingTour || isEditing}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn tour..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTours.map((tour) => (
+                        <SelectItem key={tour.id} value={tour.id.toString()}>
+                          {tour.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 {isLoadingTour && (
                   <p className="text-sm text-muted-foreground">
                     Đang tải danh sách tours...

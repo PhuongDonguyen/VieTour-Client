@@ -1,5 +1,5 @@
 import React, { useEffect, useState, ChangeEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { providerTourImageService } from "../../../services/provider/providerTourImage.service";
-import { adminTourImageService } from "../../../services/admin/adminTourImage.service";
-import { providerTourService } from "../../../services/provider/providerTour.service";
-import type { TourImage } from "../../../apis/provider/providerTourImage.api";
-import type { AdminTourImage } from "../../../apis/admin/adminTourImage.api";
+import {
+  fetchTourImageById,
+  createTourImageService,
+  updateTourImageService,
+} from "@/services/tourImage.service";
+import { fetchTours } from "@/services/tour.service";
+import type { TourImage } from "@/apis/tourImage.api";
 
 interface TourImageEditorProps {
   mode: "create" | "edit";
@@ -30,10 +32,15 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
   onBack,
 }) => {
   const params = useParams();
+  const [searchParams] = useSearchParams();
   const id = propId || params.id;
   const navigate = useNavigate();
+
+  // Get tour_id from URL query parameter for create mode
+  const tourIdFromUrl = searchParams.get("tour_id");
+
   const [form, setForm] = useState<any>({
-    tour_id: "",
+    tour_id: mode === "create" ? tourIdFromUrl || "" : "",
     alt_text: "",
     is_featured: false,
   });
@@ -47,14 +54,15 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
   >([]);
   const [loadingTours, setLoadingTours] = useState(false);
 
-  // Load available tours
+  // Load available tours (only needed for edit mode)
   const loadAvailableTours = async () => {
+    if (mode === "create") return; // Skip for create mode
+
     try {
       setLoadingTours(true);
-      const response = await providerTourService.getTours({
+      const response = await fetchTours({
         page: 1,
         limit: 100,
-        status: "active",
       });
 
       let toursData: any[] = [];
@@ -86,35 +94,42 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
     }
   };
 
+  // Load tour info for the selected tour
+  const loadTourInfo = async (tourId: string) => {
+    if (!tourId) return;
+
+    try {
+      const tourRes = await fetchTours({ tour_id: Number(tourId) });
+      if (tourRes.data && Array.isArray(tourRes.data)) {
+        setTourInfo(tourRes.data[0]);
+      }
+    } catch (error) {
+      console.error("Failed to load tour info:", error);
+      setTourInfo(null);
+    }
+  };
+
   useEffect(() => {
-    // Load available tours for both create and edit modes
-    loadAvailableTours();
+    // Load available tours for edit mode only
+    if (mode === "edit") {
+      loadAvailableTours();
+    }
 
     if (mode === "edit" && id) {
       setLoading(true);
       setError(null);
       (async () => {
         try {
-          let response;
-          response = await providerTourImageService.getTourImageById(
-            Number(id)
-          );
+          const response = await fetchTourImageById(Number(id));
           setForm({
-            tour_id:
-              "tour_id" in response ? response.tour_id : response.tour.id,
-            alt_text:
-              "alt_text" in response ? response.alt_text : response.description,
+            tour_id: response.tour_id,
+            alt_text: response.alt_text,
             is_featured: response.is_featured,
           });
           setPreviewUrl(response.image_url || null);
-          // Fetch tour info
+          // Load tour info for the image's tour
           if (response.tour_id) {
-            try {
-              const tourRes = await import(
-                "../../../apis/provider/providerTour.api"
-              ).then((m) => m.providerTourApi.getTourById(response.tour_id));
-              setTourInfo(tourRes.data.data);
-            } catch {}
+            await loadTourInfo(response.tour_id.toString());
           }
         } catch (err) {
           setError("Không tìm thấy hình ảnh hoặc đã bị xóa.");
@@ -122,8 +137,11 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
           setLoading(false);
         }
       })();
+    } else if (mode === "create" && tourIdFromUrl) {
+      // Load tour info for create mode
+      loadTourInfo(tourIdFromUrl);
     }
-  }, [mode, id]);
+  }, [mode, id, tourIdFromUrl]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -138,6 +156,10 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
       ...prev,
       tour_id: tourId,
     }));
+    // Load tour info when tour changes (edit mode only)
+    if (mode === "edit") {
+      loadTourInfo(tourId);
+    }
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -166,7 +188,7 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
         if (file) {
           formData.append("image", file);
         }
-        await providerTourImageService.updateTourImage(Number(id), formData);
+        await updateTourImageService(Number(id), formData);
         alert("Cập nhật hình ảnh thành công!");
       } else {
         // Khi tạo mới, gửi tất cả trường
@@ -176,18 +198,21 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
         if (file) {
           formData.append("image", file);
         }
-        await providerTourImageService.createTourImage(formData);
+        await createTourImageService(formData);
         alert("Tạo hình ảnh thành công!");
       }
-      navigate("/admin/tours/images");
+      navigate(`/admin/tours/images?tour_id=${form.tour_id}`);
       if (onBack) onBack();
     } catch (err: any) {
       console.error("Error saving tour image:", err);
       console.error("Error response:", err.response?.data);
       console.error("Error status:", err.response?.status);
-      
+
       // Hiển thị lỗi chi tiết hơn
-      const errorMessage = err.response?.data?.message || err.message || "Có lỗi xảy ra khi lưu hình ảnh.";
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Có lỗi xảy ra khi lưu hình ảnh.";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -242,32 +267,35 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Chọn Tour *
+                    Tour {mode === "edit" ? "*" : ""}
                   </label>
-                  <Select
-                    value={form.tour_id}
-                    onValueChange={handleTourChange}
-                    disabled={loadingTours || mode === "edit"}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          loadingTours ? "Đang tải..." : "Chọn tour..."
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTours.map((tour) => (
-                        <SelectItem key={tour.id} value={tour.id.toString()}>
-                          {tour.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {mode === "edit" && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Không được phép chỉnh sửa
-                    </p>
+                  {mode === "create" ? (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="text-sm font-medium">
+                        {tourInfo ? tourInfo.title : `Tour ID: ${form.tour_id}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <Select
+                      value={form.tour_id}
+                      onValueChange={handleTourChange}
+                      disabled={loadingTours}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            loadingTours ? "Đang tải..." : "Chọn tour..."
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTours.map((tour) => (
+                          <SelectItem key={tour.id} value={tour.id.toString()}>
+                            {tour.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 </div>
                 <div>
@@ -346,9 +374,6 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
                 />
                 <div>
                   <h3 className="font-semibold mb-1">{tourInfo.title}</h3>
-                  <Badge variant="outline">
-                    {tourInfo.tour_category?.name || "Chưa phân loại"}
-                  </Badge>
                   <div className="text-sm text-muted-foreground mt-1">
                     Tour ID: {tourInfo.id}
                   </div>

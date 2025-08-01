@@ -1,28 +1,139 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
 
-export interface TourPriceResponse {
+export interface TourPrice {
+  id: number;
+  tour_id: number;
   adult_price: number;
   kid_price: number;
-  note: string;
-  price_type: string;
+  note?: string;
+  price_type?: string;
+  created_at?: string;
+  updated_at?: string;
+  tour?: {
+    id: number;
+    title: string;
+    poster_url: string;
+    tour_category: {
+      id: number;
+      name: string;
+    };
+  };
 }
 
-export interface TourPricesApiResponse {
+export interface TourPriceQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  tour_id?: number;
+  price_type?: string;
+}
+
+export interface TourPriceResponse {
   success: boolean;
-  data: TourPriceResponse[];
+  data: TourPrice[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  };
 }
 
-export const getTourPrices = () =>
-  axiosInstance.get('/api/tour_prices');
+export interface TourPriceCreateResponse {
+  success: boolean;
+  data: TourPrice;
+  message: string;
+}
 
-export const getTourPriceById = (id: number) =>
-  axiosInstance.get(`/api/tour_prices/${id}`);
+export interface TourPriceUpdateResponse {
+  success: boolean;
+  data: TourPrice;
+  message: string;
+}
 
-export const getTourPricesByTourId = (tourId: number) =>
-  axiosInstance.get(`/api/tour_prices?tour_id=${tourId}`);
+export interface TourPriceDeleteResponse {
+  success: boolean;
+  message: string;
+}
 
-export const getTourPricesByTourIdAndDate = (tourId: number, date: string): Promise<TourPricesApiResponse> =>
-  axiosInstance.get(`/api/tour_prices?tour_id=${tourId}&date=${date}`);
+// Get all tour prices with pagination and filters
+export const getAllTourPrices = async (
+  params: TourPriceQueryParams = {}
+): Promise<TourPriceResponse> => {
+  const queryParams = new URLSearchParams();
 
-export const getAllSortedTourPrices = () =>
-  axiosInstance.get('/api/tour_prices/sorted');
+  if (params.page) queryParams.append("page", params.page.toString());
+  if (params.limit) queryParams.append("limit", params.limit.toString());
+  if (params.search) queryParams.append("search", params.search);
+  if (params.tour_id) queryParams.append("tour_id", params.tour_id.toString());
+  if (params.price_type) queryParams.append("price_type", params.price_type);
+
+  const response = await axiosInstance.get(
+    `/api/tour_prices?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
+// Get tour price by ID
+export const getTourPriceById = async (id: number): Promise<TourPrice> => {
+  const response = await axiosInstance.get(`/api/tour_prices/${id}`);
+  return response.data.data;
+};
+
+// Get tour prices by tour ID
+export const getTourPricesByTourId = async (
+  tourId: number
+): Promise<TourPriceResponse> => {
+  const response = await axiosInstance.get(
+    `/api/tour_prices?tour_id=${tourId}`
+  );
+  return response.data;
+};
+
+// Get all sorted tour prices
+export const getAllSortedTourPrices = async (): Promise<TourPriceResponse> => {
+  const response = await axiosInstance.get("/api/tour_prices/sorted");
+  return response.data;
+};
+
+// Create new tour price
+export const createTourPrice = async (data: {
+  tour_id: number;
+  adult_price: number;
+  kid_price: number;
+  note?: string;
+  price_type?: string;
+}): Promise<TourPriceCreateResponse> => {
+  const response = await axiosInstance.post("/api/tour_prices", data);
+  return response.data;
+};
+
+// Update tour price
+export const updateTourPrice = async (
+  id: number,
+  data: {
+    adult_price: number;
+    kid_price: number;
+    note?: string;
+    price_type?: string;
+  }
+): Promise<TourPriceUpdateResponse> => {
+  const response = await axiosInstance.put(`/api/tour_prices/${id}`, data);
+  return response.data;
+};
+
+// Delete tour price
+export const deleteTourPrice = async (
+  id: number
+): Promise<TourPriceDeleteResponse> => {
+  const response = await axiosInstance.delete(`/api/tour_prices/${id}`);
+  return response.data;
+};
+
+// Legacy functions for backward compatibility
+export const getTourPrices = () => getAllTourPrices();
+
+export const getTourPricesByTourIdAndDate = (
+  tourId: number,
+  date: string
+): Promise<TourPriceResponse> => getAllTourPrices({ tour_id: tourId });

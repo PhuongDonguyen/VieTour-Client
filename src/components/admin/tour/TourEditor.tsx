@@ -19,9 +19,13 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import TinyMCEEditor from "@/components/TinyMCEEditor";
 import { AuthContext } from "@/context/authContext";
-import { providerTourService } from "@/services/provider/providerTour.service";
+import {
+  fetchTourById,
+  createTourService,
+  updateTourService,
+} from "@/services/tour.service";
 import { fetchActiveTourCategories } from "@/services/tourCategory.service";
-import type { ProviderTour } from "@/apis/provider/providerTour.api";
+import type { Tour } from "@/apis/tour.api";
 
 interface TourFormData {
   title: string;
@@ -70,7 +74,7 @@ const TourEditor: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTour, setIsLoadingTour] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [currentTour, setCurrentTour] = useState<ProviderTour | null>(null);
+  const [currentTour, setCurrentTour] = useState<Tour | null>(null);
 
   // Load tour categories
   useEffect(() => {
@@ -91,7 +95,7 @@ const TourEditor: React.FC = () => {
       const loadTourData = async () => {
         try {
           setIsLoadingTour(true);
-          const response = await providerTourService.getTourById(parseInt(id));
+          const response = await fetchTourById(parseInt(id));
           console.log("TourEditor - Raw response:", response); // Debug log
 
           // Handle different response structures
@@ -128,7 +132,7 @@ const TourEditor: React.FC = () => {
             accommodation: tour.accommodation || "",
             destination_intro: tour.destination_intro || "",
             tour_info: tour.tour_info || "",
-            duration: tour.duration || "",
+            duration: tour.duration?.toString() || "",
             tour_category_id: tour.tour_category_id?.toString() || "",
             live_commentary: tour.live_commentary || "",
             is_active: tour.is_active ?? true,
@@ -219,16 +223,18 @@ const TourEditor: React.FC = () => {
         formDataToSend.append("provider_id", user.id.toString());
       }
 
-      // Add image if selected
+      // Add poster image if selected
       if (formData.image) {
-        formDataToSend.append("image", formData.image);
+        formDataToSend.append("poster", formData.image);
       }
 
       if (isEditing && currentTour) {
-        await providerTourService.updateTour(currentTour.id, formDataToSend);
+        // Use user API for updating
+        await updateTourService(currentTour.id, formDataToSend);
         alert("Cập nhật tour thành công!");
       } else {
-        await providerTourService.createTour(formDataToSend);
+        // Use user API for creating
+        await createTourService(formDataToSend);
         alert("Tạo tour mới thành công!");
       }
 
@@ -575,7 +581,9 @@ const TourEditor: React.FC = () => {
                     Lượt xem:
                   </span>
                   <span className="font-medium">
-                    {parseInt(currentTour.view_count).toLocaleString()}
+                    {parseInt(
+                      currentTour.view_count?.toString() || "0"
+                    ).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -583,7 +591,7 @@ const TourEditor: React.FC = () => {
                     Đặt chỗ:
                   </span>
                   <span className="font-medium">
-                    {currentTour.booked_count}
+                    {currentTour.booked_count || 0}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -591,17 +599,21 @@ const TourEditor: React.FC = () => {
                     Đánh giá:
                   </span>
                   <span className="font-medium">
-                    {currentTour.total_star > 0
-                      ? `${currentTour.total_star}/5`
+                    {currentTour.total_star &&
+                    currentTour.review_count &&
+                    currentTour.review_count > 0
+                      ? `${(
+                          currentTour.total_star / currentTour.review_count
+                        ).toFixed(1)}/5`
                       : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Đánh giá:
+                    Số đánh giá:
                   </span>
                   <span className="font-medium">
-                    {currentTour.review_count}
+                    {currentTour.review_count || 0}
                   </span>
                 </div>
               </CardContent>

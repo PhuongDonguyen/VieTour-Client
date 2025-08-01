@@ -9,8 +9,8 @@ import TabOverview from "./TabOverview";
 import TabCondition from "./TabCondition";
 import TabGallery from "./TabGallery";
 import { fetchTourBySlug } from "../../services/tour.service";
-import { fetchTourDetail } from "../../services/tourDetail.service";
-import { fetchTourImages } from "../../services/tourImage.service";
+import { fetchTourDetailsByTourId } from "../../services/tourDetail.service";
+import { fetchTourImagesByTourId } from "../../services/tourImage.service";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
 import { TabReview } from "../tourDetail/TabReview";
 import Skeleton from "react-loading-skeleton";
@@ -54,16 +54,16 @@ const TourDetail: React.FC = () => {
         if (tourData) {
           setTour(tourData);
           return Promise.all([
-            fetchTourDetail(tourData.id),
-            fetchTourImages(tourData.id),
+            fetchTourDetailsByTourId(tourData.id),
+            fetchTourImagesByTourId(tourData.id),
           ]);
         } else {
           throw new Error("Không tìm thấy tour.");
         }
       })
       .then(([detail, imgs]) => {
-        setDays(detail);
-        setImages(imgs);
+        setDays(detail.data || []);
+        setImages(imgs.data || []);
         setLoading(false);
 
         // Delay hiển thị comment section để mượt mà hơn
