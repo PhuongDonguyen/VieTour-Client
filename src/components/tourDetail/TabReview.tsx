@@ -20,7 +20,7 @@ interface Review {
   text: string;
   like_count: number;
   created_at: string;
-  user: User | null;
+  user: User;
   user_like_id: number | null;
 }
 
@@ -96,54 +96,56 @@ export const TabReview: React.FC<ReviewListProps> = ({
     );
   };
 
-const handleToggleLike = async (reviewId: number) => {
-  if (!userCurrent.current) return;
-  setReviews((prevReviews) =>
-    prevReviews.map((review) => {
-      if (review.id === reviewId) {
-        const isLiked = review.user_like_id !== null;
-
-        return {
-          ...review,
-          user_like_id: isLiked ? null : 1, // 1 là giả lập user_like_id khi đã like
-          like_count: isLiked
-            ? review.like_count - 1
-            : review.like_count + 1,
-        };
-      }
-      return review;
-    })
-  );
-
-  try {
-    const review = reviews.find((r) => r.id === reviewId);
-    if (review?.user_like_id !== null) {
-      await deleteLike(review!.user_like_id);
-    } else {
-      await userLikeReview(userCurrent.current?.id, reviewId);
+  const handleToggleLike = async (reviewId: number) => {
+    if (!userCurrent.current) {
+      console.log("User current: ", userCurrent.current);
+      alert("Cần đăng nhập khi like");
+      return;
     }
-  } catch (error) {
-    // Rollback nếu lỗi
     setReviews((prevReviews) =>
       prevReviews.map((review) => {
         if (review.id === reviewId) {
           const isLiked = review.user_like_id !== null;
+
           return {
             ...review,
-            user_like_id: isLiked ? null : 1,
-            like_count: isLiked
-              ? review.like_count - 1
-              : review.like_count + 1,
+            user_like_id: isLiked ? null : 1, // 1 là giả lập user_like_id khi đã like
+            like_count: isLiked ? review.like_count - 1 : review.like_count + 1,
           };
         }
         return review;
       })
     );
-  }
-};
+
+    try {
+      const review = reviews.find((r) => r.id === reviewId);
+      if (review?.user_like_id !== null) {
+        await deleteLike(review!.user_like_id);
+      } else {
+        await userLikeReview(userCurrent.current?.id, reviewId);
+      }
+    } catch (error) {
+      // Rollback nếu lỗi
+      setReviews((prevReviews) =>
+        prevReviews.map((review) => {
+          if (review.id === reviewId) {
+            const isLiked = review.user_like_id !== null;
+            return {
+              ...review,
+              user_like_id: isLiked ? null : 1,
+              like_count: isLiked
+                ? review.like_count - 1
+                : review.like_count + 1,
+            };
+          }
+          return review;
+        })
+      );
+    }
+  };
 
   const getAverageRating = () => {
-    if (reviews.length === 0) return 0;
+    if (!Array.isArray(reviews) || reviews.length === 0) return 0;
     const total = reviews.reduce((sum, review) => sum + review.tour_star, 0);
     return (total / reviews.length).toFixed(1);
   };
@@ -156,73 +158,68 @@ const handleToggleLike = async (reviewId: number) => {
     return distribution.reverse();
   };
 
+useEffect(() => {
+  const loadReviewsWithUsers = async () => {
+    try {
+      setLoading(true);
+      console.log("Tour id: ", tourId);
+      const res = await fetchReviewByTourId(tourId);
+      const data = res.data;
+
+      console.log("User profile: ", userCurrent.current);
+
+      const mapped = await Promise.all(
+        data.map(async (review: any): Promise<Review> => {
+          try {
+            const likeRes = await getLikesByUserIdAndReviewId(
+              userCurrent.current!.id,
+              review.id
+            );
+            const likeResData = likeRes.data;
+            console.log("Like res data: ", likeResData);
+            return {
+              ...review,
+              user: review.user ?? {
+                id: 0,
+                first_name: "Ẩn danh",
+                last_name: "",
+                avatar: "/public/avatar-default.jpg",
+              },
+              like_count: review.like_count ?? 0,
+              user_like_id: likeResData[0].id
+            };
+          } catch (error) {
+            return {
+              ...review,
+              user: review.user ?? {
+                id: 0,
+                first_name: "Ẩn danh",
+                last_name: "",
+                avatar: "/public/avatar-default.jpg",
+              },
+              like_count: review.like_count ?? 0,
+              user_like_id: null
+            };
+          }
+        })
+      );
+
+      setReviews(mapped);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading reviews:", error);
+      setReviews([]); // fallback tránh crash
+      setLoading(false);
+    }
+  };
+
+  loadReviewsWithUsers();
+}, []);
 
 
   useEffect(() => {
-    const loadReviewsWithUsers = async () => {
-      try {
-        const res = await fetchReviewByTourId(tourId);
-        const data = res.data;
-
-        const reviewsWithUser: Review[] = await Promise.all(
-          data.map(async (rv: any): Promise<Review> => {
-            try {
-              const resData = await fetchUserById(rv.user_id);
-              const userRes = resData.data;
-              const userReview = {
-                id: userRes.id,
-                first_name: userRes.first_name,
-                last_name: userRes.last_name,
-                avatar: userRes.avatar,
-              };
-              console.log("User current: ", userCurrent);
-              const likeRes = await getLikesByUserIdAndReviewId(
-                userCurrent.current!.id,
-                rv.id
-              );
-              const likeData = likeRes.data;
-              console.log("Like data", likeData);
-              return {
-                id: rv.id,
-                user_id: rv.user_id,
-                tour_id: rv.tour_id,
-                tour_star: rv.tour_star,
-                text: rv.text,
-                like_count: rv.like_count,
-                created_at: rv.created_at,
-                user: userReview,
-                user_like_id: likeData[0].id,
-              };
-            } catch (err) {
-              console.warn(`Failed to fetch user ${rv.user_id}:`, err);
-              return {
-                id: rv.id,
-                user_id: rv.user_id,
-                tour_id: rv.tour_id,
-                tour_star: rv.tour_star,
-                text: rv.text,
-                like_count: rv.like_count,
-                created_at: rv.created_at,
-                user_like_id: null,
-                user: {
-                  id: 0,
-                  first_name: "User",
-                  last_name: "",
-                  avatar: "",
-                },
-              };
-            }
-          })
-        );
-
-        setReviews(reviewsWithUser);
-      } catch (error) {
-        console.error("Error loading reviews:", error);
-      }
-    };
-
-    loadReviewsWithUsers();
-  }, []);
+    console.log("review: ", reviews);
+  }, [reviews]);
 
   function divideIntegers(a: number, b: number): number {
     if (b === 0) {
