@@ -90,34 +90,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       },
       {
         label: "Tours",
+        href: "/admin/tours",
         icon: <MapPin className="w-4 h-4" />,
         allowedRoles: ["admin", "provider"],
-        subItems: [
-          {
-            label: "Tour Categories",
-            href: "/admin/tours/categories",
-            icon: <Eye className="w-4 h-4" />,
-            allowedRoles: ["admin"], // Only admins can manage categories
-          },
-          {
-            label: "Tours",
-            href: "/admin/tours",
-            icon: <List className="w-4 h-4" />,
-            allowedRoles: ["admin", "provider"],
-          },
-          {
-            label: "Tour Schedules",
-            href: "/admin/tours/schedules",
-            icon: <Calendar className="w-4 h-4" />,
-            allowedRoles: ["admin", "provider"],
-          },
-          {
-            label: "Price Overrides",
-            href: "/admin/tours/price-overrides",
-            icon: <DollarSign className="w-4 h-4" />,
-            allowedRoles: ["admin", "provider"],
-          },
-        ],
+      },
+      {
+        label: "Tour Categories",
+        href: "/admin/tours/categories",
+        icon: <Eye className="w-4 h-4" />,
+        allowedRoles: ["admin"], // Only admins can manage categories
       },
       {
         label: "Đặt tour",

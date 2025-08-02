@@ -48,7 +48,7 @@ export const providerTourScheduleApi = {
     if (params?.start_date) searchParams.set("start_date", params.start_date);
 
     return axiosInstance.get(
-      `/api/provider/tour-schedules?${searchParams.toString()}`
+      `/api/provider/tour_schedules?${searchParams.toString()}`
     );
   },
 
@@ -56,7 +56,7 @@ export const providerTourScheduleApi = {
   getTourSchedule: (
     id: number
   ): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
-    return axiosInstance.get(`/api/provider/tour-schedules/${id}`);
+    return axiosInstance.get(`/api/provider/tour_schedules/${id}`);
   },
 
   // Tạo tour schedule mới
@@ -66,7 +66,7 @@ export const providerTourScheduleApi = {
     participant: number;
     status: "available" | "full" | "cancelled";
   }): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
-    return axiosInstance.post("/api/provider/tour-schedules", scheduleData);
+    return axiosInstance.post("/api/provider/tour_schedules", scheduleData);
   },
 
   // Cập nhật tour schedule
@@ -80,13 +80,13 @@ export const providerTourScheduleApi = {
     }
   ): Promise<{ data: { success: boolean; data: TourSchedule } }> => {
     return axiosInstance.put(
-      `/api/provider/tour-schedules/${id}`,
+      `/api/provider/tour_schedules/${id}`,
       scheduleData
     );
   },
 
   // Xóa tour schedule
   deleteTourSchedule: (id: number): Promise<{ data: { success: boolean } }> => {
-    return axiosInstance.delete(`/api/provider/tour-schedules/${id}`);
+    return axiosInstance.delete(`/api/provider/tour_schedules/${id}`);
   },
 };

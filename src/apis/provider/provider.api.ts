@@ -9,7 +9,7 @@ export const providerApi = {
   getTourPrices: () => axiosInstance.get("/api/provider/tour-prices"),
 
   // Lịch trình tours
-  getTourSchedules: () => axiosInstance.get("/api/provider/tour-schedules"),
+  getTourSchedules: () => axiosInstance.get("/api/provider/tour_schedules"),
 
   // Hình ảnh tours
   getTourImages: () => axiosInstance.get("/api/provider/tour-images"),
@@ -38,11 +38,11 @@ export const providerApi = {
     axiosInstance.delete(`/api/provider/tour-prices/${id}`),
 
   createTourSchedule: (data: any) =>
-    axiosInstance.post("/api/provider/tour-schedules", data),
+    axiosInstance.post("/api/provider/tour_schedules", data),
   updateTourSchedule: (id: string, data: any) =>
-    axiosInstance.put(`/api/provider/tour-schedules/${id}`, data),
+    axiosInstance.put(`/api/provider/tour_schedules/${id}`, data),
   deleteTourSchedule: (id: string) =>
-    axiosInstance.delete(`/api/provider/tour-schedules/${id}`),
+    axiosInstance.delete(`/api/provider/tour_schedules/${id}`),
 
   uploadTourImage: (formData: FormData) =>
     axiosInstance.post("/api/provider/tour-images", formData, {

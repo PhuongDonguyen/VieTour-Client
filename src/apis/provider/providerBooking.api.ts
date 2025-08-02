@@ -107,7 +107,8 @@ export const providerBookingApi = {
       searchParams.append("start_date", params.start_date);
     if (params?.end_date) searchParams.append("end_date", params.end_date);
 
-    const url = `/api/provider/bookings${
+    // Sử dụng chung API với admin, provider_id sẽ được tự động thêm từ token
+    const url = `/api/bookings${
       searchParams.toString() ? `?${searchParams.toString()}` : ""
     }`;
     return axiosInstance.get(url);

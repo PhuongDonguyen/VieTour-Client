@@ -24,7 +24,13 @@ import {
   ArrowLeft,
   Loader2,
 } from "lucide-react";
-import { adminTourCategoryService } from "../../../services/admin/adminTourCategory.service";
+import {
+  fetchTourCategoryById,
+  createTourCategoryService,
+  updateTourCategoryService,
+  deleteTourCategoryService,
+  fetchAllTourCategories,
+} from "../../../services/tourCategory.service";
 import type { AdminTourCategory } from "../../../apis/admin/adminTourCategory.api";
 import TourCategoryEditor from "./TourCategoryEditor";
 import TourCategoryViewContent from "./TourCategoryViewContent";
@@ -96,7 +102,7 @@ const TourCategoriesManagement: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await adminTourCategoryService.getAllTourCategories({
+      const response = await fetchAllTourCategories({
         page: currentPage,
         limit: 10,
         search: searchTerm || undefined,
@@ -176,7 +182,7 @@ const TourCategoriesManagement: React.FC = () => {
       )
     ) {
       try {
-        await adminTourCategoryService.deleteTourCategory(id);
+        await deleteTourCategoryService(id);
         fetchTourCategories();
         alert("Xóa danh mục thành công!");
       } catch (error) {
@@ -192,7 +198,7 @@ const TourCategoriesManagement: React.FC = () => {
     try {
       const category = tourCategories.find((cat) => cat.id === id);
       if (!category) return;
-      await adminTourCategoryService.updateTourCategory(id, {
+      await updateTourCategoryService(id, {
         name: category.name,
         image_url: category.image_url,
         is_active: !currentStatus,
@@ -216,7 +222,7 @@ const TourCategoriesManagement: React.FC = () => {
     if (data instanceof FormData) {
       // Tạo mới với upload ảnh
       try {
-        await adminTourCategoryService.createTourCategoryWithImage(data);
+        await createTourCategoryService(data);
         fetchTourCategories();
         setMode("list");
         alert("Tạo danh mục thành công!");
@@ -231,7 +237,7 @@ const TourCategoriesManagement: React.FC = () => {
       return;
     }
     try {
-      await adminTourCategoryService.createTourCategory(formData);
+      await createTourCategoryService(formData);
       fetchTourCategories();
       setMode("list");
       setFormData({
@@ -253,11 +259,10 @@ const TourCategoriesManagement: React.FC = () => {
     if (data instanceof FormData) {
       // Cập nhật với upload ảnh
       try {
-        const updated =
-          await adminTourCategoryService.updateTourCategoryWithImage(
-            selectedCategory.id,
-            data
-          );
+        const updated = await updateTourCategoryService(
+          selectedCategory.id,
+          data
+        );
         fetchTourCategories();
         setSelectedCategory(updated); // cập nhật lại state với dữ liệu mới
         setMode("view"); // chuyển về view để preview đúng
@@ -273,7 +278,7 @@ const TourCategoriesManagement: React.FC = () => {
       return;
     }
     try {
-      const updated = await adminTourCategoryService.updateTourCategory(
+      const updated = await updateTourCategoryService(
         selectedCategory.id,
         editFormData
       );

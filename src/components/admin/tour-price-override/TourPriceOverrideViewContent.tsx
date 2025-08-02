@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Edit,
@@ -18,11 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AuthContext } from "@/context/authContext";
-import { providerTourPriceOverrideService } from "@/services/provider/providerTourPriceOverride.service";
-import { adminTourPriceOverrideService } from "@/services/admin/adminTourPriceOverride.service";
+import { fetchTourPriceOverrideById } from "@/services/tourPriceOverride.service";
 import { providerTourApi } from "@/apis/provider/providerTour.api";
-import type { TourPriceOverride } from "@/apis/provider/providerTourPriceOverride.api";
-import type { AdminTourPriceOverride } from "@/apis/admin/adminTourPriceOverride.api";
+import type { TourPriceOverride } from "@/apis/tourPriceOverride.api";
 import { format } from "date-fns";
 import { providerTourPriceService } from "@/services/provider/providerTourPrice.service";
 
@@ -31,19 +29,35 @@ interface TourPriceOverrideViewContentProps {
   onBack?: () => void;
   showHeader?: boolean;
   onEdit?: (id: number) => void;
+  tourInfo?: {
+    id: number;
+    title: string;
+    poster_url: string;
+    category_name: string;
+  };
 }
 
 const TourPriceOverrideViewContent: React.FC<
   TourPriceOverrideViewContentProps
-> = ({ overrideId, onBack, showHeader = true, onEdit }) => {
+> = ({
+  overrideId,
+  onBack,
+  showHeader = true,
+  onEdit,
+  tourInfo: propTourInfo,
+}) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { id } = useParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
-  const [priceOverride, setPriceOverride] = useState<
-    TourPriceOverride | AdminTourPriceOverride | null
-  >(null);
+  // Lấy tour_id từ URL
+  const tourIdFromUrl = searchParams.get("tour_id");
+
+  const [priceOverride, setPriceOverride] = useState<TourPriceOverride | null>(
+    null
+  );
   const [tourInfo, setTourInfo] = useState<{
     title: string;
     poster_url: string;
@@ -61,20 +75,24 @@ const TourPriceOverrideViewContent: React.FC<
   });
 
   // Helper function to get tour information safely
-  const getTourInfo = (
-    override: TourPriceOverride | AdminTourPriceOverride
-  ) => {
+  const getTourInfo = (override: TourPriceOverride) => {
+    // Ưu tiên tourInfo từ prop (truyền từ TourViewContent)
+    if (propTourInfo) {
+      return propTourInfo;
+    }
+    // Sau đó kiểm tra tour info từ API
     if (override.tour_price?.tour) {
       return {
         title: override.tour_price.tour.title,
         poster_url: override.tour_price.tour.poster_url,
-        category_name: override.tour_price.tour.tour_category.name,
+        category_name:
+          override.tour_price.tour.tour_category?.name || "Chưa phân loại",
       };
     } else if (tourInfo) {
       return tourInfo;
     } else {
       return {
-        title: `Tour ID: ${override.tour_price_id}`,
+        title: `Tour Price ID: ${override.tour_price_id}`,
         poster_url: "/public/VieTour-Logo.png",
         category_name: "Chưa phân loại",
       };
@@ -88,26 +106,9 @@ const TourPriceOverrideViewContent: React.FC<
 
       try {
         setLoading(true);
-        let overrideData;
-
-        if (user?.role === "admin") {
-          // Use admin service to get price override
-          overrideData =
-            await adminTourPriceOverrideService.getTourPriceOverride(
-              parseInt(actualOverrideId)
-            );
-        } else if (user?.role === "provider") {
-          // Use provider service to get price override
-          overrideData =
-            await providerTourPriceOverrideService.getTourPriceOverrideById(
-              parseInt(actualOverrideId)
-            );
-        } else {
-          setPriceOverride(null);
-          setTourInfo(null);
-          setLoading(false);
-          return;
-        }
+        const overrideData = await fetchTourPriceOverrideById(
+          parseInt(actualOverrideId)
+        );
 
         console.log("Loaded price override data:", overrideData);
         setPriceOverride(overrideData);
@@ -118,7 +119,7 @@ const TourPriceOverrideViewContent: React.FC<
             let tourRes;
             if (user?.role === "admin") {
               tourRes = await import("@/apis/admin/adminTour.api").then((m) =>
-                m.adminTourApi.getTour(overrideData.tour_price.tour.id)
+                m.adminTourApi.getTour(overrideData.tour_price!.tour!.id)
               );
               setTourInfo({
                 title: tourRes.data.data.title,
@@ -128,7 +129,7 @@ const TourPriceOverrideViewContent: React.FC<
               });
             } else if (user?.role === "provider") {
               tourRes = await providerTourApi.getTourById(
-                overrideData.tour_price.tour.id
+                overrideData.tour_price!.tour!.id
               );
               setTourInfo({
                 title: tourRes.data.data.title,
@@ -204,9 +205,7 @@ const TourPriceOverrideViewContent: React.FC<
     return variantMap[type] || "outline";
   };
 
-  const getDateDisplay = (
-    override: TourPriceOverride | AdminTourPriceOverride
-  ) => {
+  const getDateDisplay = (override: TourPriceOverride) => {
     if (override.override_type === "single_date" && override.override_date) {
       return formatDate(override.override_date);
     } else if (override.override_type === "weekly" && override.day_of_week) {
@@ -276,7 +275,13 @@ const TourPriceOverrideViewContent: React.FC<
           {onBack ? (
             <Button onClick={onBack}>Quay lại</Button>
           ) : (
-            <Button onClick={() => navigate("/admin/tours/price-overrides")}>
+            <Button
+              onClick={() =>
+                navigate(
+                  `/admin/tours/price-overrides?tour_id=${tourIdFromUrl}`
+                )
+              }
+            >
               Về danh sách giá đặc biệt
             </Button>
           )}
@@ -293,16 +298,29 @@ const TourPriceOverrideViewContent: React.FC<
           <Button
             variant="ghost"
             onClick={
-              onBack ? onBack : () => navigate("/admin/tours/price-overrides")
+              onBack
+                ? onBack
+                : () =>
+                    navigate(
+                      `/admin/tours/price-overrides?tour_id=${tourIdFromUrl}`
+                    )
             }
-            className="flex items-center space-x-2"
+            className="flex items-center"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Quay lại</span>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Quay lại
           </Button>
-          <h1 className="text-3xl font-bold ml-4">
-            Chi Tiết Giá Đặc Biệt Tour
-          </h1>
+          <div className="ml-4">
+            <h1 className="text-3xl font-bold">Chi Tiết Giá Đặc Biệt Tour</h1>
+            {getTourInfo(priceOverride) && (
+              <p className="text-lg text-muted-foreground mt-1">
+                Tour:{" "}
+                <span className="font-semibold text-foreground">
+                  {getTourInfo(priceOverride).title}
+                </span>
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -447,7 +465,7 @@ const TourPriceOverrideViewContent: React.FC<
                     if (onEdit && priceOverride) onEdit(priceOverride.id);
                     else
                       navigate(
-                        `/admin/tours/price-overrides/edit/${priceOverride.id}`
+                        `/admin/tours/price-overrides/edit/${priceOverride.id}?tour_id=${tourIdFromUrl}`
                       );
                   }}
                   className="w-full bg-gray-800 hover:bg-gray-900 text-white"
@@ -481,6 +499,12 @@ const TourPriceOverrideViewContent: React.FC<
               <CardTitle>Thông Tin Chi Tiết</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Tour:</span>
+                <span className="font-medium text-right max-w-xs">
+                  {getTourInfo(priceOverride).title}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Loại:</span>
                 <Badge variant="secondary">
@@ -538,6 +562,33 @@ const TourPriceOverrideViewContent: React.FC<
               )}
             </CardContent>
           </Card>
+
+          {/* Thông tin tour liên quan */}
+          {(propTourInfo || tourInfo) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Thông Tin Tour</CardTitle>
+              </CardHeader>
+              <CardContent className="flex gap-4 items-center">
+                <img
+                  src={(propTourInfo || tourInfo)?.poster_url}
+                  alt={(propTourInfo || tourInfo)?.title}
+                  className="w-24 h-16 object-cover rounded-lg"
+                />
+                <div>
+                  <h3 className="text-xl font-semibold mb-1">
+                    {(propTourInfo || tourInfo)?.title}
+                  </h3>
+                  <Badge variant="outline">
+                    {(propTourInfo || tourInfo)?.category_name}
+                  </Badge>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Tour ID: {getTourIdForView()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

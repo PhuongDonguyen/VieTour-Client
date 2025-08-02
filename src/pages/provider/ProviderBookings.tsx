@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import ProviderBookingsTable from "../../components/provider/ProviderBookingsTable";
+import AdminBookingsTable from "../admin/AdminBookings";
 
 const ProviderBookings: React.FC = () => {
   useEffect(() => {
@@ -9,10 +9,9 @@ const ProviderBookings: React.FC = () => {
 
   return (
     <div className="p-6">
-      <ProviderBookingsTable />
+      <AdminBookingsTable />
     </div>
   );
 };
 
 export default ProviderBookings;
- 

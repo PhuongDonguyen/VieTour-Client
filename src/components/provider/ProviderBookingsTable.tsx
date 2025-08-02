@@ -3,7 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { providerBookingService } from "../../services/provider/providerBooking.service";
 import { providerTourService } from "../../services/provider/providerTour.service";
 import { toast } from "sonner";
-import type { ProviderBooking } from "../../apis/provider/providerBooking.api";
+import type { AdminBooking } from "../../apis/booking.api";
 import type { ProviderTour } from "../../apis/provider/providerTour.api";
 
 import {
@@ -29,7 +29,7 @@ import { Search, Calendar, Users, DollarSign } from "lucide-react";
 
 const ProviderBookingsTable: React.FC = () => {
   const { user } = useAuth();
-  const [bookings, setBookings] = useState<ProviderBooking[]>([]);
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [tours, setTours] = useState<ProviderTour[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,15 +68,18 @@ const ProviderBookingsTable: React.FC = () => {
       console.log(
         "ProviderBookingsTable: Calling providerBookingService.getProviderBookings..."
       );
-      const bookingsRes = await providerBookingService.getProviderBookings({
-        page: currentPage,
-        limit: 10,
-        search: debouncedSearchTerm || undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        tour_id: tourFilter !== "all" ? parseInt(tourFilter) : undefined,
-      });
+      const bookingsRes = await providerBookingService.getProviderBookings(
+        {
+          page: currentPage,
+          limit: 10,
+          search: debouncedSearchTerm || undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          tour_id: tourFilter !== "all" ? parseInt(tourFilter) : undefined,
+        },
+        user
+      ); // Truyền user để lấy provider_id
       console.log("ProviderBookingsTable: Bookings response:", bookingsRes);
       console.log(
         "ProviderBookingsTable: Raw response data:",
@@ -372,7 +375,11 @@ const ProviderBookingsTable: React.FC = () => {
                           <TableCell className="font-medium">
                             {booking.id.toString()}
                           </TableCell>
-                          <TableCell>{booking.tour?.title || "N/A"}</TableCell>
+                          <TableCell>
+                            {booking.schedule?.tour?.title ||
+                              booking.tour_title ||
+                              "N/A"}
+                          </TableCell>
                           <TableCell>
                             <div>
                               <div className="font-medium">
@@ -387,10 +394,6 @@ const ProviderBookingsTable: React.FC = () => {
                                   booking.user?.phone ||
                                   "N/A"}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {booking.user?.first_name}{" "}
-                                {booking.user?.last_name}
-                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -398,20 +401,21 @@ const ProviderBookingsTable: React.FC = () => {
                               <Users className="h-4 w-4" />
                               <span>
                                 {booking.booking_details?.reduce(
-                                  (total, detail) =>
+                                  (total: number, detail: any) =>
                                     total + detail.adult_quanti,
                                   0
                                 ) || 0}{" "}
                                 người lớn
                               </span>
                               {booking.booking_details?.reduce(
-                                (total, detail) => total + detail.kid_quanti,
+                                (total: number, detail: any) =>
+                                  total + detail.kid_quanti,
                                 0
                               ) > 0 && (
                                 <span className="text-sm text-gray-500">
                                   +{" "}
                                   {booking.booking_details?.reduce(
-                                    (total, detail) =>
+                                    (total: number, detail: any) =>
                                       total + detail.kid_quanti,
                                     0
                                   ) || 0}{" "}

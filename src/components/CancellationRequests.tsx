@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loading } from "./Loading";
 import { cancellationRequestService } from "@/services/cancellationRequest.service";
-import { tourScheduleService } from "@/services/tourSchedule.service";
+import { fetchTourScheduleById } from "@/services/tourSchedule.service";
 import { fetchTourById } from "@/services/tour.service";
 import { Calendar, DollarSign, FileText, Eye, X } from "lucide-react";
 import { AccountListSkeleton } from "./AccountSkeleton";
@@ -62,9 +62,8 @@ export default function CancellationRequestsList({
             if (schedule_id) {
               let schedule = scheduleCache[schedule_id];
               if (!schedule) {
-                const scheduleRes =
-                  await tourScheduleService.getTourScheduleById(schedule_id);
-                schedule = scheduleRes.data;
+                const scheduleRes = await fetchTourScheduleById(schedule_id);
+                schedule = scheduleRes;
                 scheduleCache[schedule_id] = schedule;
               }
               start_date = schedule.start_date;
@@ -106,7 +105,10 @@ export default function CancellationRequestsList({
       case "refunded":
         return { color: "bg-gray-200 text-gray-700", text: "Đã hoàn tiền" };
       case "success":
-        return { color: "bg-green-100 text-green-800", text: "Hoàn tiền thành công" };
+        return {
+          color: "bg-green-100 text-green-800",
+          text: "Hoàn tiền thành công",
+        };
       default:
         return { color: "bg-gray-100 text-gray-800", text: "Không xác định" };
     }
@@ -120,8 +122,12 @@ export default function CancellationRequestsList({
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-1">Yêu cầu hủy tour</h2>
-        <p className="text-gray-600 text-sm">Theo dõi trạng thái yêu cầu hủy tour</p>
+        <h2 className="text-2xl font-bold text-gray-800 mb-1">
+          Yêu cầu hủy tour
+        </h2>
+        <p className="text-gray-600 text-sm">
+          Theo dõi trạng thái yêu cầu hủy tour
+        </p>
       </div>
 
       {/* Cancellation Requests List */}
@@ -130,7 +136,9 @@ export default function CancellationRequestsList({
           <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
             <FileText className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có yêu cầu hủy tour</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Chưa có yêu cầu hủy tour
+          </h3>
           <p className="text-gray-600">Bạn chưa có yêu cầu hủy đặt tour nào</p>
         </div>
       ) : (
@@ -154,7 +162,12 @@ export default function CancellationRequestsList({
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-400" />
-                        <span>Ngày yêu cầu: {req.request_date ? new Date(req.request_date).toLocaleString() : "-"}</span>
+                        <span>
+                          Ngày yêu cầu:{" "}
+                          {req.request_date
+                            ? new Date(req.request_date).toLocaleString()
+                            : "-"}
+                        </span>
                       </div>
                       <div className="flex items-start gap-2">
                         <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
@@ -162,13 +175,18 @@ export default function CancellationRequestsList({
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-gray-400" />
-                        <span>Số tiền hoàn: {req.refund_amount?.toLocaleString()} đ ({req.refund_percentage}%)</span>
+                        <span>
+                          Số tiền hoàn: {req.refund_amount?.toLocaleString()} đ
+                          ({req.refund_percentage}%)
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-3 min-w-[160px] mt-4 md:mt-0">
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(req.status).color}`}
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        getStatusBadge(req.status).color
+                      }`}
                     >
                       {getStatusBadge(req.status).text}
                     </span>
@@ -211,7 +229,9 @@ export default function CancellationRequestsList({
               <X className="w-5 h-5" />
             </button>
             <div className="mt-2">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Ảnh giao dịch</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Ảnh giao dịch
+              </h3>
               <img
                 src={imageModal.url || ""}
                 alt="Giao dịch"

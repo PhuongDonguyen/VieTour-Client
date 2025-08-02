@@ -1,4 +1,4 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from "../axiosInstance";
 
 // Tour Prices API
 export interface TourPrice {
@@ -31,12 +31,12 @@ export interface TourPricesResponse {
 export const providerTourPricesApi = {
   // Lấy danh sách giá tours
   getTourPrices: (): Promise<TourPricesResponse> => {
-    return axiosInstance.get('/api/provider/tour-prices');
+    return axiosInstance.get("/api/provider/tour-prices");
   },
 
   // Tạo giá mới
   createTourPrice: (priceData: Partial<TourPrice>) => {
-    return axiosInstance.post('/api/provider/tour-prices', priceData);
+    return axiosInstance.post("/api/provider/tour-prices", priceData);
   },
 
   // Cập nhật giá
@@ -52,7 +52,7 @@ export const providerTourPricesApi = {
   // Lấy giá theo tour ID
   getPricesByTourId: (tourId: number) => {
     return axiosInstance.get(`/api/provider/tour-prices/tour/${tourId}`);
-  }
+  },
 };
 
 // Tour Schedules API
@@ -70,24 +70,27 @@ export interface TourSchedule {
 
 export const providerTourSchedulesApi = {
   getTourSchedules: () => {
-    return axiosInstance.get('/api/provider/tour-schedules');
+    return axiosInstance.get("/api/provider/tour_schedules");
   },
 
   createTourSchedule: (scheduleData: Partial<TourSchedule>) => {
-    return axiosInstance.post('/api/provider/tour-schedules', scheduleData);
+    return axiosInstance.post("/api/provider/tour_schedules", scheduleData);
   },
 
   updateTourSchedule: (id: number, scheduleData: Partial<TourSchedule>) => {
-    return axiosInstance.put(`/api/provider/tour-schedules/${id}`, scheduleData);
+    return axiosInstance.put(
+      `/api/provider/tour_schedules/${id}`,
+      scheduleData
+    );
   },
 
   deleteTourSchedule: (id: number) => {
-    return axiosInstance.delete(`/api/provider/tour-schedules/${id}`);
+    return axiosInstance.delete(`/api/provider/tour_schedules/${id}`);
   },
 
   getSchedulesByTourId: (tourId: number) => {
-    return axiosInstance.get(`/api/provider/tour-schedules/tour/${tourId}`);
-  }
+    return axiosInstance.get(`/api/provider/tour_schedules/tour/${tourId}`);
+  },
 };
 
 // Tour Images API
@@ -102,18 +105,18 @@ export interface TourImage {
 
 export const providerTourImagesApi = {
   getTourImages: () => {
-    return axiosInstance.get('/api/provider/tour-images');
+    return axiosInstance.get("/api/provider/tour-images");
   },
 
   uploadTourImage: (tourId: number, imageFile: File, caption?: string) => {
     const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('tour_id', tourId.toString());
-    if (caption) formData.append('caption', caption);
+    formData.append("image", imageFile);
+    formData.append("tour_id", tourId.toString());
+    if (caption) formData.append("caption", caption);
 
-    return axiosInstance.post('/api/provider/tour-images', formData, {
+    return axiosInstance.post("/api/provider/tour-images", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
@@ -128,7 +131,7 @@ export const providerTourImagesApi = {
 
   getImagesByTourId: (tourId: number) => {
     return axiosInstance.get(`/api/provider/tour-images/tour/${tourId}`);
-  }
+  },
 };
 
 // Tour Details API
@@ -142,11 +145,11 @@ export interface TourDetail {
 
 export const providerTourDetailsApi = {
   getTourDetails: () => {
-    return axiosInstance.get('/api/provider/tour-details');
+    return axiosInstance.get("/api/provider/tour-details");
   },
 
   createTourDetail: (detailData: Partial<TourDetail>) => {
-    return axiosInstance.post('/api/provider/tour-details', detailData);
+    return axiosInstance.post("/api/provider/tour-details", detailData);
   },
 
   updateTourDetail: (id: number, detailData: Partial<TourDetail>) => {
@@ -159,7 +162,7 @@ export const providerTourDetailsApi = {
 
   getDetailsByTourId: (tourId: number) => {
     return axiosInstance.get(`/api/provider/tour-details/tour/${tourId}`);
-  }
+  },
 };
 
 // Tour Categories API
@@ -173,20 +176,23 @@ export interface TourCategory {
 
 export const providerTourCategoriesApi = {
   getTourCategories: () => {
-    return axiosInstance.get('/api/provider/tour-categories');
+    return axiosInstance.get("/api/provider/tour-categories");
   },
 
   createTourCategory: (categoryData: Partial<TourCategory>) => {
-    return axiosInstance.post('/api/provider/tour-categories', categoryData);
+    return axiosInstance.post("/api/provider/tour-categories", categoryData);
   },
 
   updateTourCategory: (id: number, categoryData: Partial<TourCategory>) => {
-    return axiosInstance.put(`/api/provider/tour-categories/${id}`, categoryData);
+    return axiosInstance.put(
+      `/api/provider/tour-categories/${id}`,
+      categoryData
+    );
   },
 
   deleteTourCategory: (id: number) => {
     return axiosInstance.delete(`/api/provider/tour-categories/${id}`);
-  }
+  },
 };
 
 // Tour Price Overrides API
@@ -203,15 +209,24 @@ export interface TourPriceOverride {
 
 export const providerTourPriceOverridesApi = {
   getTourPriceOverrides: () => {
-    return axiosInstance.get('/api/provider/tour-price-overrides');
+    return axiosInstance.get("/api/provider/tour-price-overrides");
   },
 
   createTourPriceOverride: (overrideData: Partial<TourPriceOverride>) => {
-    return axiosInstance.post('/api/provider/tour-price-overrides', overrideData);
+    return axiosInstance.post(
+      "/api/provider/tour-price-overrides",
+      overrideData
+    );
   },
 
-  updateTourPriceOverride: (id: number, overrideData: Partial<TourPriceOverride>) => {
-    return axiosInstance.put(`/api/provider/tour-price-overrides/${id}`, overrideData);
+  updateTourPriceOverride: (
+    id: number,
+    overrideData: Partial<TourPriceOverride>
+  ) => {
+    return axiosInstance.put(
+      `/api/provider/tour-price-overrides/${id}`,
+      overrideData
+    );
   },
 
   deleteTourPriceOverride: (id: number) => {
@@ -219,6 +234,8 @@ export const providerTourPriceOverridesApi = {
   },
 
   getOverridesByTourId: (tourId: number) => {
-    return axiosInstance.get(`/api/provider/tour-price-overrides/tour/${tourId}`);
-  }
+    return axiosInstance.get(
+      `/api/provider/tour-price-overrides/tour/${tourId}`
+    );
+  },
 };

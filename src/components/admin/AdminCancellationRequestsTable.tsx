@@ -136,20 +136,11 @@ const AdminCancellationRequestsTable: React.FC = () => {
         const queryString = params.toString();
         const finalQuery = queryString ? `?${queryString}` : "";
 
-        let response;
-        if (user?.role === "admin") {
-          response =
-            await cancellationRequestService.getAllCancellationRequests(
-              finalQuery
-            );
-        } else if (user?.role === "provider") {
-          response =
-            await cancellationRequestService.getProviderCancellationRequests(
-              finalQuery
-            );
-        } else {
-          throw new Error("Unauthorized role");
-        }
+        // Sử dụng chung API, backend sẽ tự động filter theo role
+        const response =
+          await cancellationRequestService.getAllCancellationRequests(
+            finalQuery
+          );
 
         setRequests(response.data || []);
       } catch (error) {
@@ -181,11 +172,9 @@ const AdminCancellationRequestsTable: React.FC = () => {
       setFile(null);
       setPreview(null);
 
-      // Refresh data
+      // Refresh data - sử dụng chung API
       const response =
-        user?.role === "admin"
-          ? await cancellationRequestService.getAllCancellationRequests()
-          : await cancellationRequestService.getProviderCancellationRequests();
+        await cancellationRequestService.getAllCancellationRequests();
       setRequests(response.data || []);
     } catch (error) {
       console.error("Error updating request:", error);

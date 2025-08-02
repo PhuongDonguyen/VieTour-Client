@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -10,71 +12,120 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Save, Users } from "lucide-react";
 import { AuthContext } from "@/context/authContext";
-import { providerTourScheduleService } from "../../../services/provider/providerTourSchedule.service";
-import { providerTourService } from "../../../services/provider/providerTour.service";
-import type { TourSchedule } from "../../../apis/provider/providerTourSchedule.api";
+import {
+  fetchTourScheduleById,
+  createTourScheduleService,
+  updateTourScheduleService,
+} from "@/services/tourSchedule.service";
+import { fetchTours, fetchTourById } from "@/services/tour.service";
+import type { TourSchedule } from "@/apis/tourSchedule.api";
 
 const TourScheduleEditor: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isEdit = !!id;
+
+  // Get tour_id from URL query parameter
+  const tourIdFromUrl = searchParams.get("tour_id");
+  const tourId = tourIdFromUrl ? parseInt(tourIdFromUrl) : null;
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [availableTours, setAvailableTours] = useState<
     { id: number; title: string }[]
   >([]);
+  const [tourInfo, setTourInfo] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     tour_id: "",
     start_date: "",
-    participant: "",
     status: "available",
   });
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
 
   useEffect(() => {
-    // Load available tours
-    const loadTours = async () => {
-      try {
-        const response = await providerTourService.getTours({
-          limit: 100, // Get all tours
-          status: "active", // Only active tours
-        });
-
-        if (response.data && Array.isArray(response.data)) {
-          const tours = response.data.map((tour: any) => ({
-            id: tour.id,
-            title: tour.title,
+    // Load available tours only if not creating new schedule with specific tour
+    if (!isEdit && tourId) {
+      // If creating new schedule with specific tour, load only that tour
+      const loadSpecificTour = async () => {
+        try {
+          const tourData = await fetchTourById(tourId);
+          setTourInfo({
+            id: tourData.id,
+            title: tourData.title,
+          });
+          setAvailableTours([
+            {
+              id: tourData.id,
+              title: tourData.title,
+            },
+          ]);
+          // Auto-select the tour
+          setFormData((prev) => ({
+            ...prev,
+            tour_id: tourId.toString(),
           }));
-          setAvailableTours(tours);
+        } catch (error) {
+          console.error("Error loading specific tour:", error);
+          setAvailableTours([]);
         }
-      } catch (error) {
-        console.error("Error loading tours:", error);
-        // Fallback to empty array
-        setAvailableTours([]);
-      }
-    };
+      };
+      loadSpecificTour();
+    } else {
+      // Load all available tours for editing or general creation
+      const loadTours = async () => {
+        try {
+          const response = await fetchTours({
+            limit: 100, // Get all tours
+            status: "active", // Only active tours
+          });
 
-    loadTours();
+          if (response.data && Array.isArray(response.data)) {
+            const tours = response.data.map((tour: any) => ({
+              id: tour.id,
+              title: tour.title,
+            }));
+            setAvailableTours(tours);
+          }
+        } catch (error) {
+          console.error("Error loading tours:", error);
+          // Fallback to empty array
+          setAvailableTours([]);
+        }
+      };
+      loadTours();
+    }
 
     // If editing, load existing data
     if (isEdit && id) {
       const loadSchedule = async () => {
         try {
           setLoading(true);
-          const schedule = await providerTourScheduleService.getTourSchedule(
-            parseInt(id)
-          );
+          const schedule = await fetchTourScheduleById(parseInt(id));
 
           setFormData({
             tour_id: schedule.tour_id.toString(),
             start_date: schedule.start_date.split("T")[0], // Convert to date input format
-            participant: schedule.participant.toString(),
             status: schedule.status,
           });
+
+          // Load tour info for the schedule's tour
+          try {
+            const tourData = await fetchTourById(schedule.tour_id);
+            setTourInfo({
+              id: tourData.id,
+              title: tourData.title,
+            });
+          } catch (error) {
+            console.error("Error loading tour info:", error);
+          }
         } catch (error) {
           console.error("Error loading schedule:", error);
         } finally {
@@ -87,47 +138,73 @@ const TourScheduleEditor: React.FC = () => {
   }, [id, isEdit]);
 
   const handleSave = async () => {
-    if (!formData.tour_id || !formData.start_date || !formData.participant) {
-      alert("Vui lòng điền đầy đủ thông tin.");
+    if (!formData.tour_id) {
+      alert("Vui lòng chọn tour.");
       return;
     }
 
-    // Only validate participant for new schedules, not when editing
-    if (!isEdit && parseInt(formData.participant) <= 0) {
-      alert("Số người tham gia phải lớn hơn 0.");
+    if (isEdit && !formData.start_date) {
+      alert("Vui lòng chọn ngày khởi hành.");
+      return;
+    }
+
+    if (!isEdit && selectedDates.length === 0) {
+      alert("Vui lòng chọn ít nhất một ngày khởi hành.");
       return;
     }
 
     try {
       setSaving(true);
 
-      let scheduleData: any = {
-        start_date: formData.start_date,
-      };
-
       if (isEdit) {
-        scheduleData.status = formData.status as
-          | "available"
-          | "full"
-          | "cancelled";
-      } else {
-        // Only for new schedule, include tour_id and participant
-        scheduleData.tour_id = parseInt(formData.tour_id);
-        scheduleData.participant = parseInt(formData.participant);
-      }
+        // Edit existing schedule
+        let scheduleData: any = {
+          start_date: formData.start_date,
+          status: formData.status as "available" | "full" | "cancelled",
+        };
 
-      if (isEdit && id) {
-        await providerTourScheduleService.updateTourSchedule(
-          parseInt(id),
-          scheduleData
-        );
+        await updateTourScheduleService(parseInt(id), scheduleData);
         alert("Cập nhật lịch trình thành công!");
       } else {
-        await providerTourScheduleService.createTourSchedule(scheduleData);
-        alert("Tạo lịch trình thành công!");
+        // Create new schedules for multiple dates
+        const tourId = parseInt(formData.tour_id);
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const date of selectedDates) {
+          try {
+            const scheduleData = {
+              tour_id: tourId,
+              start_date: date.toISOString().split("T")[0], // Format as YYYY-MM-DD
+            };
+
+            await createTourScheduleService(scheduleData);
+            successCount++;
+          } catch (error) {
+            console.error(
+              `Error creating schedule for ${
+                date.toISOString().split("T")[0]
+              }:`,
+              error
+            );
+            errorCount++;
+          }
+        }
+
+        if (errorCount === 0) {
+          alert(`Tạo thành công ${successCount} lịch trình!`);
+        } else {
+          alert(
+            `Tạo thành công ${successCount} lịch trình, ${errorCount} lỗi.`
+          );
+        }
       }
 
-      navigate("/admin/tours/schedules");
+      navigate(
+        tourIdFromUrl
+          ? `/admin/tours/schedules?tour_id=${tourIdFromUrl}`
+          : "/admin/tours/schedules"
+      );
     } catch (error) {
       console.error("Error saving schedule:", error);
       alert("Có lỗi xảy ra khi lưu lịch trình. Vui lòng thử lại.");
@@ -163,7 +240,12 @@ const TourScheduleEditor: React.FC = () => {
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            onClick={() => navigate("/admin/tours/schedules")}
+            onClick={
+              tourIdFromUrl
+                ? () =>
+                    navigate(`/admin/tours/schedules?tour_id=${tourIdFromUrl}`)
+                : () => navigate("/admin/tours/schedules")
+            }
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -194,33 +276,40 @@ const TourScheduleEditor: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
                   Thông Tin Lịch Trình
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Chọn Tour *
+                    Tour *
                   </label>
-                  <Select
-                    value={formData.tour_id}
-                    onValueChange={(value) =>
-                      handleInputChange("tour_id", value)
-                    }
-                    disabled={isEdit}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn tour..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTours.map((tour) => (
-                        <SelectItem key={tour.id} value={tour.id.toString()}>
-                          {tour.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {!isEdit && tourId ? (
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium text-foreground">
+                        {tourInfo ? tourInfo.title : `Tour ID: ${tourId}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <Select
+                      value={formData.tour_id}
+                      onValueChange={(value) =>
+                        handleInputChange("tour_id", value)
+                      }
+                      disabled={isEdit}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn tour..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTours.map((tour) => (
+                          <SelectItem key={tour.id} value={tour.id.toString()}>
+                            {tour.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   {isEdit && (
                     <p className="text-sm text-muted-foreground mt-1">
                       Không được phép chỉnh sửa
@@ -228,7 +317,7 @@ const TourScheduleEditor: React.FC = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {isEdit ? (
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Ngày Khởi Hành *
@@ -243,29 +332,62 @@ const TourScheduleEditor: React.FC = () => {
                       required
                     />
                   </div>
+                ) : (
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Số Người Tham Gia *
+                      Chọn Ngày Khởi Hành *
                     </label>
-                    <Input
-                      type="number"
-                      value={formData.participant}
-                      onChange={(e) =>
-                        handleInputChange("participant", e.target.value)
-                      }
-                      className="w-full"
-                      placeholder="Nhập số người tham gia"
-                      min="1"
-                      required
-                      disabled={isEdit}
-                    />
-                    {isEdit && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Không được phép chỉnh sửa
-                      </p>
-                    )}
+                    <div className="space-y-4">
+                      <div className="border rounded-md p-4">
+                        <Calendar
+                          mode="multiple"
+                          selected={selectedDates}
+                          onSelect={(dates) => setSelectedDates(dates || [])}
+                          className="rounded-md border-0"
+                          disabled={(date) => {
+                            const oneWeekFromNow = new Date();
+                            oneWeekFromNow.setDate(
+                              oneWeekFromNow.getDate() + 7
+                            );
+                            return date < oneWeekFromNow;
+                          }}
+                        />
+                      </div>
+
+                      {selectedDates.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Đã chọn {selectedDates.length} ngày:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedDates.map((date, index) => (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="flex items-center gap-1"
+                              >
+                                {date.toLocaleDateString("vi-VN")}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSelectedDates(
+                                      selectedDates.filter(
+                                        (_, i) => i !== index
+                                      )
+                                    )
+                                  }
+                                  className="ml-1 text-xs hover:text-red-500"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
                 {isEdit && (
                   <div>
                     <label className="block text-sm font-medium mb-2">

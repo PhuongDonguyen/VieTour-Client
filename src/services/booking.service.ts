@@ -3,6 +3,8 @@ import {
   getMyBookings,
   getBookingById,
   updateBookingStatus,
+  getAllBookings,
+  getBookingsCount,
 } from "../apis/booking.api";
 import type { BookingRequest } from "../apis/booking.api";
 import { getTourScheduleById } from "@/apis/tourSchedule.api";
@@ -29,7 +31,11 @@ export const bookingService = {
   },
 };
 
-export const fetchMyBookings = async (page: number = 1, limit: number = 5, status?: string) => {
+export const fetchMyBookings = async (
+  page: number = 1,
+  limit: number = 5,
+  status?: string
+) => {
   try {
     const resBooking = await getMyBookings(page, limit, status);
     const bookings = resBooking.data.data; // Đây là mảng
@@ -53,9 +59,9 @@ export const fetchMyBookings = async (page: number = 1, limit: number = 5, statu
       })
     );
 
-    return { 
+    return {
       bookings: enrichedBookings,
-      pagination 
+      pagination,
     };
   } catch (error) {
     console.error("Lỗi khi lấy danh sách booking:", error);
@@ -84,6 +90,57 @@ export const fetchBookingById = async (id: number) => {
     return { data: booking };
   } catch (error) {
     console.error("Lỗi khi lấy booking theo id:", error);
+    throw error;
+  }
+};
+
+// Admin booking services
+export const fetchAllBookings = async (params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  tour_id?: number;
+  provider_id?: number;
+  start_date?: string;
+  end_date?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}) => {
+  try {
+    // Đảm bảo có page và limit mặc định
+    const defaultParams = {
+      page: 1,
+      limit: 10,
+      ...params,
+    };
+
+    const res = await getAllBookings(defaultParams);
+    const bookings = res.data.data;
+    const pagination = res.data.pagination;
+
+    // Backend đã enrich data sẵn, không cần enrich thêm
+    return {
+      data: bookings,
+      pagination,
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách tất cả booking:", error);
+    throw error;
+  }
+};
+
+export const fetchBookingsCount = async (params?: {
+  status?: string;
+  tour_id?: number;
+  provider_id?: number;
+  start_date?: string;
+  end_date?: string;
+}) => {
+  try {
+    const res = await getBookingsCount(params);
+    return res.data.data;
+  } catch (error) {
+    console.error("Lỗi khi lấy số lượng booking:", error);
     throw error;
   }
 };

@@ -64,7 +64,7 @@ export const adminTourScheduleApi = {
     if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
 
     return axiosInstance.get(
-      `/api/admin/tour-schedules?${searchParams.toString()}`
+      `/api/admin/tour_schedules?${searchParams.toString()}`
     );
   },
 
@@ -72,7 +72,7 @@ export const adminTourScheduleApi = {
   getTourSchedule: (
     id: number
   ): Promise<{ data: { success: boolean; data: AdminTourSchedule } }> => {
-    return axiosInstance.get(`/api/admin/tour-schedules/${id}`);
+    return axiosInstance.get(`/api/admin/tour_schedules/${id}`);
   },
 
   // Lấy thống kê tour schedules
@@ -89,6 +89,6 @@ export const adminTourScheduleApi = {
       };
     };
   }> => {
-    return axiosInstance.get("/api/admin/tour-schedules/stats");
+    return axiosInstance.get("/api/admin/tour_schedules/stats");
   },
 };

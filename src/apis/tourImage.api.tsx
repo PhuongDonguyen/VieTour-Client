@@ -115,7 +115,7 @@ export const deleteTourImage = async (
 export const toggleTourImageFeatured = async (
   id: number
 ): Promise<TourImageUpdateResponse> => {
-  const response = await axiosInstance.put(
+  const response = await axiosInstance.patch(
     `/api/tour_images/${id}/toggle-featured`
   );
   return response.data;

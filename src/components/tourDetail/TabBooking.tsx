@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { tourScheduleService } from "../../services/tourSchedule.service";
-import { fetchUserProfile } from "../../services/userProfile.service";
-import { bookingService } from "../../services/booking.service";
-import { paymentService } from "../../services/payment.service";
+import { fetchAllTourSchedules } from "@/services/tourSchedule.service";
+import { fetchUserProfile } from "@/services/userProfile.service";
+import { bookingService } from "@/services/booking.service";
+import { paymentService } from "@/services/payment.service";
 import {
   processPayment,
   getPaymentMethodDisplayName,
-} from "../../services/paymentGateway.service";
-import { getTourPricesByTourIdAndDate } from "../../apis/tourPrice.api";
-import { useAuth } from "../../hooks/useAuth";
-import Modal from "../Modal";
-import LoginForm from "../authentication/LoginForm";
-import SignupForm from "../authentication/SignupForm";
-import { TourCalendar } from "./TourCalendar";
-import type { BookingRequest, BookingDetail } from "../../apis/booking.api";
-import type { PaymentMethod } from "../../apis/payment.api";
+} from "@/services/paymentGateway.service";
+import { getTourPricesByTourIdAndDate } from "@/apis/tourPrice.api";
+import { useAuth } from "@/hooks/useAuth";
+import Modal from "@/components/Modal";
+import LoginForm from "@/components/authentication/LoginForm";
+import SignupForm from "@/components/authentication/SignupForm";
+import { TourCalendar } from "@/components/tourDetail/TourCalendar";
+import type { BookingRequest, BookingDetail } from "@/apis/booking.api";
+import type { PaymentMethod } from "@/apis/payment.api";
 import { toast } from "sonner";
 
 // Constants - có thể tùy chỉnh theo business logic
@@ -276,22 +276,17 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     const loadTourSchedules = async () => {
       try {
         console.log("Loading tour schedules for tourId:", tourId);
-        const schedulesData = await tourScheduleService.getTourSchedules(
-          tourId
-        );
+        const schedulesData = await fetchAllTourSchedules({
+          tour_id: tourId,
+        });
         console.log("Tour schedules data:", schedulesData);
 
-        if (schedulesData.success) {
-          // Filter chỉ lấy những ngày từ 2 ngày sau ngày hiện tại
-          const validDates = schedulesData.data.filter((date: AvailableDate) =>
-            isValidBookingDate(date.start_date)
-          );
-          setAvailableDates(validDates);
-          console.log("Available dates set (filtered):", validDates);
-        } else {
-          console.log("No success in schedules response");
-          setAvailableDates([]);
-        }
+        // Filter chỉ lấy những ngày từ 2 ngày sau ngày hiện tại
+        const validDates = schedulesData.data.filter((date: AvailableDate) =>
+          isValidBookingDate(date.start_date)
+        );
+        setAvailableDates(validDates);
+        console.log("Available dates set (filtered):", validDates);
       } catch (error) {
         console.error("Error loading tour schedules:", error);
         setAvailableDates([]);
