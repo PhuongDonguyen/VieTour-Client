@@ -35,7 +35,7 @@ import {
   deleteTourPriceOverrideService,
   toggleActiveTourPriceOverrideService,
 } from "../../../services/tourPriceOverride.service";
-import { adminTourService } from "../../../services/admin/adminTour.service";
+import { fetchTourById } from "../../../services/tour.service";
 import type { TourPriceOverride } from "../../../apis/tourPriceOverride.api";
 import TourPriceOverrideViewContent from "./TourPriceOverrideViewContent";
 import TourPriceOverrideEditor from "./TourPriceOverrideEditor";
@@ -75,10 +75,10 @@ const TourPriceOverridesList: React.FC = () => {
   // Fetch tour info
   useEffect(() => {
     if (tourIdFromUrl) {
-      adminTourService.getTour(parseInt(tourIdFromUrl)).then((res) => {
+      fetchTourById(parseInt(tourIdFromUrl)).then((res) => {
         setTourInfo({
-          id: res.data.data.id,
-          title: res.data.data.title,
+          id: res.id,
+          title: res.title,
         });
       });
     }

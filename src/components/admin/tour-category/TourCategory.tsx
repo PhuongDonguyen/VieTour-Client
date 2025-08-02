@@ -31,7 +31,18 @@ import {
   deleteTourCategoryService,
   fetchAllTourCategories,
 } from "../../../services/tourCategory.service";
-import type { AdminTourCategory } from "../../../apis/admin/adminTourCategory.api";
+// Define the tour category interface locally
+interface TourCategory {
+  id: number;
+  name: string;
+  description?: string;
+  image_url: string;
+  slug: string;
+  is_active: boolean;
+  tourCount?: number;
+  created_at?: string;
+  updated_at?: string;
+}
 import TourCategoryEditor from "./TourCategoryEditor";
 import TourCategoryViewContent from "./TourCategoryViewContent";
 
@@ -70,7 +81,7 @@ const TourCategoriesManagement: React.FC = () => {
     );
   }
 
-  const [tourCategories, setTourCategories] = useState<AdminTourCategory[]>([]);
+  const [tourCategories, setTourCategories] = useState<TourCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,8 +89,9 @@ const TourCategoriesManagement: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   // 1. State quản lý chế độ hiển thị
   const [mode, setMode] = useState<"list" | "view" | "edit" | "create">("list");
-  const [selectedCategory, setSelectedCategory] =
-    useState<AdminTourCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<TourCategory | null>(
+    null
+  );
   const [loadingActiveIds, setLoadingActiveIds] = useState<number[]>([]);
   const [viewLoading, setViewLoading] = useState(false);
 
@@ -118,7 +130,7 @@ const TourCategoriesManagement: React.FC = () => {
 
       // Sort by name
       const sortedCategoriesData = categoriesData.sort(
-        (a: AdminTourCategory, b: AdminTourCategory) =>
+        (a: TourCategory, b: TourCategory) =>
           a.name.localeCompare(b.name, "vi", { sensitivity: "base" })
       );
 
@@ -146,7 +158,7 @@ const TourCategoriesManagement: React.FC = () => {
   };
 
   // 2. Handler chuyển chế độ
-  const handleViewCategory = (category: AdminTourCategory) => {
+  const handleViewCategory = (category: TourCategory) => {
     setViewLoading(true);
     setSelectedCategory(category);
     setMode("view");
@@ -155,7 +167,7 @@ const TourCategoriesManagement: React.FC = () => {
       setViewLoading(false);
     }, 800);
   };
-  const handleEditCategory = (category: AdminTourCategory) => {
+  const handleEditCategory = (category: TourCategory) => {
     setSelectedCategory(category);
     setEditFormData({
       name: category.name,

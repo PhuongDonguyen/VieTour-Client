@@ -19,10 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AuthContext } from "@/context/authContext";
 import { fetchTourPriceOverrideById } from "@/services/tourPriceOverride.service";
-import { providerTourApi } from "@/apis/provider/providerTour.api";
+import { getTourById } from "@/apis/tour.api";
 import type { TourPriceOverride } from "@/apis/tourPriceOverride.api";
 import { format } from "date-fns";
-import { providerTourPriceService } from "@/services/provider/providerTourPrice.service";
+import { fetchTourPriceById } from "@/services/tourPrice.service";
 
 interface TourPriceOverrideViewContentProps {
   overrideId?: string;
@@ -118,24 +118,20 @@ const TourPriceOverrideViewContent: React.FC<
           try {
             let tourRes;
             if (user?.role === "admin") {
-              tourRes = await import("@/apis/admin/adminTour.api").then((m) =>
-                m.adminTourApi.getTour(overrideData.tour_price!.tour!.id)
-              );
+              tourRes = await getTourById(overrideData.tour_price!.tour!.id);
               setTourInfo({
-                title: tourRes.data.data.title,
-                poster_url: tourRes.data.data.poster_url,
+                title: tourRes.data.title,
+                poster_url: tourRes.data.poster_url,
                 category_name:
-                  tourRes.data.data.tour_category?.name || "Chưa phân loại",
+                  tourRes.data.tour_category?.name || "Chưa phân loại",
               });
             } else if (user?.role === "provider") {
-              tourRes = await providerTourApi.getTourById(
-                overrideData.tour_price!.tour!.id
-              );
+              tourRes = await getTourById(overrideData.tour_price!.tour!.id);
               setTourInfo({
-                title: tourRes.data.data.title,
-                poster_url: tourRes.data.data.poster_url,
+                title: tourRes.data.title,
+                poster_url: tourRes.data.poster_url,
                 category_name:
-                  tourRes.data.data.tour_category?.name || "Chưa phân loại",
+                  tourRes.data.tour_category?.name || "Chưa phân loại",
               });
             } else {
               setTourInfo(null);
@@ -164,8 +160,7 @@ const TourPriceOverrideViewContent: React.FC<
       priceOverride.tour_price_id &&
       !tourIdForView
     ) {
-      providerTourPriceService
-        .getTourPrice(priceOverride.tour_price_id)
+      fetchTourPriceById(priceOverride.tour_price_id)
         .then((price) => setTourIdForView(price.tour_id))
         .catch(() => setTourIdForView(null));
     }

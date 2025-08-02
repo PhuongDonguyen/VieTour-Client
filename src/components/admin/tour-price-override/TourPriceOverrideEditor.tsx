@@ -19,7 +19,7 @@ import {
   createTourPriceOverrideService,
   updateTourPriceOverrideService,
 } from "../../../services/tourPriceOverride.service";
-import { providerTourPriceService } from "../../../services/provider/providerTourPrice.service";
+import { fetchAllTourPrices } from "../../../services/tourPrice.service";
 import type { TourPriceOverride } from "../../../apis/tourPriceOverride.api";
 
 interface TourPriceOverrideEditorProps {
@@ -73,7 +73,7 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
 
       // Nếu có tour_id từ URL, chỉ lấy tour prices của tour đó
       if (tourIdFromUrl) {
-        const response = await providerTourPriceService.getTourPrices({
+        const response = await fetchAllTourPrices({
           page: 1,
           limit: 100,
           tour_id: parseInt(tourIdFromUrl),
@@ -189,11 +189,14 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
 
       const formData = {
         tour_price_id: parseInt(form.tour_price_id),
-        override_type: form.override_type,
-        override_date: form.override_date || null,
-        start_date: form.start_date || null,
-        end_date: form.end_date || null,
-        day_of_week: form.day_of_week || null,
+        override_type: form.override_type as
+          | "single_date"
+          | "date_range"
+          | "weekly",
+        override_date: form.override_date || undefined,
+        start_date: form.start_date || undefined,
+        end_date: form.end_date || undefined,
+        day_of_week: form.day_of_week || undefined,
         adult_price: parseInt(form.adult_price),
         kid_price: parseInt(form.kid_price),
         note: form.note,

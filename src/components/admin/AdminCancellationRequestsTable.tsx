@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cancellationRequestService } from "../../services/cancellationRequest.service";
-import { adminTourApi, getAllProviders } from "../../apis/admin/adminTour.api";
-import { providerTourApi } from "../../apis/provider/providerTour.api";
+import { getAllTours } from "../../apis/tour.api";
 import { useAuth } from "../../hooks/useAuth";
 import {
   Table,
@@ -79,22 +78,16 @@ const AdminCancellationRequestsTable: React.FC = () => {
     const fetchData = async () => {
       try {
         if (user?.role === "admin") {
-          const providersRes = await getAllProviders();
-          setProviders(providersRes.data.data || []);
-
-          const toursRes = await adminTourApi.getAllTours();
+          // For admin, fetch all tours
+          const toursRes = await getAllTours({ limit: 1000 });
           console.log("Admin tours response:", toursRes);
-          setTours(toursRes.data.data || []);
+          setTours(toursRes.data || []);
+          setProviders([]); // No providers needed for admin
         } else if (user?.role === "provider") {
           // For provider, fetch their own tours
-          const toursRes = await providerTourApi.getProviderTours({
-            limit: 1000,
-          });
+          const toursRes = await getAllTours({ limit: 1000 });
           console.log("Provider tours response:", toursRes);
-          // From console log: toursRes.data = {success: true, data: Array(10), pagination: {...}}
-          // So we need toursRes.data.data to get the actual array
-          const toursData = (toursRes as any).data?.data || toursRes.data || [];
-          setTours(toursData);
+          setTours(toursRes.data || []);
         }
       } catch (error) {
         console.error("Error fetching providers/tours:", error);

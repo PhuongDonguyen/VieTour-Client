@@ -4,8 +4,7 @@ import {
   fetchAllBookings,
   fetchBookingsCount,
 } from "../../services/booking.service";
-import { getAllProviders } from "../../apis/admin/adminTour.api";
-import { adminTourApi } from "../../apis/admin/adminTour.api";
+import { getAllTours } from "../../apis/tour.api";
 import { toast } from "sonner";
 import type { AdminBooking } from "../../apis/booking.api";
 
@@ -60,15 +59,11 @@ const AdminBookingsTable: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Chỉ fetch providers cho admin
-        if (user?.role !== "provider") {
-          const providersRes = await getAllProviders();
-          setProviders(providersRes.data.data || []);
-        }
-
         // Fetch tours cho cả admin và provider
-        const toursRes = await adminTourApi.getAllTours({ limit: 1000 });
-        setTours(toursRes.data.data || []);
+        const toursRes = await getAllTours({ limit: 1000 });
+        setTours(toursRes.data || []);
+        // Set empty providers array since we're using common API
+        setProviders([]);
       } catch (error) {
         console.error("Error fetching providers/tours:", error);
         setProviders([]);

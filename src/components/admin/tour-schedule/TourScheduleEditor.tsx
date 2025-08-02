@@ -84,7 +84,6 @@ const TourScheduleEditor: React.FC = () => {
         try {
           const response = await fetchTours({
             limit: 100, // Get all tours
-            status: "active", // Only active tours
           });
 
           if (response.data && Array.isArray(response.data)) {
@@ -176,6 +175,7 @@ const TourScheduleEditor: React.FC = () => {
             const scheduleData = {
               tour_id: tourId,
               start_date: date.toISOString().split("T")[0], // Format as YYYY-MM-DD
+              participant: 0, // Default participant count
             };
 
             await createTourScheduleService(scheduleData);

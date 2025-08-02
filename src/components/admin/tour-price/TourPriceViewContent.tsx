@@ -190,10 +190,8 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
             <Button
               onClick={() =>
                 navigate(
-                  tourIdFromUrl || tourPrice?.tour_id
-                    ? `/admin/tours/prices?tour_id=${
-                        tourIdFromUrl || tourPrice?.tour_id
-                      }`
+                  tourIdFromUrl
+                    ? `/admin/tours/prices?tour_id=${tourIdFromUrl}`
                     : "/admin/tours/prices"
                 )
               }

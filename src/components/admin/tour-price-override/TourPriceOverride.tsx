@@ -45,7 +45,7 @@ import {
   deleteTourPriceOverrideService,
   toggleActiveTourPriceOverrideService,
 } from "../../../services/tourPriceOverride.service";
-import { adminTourService } from "../../../services/admin/adminTour.service";
+import { fetchAllToursByProviderId } from "../../../services/tour.service";
 import type { TourPriceOverride } from "../../../apis/tourPriceOverride.api";
 import TourPriceOverrideViewContent from "./TourPriceOverrideViewContent";
 import TourPriceOverrideEditor from "./TourPriceOverrideEditor";
@@ -140,7 +140,7 @@ const TourPriceOverridesManagement: React.FC = () => {
   useEffect(() => {
     if (isAdmin) {
       // Lấy danh sách tour cho admin
-      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
+      fetchAllToursByProviderId(null).then((res) => {
         if (res.data && Array.isArray(res.data)) {
           setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
         }

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, ChangeEvent } from "react";
+import React, { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import {
   createTourImageService,
   updateTourImageService,
 } from "@/services/tourImage.service";
-import { fetchTours } from "@/services/tour.service";
+import { fetchTours, fetchTourById } from "@/services/tour.service";
 import type { TourImage } from "@/apis/tourImage.api";
 
 interface TourImageEditorProps {
@@ -99,10 +100,8 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
     if (!tourId) return;
 
     try {
-      const tourRes = await fetchTours({ tour_id: Number(tourId) });
-      if (tourRes.data && Array.isArray(tourRes.data)) {
-        setTourInfo(tourRes.data[0]);
-      }
+      const tourRes = await fetchTourById(Number(tourId));
+      setTourInfo(tourRes);
     } catch (error) {
       console.error("Failed to load tour info:", error);
       setTourInfo(null);

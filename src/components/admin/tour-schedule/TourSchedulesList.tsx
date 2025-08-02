@@ -174,6 +174,7 @@ const TourSchedulesList: React.FC = () => {
           const scheduleData = {
             tour_id: tourId,
             start_date: selectedSchedule.start_date,
+            participant: selectedSchedule.participant,
           };
 
           await createTourScheduleService(scheduleData);
