@@ -10,6 +10,7 @@ import {
 } from "../services/question.service";
 import { useAuth } from "../hooks/useAuth";
 import { RepliesSection } from "./renderReplies";
+import { LoadingChat } from "@/pages/admin/AdminSupport";
 
 interface Question {
   id: number;
@@ -19,7 +20,7 @@ interface Question {
   text: string;
   created_at: string;
   user: User | null;
-  replies?: Question[];
+  questions?: Question[];
 }
 
 interface User {
@@ -113,7 +114,7 @@ export const CommentSection = () => {
 
         const transformedData = rawData.map((q: any) => ({
           ...q,
-          replies: q.questions || [],
+          questions: q.questions || [],
         }));
 
         setQuestions(transformedData);
@@ -188,6 +189,7 @@ export const CommentSection = () => {
         alert("Vui lòng đăng nhập!");
         return;
       }
+      setLoadingQuestion(true);
       const res = await sendQuestion(user.id, tourId, null, commentText, false);
       console.log("res par ", res);
       const dataRes = res.data;
@@ -199,15 +201,18 @@ export const CommentSection = () => {
         text: dataRes.text,
         created_at: dataRes.created_at,
         user: user,
-        replies: [],
+        questions: [],
       };
       addQuestion(newQuestion);
       setCommentText("");
       const data = await res.data.json();
       console.log("Gửi câu hỏi thành công:", data);
+      setLoadingQuestion(false);
       return data;
+      
     } catch (error) {
       console.error("Lỗi khi gửi câu hỏi:", error);
+      setLoadingQuestion(false);
       return null;
     }
   };
@@ -224,7 +229,7 @@ export const CommentSection = () => {
         alert("Vui lòng đăng nhập!");
         return;
       }
-      setLoading(true);
+      setLoadingQuestion(true);
       const res = await sendQuestion(
         user.id,
         tourId,
@@ -243,17 +248,17 @@ export const CommentSection = () => {
         text: replyText,
         created_at: dataRes.created_at,
         user: user,
-        replies: [],
+        questions: [],
       };
       handleAddReply(parrent_id, newQuestion);
       setReplyText("");
       console.log("Gửi câu hỏi thành công:");
       setActiveReplyId(null);
-      setLoading(false);
+      setLoadingQuestion(false);
       return res;
     } catch (error) {
       console.error("Lỗi khi gửi câu hỏi:", error);
-      setLoading(false);
+      setLoadingQuestion(false);
       return null;
     }
   };
@@ -273,15 +278,15 @@ export const CommentSection = () => {
         // Nếu tìm thấy đúng parent, thêm reply vào replies
         return {
           ...question,
-          replies: [...(question.replies || []), reply],
+          questions: [...(question.questions || []), reply],
         };
       }
 
-      // Nếu có replies thì duyệt tiếp (đệ quy)
-      if (question.replies && question.replies.length > 0) {
+      // Nếu có questions thì duyệt tiếp (đệ quy)
+      if (question.questions && question.questions.length > 0) {
         return {
           ...question,
-          replies: addReplyToTree(question.replies, parentId, reply),
+          questions: addReplyToTree(question.questions, parentId, reply),
         };
       }
 
@@ -435,8 +440,8 @@ export const CommentSection = () => {
                       {/* Ô nhập trả lời */}
                       {activeReplyId === q.id && (
                         <div className=" mt-2 space-y-2">
-                          {loading ? (
-                            <Loading />
+                          {loadingQuestion ? (
+                            <LoadingChat />
                           ) : (
                             <div>
                               <textarea
@@ -471,9 +476,9 @@ export const CommentSection = () => {
                       )}
 
                       {/* Danh sách trả lời */}
-                      {q.replies && q.replies.length > 0 && (
+                      {q.questions && q.questions.length > 0 && (
                         <RepliesSection
-                          replies={q.replies}
+                          questions={q.questions}
                           user={user!}
                           activeReplyId={activeReplyId}
                           setActiveReplyId={setActiveReplyId}
@@ -481,7 +486,7 @@ export const CommentSection = () => {
                           setReplyText={setReplyText}
                           handleReplySubmit={handleReplySubmit}
                           handleDeleteQuestion={handleDeleteQuestion}
-                          loading={loading}
+                          loading={loadingQuestion}
                         />
                       )}
                     </div>

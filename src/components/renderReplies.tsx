@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Loading } from './Loading';
+import { LoadingChat } from '@/pages/admin/AdminSupport';
 
 interface Question {
   id: number;
@@ -10,8 +11,47 @@ interface Question {
   text: string;
   created_at: string;
   user: User |null;
-  replies?: Question[];
+  questions?: Question[];
 }
+
+export const loadChat = () => {
+  return (
+    <div className="w-12 text-orange-600">
+      <svg
+        fill="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="4" cy="12" r="3">
+          <animate
+            id="spinner_jObz"
+            begin="0;spinner_vwSQ.end-0.25s"
+            attributeName="r"
+            dur="0.75s"
+            values="3;.2;3"
+          ></animate>
+        </circle>
+        <circle cx="12" cy="12" r="3">
+          <animate
+            begin="spinner_jObz.end-0.6s"
+            attributeName="r"
+            dur="0.75s"
+            values="3;.2;3"
+          ></animate>
+        </circle>
+        <circle cx="20" cy="12" r="3">
+          <animate
+            id="spinner_vwSQ"
+            begin="spinner_jObz.end-0.45s"
+            attributeName="r"
+            dur="0.75s"
+            values="3;.2;3"
+          ></animate>
+        </circle>
+      </svg>
+    </div>
+  );
+};
 
 interface User {
   id: number;
@@ -20,7 +60,7 @@ interface User {
   avatar?: string;
 }
 type RepliesSectionProps = {
-  replies: Question[];
+  questions: Question[];
   level?: number;
   user?: User;
   activeReplyId: number | null;
@@ -32,7 +72,7 @@ type RepliesSectionProps = {
   loading: boolean;
 };
 
-export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setActiveReplyId, replyText, setReplyText, handleReplySubmit, handleDeleteQuestion , loading} : RepliesSectionProps) => {
+export const RepliesSection = ({ questions, level = 1, user, activeReplyId, setActiveReplyId, replyText, setReplyText, handleReplySubmit, handleDeleteQuestion , loading} : RepliesSectionProps) => {
   const [expandedReplyIds, setExpandedReplyIds] = useState<number[]>([]);
 
   const toggleReplyVisibility = (id: number) => {
@@ -43,7 +83,7 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
 
   return (
     <div className={`mt-4 pl-${2} border-l-2 border-orange-200 space-y-4`}>
-      {replies.map((rep) => {
+      {questions.map((rep) => {
         const isExpanded = expandedReplyIds.includes(rep.id);
         return (
           <div key={rep.id} className="text-sm flex items-start gap-3">
@@ -109,7 +149,7 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
               {activeReplyId === rep.id && (
                 <div className="mt-2 space-y-2">
                   {loading ? (
-                    <Loading />
+                    <LoadingChat />
                   ) : (
                     <div>
                       <textarea
@@ -122,12 +162,16 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             handleReplySubmit(rep.id);
+                            if (!isExpanded) toggleReplyVisibility(rep.id);
                           }
                         }}
                         className="w-full px-4 py-2 border rounded-lg border-gray-300 resize-none"
                       />
                       <button
-                        onClick={() => handleReplySubmit(rep.id)}
+                          onClick={() => {
+                            handleReplySubmit(rep.id);
+                            if (!isExpanded) toggleReplyVisibility(rep.id);
+                          }}
                         className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
                       >
                         Gửi trả lời
@@ -144,7 +188,7 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
               )}
 
               {/* Nút ẩn/hiện reply con */}
-              {rep.replies && rep.replies.length > 0 && (
+              {rep.questions && rep.questions.length > 0 && (
                 <button
                   onClick={() => toggleReplyVisibility(rep.id)}
                   className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:underline"
@@ -157,17 +201,17 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
                   ) : (
                     <>
                       <ChevronDown size={16} />
-                      <span>Xem thêm {rep.replies.length} trả lời</span>
+                      <span>Xem thêm {rep.questions.length} trả lời</span>
                     </>
                   )}
                 </button>
               )}
 
               {/* Hiển thị reply con nếu đang mở */}
-              {rep.replies && rep.replies.length > 0 && isExpanded && (
+              {rep.questions && rep.questions.length > 0 && isExpanded && (
                 <div className="mt-3">
                   <RepliesSection
-                    replies={rep.replies}
+                    questions={rep.questions}
                     level={level + 1}
                     user={user}
                     activeReplyId={activeReplyId}
