@@ -128,12 +128,18 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
             Chi tiết tour bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.
           </p>
           {onBack ? (
-            <Button onClick={onBack}>
+            <Button
+              onClick={onBack}
+              className="bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại
             </Button>
           ) : (
-            <Button onClick={() => navigate("/admin/tours/details")}>
+            <Button
+              onClick={() => navigate("/admin/tours/details")}
+              className="bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại danh sách
             </Button>
@@ -151,20 +157,22 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
           <div className="flex items-center space-x-4">
             {onBack ? (
               <Button
-                variant="ghost"
                 onClick={onBack}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Quay lại</span>
               </Button>
             ) : (
               <Button
-                variant="ghost"
                 onClick={() =>
-                  navigate(`/admin/tours/details?tour_id=${tourDetail.tour_id}`)
+                  navigate(
+                    tourDetail.tour_id
+                      ? `/admin/tours/details?tour_id=${tourDetail.tour_id}`
+                      : "/admin/tours/details"
+                  )
                 }
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Về danh sách chi tiết tour</span>

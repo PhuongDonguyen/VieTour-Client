@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Save, Calendar, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,11 +36,15 @@ interface TourDetailFormData {
 const TourDetailEditor: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
+  // Get tour_id from URL query parameter
+  const tourIdFromUrl = searchParams.get("tour_id");
+
   const [formData, setFormData] = useState<TourDetailFormData>({
-    tour_id: "",
+    tour_id: tourIdFromUrl || "",
     title: "",
     order: "",
     morning_description: "",
@@ -88,13 +92,30 @@ const TourDetailEditor: React.FC = () => {
         );
 
         setAvailableTours(sortedTours);
+
+        // Auto-select tour if tourIdFromUrl is provided and we're in create mode
+        if (!isEditing && tourIdFromUrl) {
+          const selectedTour = sortedTours.find(
+            (t) => t.id.toString() === tourIdFromUrl
+          );
+          if (selectedTour) {
+            setFormData((prev) => ({
+              ...prev,
+              tour_id: tourIdFromUrl,
+            }));
+            setSelectedTour(selectedTour);
+          }
+        } else if (!isEditing && !tourIdFromUrl) {
+          // If no tour_id in URL, don't auto-select any tour
+          // Let user choose manually
+        }
       } catch (error) {
         console.error("Error loading available tours:", error);
       }
     };
 
     loadAvailableTours();
-  }, []);
+  }, [isEditing, tourIdFromUrl]);
 
   // Load tour detail data for editing
   useEffect(() => {
@@ -160,7 +181,11 @@ const TourDetailEditor: React.FC = () => {
 
   // Handle save
   const handleSave = async () => {
-    if (!formData.tour_id || !formData.title || !formData.order) {
+    if (!formData.tour_id) {
+      alert("Vui lòng chọn tour");
+      return;
+    }
+    if (!formData.title || !formData.order) {
       alert("Vui lòng điền đầy đủ thông tin bắt buộc");
       return;
     }
@@ -186,7 +211,11 @@ const TourDetailEditor: React.FC = () => {
       }
 
       // Navigate back to list with tour_id filter to maintain the selected tour
-      navigate(`/admin/tours/details?tour_id=${formData.tour_id}`);
+      navigate(
+        tourIdFromUrl || formData.tour_id
+          ? `/admin/tours/details?tour_id=${tourIdFromUrl || formData.tour_id}`
+          : "/admin/tours/details"
+      );
     } catch (error) {
       console.error("Error saving tour detail:", error);
       alert("Có lỗi xảy ra khi lưu chi tiết tour. Vui lòng thử lại.");
@@ -216,7 +245,13 @@ const TourDetailEditor: React.FC = () => {
           <Button
             variant="outline"
             onClick={() =>
-              navigate(`/admin/tours/details?tour_id=${formData.tour_id}`)
+              navigate(
+                tourIdFromUrl || formData.tour_id
+                  ? `/admin/tours/details?tour_id=${
+                      tourIdFromUrl || formData.tour_id
+                    }`
+                  : "/admin/tours/details"
+              )
             }
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -257,6 +292,7 @@ const TourDetailEditor: React.FC = () => {
                   <Select
                     value={formData.tour_id}
                     onValueChange={handleTourChange}
+                    disabled={isLoadingTour || (!isEditing && !!tourIdFromUrl)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn tour..." />
@@ -386,6 +422,7 @@ const TourDetailEditor: React.FC = () => {
                   {formData.tour_id ? "✓" : "✗"}
                 </Badge>
               </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-sm">Tiêu đề</span>
                 <Badge variant={formData.title ? "default" : "secondary"}>

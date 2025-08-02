@@ -39,6 +39,7 @@ import {
   toggleTourStatusService,
 } from "@/services/tour.service";
 import { fetchActiveTourCategories } from "@/services/tourCategory.service";
+import { fetchAllProviderProfiles } from "@/services/providerProfile.service";
 import type { Tour } from "@/apis/tour.api";
 
 const ProviderTours: React.FC = () => {
@@ -61,6 +62,8 @@ const ProviderTours: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
     categoryIdFromUrl || "all"
   );
+  const [providers, setProviders] = useState<any[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>("all");
   const [filteredTours, setFilteredTours] = useState<Tour[]>([]);
   const [loadingTourId, setLoadingTourId] = useState<number | null>(null);
   const [categoryMap, setCategoryMap] = useState<{ [key: number]: string }>({});
@@ -153,7 +156,7 @@ const ProviderTours: React.FC = () => {
     const fetchToursData = async () => {
       setLoading(true);
       try {
-        const params = {
+        const params: any = {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
@@ -162,6 +165,37 @@ const ProviderTours: React.FC = () => {
               ? Number(selectedCategoryId)
               : undefined,
         };
+
+        // Debug: log user info
+        console.log("User info:", {
+          role: user?.role,
+          provider_id: user?.provider_id,
+          providerId: user?.providerId,
+          id: user?.id,
+          user: user,
+        });
+
+        // Thêm provider_id nếu role là provider hoặc admin chọn provider
+        let providerId = null;
+        if (user?.role === "provider") {
+          // Kiểm tra nhiều trường hợp có thể có provider_id
+          providerId = user?.provider_id || user?.providerId || user?.id;
+        } else if (user?.role === "admin" && selectedProviderId !== "all") {
+          // Admin chọn provider để filter
+          providerId = selectedProviderId;
+        }
+
+        if (providerId) {
+          params.provider_id = providerId;
+          console.log("Added provider_id to params:", providerId);
+        } else {
+          console.log(
+            "Not adding provider_id - role:",
+            user?.role,
+            "providerId:",
+            providerId
+          );
+        }
 
         console.log("Fetching tours with params:", params);
         const res = await fetchTours(params);
@@ -178,7 +212,14 @@ const ProviderTours: React.FC = () => {
       }
     };
     fetchToursData();
-  }, [currentPage, searchTerm, selectedCategoryId]);
+  }, [
+    currentPage,
+    searchTerm,
+    selectedCategoryId,
+    selectedProviderId,
+    user?.role,
+    user?.provider_id,
+  ]);
 
   // FE search/filter - chỉ lọc theo search term, không lọc theo category (vì đã lọc ở backend)
   useEffect(() => {
@@ -215,6 +256,26 @@ const ProviderTours: React.FC = () => {
     }
   };
 
+  // Fetch providers for admin
+  useEffect(() => {
+    const fetchProvidersData = async () => {
+      if (user?.role === "admin") {
+        try {
+          const providersRes = await fetchAllProviderProfiles({
+            limit: 1000,
+            is_verified: true,
+          });
+          setProviders(providersRes || []);
+          console.log("Providers for admin:", providersRes);
+        } catch (error) {
+          console.error("Error fetching providers:", error);
+          setProviders([]);
+        }
+      }
+    };
+    fetchProvidersData();
+  }, [user?.role]);
+
   // Fetch tour categories on mount
   useEffect(() => {
     fetchActiveTourCategories().then((data) => {
@@ -246,6 +307,11 @@ const ProviderTours: React.FC = () => {
     // Không cần set loading vì lọc trên Frontend
   };
 
+  const handleProviderChange = (value: string) => {
+    setSelectedProviderId(value);
+    setCurrentPage(1); // Reset to first page when changing provider
+  };
+
   // Handle delete tour
   const handleDeleteTour = async (id: number) => {
     if (isAdmin) {
@@ -255,12 +321,32 @@ const ProviderTours: React.FC = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa tour này?")) {
       try {
         await deleteTourService(id);
-        // Refresh the tours list
-        const res = await fetchTours({
+        // Refresh the tours list với provider_id nếu cần
+        const refreshParams: any = {
           page: currentPage,
           limit: 10,
           search: searchTerm || undefined,
-        });
+          tour_category_id:
+            selectedCategoryId !== "all"
+              ? Number(selectedCategoryId)
+              : undefined,
+        };
+
+        // Thêm provider_id nếu role là provider hoặc admin chọn provider
+        let providerId = null;
+        if (user?.role === "provider") {
+          // Kiểm tra nhiều trường hợp có thể có provider_id
+          providerId = user?.provider_id || user?.providerId || user?.id;
+        } else if (user?.role === "admin" && selectedProviderId !== "all") {
+          // Admin chọn provider để filter
+          providerId = selectedProviderId;
+        }
+
+        if (providerId) {
+          refreshParams.provider_id = providerId;
+        }
+
+        const res = await fetchTours(refreshParams);
         setTours(res.data);
       } catch (error) {
         console.error("Failed to delete tour:", error);
@@ -356,6 +442,32 @@ const ProviderTours: React.FC = () => {
                 className="pl-10 max-w-sm"
               />
             </div>
+            {isAdmin && (
+              <div className="w-56">
+                <Select
+                  value={selectedProviderId}
+                  onValueChange={handleProviderChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nhà cung cấp" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
+                    {providers.length > 0 ? (
+                      providers.map((p) => (
+                        <SelectItem key={p.id} value={p.id.toString()}>
+                          {p.company_name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-providers" disabled>
+                        Không có nhà cung cấp
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="w-56">
               <Select
                 value={selectedCategoryId}

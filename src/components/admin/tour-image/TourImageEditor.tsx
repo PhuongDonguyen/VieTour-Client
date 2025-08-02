@@ -45,19 +45,19 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
     alt_text: "",
     is_featured: false,
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [tourInfo, setTourInfo] = useState<any>(null);
   const [availableTours, setAvailableTours] = useState<
     { id: number; title: string }[]
   >([]);
   const [loadingTours, setLoadingTours] = useState(false);
 
-  // Load available tours (only needed for edit mode)
+  // Load available tours (always needed for edit mode to allow tour changes)
   const loadAvailableTours = async () => {
-    if (mode === "create") return; // Skip for create mode
+    if (mode === "create" && tourIdFromUrl) return; // Skip for create mode with tour_id
 
     try {
       setLoadingTours(true);
@@ -109,9 +109,12 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
   };
 
   useEffect(() => {
-    // Load available tours for edit mode only
-    if (mode === "edit") {
+    // Load available tours only for create mode without tour_id
+    if (mode === "create" && !tourIdFromUrl) {
       loadAvailableTours();
+    } else {
+      // For edit mode or create mode with tour_id, don't load available tours
+      setAvailableTours([]);
     }
 
     if (mode === "edit" && id) {
@@ -125,7 +128,7 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
             alt_text: response.alt_text,
             is_featured: response.is_featured,
           });
-          setPreviewUrl(response.image_url || null);
+          setPreviewUrls([response.image_url || ""]);
           // Load tour info for the image's tour
           if (response.tour_id) {
             await loadTourInfo(response.tour_id.toString());
@@ -137,8 +140,11 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
         }
       })();
     } else if (mode === "create" && tourIdFromUrl) {
-      // Load tour info for create mode
+      // Load tour info for create mode with tour_id
       loadTourInfo(tourIdFromUrl);
+    } else if (mode === "create" && !tourIdFromUrl && form.tour_id) {
+      // Load tour info when user selects a tour in create mode
+      loadTourInfo(form.tour_id);
     }
   }, [mode, id, tourIdFromUrl]);
 
@@ -155,16 +161,18 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
       ...prev,
       tour_id: tourId,
     }));
-    // Load tour info when tour changes (edit mode only)
-    if (mode === "edit") {
-      loadTourInfo(tourId);
-    }
+    // Load tour info when tour changes
+    loadTourInfo(tourId);
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setPreviewUrl(URL.createObjectURL(e.target.files[0]));
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+      setFiles(selectedFiles);
+
+      // Create preview URLs for all selected files
+      const urls = selectedFiles.map((file) => URL.createObjectURL(file));
+      setPreviewUrls(urls);
     }
   };
 
@@ -173,34 +181,67 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
       setError("Vui lòng chọn Tour.");
       return;
     }
+    if (files.length === 0 && mode === "create") {
+      setError("Vui lòng chọn file hình ảnh.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-
       if (mode === "edit" && id) {
-        // Khi edit, gửi tour_id để server validate
+        // Khi edit, chỉ có thể cập nhật 1 ảnh
+        if (files.length > 1) {
+          setError("Chế độ chỉnh sửa chỉ hỗ trợ 1 ảnh.");
+          return;
+        }
+
+        const formData = new FormData();
         formData.append("tour_id", form.tour_id);
         formData.append("alt_text", form.alt_text);
         formData.append("is_featured", form.is_featured ? "true" : "false");
-        if (file) {
-          formData.append("image", file);
+        if (files.length > 0) {
+          formData.append("image", files[0]);
         }
         await updateTourImageService(Number(id), formData);
         alert("Cập nhật hình ảnh thành công!");
       } else {
-        // Khi tạo mới, gửi tất cả trường
-        formData.append("tour_id", form.tour_id);
-        formData.append("alt_text", form.alt_text);
-        formData.append("is_featured", form.is_featured ? "true" : "false");
-        if (file) {
-          formData.append("image", file);
+        // Khi tạo mới, gửi từng ảnh qua vòng lặp
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (let i = 0; i < files.length; i++) {
+          try {
+            const formData = new FormData();
+            formData.append("tour_id", form.tour_id);
+            formData.append("alt_text", form.alt_text);
+            formData.append("is_featured", form.is_featured ? "true" : "false");
+            formData.append("image", files[i]);
+
+            await createTourImageService(formData);
+            successCount++;
+          } catch (err: any) {
+            console.error(`Error uploading file ${files[i].name}:`, err);
+            errorCount++;
+          }
         }
-        await createTourImageService(formData);
-        alert("Tạo hình ảnh thành công!");
+
+        if (errorCount === 0) {
+          alert(`Tạo thành công ${successCount} hình ảnh!`);
+        } else if (successCount > 0) {
+          alert(
+            `Tạo thành công ${successCount} hình ảnh, ${errorCount} hình ảnh lỗi.`
+          );
+        } else {
+          throw new Error("Tất cả hình ảnh đều lỗi.");
+        }
       }
-      navigate(`/admin/tours/images?tour_id=${form.tour_id}`);
+
+      navigate(
+        tourIdFromUrl || form.tour_id
+          ? `/admin/tours/images?tour_id=${tourIdFromUrl || form.tour_id}`
+          : "/admin/tours/images"
+      );
       if (onBack) onBack();
     } catch (err: any) {
       console.error("Error saving tour image:", err);
@@ -224,9 +265,18 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost"
-            onClick={onBack}
-            className="flex items-center gap-2"
+            onClick={
+              onBack ||
+              (() =>
+                navigate(
+                  tourIdFromUrl || form.tour_id
+                    ? `/admin/tours/images?tour_id=${
+                        tourIdFromUrl || form.tour_id
+                      }`
+                    : "/admin/tours/images"
+                ))
+            }
+            className="flex items-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
           >
             <ArrowLeft className="w-4 h-4" />
             Quay lại
@@ -266,9 +316,9 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Tour {mode === "edit" ? "*" : ""}
+                    Tour *
                   </label>
-                  {mode === "create" ? (
+                  {mode === "edit" || (mode === "create" && tourIdFromUrl) ? (
                     <div className="p-3 bg-muted rounded-md">
                       <p className="text-sm font-medium">
                         {tourInfo ? tourInfo.title : `Tour ID: ${form.tour_id}`}
@@ -299,13 +349,21 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Chọn file hình ảnh
+                    Chọn file hình ảnh{" "}
+                    {mode === "create" ? "(có thể chọn nhiều)" : ""}
                   </label>
                   <Input
                     type="file"
                     accept="image/*"
+                    multiple={mode === "create"}
                     onChange={handleFileChange}
                   />
+                  {files.length > 0 && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Đã chọn {files.length} file:{" "}
+                      {files.map((f) => f.name).join(", ")}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -346,12 +404,17 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
               <CardTitle>Preview Ảnh</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
-              {previewUrl ? (
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="w-full max-w-xs h-48 object-cover rounded-lg border"
-                />
+              {previewUrls.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2 max-w-xs">
+                  {previewUrls.map((url, index) => (
+                    <img
+                      key={index}
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border"
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="text-muted-foreground text-sm">
                   Chưa chọn ảnh
@@ -386,7 +449,10 @@ const TourImageEditor: React.FC<TourImageEditorProps> = ({
               <CardTitle>Trạng Thái Form</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div>Đã chọn file: {file ? file.name : "Chưa chọn"}</div>
+              <div>
+                Đã chọn file:{" "}
+                {files.length > 0 ? `${files.length} file` : "Chưa chọn"}
+              </div>
               <div>Nổi bật: {form.is_featured ? "Có" : "Không"}</div>
               <div>Mô tả: {form.alt_text || "Chưa nhập"}</div>
             </CardContent>

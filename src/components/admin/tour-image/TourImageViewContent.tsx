@@ -100,13 +100,12 @@ const TourImageViewContent: React.FC<TourImageViewContentProps> = ({
       {showHeader && (
         <div className="flex items-center mb-4">
           <Button
-            variant="ghost"
             onClick={
               onBack
                 ? onBack
                 : () => navigate(`/admin/tours/images?tour_id=${image.tour_id}`)
             }
-            className="flex items-center"
+            className="flex items-center bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay lại

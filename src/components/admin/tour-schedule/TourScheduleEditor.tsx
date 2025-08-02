@@ -239,14 +239,13 @@ const TourScheduleEditor: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost"
             onClick={
               tourIdFromUrl
                 ? () =>
                     navigate(`/admin/tours/schedules?tour_id=${tourIdFromUrl}`)
                 : () => navigate("/admin/tours/schedules")
             }
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
           >
             <ArrowLeft className="w-4 h-4" />
             Quay lại

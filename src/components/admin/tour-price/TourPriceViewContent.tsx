@@ -182,7 +182,10 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
             Thông tin giá tour bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.
           </p>
           {onBack ? (
-            <Button onClick={onBack}>
+            <Button
+              onClick={onBack}
+              className="bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại
             </Button>
@@ -195,6 +198,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                     : "/admin/tours/prices"
                 )
               }
+              className="bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại danh sách
@@ -213,16 +217,14 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
           <div className="flex items-center space-x-4">
             {onBack ? (
               <Button
-                variant="outline"
                 onClick={onBack}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span>Quay lại</span>
               </Button>
             ) : (
               <Button
-                variant="outline"
                 onClick={() =>
                   navigate(
                     tourIdFromUrl || tourPrice?.tour_id
@@ -232,7 +234,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                       : "/admin/tours/prices"
                   )
                 }
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span>Quay lại</span>
@@ -243,7 +245,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                 Giá Tour: {getTourInfo(tourPrice).title}
               </h1>
               <p className="text-muted-foreground">
-                Tour Price
+                Chi tiết giá tour
                 {tourPrice?.created_at &&
                 formatDate(tourPrice.created_at) !== "Invalid Date"
                   ? ` • ${formatDate(tourPrice.created_at)}`
@@ -289,7 +291,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                   </p>
                   <Badge variant="secondary">
                     <Tag className="w-3 h-3 mr-1" />
-                    {tourPrice?.price_type || "Standard"}
+                    {tourPrice?.price_type || "Tiêu chuẩn"}
                   </Badge>
                 </div>
                 <div>
@@ -298,7 +300,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                   </p>
                   <Badge variant="default">
                     <TrendingUp className="w-3 h-3 mr-1" />
-                    Active
+                    Hoạt động
                   </Badge>
                 </div>
               </div>
@@ -343,7 +345,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Thao tác nhanh</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {!isAdmin && (
@@ -358,7 +360,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                   className="w-full"
                 >
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit Tour Price
+                  Chỉnh sửa giá tour
                 </Button>
               )}
               <Button
@@ -369,7 +371,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
                 className="w-full"
               >
                 <Eye className="w-4 h-4 mr-2" />
-                View Tour
+                Xem tour
               </Button>
             </CardContent>
           </Card>
@@ -377,25 +379,25 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
           {/* Price Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Price Details</CardTitle>
+              <CardTitle>Chi tiết giá</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Price ID
+                  Mã giá
                 </label>
                 <p className="font-mono text-sm">{tourPrice?.id}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Tour ID
+                  Mã tour
                 </label>
                 <p className="font-mono text-sm">{tourPrice?.tour_id}</p>
               </div>
               {tourPrice?.created_at && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Created
+                    Ngày tạo
                   </label>
                   <p className="text-sm">{formatDate(tourPrice.created_at)}</p>
                 </div>
@@ -403,7 +405,7 @@ const TourPriceViewContent: React.FC<TourPriceViewContentProps> = ({
               {tourPrice?.updated_at && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Updated
+                    Ngày cập nhật
                   </label>
                   <p className="text-sm">{formatDate(tourPrice.updated_at)}</p>
                 </div>

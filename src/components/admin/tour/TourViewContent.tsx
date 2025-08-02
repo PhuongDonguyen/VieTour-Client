@@ -174,18 +174,18 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
           <div className="flex items-center space-x-4">
             {onBack ? (
               <Button
-                variant="ghost"
+                variant="default"
                 onClick={onBack}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Quay lại</span>
               </Button>
             ) : (
               <Button
-                variant="ghost"
+                variant="default"
                 onClick={() => navigate("/admin/tours")}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Về danh sách tour</span>

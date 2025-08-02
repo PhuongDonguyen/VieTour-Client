@@ -291,7 +291,6 @@ const TourPriceOverrideViewContent: React.FC<
       {showHeader && (
         <div className="flex items-center mb-4">
           <Button
-            variant="ghost"
             onClick={
               onBack
                 ? onBack
@@ -300,7 +299,7 @@ const TourPriceOverrideViewContent: React.FC<
                       `/admin/tours/price-overrides?tour_id=${tourIdFromUrl}`
                     )
             }
-            className="flex items-center"
+            className="flex items-center bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay lại

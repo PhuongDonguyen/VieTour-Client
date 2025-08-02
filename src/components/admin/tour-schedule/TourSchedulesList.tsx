@@ -254,9 +254,8 @@ const TourSchedulesList: React.FC = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost"
             onClick={handleBackToTour}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
           >
             <ArrowLeft className="w-4 h-4" />
             Quay lại Tour

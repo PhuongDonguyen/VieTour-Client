@@ -98,7 +98,11 @@ const TourDetails: React.FC = () => {
       alert("Admin không có quyền tạo chi tiết tour.");
       return;
     }
-    navigate("/admin/tours/details/new");
+    navigate(
+      tourIdFromUrl
+        ? `/admin/tours/details/new?tour_id=${tourIdFromUrl}`
+        : "/admin/tours/details/new"
+    );
   };
 
   return (

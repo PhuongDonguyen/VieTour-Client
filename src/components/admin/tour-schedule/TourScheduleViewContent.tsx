@@ -112,7 +112,6 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
       {/* Header */}
       <div className="flex items-center mb-4">
         <Button
-          variant="ghost"
           onClick={
             onBack
               ? onBack
@@ -121,7 +120,7 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
                   navigate(`/admin/tours/schedules?tour_id=${tourIdFromUrl}`)
               : () => navigate("/admin/tours/schedules")
           }
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Quay lại</span>

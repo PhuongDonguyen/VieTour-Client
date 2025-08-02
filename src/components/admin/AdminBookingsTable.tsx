@@ -5,6 +5,7 @@ import {
   fetchBookingsCount,
 } from "../../services/booking.service";
 import { getAllTours } from "../../apis/tour.api";
+import { fetchAllProviderProfiles } from "../../services/providerProfile.service";
 import { toast } from "sonner";
 import type { AdminBooking } from "../../apis/booking.api";
 
@@ -55,45 +56,72 @@ const AdminBookingsTable: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch providers and tours
+  // Fetch providers and initial tours
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch tours cho cả admin và provider
-        const toursRes = await getAllTours({ limit: 1000 });
-        setTours(toursRes.data || []);
-        // Set empty providers array since we're using common API
-        setProviders([]);
+        if (user?.role === "admin") {
+          // For admin, fetch providers only (tours will be fetched by provider filter)
+          const providersRes = await fetchAllProviderProfiles({
+            limit: 1000,
+            is_verified: true,
+          });
+          console.log("Admin providers response:", providersRes);
+          setProviders(providersRes || []);
+
+          // Fetch all tours initially for admin
+          const toursRes = await getAllTours({ limit: 1000 });
+          setTours(toursRes.data || []);
+          setFilteredTours(toursRes.data || []);
+        } else {
+          // For provider, fetch their own tours
+          const toursRes = await getAllTours({
+            limit: 1000,
+            provider_id: user?.id,
+          });
+          setTours(toursRes.data || []);
+          setFilteredTours(toursRes.data || []);
+          setProviders([]); // Provider doesn't need provider dropdown
+        }
       } catch (error) {
         console.error("Error fetching providers/tours:", error);
         setProviders([]);
         setTours([]);
+        setFilteredTours([]);
       }
     };
     fetchData();
-  }, [user?.role]);
+  }, [user?.role, user?.id]);
 
-  // Filter tours based on selected provider
+  // Fetch tours based on selected provider (backend filtering)
   useEffect(() => {
-    if (user?.role === "provider") {
-      // Provider chỉ thấy tour của mình
-      const filtered = tours.filter((tour) => tour.provider_id === user.id);
-      setFilteredTours(filtered);
-    } else if (providerFilter !== "all") {
-      // Admin có thể filter theo provider
-      const selectedProviderId = parseInt(providerFilter);
-      const filtered = tours.filter(
-        (tour) => tour.provider_id === selectedProviderId
-      );
-      setFilteredTours(filtered);
-      // Reset tour filter when provider changes
-      setTourFilter("all");
-    } else {
-      setFilteredTours(tours);
-      // Reset tour filter when provider changes
-      setTourFilter("all");
-    }
-  }, [providerFilter, tours, user?.role, user?.id]);
+    const fetchToursByProvider = async () => {
+      try {
+        let params: any = { limit: 1000 };
+
+        if (user?.role === "provider") {
+          // Provider chỉ thấy tour của mình
+          params.provider_id = user.id;
+        } else if (user?.role === "admin" && providerFilter !== "all") {
+          // Admin chọn provider để filter
+          params.provider_id = parseInt(providerFilter);
+        }
+
+        const toursRes = await getAllTours(params);
+        setTours(toursRes.data || []);
+        setFilteredTours(toursRes.data || []);
+
+        // Reset tour filter when provider changes
+        setTourFilter("all");
+      } catch (error) {
+        console.error("Error fetching tours by provider:", error);
+        setTours([]);
+        setFilteredTours([]);
+      }
+    };
+
+    fetchToursByProvider();
+  }, [providerFilter, user?.role, user?.id]);
 
   // Fetch bookings
   const fetchData = async () => {
@@ -121,6 +149,7 @@ const AdminBookingsTable: React.FC = () => {
         tour_id: tourFilter !== "all" ? parseInt(tourFilter) : undefined,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
+        // Note: search parameter not supported by backend yet
       });
 
       const bookingsData = bookingsRes.data || [];
@@ -236,7 +265,7 @@ const AdminBookingsTable: React.FC = () => {
             <div className="flex-1 relative min-w-[220px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Tìm kiếm theo tên tour..."
+                placeholder="Tìm kiếm theo tên khách hàng..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -271,7 +300,7 @@ const AdminBookingsTable: React.FC = () => {
             </div>
 
             {/* Chỉ hiển thị filter provider cho admin */}
-            {user?.role !== "provider" && (
+            {user?.role === "admin" && (
               <div className="w-40">
                 <Select
                   value={providerFilter}
@@ -285,7 +314,7 @@ const AdminBookingsTable: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
-                    {Array.isArray(providers) &&
+                    {providers.length > 0 ? (
                       providers.map((provider) => (
                         <SelectItem
                           key={provider.id}
@@ -293,7 +322,12 @@ const AdminBookingsTable: React.FC = () => {
                         >
                           {provider.company_name}
                         </SelectItem>
-                      ))}
+                      ))
+                    ) : (
+                      <SelectItem value="no-providers" disabled>
+                        Không có nhà cung cấp
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
