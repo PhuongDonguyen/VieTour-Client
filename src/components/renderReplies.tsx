@@ -9,7 +9,7 @@ interface Question {
   parent_question_id: number | null;
   text: string;
   created_at: string;
-  user?: User;
+  user: User |null;
   replies?: Question[];
 }
 
@@ -51,14 +51,16 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
             <div className="ms-3 w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
               {rep.user?.avatar ? (
                 <img
-                  src={rep.user.avatar}
+                  src={rep.user.avatar || "/public/avatar-default.jpg"}
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-white font-bold text-xs">
-                  {rep.user?.first_name?.charAt(0).toUpperCase() || "?"}
-                </span>
+                <img
+                  src={"/public/avatar-default.jpg"}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
               )}
             </div>
 
@@ -67,7 +69,7 @@ export const RepliesSection = ({ replies, level = 1, user, activeReplyId, setAct
               <div className="font-semibold text-gray-700">
                 {rep.user
                   ? `${rep.user.first_name} ${rep.user.last_name}`
-                  : "Ẩn danh"}
+                  : "Quản trị viên"}
               </div>
               <div className="text-gray-600">{rep.text}</div>
               <div className="text-xs text-gray-400">

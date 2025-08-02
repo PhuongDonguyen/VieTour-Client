@@ -1,7 +1,7 @@
 import axiosInstance from "./axiosInstance";
 
 export const getQuestionByTourId = (tourId: number)  => 
-    axiosInstance.get( `/api/questions?tourId=${tourId}`)
+    axiosInstance.get( `/api/questions?tour_id=${tourId}`)
 
 export const submitQuestion = (user_id: number|null, tour_id: number, parent_question_id: number| null, text: string, reported: boolean) =>
     axiosInstance.post(`/api/questions`,{user_id, tour_id, parent_question_id, text, reported})
