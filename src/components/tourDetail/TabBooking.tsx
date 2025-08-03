@@ -298,6 +298,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({
         console.log("Loading tour schedules for tourId:", tourId);
         const schedulesData = await fetchAllTourSchedules({
           tour_id: tourId,
+          page: 1,
+          limit: 1000,
         });
         console.log("Tour schedules data:", schedulesData);
 

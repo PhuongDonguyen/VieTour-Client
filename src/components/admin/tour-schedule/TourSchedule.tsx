@@ -126,7 +126,7 @@ const TourSchedulesManagement: React.FC = () => {
         status,
       });
 
-            // The response should have the correct structure now
+      // The response should have the correct structure now
       setTourSchedules(res.data);
       setTotalPages(res.pagination.totalPages);
       setTotalItems(res.pagination.totalItems);
@@ -150,8 +150,6 @@ const TourSchedulesManagement: React.FC = () => {
   useEffect(() => {
     fetchTourSchedules();
   }, [currentPage, selectedTourId, selectedStatus]);
-
-
 
   // Fetch tour info for all schedules
   useEffect(() => {
@@ -325,7 +323,6 @@ const TourSchedulesManagement: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                
                 {Array.isArray(tourSchedules) && tourSchedules.length > 0 ? (
                   tourSchedules.map((schedule) => (
                     <TableRow key={schedule.id}>
