@@ -104,7 +104,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   });
   const [showPaymentLoading, setShowPaymentLoading] = useState(false);
   const [showTourFullModal, setShowTourFullModal] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Key cho localStorage
@@ -535,8 +537,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
       if (!formData.phone.trim()) {
         newErrors.phone = "Vui lòng nhập số điện thoại!";
-      } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ""))) {
-        newErrors.phone = "Số điện thoại không hợp lệ!";
+      } else if (!/^[0-9]{10}$/.test(formData.phone.replace(/\s/g, ""))) {
+        newErrors.phone = "Số điện thoại phải có đúng 10 chữ số!";
       }
 
       if (Object.keys(newErrors).length > 0) {
@@ -727,13 +729,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     } catch (error: any) {
       setShowPaymentLoading(false);
       console.error("Error creating booking:", error);
-      
+
       // Check for specific error code 9003 (Tour is full)
       if (error.response?.data?.errorCode === 9003) {
         setShowTourFullModal(true);
         return;
       }
-      
+
       toast.error("Đã có lỗi xảy ra. Vui lòng thử lại");
     } finally {
       setIsSubmitting(false);
@@ -775,32 +777,6 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   };
 
   // Function để test schedule_id
-  const testScheduleId = () => {
-    console.log("=== TEST SCHEDULE ID ===");
-    console.log("formData.selectedScheduleId:", formData.selectedScheduleId);
-    console.log(
-      "Type of selectedScheduleId:",
-      typeof formData.selectedScheduleId
-    );
-    console.log("Available dates:", availableDates);
-
-    if (formData.selectedScheduleId) {
-      const found = availableDates.find(
-        (date) => date.id === formData.selectedScheduleId
-      );
-      console.log("Found schedule:", found);
-      if (found) {
-        console.log("Schedule details:", {
-          id: found.id,
-          start_date: found.start_date,
-          participant: found.participant,
-          status: found.status,
-          tour_id: found.tour_id,
-        });
-      }
-    }
-    console.log("=== END TEST ===");
-  };
 
   const getTotalPeople = () => {
     let totalAdults = 0;
@@ -824,7 +800,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                 <span>Đang cập nhật thông tin tour...</span>
               </div>
             )}
-            
+
             <TourCalendar
               availableDates={availableDates}
               tourCapacity={tourCapacity}
@@ -887,29 +863,56 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                           tourCapacity - schedule.participant;
                         const isSelected =
                           formData.selectedScheduleId === schedule.id;
+                        const isDisabled = remainingCapacity === 0;
 
                         return (
                           <div
                             key={schedule.id}
-                            className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                              isSelected
-                                ? "border-orange-500 bg-orange-50"
-                                : "border-gray-200 hover:border-orange-300"
+                            className={`p-4 border rounded-lg transition-all ${
+                              isDisabled
+                                ? "border-gray-300 bg-gray-100 cursor-not-allowed opacity-60"
+                                : isSelected
+                                ? "border-orange-500 bg-orange-50 cursor-pointer"
+                                : "border-gray-200 hover:border-orange-300 cursor-pointer"
                             }`}
-                            onClick={() => handleScheduleSelect(schedule.id)}
+                            onClick={() => {
+                              if (!isDisabled) {
+                                handleScheduleSelect(schedule.id);
+                              }
+                            }}
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="font-medium text-gray-800">
+                                <p
+                                  className={`font-medium ${
+                                    isDisabled
+                                      ? "text-gray-500"
+                                      : "text-gray-800"
+                                  }`}
+                                >
                                   Lịch trình #{schedule.id}
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p
+                                  className={`text-sm ${
+                                    isDisabled
+                                      ? "text-gray-400"
+                                      : "text-gray-600"
+                                  }`}
+                                >
                                   Ngày: {schedule.start_date}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="text-sm font-medium text-gray-800">
-                                  Còn lại: {remainingCapacity} vé
+                                <p
+                                  className={`text-sm font-medium ${
+                                    isDisabled
+                                      ? "text-red-600"
+                                      : "text-gray-800"
+                                  }`}
+                                >
+                                  {isDisabled
+                                    ? "Hết vé"
+                                    : `Còn lại: ${remainingCapacity} vé`}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   Đã đặt: {schedule.participant} người
@@ -1376,7 +1379,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   return (
     <>
       {/* Hiển thị form đăng nhập nếu chưa đăng nhập */}
-      {(!user || user?.role !== 'user') ? (
+      {!user || user?.role !== "user" ? (
         <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
           <div className="text-center py-12">
             <div className="mb-6">
@@ -1474,16 +1477,6 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               >
                 Quay lại
               </button>
-
-              {/* Debug button - chỉ hiển thị trong development */}
-              {process.env.NODE_ENV === "development" && (
-                <button
-                  onClick={testScheduleId}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600 transition-colors text-sm"
-                >
-                  Test Schedule
-                </button>
-              )}
             </div>
 
             {currentStep < BOOKING_CONSTANTS.TOTAL_STEPS ? (
@@ -1526,19 +1519,33 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       </Modal>
 
       {/* Modal Tour Full */}
-      <Modal isOpen={showTourFullModal} onClose={() => setShowTourFullModal(false)}>
+      <Modal
+        isOpen={showTourFullModal}
+        onClose={() => setShowTourFullModal(false)}
+      >
         <div className="bg-white rounded-lg p-6 max-w-md mx-auto">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                className="h-6 w-6 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Tour đã đầy
             </h3>
             <p className="text-sm text-gray-500 mb-6">
-              Rất tiếc, tour này đã đạt sức chứa tối đa. Vui lòng chọn lịch tour khác hoặc liên hệ với chúng tôi để được hỗ trợ.
+              Rất tiếc, tour này đã đạt sức chứa tối đa. Vui lòng chọn lịch tour
+              khác hoặc liên hệ với chúng tôi để được hỗ trợ.
             </p>
             <div className="flex gap-3">
               <button
