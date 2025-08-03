@@ -1,12 +1,39 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { fetchBlogs } from "../services/blog.service";
+
+import { 
+  Calendar, 
+  Clock, 
+  Eye, 
+  Share2, 
+  Heart, 
+  Bookmark, 
+  ArrowLeft, 
+  Facebook, 
+  Twitter, 
+  Link as LinkIcon, 
+  ChevronUp 
+} from "lucide-react";
 import Skeleton from 'react-loading-skeleton';
 
 const BlogDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     console.log({ slug });
@@ -27,18 +54,32 @@ const BlogDetail: React.FC = () => {
     fetchData();
   }, [slug]);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const calculateReadingTime = (content: string) => {
+    if (!content) return "1 min read";
+    
+    // Remove HTML tags to get plain text
+    const plainText = content.replace(/<[^>]*>/g, '');
+    
+    // Count words (split by spaces)
+    const words = plainText.trim().split(/\s+/).length;
+    
+    // Average reading speed: 200 words per minute
+    const minutes = Math.ceil(words / 200);
+    
+    return `${Math.max(1, minutes)} min read`;
+  };
+
   if (loading) {
     return (
-      <div className="flex-1 bg-gray-50 py-12 px-4 monserrat">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
-          <div className="w-full lg:w-9/12">
-            <Skeleton height={40} width={300} style={{ marginBottom: 24, marginTop: 64 }} />
-            <Skeleton height={384} className="mb-6" />
-            <Skeleton count={8} height={20} style={{ marginBottom: 8 }} />
-          </div>
-          <div className="w-full lg:w-3/12">
-            <Skeleton height={200} />
-          </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="mt-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Skeleton height={40} width={300} style={{ marginBottom: 24 }} />
+          <Skeleton height={384} className="mb-6" />
+          <Skeleton count={8} height={20} style={{ marginBottom: 8 }} />
         </div>
       </div>
     );
@@ -47,19 +88,209 @@ const BlogDetail: React.FC = () => {
   if (!blog) return <div className="text-center py-20 text-red-500">Không tìm thấy blog.</div>;
 
   return (
-    <div className="flex-1 bg-gray-50 py-12 px-4 monserrat">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
-        <div className="w-full lg:w-9/12">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6 text-blue-900 mt-16">{blog.title}</h1>
+    <div className="min-h-screen bg-gray-50 monserrat">
+      <div className="mt-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb */}
+        <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+          <Link to="/" className="hover:text-blue-600">
+            Home
+          </Link>
+          <span>/</span>
+          <Link to="/blog" className="hover:text-blue-600">
+            Blog
+          </Link>
+          <span>/</span>
+          <span className="text-gray-900">{blog.title}</span>
+        </nav>
+
+        {/* Back to Blog */}
+        <div className="mb-6">
+          <Link to="/blog">
+            <button className="flex items-center text-gray-600 hover:text-blue-600 p-0">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Blog
+            </button>
+          </Link>
+        </div>
+
+        {/* Article Header */}
+        <article className="bg-white rounded-lg shadow-sm overflow-hidden">
+          {/* Hero Image */}
           {blog.thumbnail && (
-            <img src={blog.thumbnail} alt={blog.title} className="w-full rounded-lg mb-6 object-cover max-h-96" />
+            <div className="relative h-96">
+              <img
+                src={blog.thumbnail}
+                alt={blog.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">{blog.title}</h1>
+                {blog.excerpt && (
+                  <p className="text-lg text-white/90">{blog.excerpt}</p>
+                )}
+              </div>
+            </div>
           )}
-          <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: blog.content }} />
+
+          {/* Article Meta */}
+          <div className="p-6 border-b">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center space-x-4">
+                                 <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                   <span className="text-gray-600 font-semibold">
+                     {blog.author?.[0] || 'A'}
+                   </span>
+                 </div>
+                                  <div>
+                    <h3 className="font-semibold">{blog.author || 'Anonymous'}</h3>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {blog.created_at && new Date(blog.created_at).toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {(() => {
+                          // Simple reading time calculation for browser
+                          const content = blog.content || '';
+                          // Remove HTML tags for accurate word count
+                          const textContent = content.replace(/<[^>]*>/g, '');
+                          const words = textContent.trim().split(/\s+/).length;
+                          const wordsPerMinute = 200;
+                          const minutes = Math.ceil(words / wordsPerMinute);
+                          return `${Math.max(1, minutes)} min read`;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+              </div>
+
+              {/* Social Actions */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setIsLiked(!isLiked)}
+                  className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${
+                    isLiked ? "text-red-600 border-red-200" : "text-gray-600 border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-red-600" : ""}`} />
+                  {isLiked ? 1 : 0}
+                </button>
+                <button
+                  onClick={() => setIsBookmarked(!isBookmarked)}
+                  className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${
+                    isBookmarked ? "text-blue-600 border-blue-200" : "text-gray-600 border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <Bookmark className={`h-4 w-4 mr-2 ${isBookmarked ? "fill-blue-600" : ""}`} />
+                  Save
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowShareMenu(!showShareMenu)}
+                    className="flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:border-gray-400"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
+                  </button>
+                  {showShareMenu && (
+                    <div className="absolute right-0 top-full mt-2 bg-white border rounded-lg shadow-lg p-2 z-10">
+                      <div className="flex space-x-2">
+                        <button className="p-2 hover:bg-gray-100 rounded">
+                          <Facebook className="h-4 w-4 text-blue-600" />
+                        </button>
+                        <button className="p-2 hover:bg-gray-100 rounded">
+                          <Twitter className="h-4 w-4 text-blue-400" />
+                        </button>
+                        <button className="p-2 hover:bg-gray-100 rounded">
+                          <LinkIcon className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Article Content */}
+          <div className="p-6">
+            <div className="prose prose-lg max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+            </div>
+          </div>
+        </article>
+
+        {/* Comments Section */}
+        {/* {<div className="mt-8 bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold">Comments (0)</h3>
+          </div> */}
+
+          {/* Add Comment Form */}
+          {/* <div className="mb-8 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-semibold mb-3">Join the conversation</h4>
+            <div className="space-y-3">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Share your thoughts about this article..."
+                className="w-full p-3 border border-gray-300 rounded-lg resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-600">Be respectful and constructive in your comments</p>
+                <button
+                  onClick={() => {
+                    if (newComment.trim()) {
+                      // Handle comment submission
+                      setNewComment("");
+                    }
+                  }}
+                  disabled={!newComment.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Post Comment
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center text-gray-500">
+            <p>No comments yet. Be the first to share your thoughts!</p>
+          </div> */}
         </div>
-        <div className="w-full lg:w-3/12">
-          {/* Add your right-side component here */}
+
+        {/* Newsletter Signup */}
+        {/* <div className="mt-12 bg-blue-50 rounded-lg p-8 text-center">
+          <h3 className="text-2xl font-bold mb-4">Never Miss Our Latest Travel Tips</h3>
+          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+            Subscribe to our newsletter and get the latest destination guides, travel tips, and exclusive offers
+            delivered to your inbox.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              Subscribe
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-4">Join 15,000+ travelers who trust our insights</p>
         </div>
-      </div>
+      </div> */}
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center"
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+      )}
     </div>
   );
 };

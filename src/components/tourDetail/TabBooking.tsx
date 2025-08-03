@@ -102,6 +102,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     specialRequests: "",
   });
   const [showPaymentLoading, setShowPaymentLoading] = useState(false);
+  const [showTourFullModal, setShowTourFullModal] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Key cho localStorage
   const getStorageKey = () => `booking_form_${tourId}`;
@@ -183,6 +186,16 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       }
     };
   }, [user, tourId, duration, wasLoggedOut]);
+
+  // Cleanup refresh interval when component unmounts
+  useEffect(() => {
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        setRefreshInterval(null);
+      }
+    };
+  }, [refreshInterval]);
 
   // Effect để cập nhật numDays khi duration prop thay đổi
   useEffect(() => {
@@ -275,6 +288,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   useEffect(() => {
     const loadTourSchedules = async () => {
       try {
+        setIsRefreshing(true);
         console.log("Loading tour schedules for tourId:", tourId);
         const schedulesData = await tourScheduleService.getTourSchedules(
           tourId
@@ -295,10 +309,29 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       } catch (error) {
         console.error("Error loading tour schedules:", error);
         setAvailableDates([]);
+      } finally {
+        setIsRefreshing(false);
       }
     };
 
+    // Load schedules immediately
     loadTourSchedules();
+
+    // Set up auto-refresh every 1 minute (60000ms)
+    const interval = setInterval(() => {
+      console.log("Auto-refreshing tour schedules...");
+      loadTourSchedules();
+    }, 10000); // 1 minute
+
+    setRefreshInterval(interval);
+
+    // Cleanup function to clear interval when component unmounts or tourId changes
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+        setRefreshInterval(null);
+      }
+    };
   }, [tourId]);
 
   // Load prices khi chuyển sang bước 2 và đã chọn ngày
@@ -627,9 +660,16 @@ export const TabBooking: React.FC<TabBookingProps> = ({
         specialRequests: "",
       });
       setSelectedPaymentMethod(null);
-    } catch (error) {
+    } catch (error: any) {
       setShowPaymentLoading(false);
       console.error("Error creating booking:", error);
+      
+      // Check for specific error code 9003 (Tour is full)
+      if (error.response?.data?.errorCode === 9003) {
+        setShowTourFullModal(true);
+        return;
+      }
+      
       toast.error("Đã có lỗi xảy ra. Vui lòng thử lại");
     } finally {
       setIsSubmitting(false);
@@ -685,6 +725,14 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       case 1:
         return (
           <div className="space-y-6">
+            {/* Refresh indicator */}
+            {isRefreshing && (
+              <div className="flex items-center justify-center gap-2 text-sm text-blue-600 bg-blue-50 px-4 py-2 rounded-lg">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>Đang cập nhật thông tin tour...</span>
+              </div>
+            )}
+            
             <TourCalendar
               availableDates={availableDates}
               tourCapacity={tourCapacity}
@@ -1137,7 +1185,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   return (
     <>
       {/* Hiển thị form đăng nhập nếu chưa đăng nhập */}
-      {!user ? (
+      {(!user || user?.role !== 'user') ? (
         <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
           <div className="text-center py-12">
             <div className="mb-6">
@@ -1272,6 +1320,42 @@ export const TabBooking: React.FC<TabBookingProps> = ({
             onSwitchForm={() => setShowSignupForm(true)}
           />
         )}
+      </Modal>
+
+      {/* Modal Tour Full */}
+      <Modal isOpen={showTourFullModal} onClose={() => setShowTourFullModal(false)}>
+        <div className="bg-white rounded-lg p-6 max-w-md mx-auto">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Tour đã đầy
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Rất tiếc, tour này đã đạt sức chứa tối đa. Vui lòng chọn lịch tour khác hoặc liên hệ với chúng tôi để được hỗ trợ.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowTourFullModal(false);
+                  setCurrentStep(1); // Go back to step 1 to select different date
+                }}
+                className="flex-1 bg-orange-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-orange-600 transition-colors"
+              >
+                Chọn ngày khác
+              </button>
+              <button
+                onClick={() => setShowTourFullModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       </Modal>
 
       {/* Overlay loading khi chờ giao dịch */}

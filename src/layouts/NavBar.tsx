@@ -53,9 +53,9 @@ export const NavBar = ({ textDark = false }) => {
   return (
     <>
       <nav
-        className={`fixed w-full z-40 transition-all duration-300 ${isScrolled ? 'bg-white/95 shadow-lg' : 'bg-white/10'
+        className={`border-b border-white/10 monserrat fixed w-full z-40 transition-all duration-300 ${isScrolled ? 'bg-white/95 shadow-lg' : 'bg-white/10'
           }`}
-        style={{ top: isScrolled ? '0px' : '40px' }}
+        style={{ top: isScrolled ? '0px' : '44px' }}
         onMouseLeave={closeDropdowns}
       >
         <div className={`container mx-auto px-4 py-4`}>
@@ -66,20 +66,22 @@ export const NavBar = ({ textDark = false }) => {
                 <img
                   src="/VieTour-Logo.png"
                   alt="VieTour Logo"
-                  className="h-11 w-auto"
+                  className={`h-12 w-auto transition-all duration-300 ${
+                    !isScrolled && !textDark ? 'brightness-0 invert' : ''
+                  }`}
                 />
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center font-medium">
-              <Link to="/" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</Link>
-              <Link to="/about" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</Link>
+            <div className="hidden md:flex items-center font-semibold">
+              <Link to="/" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>TRANG CHỦ</Link>
+              <Link to="/about" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>GIỚI THIỆU</Link>
               <div className="relative">
                 <button
                   onClick={() => handleDropdownToggle('tour')}
                   onMouseEnter={() => setActiveDropdown('tour')}
-                  className={`px-3 py-2 flex items-center space-x-1 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
+                  className={`px-2 py-2 flex items-center space-x-1 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
                 >
                   <span>TOUR</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === 'tour' ? 'rotate-180' : ''}`} />
@@ -105,7 +107,7 @@ export const NavBar = ({ textDark = false }) => {
                 <button
                   onClick={() => handleDropdownToggle('blog')}
                   onMouseEnter={() => setActiveDropdown('blog')}
-                  className={`px-3 py-2 flex items-center space-x-1 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
+                  className={`px-2 py-2 flex items-center space-x-1 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}
                 >
                   <span>BLOG</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === 'blog' ? 'rotate-180' : ''}`} />
@@ -127,9 +129,9 @@ export const NavBar = ({ textDark = false }) => {
                   </div>
                 )}
               </div>
-              <Link to="/pricing" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</Link>
-              <Link to="/gallery" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</Link>
-              <Link to="/contact" className={`px-3 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</Link>
+              <Link to="/pricing" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>BẢNG GIÁ</Link>
+              <Link to="/gallery" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>HÌNH ẢNH</Link>
+              <Link to="/contact" className={`px-2 py-2 hover:text-orange-500 transition-colors ${isScrolled || textDark ? 'text-gray-700' : 'text-white'}`}>LIÊN HỆ</Link>
             </div>
 
             {/* Search and User Menu */}
@@ -138,7 +140,7 @@ export const NavBar = ({ textDark = false }) => {
                 <SearchBar 
                   isScrolled={isScrolled}
                   textDark={textDark}
-                  className="w-80"
+                  className="w-70"
                 />
               </div>
               {/* User Menu */}
@@ -219,8 +221,8 @@ export const NavBar = ({ textDark = false }) => {
                     placeholder="Tìm kiếm tour..."
                   />
                 </div>
-                <Link to="/" className="block px-3 py-2 text-gray-700 hover:text-orange-500">TRANG CHỦ</Link>
-                <Link to="/about" className="block px-3 py-2 text-gray-700 hover:text-orange-500">GIỚI THIỆU</Link>
+                <Link to="/" className="block px-2 py-2 text-gray-700 hover:text-orange-500">TRANG CHỦ</Link>
+                <Link to="/about" className="block px-2 py-2 text-gray-700 hover:text-orange-500">GIỚI THIỆU</Link>
                 <div className="px-3 py-2">
                   <div className="text-gray-700 font-medium mb-2">TOUR</div>
                   <div className="pl-4 space-y-1">
