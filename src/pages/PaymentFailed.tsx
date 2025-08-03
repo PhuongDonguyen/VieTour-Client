@@ -48,7 +48,8 @@ export default function PaymentFailed() {
 
     const handleRetryPayment = () => {
         // Go back to the previous page (usually the booking form)
-        window.history.back();
+        const tourSlug = searchParams.get('tour');
+        navigate(`/booking/${tourSlug}`);
     };
 
     const handleGoToTours = () => {
@@ -138,7 +139,7 @@ export default function PaymentFailed() {
                         size="lg"
                     >
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Thử lại thanh toán
+                        Đặt lại tour
                     </Button>
                     <Button
                         onClick={handleGoToTours}
