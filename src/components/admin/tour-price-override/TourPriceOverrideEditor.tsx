@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,11 +14,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { AuthContext } from "@/context/authContext";
 import { ArrowLeft, Save, DollarSign, Calendar, Clock } from "lucide-react";
-import { providerTourPriceOverrideService } from "../../../services/provider/providerTourPriceOverride.service";
-import { adminTourPriceOverrideService } from "../../../services/admin/adminTourPriceOverride.service";
-import { providerTourPriceService } from "../../../services/provider/providerTourPrice.service";
-import type { TourPriceOverride } from "../../../apis/provider/providerTourPriceOverride.api";
-import type { AdminTourPriceOverride } from "../../../apis/admin/adminTourPriceOverride.api";
+import {
+  fetchTourPriceOverrideById,
+  createTourPriceOverrideService,
+  updateTourPriceOverrideService,
+} from "../../../services/tourPriceOverride.service";
+import { fetchAllTourPrices } from "../../../services/tourPrice.service";
+import type { TourPriceOverride } from "../../../apis/tourPriceOverride.api";
 
 interface TourPriceOverrideEditorProps {
   mode: "create" | "edit";
@@ -32,8 +34,12 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
   onBack,
 }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
+
+  // Lấy tour_id từ URL
+  const tourIdFromUrl = searchParams.get("tour_id");
 
   const [loading, setLoading] = useState(false);
   const [loadingTours, setLoadingTours] = useState(false);
@@ -64,36 +70,44 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
   const loadAvailableTourPrices = async () => {
     try {
       setLoadingTours(true);
-      const response = await providerTourPriceService.getTourPrices({
-        page: 1,
-        limit: 100,
-      });
 
-      let pricesData: any[] = [];
-      if (response && typeof response === "object") {
-        if (response.data && Array.isArray(response.data)) {
-          pricesData = response.data;
-        } else if (Array.isArray(response)) {
-          pricesData = response;
-        } else if (
-          "success" in response &&
-          "data" in response &&
-          Array.isArray(response.data)
-        ) {
-          pricesData = response.data;
+      // Nếu có tour_id từ URL, chỉ lấy tour prices của tour đó
+      if (tourIdFromUrl) {
+        const response = await fetchAllTourPrices({
+          page: 1,
+          limit: 100,
+          tour_id: parseInt(tourIdFromUrl),
+        });
+
+        let pricesData: any[] = [];
+        if (response && typeof response === "object") {
+          if (response.data && Array.isArray(response.data)) {
+            pricesData = response.data;
+          } else if (Array.isArray(response)) {
+            pricesData = response;
+          } else if (
+            "success" in response &&
+            "data" in response &&
+            Array.isArray(response.data)
+          ) {
+            pricesData = response.data;
+          }
         }
+
+        // Transform data to include tour title and note
+        const transformedPrices = pricesData.map((price) => ({
+          id: price.id,
+          tour_title: price.tour?.title || `Tour ID: ${price.tour_id}`,
+          adult_price: price.adult_price,
+          kid_price: price.kid_price,
+          note: price.note || "",
+        }));
+
+        setAvailableTourPrices(transformedPrices);
+      } else {
+        // Nếu không có tour_id, hiển thị thông báo
+        setAvailableTourPrices([]);
       }
-
-      // Transform data to include tour title and note
-      const transformedPrices = pricesData.map((price) => ({
-        id: price.id,
-        tour_title: price.tour?.title || `Tour ID: ${price.tour_id}`,
-        adult_price: price.adult_price,
-        kid_price: price.kid_price,
-        note: price.note || "",
-      }));
-
-      setAvailableTourPrices(transformedPrices);
     } catch (error) {
       console.error("Failed to load tour prices:", error);
       setAvailableTourPrices([]);
@@ -108,18 +122,7 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
       if (mode === "edit" && id) {
         try {
           setLoading(true);
-          let response;
-
-          if (isAdmin) {
-            response = await adminTourPriceOverrideService.getTourPriceOverride(
-              parseInt(id)
-            );
-          } else {
-            response =
-              await providerTourPriceOverrideService.getTourPriceOverrideById(
-                parseInt(id)
-              );
-          }
+          const response = await fetchTourPriceOverrideById(parseInt(id));
 
           setForm({
             tour_price_id: response.tour_price_id.toString(),
@@ -143,7 +146,7 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
 
     loadExistingData();
     loadAvailableTourPrices();
-  }, [mode, id, isAdmin]);
+  }, [mode, id]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setForm((prev) => ({
@@ -186,11 +189,14 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
 
       const formData = {
         tour_price_id: parseInt(form.tour_price_id),
-        override_type: form.override_type,
-        override_date: form.override_date || null,
-        start_date: form.start_date || null,
-        end_date: form.end_date || null,
-        day_of_week: form.day_of_week || null,
+        override_type: form.override_type as
+          | "single_date"
+          | "date_range"
+          | "weekly",
+        override_date: form.override_date || undefined,
+        start_date: form.start_date || undefined,
+        end_date: form.end_date || undefined,
+        day_of_week: form.day_of_week || undefined,
         adult_price: parseInt(form.adult_price),
         kid_price: parseInt(form.kid_price),
         note: form.note,
@@ -198,31 +204,15 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
       };
 
       if (mode === "edit" && id) {
-        if (isAdmin) {
-          await adminTourPriceOverrideService.updateTourPriceOverride(
-            parseInt(id),
-            formData
-          );
-        } else {
-          await providerTourPriceOverrideService.updateTourPriceOverride(
-            parseInt(id),
-            formData
-          );
-        }
+        await updateTourPriceOverrideService(parseInt(id), formData);
       } else {
-        if (isAdmin) {
-          await adminTourPriceOverrideService.createTourPriceOverride(formData);
-        } else {
-          await providerTourPriceOverrideService.createTourPriceOverride(
-            formData
-          );
-        }
+        await createTourPriceOverrideService(formData);
       }
 
       if (onBack) {
         onBack();
       } else {
-        navigate("/admin/tours/price-overrides");
+        navigate(`/admin/tours/price-overrides?tour_id=${tourIdFromUrl}`);
       }
     } catch (error) {
       console.error("Failed to save price override:", error);
@@ -245,11 +235,15 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
-            variant="ghost"
             onClick={
-              onBack ? onBack : () => navigate("/admin/tours/price-overrides")
+              onBack
+                ? onBack
+                : () =>
+                    navigate(
+                      `/admin/tours/price-overrides?tour_id=${tourIdFromUrl}`
+                    )
             }
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Quay lại</span>
@@ -304,41 +298,63 @@ const TourPriceOverrideEditor: React.FC<TourPriceOverrideEditorProps> = ({
                   <Label htmlFor="tour_price_id" className="mb-2 block">
                     Tour Price *
                   </Label>
-                  <Select
-                    value={form.tour_price_id}
-                    onValueChange={(value) =>
-                      handleInputChange("tour_price_id", value)
-                    }
-                    disabled={loadingTours || mode === "edit"}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          loadingTours ? "Đang tải..." : "Chọn tour price..."
+                  {!tourIdFromUrl ? (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-800 text-sm">
+                        Không tìm thấy tour_id trong URL. Vui lòng quay lại
+                        trang danh sách tour.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <Select
+                        value={form.tour_price_id}
+                        onValueChange={(value) =>
+                          handleInputChange("tour_price_id", value)
                         }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTourPrices.map((price) => (
-                        <SelectItem key={price.id} value={price.id.toString()}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {price.tour_title}
-                            </span>
-                            {price.note && (
-                              <span className="text-xs text-muted-foreground">
-                                {price.note}
-                              </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {mode === "edit" && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Không được phép chỉnh sửa
-                    </p>
+                        disabled={loadingTours || mode === "edit"}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              loadingTours
+                                ? "Đang tải..."
+                                : "Chọn tour price..."
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTourPrices.length > 0 ? (
+                            availableTourPrices.map((price) => (
+                              <SelectItem
+                                key={price.id}
+                                value={price.id.toString()}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {price.tour_title}
+                                  </span>
+                                  {price.note && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {price.note}
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="p-2 text-sm text-muted-foreground">
+                              Không có tour price nào cho tour này
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {mode === "edit" && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Không được phép chỉnh sửa
+                        </p>
+                      )}
+                    </>
                   )}
 
                   {/* Hiển thị thông tin giá gốc khi đã chọn */}

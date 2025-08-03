@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { tourPriceService } from "../../services/tourPrice.service";
+import { fetchTourPricesByTourId } from "../../services/tourPrice.service";
 
 interface TabPriceProps {
   tourId: number;
@@ -9,7 +9,7 @@ interface PriceData {
   id: number;
   adult_price: number;
   kid_price: number;
-  note: string;
+  note?: string;
 }
 
 const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
@@ -20,15 +20,15 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
   useEffect(() => {
     const fetchPrices = async () => {
       if (!tourId) return;
-      
+
       setLoading(true);
       setError(null);
-      
+
       try {
-        const res = await tourPriceService.getTourPricesByTourId(tourId);
-        setPrices(res?.data?.data || []);
+        const res = await fetchTourPricesByTourId(tourId);
+        setPrices(res?.data || []);
       } catch (err) {
-        console.error('Error fetching tour prices:', err);
+        console.error("Error fetching tour prices:", err);
         setError("Không thể tải bảng giá.");
       } finally {
         setLoading(false);
@@ -49,15 +49,26 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="py-3 px-4 font-semibold text-center">STT</th>
-                    <th className="py-3 px-4 font-semibold text-center">Giá người lớn</th>
-                    <th className="py-3 px-4 font-semibold text-center">Giá trẻ em</th>
-                    <th className="py-3 px-4 font-semibold text-center">Ghi chú</th>
-                    <th className="py-3 px-4 font-semibold text-center">Hành động</th>
+                    <th className="py-3 px-4 font-semibold text-center">
+                      Giá người lớn
+                    </th>
+                    <th className="py-3 px-4 font-semibold text-center">
+                      Giá trẻ em
+                    </th>
+                    <th className="py-3 px-4 font-semibold text-center">
+                      Ghi chú
+                    </th>
+                    <th className="py-3 px-4 font-semibold text-center">
+                      Hành động
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...Array(2)].map((_, index) => (
-                    <tr key={index} className="border-b border-gray-200 last:border-b-0">
+                    <tr
+                      key={index}
+                      className="border-b border-gray-200 last:border-b-0"
+                    >
                       <td className="py-3 px-4 text-center">
                         <div className="h-4 bg-gray-200 rounded animate-pulse w-6 mx-auto"></div>
                       </td>
@@ -89,7 +100,7 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
       <div className="w-full max-w-7xl mx-auto">
         <div className="p-8 text-center">
           <div className="text-red-500 text-lg font-medium mb-2">{error}</div>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="text-blue-500 hover:text-blue-700 underline"
           >
@@ -104,7 +115,9 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
     return (
       <div className="w-full max-w-7xl mx-auto">
         <div className="p-8 text-center">
-          <div className="text-gray-500 text-lg">Chưa có bảng giá cho tour này.</div>
+          <div className="text-gray-500 text-lg">
+            Chưa có bảng giá cho tour này.
+          </div>
         </div>
       </div>
     );
@@ -120,10 +133,18 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
               <thead>
                 <tr className="bg-blue-800 text-white">
                   <th className="py-3 px-4 font-semibold text-center">STT</th>
-                  <th className="py-3 px-4 font-semibold text-center">Giá người lớn</th>
-                  <th className="py-3 px-4 font-semibold text-center">Giá trẻ em</th>
-                  <th className="py-3 px-4 font-semibold text-center">Ghi chú</th>
-                  <th className="py-3 px-4 font-semibold text-center">Hành động</th>
+                  <th className="py-3 px-4 font-semibold text-center">
+                    Giá người lớn
+                  </th>
+                  <th className="py-3 px-4 font-semibold text-center">
+                    Giá trẻ em
+                  </th>
+                  <th className="py-3 px-4 font-semibold text-center">
+                    Ghi chú
+                  </th>
+                  <th className="py-3 px-4 font-semibold text-center">
+                    Hành động
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +153,9 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
                     key={row.id}
                     className="border-b border-blue-800 last:border-b-0 hover:bg-gray-50 transition-colors"
                   >
-                    <td className="py-3 px-4 text-center font-medium">{idx + 1}</td>
+                    <td className="py-3 px-4 text-center font-medium">
+                      {idx + 1}
+                    </td>
                     <td className="py-3 px-4 font-bold text-lg text-gray-800 text-center">
                       {row.adult_price.toLocaleString()} VND
                     </td>
@@ -140,7 +163,7 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
                       {row.kid_price.toLocaleString()} VND
                     </td>
                     <td className="py-3 px-4 text-gray-700 text-center">
-                      {row.note || '-'}
+                      {row.note || "-"}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-full transition-all duration-200 hover:shadow-lg active:scale-95">

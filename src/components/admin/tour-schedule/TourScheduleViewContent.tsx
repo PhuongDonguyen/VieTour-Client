@@ -1,16 +1,13 @@
 import React, { useEffect, useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Users, Edit, Eye } from "lucide-react";
 import { AuthContext } from "@/context/authContext";
-import { providerTourScheduleService } from "../../../services/provider/providerTourSchedule.service";
-import { adminTourScheduleService } from "../../../services/admin/adminTourSchedule.service";
-import { providerTourApi } from "../../../apis/provider/providerTour.api";
-import type { TourSchedule } from "../../../apis/provider/providerTourSchedule.api";
-import type { AdminTourSchedule } from "../../../apis/admin/adminTourSchedule.api";
-import { adminTourService } from "@/services/admin/adminTour.service";
+import { fetchTourScheduleById } from "@/services/tourSchedule.service";
+import { fetchTourById } from "@/services/tour.service";
+import type { TourSchedule } from "@/apis/tourSchedule.api";
 
 interface TourScheduleViewContentProps {
   scheduleId: string;
@@ -22,17 +19,18 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
   onBack,
 }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
-  const [schedule, setSchedule] = useState<
-    TourSchedule | AdminTourSchedule | null
-  >(null);
+  const [schedule, setSchedule] = useState<TourSchedule | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Get tour_id from URL query parameter for back navigation
+  const tourIdFromUrl = searchParams.get("tour_id");
+
   const [tourInfo, setTourInfo] = useState<{
     title: string;
-    poster_url: string;
-    category_name: string;
   } | null>(null);
 
   useEffect(() => {
@@ -40,58 +38,29 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
       if (!scheduleId) return;
       setLoading(true);
       try {
-        let scheduleData;
-        if (user?.role === "admin") {
-          scheduleData = await adminTourScheduleService.getTourSchedule(
-            parseInt(scheduleId)
-          );
-        } else if (user?.role === "provider") {
-          scheduleData = await providerTourScheduleService.getTourSchedule(
-            parseInt(scheduleId)
-          );
-        } else {
-          setSchedule(null);
-          setTourInfo(null);
-          setLoading(false);
-          return;
-        }
+        const scheduleData = await fetchTourScheduleById(parseInt(scheduleId));
         setSchedule(scheduleData);
-        // Fetch tour info nếu cần
-        const tourId =
-          (scheduleData as any).tour_id ||
-          (scheduleData.tour && scheduleData.tour.id);
+
+        // Fetch tour info (only title)
+        const tourId = scheduleData.tour_id;
         if (tourId) {
           try {
-            if (user?.role === "admin") {
-              const tourRes = await adminTourService.getTour(tourId);
-              setTourInfo({
-                title: tourRes.title,
-                poster_url: tourRes.poster_url,
-                category_name: tourRes.tour_category?.name || "Chưa phân loại",
-              });
-            } else if (user?.role === "provider") {
-              const response = await providerTourApi.getTourById(tourId);
-              const tourData = response.data.data;
-              setTourInfo({
-                title: tourData.title,
-                poster_url: tourData.poster_url,
-                category_name: tourData.tour_category?.name || "Chưa phân loại",
-              });
-            } else {
-              setTourInfo(null);
-            }
+            const tourRes = await fetchTourById(tourId);
+            setTourInfo({
+              title: tourRes.title,
+            });
           } catch {
             setTourInfo(null);
           }
         }
-      } catch {
+      } catch (error) {
         setSchedule(null);
       } finally {
         setLoading(false);
       }
     };
     loadSchedule();
-  }, [scheduleId, user?.role]);
+  }, [scheduleId]);
 
   // Ẩn/disable các nút thao tác nếu là admin
   const isEditable = !isAdmin;
@@ -143,17 +112,21 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
       {/* Header */}
       <div className="flex items-center mb-4">
         <Button
-          variant="ghost"
-          onClick={onBack ? onBack : () => navigate("/admin/tours/schedules")}
-          className="flex items-center space-x-2"
+          onClick={
+            onBack
+              ? onBack
+              : tourIdFromUrl
+              ? () =>
+                  navigate(`/admin/tours/schedules?tour_id=${tourIdFromUrl}`)
+              : () => navigate("/admin/tours/schedules")
+          }
+          className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Quay lại</span>
         </Button>
         <h1 className="text-3xl font-bold ml-4">
-          {tourInfo?.title ||
-            (schedule as TourSchedule).tour_id ||
-            "Lịch Trình"}
+          {tourInfo?.title || `Tour ID: ${schedule.tour_id}` || "Lịch Trình"}
         </h1>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -165,31 +138,36 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
                 <Calendar className="w-5 h-5" /> Thông Tin Lịch Trình
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-4 items-center">
-              <img
-                src={tourInfo?.poster_url || "/public/VieTour-Logo.png"}
-                alt={tourInfo?.title || "Tour"}
-                className="w-24 h-16 object-cover rounded-lg"
-              />
+            <CardContent className="space-y-4">
               <div>
-                <h3 className="text-xl font-semibold mb-1">
-                  {tourInfo?.title ||
-                    `Tour ID: ${(schedule as TourSchedule).tour_id}`}
+                <h3 className="text-xl font-semibold mb-3">
+                  {tourInfo?.title || `Tour ID: ${schedule.tour_id}`}
                 </h3>
-                <Badge variant="secondary" className="mb-2">
-                  {tourInfo?.category_name || "Chưa phân loại"}
-                </Badge>
-                <div className="text-sm text-muted-foreground">
-                  ID: {schedule.id}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Ngày khởi hành: {formatDate(schedule.start_date)}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Số người tham gia: {schedule.participant} người
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Trạng thái: {getStatusText(schedule.status)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">ID Lịch Trình:</span>{" "}
+                      {schedule.id}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">ID Tour:</span>{" "}
+                      {schedule.tour_id}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">Ngày khởi hành:</span>{" "}
+                      {formatDate(schedule.start_date)}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">Số người tham gia:</span>{" "}
+                      {schedule.participant} người
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">Trạng thái:</span>{" "}
+                      {getStatusText(schedule.status)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -207,30 +185,29 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
                   className="w-full"
                   variant="default"
                   onClick={() =>
-                    navigate(`/admin/tours/schedules/edit/${schedule.id}`)
+                    navigate(
+                      `/admin/tours/schedules/edit/${schedule.id}?tour_id=${
+                        tourIdFromUrl || schedule.tour_id
+                      }`
+                    )
                   }
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Chỉnh sửa chi tiết
                 </Button>
               )}
-              {schedule &&
-                ((schedule as any).tour_id ||
-                  (schedule.tour && schedule.tour.id)) && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      const tid =
-                        (schedule as any).tour_id ||
-                        (schedule.tour && schedule.tour.id);
-                      navigate(`/admin/tours/view/${tid}`);
-                    }}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Xem Tour
-                  </Button>
-                )}
+              {schedule.tour_id && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    navigate(`/admin/tours/view/${schedule.tour_id}`);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Xem Tour
+                </Button>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -248,9 +225,7 @@ const TourScheduleViewContent: React.FC<TourScheduleViewContentProps> = ({
                 <label className="text-sm font-medium text-muted-foreground">
                   ID Tour
                 </label>
-                <p className="font-mono text-sm">
-                  {tourInfo?.title ? (schedule as any).tour_id : ""}
-                </p>
+                <p className="font-mono text-sm">{schedule.tour_id}</p>
               </div>
             </CardContent>
           </Card>

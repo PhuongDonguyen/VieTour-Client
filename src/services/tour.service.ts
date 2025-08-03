@@ -10,18 +10,29 @@ import {
   getTopBookedTours,
   getToursByCatId,
   getAllToursByProviderId,
+  createTour,
+  updateTour,
+  deleteTour,
+  toggleTourStatus,
   type TourResponse,
   type TourQueryParams,
+  type TourCreateResponse,
+  type TourUpdateResponse,
+  type TourDeleteResponse,
+  type TourToggleResponse,
 } from "../apis/tour.api";
 
-export const fetchTours = async (params?: TourQueryParams): Promise<TourResponse> => {
+export const fetchTours = async (
+  params?: TourQueryParams
+): Promise<TourResponse> => {
   const res = await getAllTours(params);
   return res;
 };
 
 export const fetchTourBySlug = async (slug: string) => {
   const res = await getTourBySlug(slug);
-  if (res.data && res.data.success && res.data.data.length > 0) return res.data.data[0];
+  if (res.data && res.data.success && res.data.data.length > 0)
+    return res.data.data[0];
   throw new Error("Tour not found");
 };
 
@@ -65,7 +76,40 @@ export const fetchAllToursByProviderId = async (providerId: number | null) => {
   const res = await getAllToursByProviderId(providerId);
   if (res.data && res.data.success) return res.data;
   throw new Error("Không lấy được tất cả tour");
-}
+};
+
+// Create tour
+export const createTourService = async (
+  tourData: FormData
+): Promise<TourCreateResponse> => {
+  const res = await createTour(tourData);
+  return res;
+};
+
+// Update tour
+export const updateTourService = async (
+  id: number,
+  tourData: FormData
+): Promise<TourUpdateResponse> => {
+  const res = await updateTour(id, tourData);
+  return res;
+};
+
+// Delete tour
+export const deleteTourService = async (
+  id: number
+): Promise<TourDeleteResponse> => {
+  const res = await deleteTour(id);
+  return res;
+};
+
+// Toggle tour status
+export const toggleTourStatusService = async (
+  id: number
+): Promise<TourToggleResponse> => {
+  const res = await toggleTourStatus(id);
+  return res;
+};
 
 // Session-based view count increment
 //

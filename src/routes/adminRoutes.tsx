@@ -13,14 +13,14 @@ import TourScheduleEditor from "../components/admin/tour-schedule/TourScheduleEd
 import TourPricesManagement from "../components/admin/tour-price/TourPrice";
 import TourDetails from "../components/admin/tour-detail/TourDetail";
 import TourSchedulesManagement from "../components/admin/tour-schedule/TourSchedule";
+import TourSchedulesListPage from "../pages/admin/TourSchedulesListPage";
 import TourImagesManagement from "../components/admin/tour-image/TourImage";
-import TourPriceOverridesManagement from "../components/admin/tour-price-override/TourPriceOverride";
+import TourPriceOverridesListPage from "../pages/admin/TourPriceOverridesListPage";
 import TourCategory from "../components/admin/tour-category/TourCategory";
 import AdminBlog from "../pages/admin/AdminBlog";
 import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
 import CancellationRequests from "../pages/admin/AdminCancellationRequests";
-import ProviderBookingsTable from "../components/provider/ProviderBookingsTable";
 import AdminBookings from "../pages/admin/AdminBookings";
 
 import {
@@ -147,7 +147,7 @@ export const adminRoutes = [
     element: (
       <RequireAdminAccess>
         <AdminLayout title="Tour Price Overrides">
-          <TourPriceOverridesManagement />
+          <TourPriceOverridesListPage />
         </AdminLayout>
       </RequireAdminAccess>
     ),
@@ -157,7 +157,7 @@ export const adminRoutes = [
     element: (
       <RequireAdminAccess>
         <AdminLayout title="Tour Schedules">
-          <TourSchedulesManagement />
+          <TourSchedulesListPage />
         </AdminLayout>
       </RequireAdminAccess>
     ),
@@ -465,7 +465,7 @@ export const adminRoutes = [
       <RequireProviderOnly>
         <AdminLayout title="Đặt tour của tôi">
           <div className="p-6">
-            <ProviderBookingsTable />
+            <AdminBookings />
           </div>
         </AdminLayout>
       </RequireProviderOnly>

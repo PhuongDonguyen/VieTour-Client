@@ -5,10 +5,20 @@ import { ChangePasswordForm } from "@/components/ChangepwForm";
 import MyBooking from "@/components/MyBooking";
 import CancellationRequests from "@/components/CancellationRequests";
 import CancellationRequestsProvider from "@/pages/admin/AdminCancellationRequests";
-import ProviderBookings from "@/pages/provider/ProviderBookings";
+import AdminBookings from "@/pages/admin/AdminBookings";
 import { fetchUserProfile } from "@/services/userProfile.service";
 import { useAuth } from "@/hooks/useAuth";
-import { User, Lock, Calendar, XCircle, Bell, Settings, DollarSign, BookOpen, LogOut } from "lucide-react";
+import {
+  User,
+  Lock,
+  Calendar,
+  XCircle,
+  Bell,
+  Settings,
+  DollarSign,
+  BookOpen,
+  LogOut,
+} from "lucide-react";
 
 interface user {
   id: number;
@@ -48,7 +58,7 @@ const AccountPage: React.FC = () => {
     }
 
     if (tab === "provider-bookings") {
-      navigate("/provider/bookings");
+      navigate("/admin/provider-bookings");
       return;
     }
   };
@@ -66,7 +76,7 @@ const AccountPage: React.FC = () => {
       case "provider-cancellation-requests":
         return <CancellationRequestsProvider />;
       case "provider-bookings":
-        return <ProviderBookings />;
+        return <AdminBookings />;
       case "notifications":
         return (
           <div className="space-y-6">
@@ -74,8 +84,12 @@ const AccountPage: React.FC = () => {
               <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
                 <Bell className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có thông báo</h3>
-              <p className="text-gray-600">Bạn sẽ nhận được thông báo khi có cập nhật mới</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Chưa có thông báo
+              </h3>
+              <p className="text-gray-600">
+                Bạn sẽ nhận được thông báo khi có cập nhật mới
+              </p>
             </div>
           </div>
         );
@@ -86,8 +100,12 @@ const AccountPage: React.FC = () => {
               <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
                 <Settings className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Cài đặt tài khoản</h3>
-              <p className="text-gray-600">Tùy chỉnh các cài đặt tài khoản của bạn</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Cài đặt tài khoản
+              </h3>
+              <p className="text-gray-600">
+                Tùy chỉnh các cài đặt tài khoản của bạn
+              </p>
             </div>
           </div>
         );
@@ -98,8 +116,12 @@ const AccountPage: React.FC = () => {
               <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
                 <User className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Chào mừng bạn trở lại!</h3>
-              <p className="text-gray-600">Chọn một tùy chọn từ menu để bắt đầu quản lý tài khoản</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Chào mừng bạn trở lại!
+              </h3>
+              <p className="text-gray-600">
+                Chọn một tùy chọn từ menu để bắt đầu quản lý tài khoản
+              </p>
             </div>
           </div>
         );
@@ -145,26 +167,27 @@ const AccountPage: React.FC = () => {
       icon: Settings,
       description: "Tùy chỉnh tài khoản",
     },
-    ...(authUser?.role === "provider" ? [
-      {
-        id: "provider-cancellation-requests",
-        label: "Yêu cầu hoàn tiền",
-        icon: DollarSign,
-        description: "Quản lý hoàn tiền",
-      },
-      {
-        id: "provider-bookings",
-        label: "Quản lý đặt tour",
-        icon: BookOpen,
-        description: "Quản lý đặt tour",
-      },
-    ] : []),
+    ...(authUser?.role === "provider"
+      ? [
+          {
+            id: "provider-cancellation-requests",
+            label: "Yêu cầu hoàn tiền",
+            icon: DollarSign,
+            description: "Quản lý hoàn tiền",
+          },
+          {
+            id: "provider-bookings",
+            label: "Quản lý đặt tour",
+            icon: BookOpen,
+            description: "Quản lý đặt tour",
+          },
+        ]
+      : []),
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-20">
-
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <div className="lg:w-80 flex-shrink-0">
@@ -189,7 +212,9 @@ const AccountPage: React.FC = () => {
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {userCurrent?.first_name} {userCurrent?.last_name}
                   </p>
-                  <p className="text-sm text-gray-500 truncate">{userCurrent?.email}</p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {userCurrent?.email}
+                  </p>
                 </div>
               </div>
             </div>
@@ -201,7 +226,7 @@ const AccountPage: React.FC = () => {
                   {menuItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
-                    
+
                     return (
                       <button
                         key={item.id}
@@ -212,9 +237,13 @@ const AccountPage: React.FC = () => {
                             : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                         }`}
                       >
-                        <Icon className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                          isActive ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"
-                        }`} />
+                        <Icon
+                          className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                            isActive
+                              ? "text-blue-600"
+                              : "text-gray-400 group-hover:text-gray-500"
+                          }`}
+                        />
                         <div className="flex-1 text-left">
                           <div className="flex items-center justify-between">
                             <span>{item.label}</span>
@@ -224,9 +253,11 @@ const AccountPage: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <p className={`text-xs mt-0.5 ${
-                            isActive ? "text-blue-600" : "text-gray-500"
-                          }`}>
+                          <p
+                            className={`text-xs mt-0.5 ${
+                              isActive ? "text-blue-600" : "text-gray-500"
+                            }`}
+                          >
                             {item.description}
                           </p>
                         </div>
@@ -249,9 +280,7 @@ const AccountPage: React.FC = () => {
           {/* Main Content */}
           <div className="flex-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-              <div className="p-8">
-                {renderContent()}
-              </div>
+              <div className="p-8">{renderContent()}</div>
             </div>
           </div>
         </div>

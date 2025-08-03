@@ -24,8 +24,25 @@ import {
   ArrowLeft,
   Loader2,
 } from "lucide-react";
-import { adminTourCategoryService } from "../../../services/admin/adminTourCategory.service";
-import type { AdminTourCategory } from "../../../apis/admin/adminTourCategory.api";
+import {
+  fetchTourCategoryById,
+  createTourCategoryService,
+  updateTourCategoryService,
+  deleteTourCategoryService,
+  fetchAllTourCategories,
+} from "../../../services/tourCategory.service";
+// Define the tour category interface locally
+interface TourCategory {
+  id: number;
+  name: string;
+  description?: string;
+  image_url: string;
+  slug: string;
+  is_active: boolean;
+  tourCount?: number;
+  created_at?: string;
+  updated_at?: string;
+}
 import TourCategoryEditor from "./TourCategoryEditor";
 import TourCategoryViewContent from "./TourCategoryViewContent";
 
@@ -64,7 +81,7 @@ const TourCategoriesManagement: React.FC = () => {
     );
   }
 
-  const [tourCategories, setTourCategories] = useState<AdminTourCategory[]>([]);
+  const [tourCategories, setTourCategories] = useState<TourCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,8 +89,9 @@ const TourCategoriesManagement: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   // 1. State quản lý chế độ hiển thị
   const [mode, setMode] = useState<"list" | "view" | "edit" | "create">("list");
-  const [selectedCategory, setSelectedCategory] =
-    useState<AdminTourCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<TourCategory | null>(
+    null
+  );
   const [loadingActiveIds, setLoadingActiveIds] = useState<number[]>([]);
   const [viewLoading, setViewLoading] = useState(false);
 
@@ -96,7 +114,7 @@ const TourCategoriesManagement: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await adminTourCategoryService.getAllTourCategories({
+      const response = await fetchAllTourCategories({
         page: currentPage,
         limit: 10,
         search: searchTerm || undefined,
@@ -112,7 +130,7 @@ const TourCategoriesManagement: React.FC = () => {
 
       // Sort by name
       const sortedCategoriesData = categoriesData.sort(
-        (a: AdminTourCategory, b: AdminTourCategory) =>
+        (a: TourCategory, b: TourCategory) =>
           a.name.localeCompare(b.name, "vi", { sensitivity: "base" })
       );
 
@@ -140,7 +158,7 @@ const TourCategoriesManagement: React.FC = () => {
   };
 
   // 2. Handler chuyển chế độ
-  const handleViewCategory = (category: AdminTourCategory) => {
+  const handleViewCategory = (category: TourCategory) => {
     setViewLoading(true);
     setSelectedCategory(category);
     setMode("view");
@@ -149,7 +167,7 @@ const TourCategoriesManagement: React.FC = () => {
       setViewLoading(false);
     }, 800);
   };
-  const handleEditCategory = (category: AdminTourCategory) => {
+  const handleEditCategory = (category: TourCategory) => {
     setSelectedCategory(category);
     setEditFormData({
       name: category.name,
@@ -176,7 +194,7 @@ const TourCategoriesManagement: React.FC = () => {
       )
     ) {
       try {
-        await adminTourCategoryService.deleteTourCategory(id);
+        await deleteTourCategoryService(id);
         fetchTourCategories();
         alert("Xóa danh mục thành công!");
       } catch (error) {
@@ -192,7 +210,7 @@ const TourCategoriesManagement: React.FC = () => {
     try {
       const category = tourCategories.find((cat) => cat.id === id);
       if (!category) return;
-      await adminTourCategoryService.updateTourCategory(id, {
+      await updateTourCategoryService(id, {
         name: category.name,
         image_url: category.image_url,
         is_active: !currentStatus,
@@ -216,7 +234,7 @@ const TourCategoriesManagement: React.FC = () => {
     if (data instanceof FormData) {
       // Tạo mới với upload ảnh
       try {
-        await adminTourCategoryService.createTourCategoryWithImage(data);
+        await createTourCategoryService(data);
         fetchTourCategories();
         setMode("list");
         alert("Tạo danh mục thành công!");
@@ -231,7 +249,7 @@ const TourCategoriesManagement: React.FC = () => {
       return;
     }
     try {
-      await adminTourCategoryService.createTourCategory(formData);
+      await createTourCategoryService(formData);
       fetchTourCategories();
       setMode("list");
       setFormData({
@@ -253,11 +271,10 @@ const TourCategoriesManagement: React.FC = () => {
     if (data instanceof FormData) {
       // Cập nhật với upload ảnh
       try {
-        const updated =
-          await adminTourCategoryService.updateTourCategoryWithImage(
-            selectedCategory.id,
-            data
-          );
+        const updated = await updateTourCategoryService(
+          selectedCategory.id,
+          data
+        );
         fetchTourCategories();
         setSelectedCategory(updated); // cập nhật lại state với dữ liệu mới
         setMode("view"); // chuyển về view để preview đúng
@@ -273,7 +290,7 @@ const TourCategoriesManagement: React.FC = () => {
       return;
     }
     try {
-      const updated = await adminTourCategoryService.updateTourCategory(
+      const updated = await updateTourCategoryService(
         selectedCategory.id,
         editFormData
       );

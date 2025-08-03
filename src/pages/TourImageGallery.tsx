@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { fetchTourImagesLimit } from '../services/tourImage.service';
-import { getTourById } from '../apis/tour.api';
-import { Loading } from '@/components/Loading';
-import ReactModal from 'react-modal';
+import React, { useEffect, useState } from "react";
+import { getAllTourImages } from "../apis/tourImage.api";
+import { getTourById } from "../apis/tour.api";
+import { Loading } from "@/components/Loading";
+import ReactModal from "react-modal";
 
 interface TourImage {
   id: number;
@@ -31,7 +31,8 @@ const TourImageGallery: React.FC = () => {
     if (!hasMore || loading) return;
     const handleScroll = () => {
       if (
-        window.innerHeight + window.scrollY >= document.body.offsetHeight - 400 &&
+        window.innerHeight + window.scrollY >=
+          document.body.offsetHeight - 400 &&
         !loading &&
         hasMore
       ) {
@@ -40,31 +41,45 @@ const TourImageGallery: React.FC = () => {
         loadImages(nextPage);
       }
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [page, hasMore, loading]);
 
   const loadImages = async (pageToLoad: number, reset = false) => {
     setLoading(true);
     try {
-      const imgs: TourImage[] = await fetchTourImagesLimit(pageToLoad, PAGE_SIZE);
+      const response = await getAllTourImages({
+        page: pageToLoad,
+        limit: PAGE_SIZE,
+      });
+      const imgs: TourImage[] = response.data;
       if (imgs.length < PAGE_SIZE) setHasMore(false);
       else setHasMore(true);
       const newImages = reset ? imgs : [...images, ...imgs];
       setImages(newImages);
       // Lấy tên tour cho các tour_id mới
-      const uniqueTourIds = Array.from(new Set(imgs.map(img => typeof img.tour_id === 'number' ? img.tour_id : null).filter((id): id is number => id !== null)));
+      const uniqueTourIds = Array.from(
+        new Set(
+          imgs
+            .map((img) =>
+              typeof img.tour_id === "number" ? img.tour_id : null
+            )
+            .filter((id): id is number => id !== null)
+        )
+      );
       const names: Record<number, string> = { ...tourNames };
-      await Promise.all(uniqueTourIds.map(async (id: number) => {
-        if (!names[id]) {
-          try {
-            const tourRes = await getTourById(id);
-            names[id] = tourRes.data?.name || `Tour #${id}`;
-          } catch {
-            names[id] = `Tour #${id}`;
+      await Promise.all(
+        uniqueTourIds.map(async (id: number) => {
+          if (!names[id]) {
+            try {
+              const tourRes = await getTourById(id);
+              names[id] = tourRes.data?.name || `Tour #${id}`;
+            } catch {
+              names[id] = `Tour #${id}`;
+            }
           }
-        }
-      }));
+        })
+      );
       setTourNames(names);
     } catch (err) {
       if (reset) setImages([]);
@@ -106,30 +121,46 @@ const TourImageGallery: React.FC = () => {
   React.useEffect(() => {
     if (modalIdx === null) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') showPrev();
-      if (e.key === 'ArrowRight') showNext();
-      if (e.key === 'Escape') closeModal();
+      if (e.key === "ArrowLeft") showPrev();
+      if (e.key === "ArrowRight") showNext();
+      if (e.key === "Escape") closeModal();
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, [modalIdx]);
 
-  if (!images.length && loading) return <div className="p-8 mt-30 text-center"><Loading /></div>;
-  if (!images.length) return <div className="p-8 text-center text-gray-500">Không có hình ảnh tour nào.</div>;
+  if (!images.length && loading)
+    return (
+      <div className="p-8 mt-30 text-center">
+        <Loading />
+      </div>
+    );
+  if (!images.length)
+    return (
+      <div className="p-8 text-center text-gray-500">
+        Không có hình ảnh tour nào.
+      </div>
+    );
 
   return (
     <div className="w-full mt-20 max-w-7xl mx-auto p-4">
-      <h2 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">Tất cả hình ảnh tour</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
+        Tất cả hình ảnh tour
+      </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {images.map((img, idx) => (
-          <div key={img.id} className="aspect-square w-full bg-gray-100 rounded-xl overflow-hidden cursor-pointer" onClick={() => openModal(idx)}>
+          <div
+            key={img.id}
+            className="aspect-square w-full bg-gray-100 rounded-xl overflow-hidden cursor-pointer"
+            onClick={() => openModal(idx)}
+          >
             <img
               src={img.image_url}
-              alt={img.alt_text || ''}
+              alt={img.alt_text || ""}
               className="w-full h-full object-cover rounded-xl"
               loading="lazy"
             />
-            {typeof img.tour_id === 'number' && (
+            {typeof img.tour_id === "number" && (
               <div className="text-xs text-center mt-1 text-gray-700 font-medium">
                 {tourNames[img.tour_id] || `Tour #${img.tour_id}`}
               </div>
@@ -144,22 +175,42 @@ const TourImageGallery: React.FC = () => {
         ariaHideApp={false}
         className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-80"
         overlayClassName="fixed inset-0 z-40 bg-black bg-opacity-80"
-        style={{ content: { background: 'none', border: 'none', padding: 0 } }}
+        style={{ content: { background: "none", border: "none", padding: 0 } }}
       >
         {modalIdx !== null && images[modalIdx] && (
           <div className="relative flex flex-col items-center">
-            <button onClick={closeModal} className="absolute top-2 right-2 text-white text-3xl font-bold z-10">×</button>
-            <button onClick={showPrev} className="absolute left-2 top-1/2 -translate-y-1/2 text-white text-3xl z-10">&#8592;</button>
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 text-white text-3xl font-bold z-10"
+            >
+              ×
+            </button>
+            <button
+              onClick={showPrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 text-white text-3xl z-10"
+            >
+              &#8592;
+            </button>
             <img
               src={images[modalIdx].image_url}
-              alt={images[modalIdx].alt_text || ''}
-              className={`max-h-[80vh] max-w-[90vw] rounded-xl shadow-lg transition-opacity duration-200 ${fade ? 'opacity-100' : 'opacity-0'}`}
-              style={{ background: '#eee' }}
+              alt={images[modalIdx].alt_text || ""}
+              className={`max-h-[80vh] max-w-[90vw] rounded-xl shadow-lg transition-opacity duration-200 ${
+                fade ? "opacity-100" : "opacity-0"
+              }`}
+              style={{ background: "#eee" }}
             />
-            <button onClick={showNext} className="absolute right-2 top-1/2 -translate-y-1/2 text-white text-3xl z-10">&#8594;</button>
+            <button
+              onClick={showNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white text-3xl z-10"
+            >
+              &#8594;
+            </button>
             <div className="mt-4 text-white text-center">
-              {typeof images[modalIdx].tour_id === 'number' && (
-                <div className="font-semibold">{tourNames[images[modalIdx].tour_id] || `Tour #${images[modalIdx].tour_id}`}</div>
+              {typeof images[modalIdx].tour_id === "number" && (
+                <div className="font-semibold">
+                  {tourNames[images[modalIdx].tour_id] ||
+                    `Tour #${images[modalIdx].tour_id}`}
+                </div>
               )}
               <div>{images[modalIdx].alt_text}</div>
             </div>
@@ -174,15 +225,17 @@ const TourImageGallery: React.FC = () => {
             onClick={handleLoadMore}
             disabled={loading}
           >
-            {loading ? <Loading /> : 'Xem thêm'}
+            {loading ? <Loading /> : "Xem thêm"}
           </button>
         </div>
       )}
       {loading && images.length > 0 && (
-        <div className="flex justify-center mt-6 "><Loading /></div>
+        <div className="flex justify-center mt-6 ">
+          <Loading />
+        </div>
       )}
     </div>
   );
 };
 
-export default TourImageGallery; 
+export default TourImageGallery;

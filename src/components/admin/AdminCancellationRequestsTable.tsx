@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cancellationRequestService } from "../../services/cancellationRequest.service";
-import { adminTourApi, getAllProviders } from "../../apis/admin/adminTour.api";
-import { providerTourApi } from "../../apis/provider/providerTour.api";
+import { getAllTours } from "../../apis/tour.api";
+import { fetchAllProviderProfiles } from "../../services/providerProfile.service";
 import { useAuth } from "../../hooks/useAuth";
 import {
   Table,
@@ -79,30 +79,50 @@ const AdminCancellationRequestsTable: React.FC = () => {
     const fetchData = async () => {
       try {
         if (user?.role === "admin") {
-          const providersRes = await getAllProviders();
-          setProviders(providersRes.data.data || []);
+          // For admin, fetch providers and tours separately
+          const [providersRes, toursRes] = await Promise.all([
+            fetchAllProviderProfiles({ limit: 1000, is_verified: true }),
+            getAllTours({ limit: 1000 }),
+          ]);
 
-          const toursRes = await adminTourApi.getAllTours();
+          console.log("Admin providers response:", providersRes);
           console.log("Admin tours response:", toursRes);
-          setTours(toursRes.data.data || []);
+
+          // Set providers from API (direct array response)
+          setProviders(providersRes || []);
+          console.log("Providers for admin:", providersRes);
+
+          // Store all tours for filtering later
+          const allTours = toursRes.data || [];
+
+          // Set tours based on selected provider
+          if (providerId) {
+            const filteredTours = allTours.filter(
+              (tour: any) => tour.provider?.id === parseInt(providerId)
+            );
+            setTours(filteredTours);
+          } else {
+            setTours(allTours);
+          }
         } else if (user?.role === "provider") {
-          // For provider, fetch their own tours
-          const toursRes = await providerTourApi.getProviderTours({
+          // For provider, fetch their own tours with provider_id from token
+          const providerId = user?.provider_id || user?.providerId || user?.id;
+          const toursRes = await getAllTours({
             limit: 1000,
+            provider_id: providerId,
           });
           console.log("Provider tours response:", toursRes);
-          // From console log: toursRes.data = {success: true, data: Array(10), pagination: {...}}
-          // So we need toursRes.data.data to get the actual array
-          const toursData = (toursRes as any).data?.data || toursRes.data || [];
-          setTours(toursData);
+          console.log("Provider ID from token:", providerId);
+          setTours(toursRes.data || []);
         }
       } catch (error) {
         console.error("Error fetching providers/tours:", error);
         setTours([]); // Set empty array on error
+        setProviders([]); // Set empty array on error
       }
     };
     fetchData();
-  }, [user?.role]);
+  }, [user?.role, providerId, user?.id]); // Thêm user?.id vào dependency cho provider
 
   // Debug tours state
   useEffect(() => {
@@ -111,15 +131,18 @@ const AdminCancellationRequestsTable: React.FC = () => {
     console.log("Tours length:", tours?.length);
   }, [tours]);
 
-  // Filter tours based on selected provider (admin only)
+  // Debug providers state
   useEffect(() => {
-    if (user?.role === "admin" && providerId) {
-      const filteredTours = tours.filter(
-        (tour) => tour.provider?.id === parseInt(providerId)
-      );
-      setTours(filteredTours);
+    console.log("Current providers state:", providers);
+    console.log("Providers is array:", Array.isArray(providers));
+    console.log("Providers length:", providers?.length);
+    if (providers && providers.length > 0) {
+      console.log("First provider:", providers[0]);
     }
-  }, [providerId, user?.role]);
+  }, [providers]);
+
+  // Filter tours based on selected provider (admin only) - REMOVED
+  // We'll filter at backend level instead of frontend
 
   // Fetch cancellation requests
   useEffect(() => {
@@ -133,23 +156,45 @@ const AdminCancellationRequestsTable: React.FC = () => {
         if (status) params.append("status", status);
         if (tourId) params.append("tour_id", tourId);
 
+        // Thêm provider_id nếu role là provider hoặc admin chọn provider
+        if (user?.role === "provider") {
+          let providerId = null;
+          // Kiểm tra nhiều trường hợp có thể có provider_id
+          providerId = user?.provider_id || user?.providerId || user?.id;
+
+          if (providerId) {
+            params.append("provider_id", providerId.toString());
+            console.log(
+              "Added provider_id to cancellation requests (provider):",
+              providerId
+            );
+          } else {
+            console.log(
+              "Not adding provider_id - role:",
+              user?.role,
+              "providerId:",
+              providerId
+            );
+          }
+        } else if (user?.role === "admin" && providerId) {
+          // Admin chọn provider để filter
+          params.append("provider_id", providerId);
+          console.log(
+            "Added provider_id to cancellation requests (admin):",
+            providerId
+          );
+        }
+
         const queryString = params.toString();
         const finalQuery = queryString ? `?${queryString}` : "";
 
-        let response;
-        if (user?.role === "admin") {
-          response =
-            await cancellationRequestService.getAllCancellationRequests(
-              finalQuery
-            );
-        } else if (user?.role === "provider") {
-          response =
-            await cancellationRequestService.getProviderCancellationRequests(
-              finalQuery
-            );
-        } else {
-          throw new Error("Unauthorized role");
-        }
+        console.log("Fetching cancellation requests with query:", finalQuery);
+
+        // Sử dụng chung API, backend sẽ tự động filter theo role
+        const response =
+          await cancellationRequestService.getAllCancellationRequests(
+            finalQuery
+          );
 
         setRequests(response.data || []);
       } catch (error) {
@@ -161,7 +206,16 @@ const AdminCancellationRequestsTable: React.FC = () => {
     };
 
     fetchRequests();
-  }, [debouncedSearch, status, tourId, user?.role]);
+  }, [
+    debouncedSearch,
+    status,
+    tourId,
+    providerId, // Thêm providerId vào dependency
+    user?.role,
+    user?.provider_id,
+    user?.providerId,
+    user?.id,
+  ]);
 
   const handleUpload = async () => {
     if (!selected || !file) return;
@@ -181,11 +235,24 @@ const AdminCancellationRequestsTable: React.FC = () => {
       setFile(null);
       setPreview(null);
 
-      // Refresh data
+      // Refresh data - sử dụng chung API với provider_id nếu cần
+      let refreshQuery = "";
+      if (user?.role === "provider") {
+        let providerId = null;
+        providerId = user?.provider_id || user?.providerId || user?.id;
+
+        if (providerId) {
+          refreshQuery = `?provider_id=${providerId}`;
+        }
+      } else if (user?.role === "admin" && providerId) {
+        // Admin chọn provider để filter
+        refreshQuery = `?provider_id=${providerId}`;
+      }
+
       const response =
-        user?.role === "admin"
-          ? await cancellationRequestService.getAllCancellationRequests()
-          : await cancellationRequestService.getProviderCancellationRequests();
+        await cancellationRequestService.getAllCancellationRequests(
+          refreshQuery
+        );
       setRequests(response.data || []);
     } catch (error) {
       console.error("Error updating request:", error);
@@ -250,11 +317,17 @@ const AdminCancellationRequestsTable: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
-                    {providers.map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
-                        {p.company_name}
+                    {providers.length > 0 ? (
+                      providers.map((p) => (
+                        <SelectItem key={p.id} value={p.id.toString()}>
+                          {p.company_name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-providers" disabled>
+                        Không có nhà cung cấp
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>

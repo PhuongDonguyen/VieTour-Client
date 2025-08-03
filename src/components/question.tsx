@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import {
-  MessageCircle,
-  User,
-  Send,
-} from "lucide-react";
+import { MessageCircle, User, Send } from "lucide-react";
 import { fetchTourBySlug } from "../services/tour.service";
 import { Loading } from "./Loading";
 import {
@@ -14,6 +10,7 @@ import {
 } from "../services/question.service";
 import { useAuth } from "../hooks/useAuth";
 import { RepliesSection } from "./renderReplies";
+import { LoadingChat } from "@/pages/admin/AdminSupport";
 
 interface Question {
   id: number;
@@ -22,8 +19,8 @@ interface Question {
   parent_question_id: number | null;
   text: string;
   created_at: string;
-  user?: User;
-  replies?: Question[];
+  user: User | null;
+  questions?: Question[];
 }
 
 interface User {
@@ -32,6 +29,45 @@ interface User {
   last_name: string;
   avatar?: string;
 }
+
+export const loadChat = () => {
+  return (
+    <div className="w-12 text-orange-600">
+      <svg
+        fill="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="4" cy="12" r="3">
+          <animate
+            id="spinner_jObz"
+            begin="0;spinner_vwSQ.end-0.25s"
+            attributeName="r"
+            dur="0.75s"
+            values="3;.2;3"
+          ></animate>
+        </circle>
+        <circle cx="12" cy="12" r="3">
+          <animate
+            begin="spinner_jObz.end-0.6s"
+            attributeName="r"
+            dur="0.75s"
+            values="3;.2;3"
+          ></animate>
+        </circle>
+        <circle cx="20" cy="12" r="3">
+          <animate
+            id="spinner_vwSQ"
+            begin="spinner_jObz.end-0.45s"
+            attributeName="r"
+            dur="0.75s"
+            values="3;.2;3"
+          ></animate>
+        </circle>
+      </svg>
+    </div>
+  );
+};
 
 export const CommentSection = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -52,8 +88,8 @@ export const CommentSection = () => {
           return;
         }
         const res = await fetchTourBySlug(slug);
-        console.log("res:", res[0]);
-        setTourId(res[0].id);
+        console.log("res:", res);
+        setTourId(res.id);
       } catch (error) {
         console.log("Không thể tải dữ liệu tour");
       }
@@ -62,14 +98,26 @@ export const CommentSection = () => {
   }, []);
 
   useEffect(() => {
+    console.log("Tour id: ", tourId);
+  }, [tourId]);
+
+  useEffect(() => {
     const loadQuestions = async () => {
       try {
         setLoadingQuestion(true);
         const res = await fetchQuestionsByTourId(tourId);
+        console.log("Tour id: ", res);
+
         setCountQuestion(res.data.length);
-        const questionsWithUser = await addUsersToQuestions(res.data);
-        const nested = nestQuestions(questionsWithUser);
-        setQuestions(nested);
+
+        const rawData = res.data;
+
+        const transformedData = rawData.map((q: any) => ({
+          ...q,
+          questions: q.questions || [],
+        }));
+
+        setQuestions(transformedData);
         setLoadingQuestion(false);
       } catch (error) {
         setLoadingQuestion(false);
@@ -86,68 +134,50 @@ export const CommentSection = () => {
   }, [questions]);
 
   // Hàm thêm thông tin user cho mỗi câu hỏi
-  const addUsersToQuestions = async (
-    questions: Question[]
-  ): Promise<Question[]> => {
-    return Promise.all(
-      questions.map(async (q) => {
-        try {
-          // For now, we'll use a default user structure since we don't have fetchUserById
-          // In a real implementation, you might want to fetch user details from an API
-          const defaultUser = {
-            id: q.user_id,
-            first_name: "Ẩn",
-            last_name: "Danh",
-            avatar: "", // hoặc icon mặc định
-          };
-          return {
-            ...q,
-            user: defaultUser,
-            replies: [],
-          };
-        } catch (error) {
-          console.error(`Lỗi khi tải user với id ${q.user_id}:`, error);
-          // Gán user mặc định khi có lỗi
-          const defaultUser = {
-            id: q.user_id,
-            first_name: "Ẩn",
-            last_name: "Danh",
-            avatar: "", // hoặc icon mặc định
-          };
-          return {
-            ...q,
-            user: defaultUser,
-            replies: [],
-          };
-        }
-      })
-    );
-  };
+  // const addUsersToQuestions = async (
+  //   questions: Question[]
+  // ): Promise<Question[]> => {
+  //   return Promise.all(
+  //     questions.map(async (q) => {
+  //       try {
+  //         // For now, we'll use a default user structure since we don't have fetchUserById
+  //         // In a real implementation, you might want to fetch user details from an API
+  //         const defaultUser = {
+  //           id: q.user_id,
+  //           first_name: "Ẩn",
+  //           last_name: "Danh",
+  //           avatar: "", // hoặc icon mặc định
+  //         };
+  //         return {
+  //           ...q,
+  //           user: defaultUser,
+  //           replies: [],
+  //         };
+  //       } catch (error) {
+  //         console.error(`Lỗi khi tải user với id ${q.user_id}:`, error);
+  //         // Gán user mặc định khi có lỗi
+  //         const defaultUser = {
+  //           id: q.user_id,
+  //           first_name: "Ẩn",
+  //           last_name: "Danh",
+  //           avatar: "", // hoặc icon mặc định
+  //         };
+  //         return {
+  //           ...q,
+  //           user: defaultUser,
+  //           replies: [],
+  //         };
+  //       }
+  //     })
+  //   );
+  // };
 
-  function nestQuestions(data: Question[]): Question[] {
-    setLoading(true);
-    const map = new Map<number, Question>();
-    const roots: Question[] = [];
-
-    data.forEach((q) => {
-      map.set(q.id, { ...q, replies: [] });
-    });
-
-    data.forEach((q) => {
-      if (q.parent_question_id) {
-        const parent = map.get(q.parent_question_id);
-        if (parent) {
-          parent.replies?.push(map.get(q.id)!);
-        }
-      } else {
-        roots.push(map.get(q.id)!);
-      }
-    });
-    setLoading(false);
-    return roots;
-  }
-
-
+  // function nestQuestions(data: Question[]): Question[] {
+  //   setLoading(true);
+  //   const qt = data.map
+  //   setLoading(false);
+  //   return roots;
+  // }
 
   const addQuestion = (newQuestion: Question) => {
     setQuestions((prev) => [newQuestion, ...prev]);
@@ -159,6 +189,7 @@ export const CommentSection = () => {
         alert("Vui lòng đăng nhập!");
         return;
       }
+      setLoadingQuestion(true);
       const res = await sendQuestion(user.id, tourId, null, commentText, false);
       console.log("res par ", res);
       const dataRes = res.data;
@@ -170,15 +201,18 @@ export const CommentSection = () => {
         text: dataRes.text,
         created_at: dataRes.created_at,
         user: user,
-        replies: [],
+        questions: [],
       };
       addQuestion(newQuestion);
       setCommentText("");
       const data = await res.data.json();
       console.log("Gửi câu hỏi thành công:", data);
+      setLoadingQuestion(false);
       return data;
+      
     } catch (error) {
       console.error("Lỗi khi gửi câu hỏi:", error);
+      setLoadingQuestion(false);
       return null;
     }
   };
@@ -195,7 +229,7 @@ export const CommentSection = () => {
         alert("Vui lòng đăng nhập!");
         return;
       }
-      setLoading(true);
+      setLoadingQuestion(true);
       const res = await sendQuestion(
         user.id,
         tourId,
@@ -214,17 +248,17 @@ export const CommentSection = () => {
         text: replyText,
         created_at: dataRes.created_at,
         user: user,
-        replies: [],
+        questions: [],
       };
       handleAddReply(parrent_id, newQuestion);
       setReplyText("");
       console.log("Gửi câu hỏi thành công:");
       setActiveReplyId(null);
-      setLoading(false);
+      setLoadingQuestion(false);
       return res;
     } catch (error) {
       console.error("Lỗi khi gửi câu hỏi:", error);
-      setLoading(false);
+      setLoadingQuestion(false);
       return null;
     }
   };
@@ -244,15 +278,15 @@ export const CommentSection = () => {
         // Nếu tìm thấy đúng parent, thêm reply vào replies
         return {
           ...question,
-          replies: [...(question.replies || []), reply],
+          questions: [...(question.questions || []), reply],
         };
       }
 
-      // Nếu có replies thì duyệt tiếp (đệ quy)
-      if (question.replies && question.replies.length > 0) {
+      // Nếu có questions thì duyệt tiếp (đệ quy)
+      if (question.questions && question.questions.length > 0) {
         return {
           ...question,
-          replies: addReplyToTree(question.replies, parentId, reply),
+          questions: addReplyToTree(question.questions, parentId, reply),
         };
       }
 
@@ -350,7 +384,7 @@ export const CommentSection = () => {
                     <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
                       {q.user?.avatar ? (
                         <img
-                          src={q.user.avatar}
+                          src={q.user.avatar || "/public/avatar-default.jpg"}
                           alt="Avatar"
                           className="w-full h-full object-cover"
                         />
@@ -365,8 +399,9 @@ export const CommentSection = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-bold text-gray-800">
-                          {q.user?.first_name + " " + q.user?.last_name ||
-                            "Ẩn danh"}
+                          {!!q.user_id
+                            ? q.user?.first_name + " " + q.user?.last_name
+                            : "Quản trị viên"}
                         </h4>
                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                         <span className="text-xs text-gray-500">
@@ -405,8 +440,8 @@ export const CommentSection = () => {
                       {/* Ô nhập trả lời */}
                       {activeReplyId === q.id && (
                         <div className=" mt-2 space-y-2">
-                          {loading ? (
-                            <Loading />
+                          {loadingQuestion ? (
+                            <LoadingChat />
                           ) : (
                             <div>
                               <textarea
@@ -441,9 +476,9 @@ export const CommentSection = () => {
                       )}
 
                       {/* Danh sách trả lời */}
-                      {q.replies && q.replies.length > 0 && (
+                      {q.questions && q.questions.length > 0 && (
                         <RepliesSection
-                          replies={q.replies}
+                          questions={q.questions}
                           user={user!}
                           activeReplyId={activeReplyId}
                           setActiveReplyId={setActiveReplyId}
@@ -451,7 +486,7 @@ export const CommentSection = () => {
                           setReplyText={setReplyText}
                           handleReplySubmit={handleReplySubmit}
                           handleDeleteQuestion={handleDeleteQuestion}
-                          loading={loading}
+                          loading={loadingQuestion}
                         />
                       )}
                     </div>

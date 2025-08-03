@@ -74,11 +74,11 @@ export const updateCancellationRequest = async (
   return response.data;
 };
 
-// Lấy tất cả yêu cầu hoàn tiền cho admin
+// Lấy tất cả yêu cầu hoàn tiền (admin và provider sẽ tự động filter theo role)
 export const getAllCancellationRequests = async (
   query?: string
 ): Promise<CancellationRequestsResponse> => {
-  const url = "/api/cancellation-requests/admin/all" + (query || "");
+  const url = "/api/cancellation-requests" + (query || "");
   const response = await axiosInstance.get(url);
   return response.data;
 };
@@ -100,13 +100,5 @@ export const updateCancellationRequestStatus = async (
       headers: { "Content-Type": "multipart/form-data" },
     }
   );
-  return response.data;
-};
-
-export const getProviderCancellationRequests = async (
-  query?: string
-): Promise<CancellationRequestsResponse> => {
-  const url = "/api/cancellation-requests/provider/all" + (query || "");
-  const response = await axiosInstance.get(url);
   return response.data;
 };

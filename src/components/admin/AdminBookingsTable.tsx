@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { adminBookingService } from "../../services/admin/adminBooking.service";
-import { getAllProviders } from "../../apis/admin/adminTour.api";
-import { adminTourApi } from "../../apis/admin/adminTour.api";
+import {
+  fetchAllBookings,
+  fetchBookingsCount,
+} from "../../services/booking.service";
+import { getAllTours } from "../../apis/tour.api";
+import { fetchAllProviderProfiles } from "../../services/providerProfile.service";
 import { toast } from "sonner";
-import type { AdminBooking } from "../../apis/admin/adminBooking.api";
+import type { AdminBooking } from "../../apis/booking.api";
 
 import {
   Table,
@@ -53,40 +56,72 @@ const AdminBookingsTable: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch providers and tours
+  // Fetch providers and initial tours
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const providersRes = await getAllProviders();
-        setProviders(providersRes.data.data || []);
+        if (user?.role === "admin") {
+          // For admin, fetch providers only (tours will be fetched by provider filter)
+          const providersRes = await fetchAllProviderProfiles({
+            limit: 1000,
+            is_verified: true,
+          });
+          console.log("Admin providers response:", providersRes);
+          setProviders(providersRes || []);
 
-        const toursRes = await adminTourApi.getAllTours({ limit: 1000 });
-        setTours(toursRes.data.data || []);
+          // Fetch all tours initially for admin
+          const toursRes = await getAllTours({ limit: 1000 });
+          setTours(toursRes.data || []);
+          setFilteredTours(toursRes.data || []);
+        } else {
+          // For provider, fetch their own tours
+          const toursRes = await getAllTours({
+            limit: 1000,
+            provider_id: user?.id,
+          });
+          setTours(toursRes.data || []);
+          setFilteredTours(toursRes.data || []);
+          setProviders([]); // Provider doesn't need provider dropdown
+        }
       } catch (error) {
         console.error("Error fetching providers/tours:", error);
         setProviders([]);
         setTours([]);
+        setFilteredTours([]);
       }
     };
     fetchData();
-  }, []);
+  }, [user?.role, user?.id]);
 
-  // Filter tours based on selected provider
+  // Fetch tours based on selected provider (backend filtering)
   useEffect(() => {
-    if (providerFilter !== "all") {
-      const selectedProviderId = parseInt(providerFilter);
-      const filtered = tours.filter(
-        (tour) => tour.provider_id === selectedProviderId
-      );
-      setFilteredTours(filtered);
-      // Reset tour filter when provider changes
-      setTourFilter("all");
-    } else {
-      setFilteredTours(tours);
-      // Reset tour filter when provider changes
-      setTourFilter("all");
-    }
-  }, [providerFilter, tours]);
+    const fetchToursByProvider = async () => {
+      try {
+        let params: any = { limit: 1000 };
+
+        if (user?.role === "provider") {
+          // Provider chỉ thấy tour của mình
+          params.provider_id = user.id;
+        } else if (user?.role === "admin" && providerFilter !== "all") {
+          // Admin chọn provider để filter
+          params.provider_id = parseInt(providerFilter);
+        }
+
+        const toursRes = await getAllTours(params);
+        setTours(toursRes.data || []);
+        setFilteredTours(toursRes.data || []);
+
+        // Reset tour filter when provider changes
+        setTourFilter("all");
+      } catch (error) {
+        console.error("Error fetching tours by provider:", error);
+        setTours([]);
+        setFilteredTours([]);
+      }
+    };
+
+    fetchToursByProvider();
+  }, [providerFilter, user?.role, user?.id]);
 
   // Fetch bookings
   const fetchData = async () => {
@@ -98,39 +133,38 @@ const AdminBookingsTable: React.FC = () => {
         return;
       }
 
-      const bookingsRes = await adminBookingService.getAdminBookings({
+      // Nếu là provider, tự động thêm provider_id từ user
+      const isProvider = user?.role === "provider";
+      const providerId = isProvider ? user?.id : undefined;
+
+      const bookingsRes = await fetchAllBookings({
         page: currentPage,
         limit: 10,
-        search: debouncedSearchTerm || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
-        provider_id:
-          providerFilter !== "all" ? parseInt(providerFilter) : undefined,
+        provider_id: isProvider
+          ? providerId
+          : providerFilter !== "all"
+          ? parseInt(providerFilter)
+          : undefined,
         tour_id: tourFilter !== "all" ? parseInt(tourFilter) : undefined,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
+        // Note: search parameter not supported by backend yet
       });
 
-      const responseData = bookingsRes.data as any;
-      if (responseData && responseData.success) {
-        const bookingsData = Array.isArray(responseData.data)
-          ? responseData.data
-          : [];
-        const paginationData = responseData.pagination || {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPrevPage: false,
-        };
+      const bookingsData = bookingsRes.data || [];
+      const paginationData = bookingsRes.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        limit: 10,
+      };
 
-        setBookings(bookingsData);
-        setCurrentPage(paginationData.currentPage || 1);
-        setTotalPages(paginationData.totalPages || 1);
-        setTotalItems(paginationData.totalItems || 0);
-        setHasNextPage(paginationData.hasNextPage || false);
-        setHasPrevPage(paginationData.hasPrevPage || false);
-      }
+      setBookings(bookingsData);
+      setTotalPages(paginationData.totalPages || 1);
+      setTotalItems(paginationData.totalItems || 0);
+      setHasNextPage(paginationData.hasNextPage || false);
+      setHasPrevPage(paginationData.hasPrevPage || false);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast.error("Không thể tải danh sách đặt tour");
@@ -209,9 +243,15 @@ const AdminBookingsTable: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý đặt tour</h1>
+          <h1 className="text-3xl font-bold">
+            {user?.role === "provider"
+              ? "Đặt tour của tôi"
+              : "Quản lý đặt tour"}
+          </h1>
           <p className="text-muted-foreground">
-            Quản lý tất cả đặt tour trong hệ thống
+            {user?.role === "provider"
+              ? "Theo dõi các đặt tour từ khách hàng của bạn"
+              : "Quản lý tất cả đặt tour trong hệ thống"}
           </p>
         </div>
       </div>
@@ -225,7 +265,7 @@ const AdminBookingsTable: React.FC = () => {
             <div className="flex-1 relative min-w-[220px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Tìm kiếm theo tên tour..."
+                placeholder="Tìm kiếm theo tên khách hàng..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -236,7 +276,13 @@ const AdminBookingsTable: React.FC = () => {
             </div>
 
             <div className="w-40">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setCurrentPage(1);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
@@ -253,28 +299,48 @@ const AdminBookingsTable: React.FC = () => {
               </Select>
             </div>
 
-            <div className="w-40">
-              <Select value={providerFilter} onValueChange={setProviderFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Nhà cung cấp" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
-                  {Array.isArray(providers) &&
-                    providers.map((provider) => (
-                      <SelectItem
-                        key={provider.id}
-                        value={provider.id.toString()}
-                      >
-                        {provider.company_name}
+            {/* Chỉ hiển thị filter provider cho admin */}
+            {user?.role === "admin" && (
+              <div className="w-40">
+                <Select
+                  value={providerFilter}
+                  onValueChange={(value) => {
+                    setProviderFilter(value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nhà cung cấp" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
+                    {providers.length > 0 ? (
+                      providers.map((provider) => (
+                        <SelectItem
+                          key={provider.id}
+                          value={provider.id.toString()}
+                        >
+                          {provider.company_name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-providers" disabled>
+                        Không có nhà cung cấp
                       </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="w-40">
-              <Select value={tourFilter} onValueChange={setTourFilter}>
+              <Select
+                value={tourFilter}
+                onValueChange={(value) => {
+                  setTourFilter(value);
+                  setCurrentPage(1);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Tour" />
                 </SelectTrigger>
@@ -295,7 +361,10 @@ const AdminBookingsTable: React.FC = () => {
                 type="date"
                 placeholder="Từ ngày"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full"
               />
             </div>
@@ -304,7 +373,10 @@ const AdminBookingsTable: React.FC = () => {
                 type="date"
                 placeholder="Đến ngày"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full"
               />
             </div>
@@ -357,9 +429,15 @@ const AdminBookingsTable: React.FC = () => {
                           <TableCell className="font-medium">
                             {booking.id.toString()}
                           </TableCell>
-                          <TableCell>{booking.tour?.title || "N/A"}</TableCell>
                           <TableCell>
-                            {booking.provider?.company_name || "N/A"}
+                            {booking.schedule?.tour?.title ||
+                              booking.tour_title ||
+                              "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            {booking.schedule?.tour?.provider?.company_name ||
+                              booking.company_name ||
+                              "N/A"}
                           </TableCell>
                           <TableCell>
                             <div>

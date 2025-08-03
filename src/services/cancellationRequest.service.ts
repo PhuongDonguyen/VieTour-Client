@@ -9,6 +9,7 @@ export const cancellationRequestService = {
     cancellationRequestApi.getAllCancellationRequests(query),
   updateCancellationRequestStatus:
     cancellationRequestApi.updateCancellationRequestStatus,
+  // Provider sử dụng chung API với admin, backend sẽ tự động filter theo role
   getProviderCancellationRequests: (query?: string) =>
-    cancellationRequestApi.getProviderCancellationRequests(query),
+    cancellationRequestApi.getAllCancellationRequests(query),
 };

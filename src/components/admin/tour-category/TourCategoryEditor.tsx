@@ -4,7 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save } from "lucide-react";
-import type { AdminTourCategory } from "@/apis/admin/adminTourCategory.api";
+// Define the tour category interface locally
+interface AdminTourCategory {
+  id: number;
+  name: string;
+  description?: string;
+  image_url: string;
+  slug: string;
+  is_active: boolean;
+  tourCount?: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface TourCategoryEditorProps {
   mode: "create" | "edit";

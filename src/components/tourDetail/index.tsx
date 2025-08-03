@@ -9,8 +9,8 @@ import TabOverview from "./TabOverview";
 import TabCondition from "./TabCondition";
 import TabGallery from "./TabGallery";
 import { fetchTourBySlug } from "../../services/tour.service";
-import { fetchTourDetail } from "../../services/tourDetail.service";
-import { fetchTourImages } from "../../services/tourImage.service";
+import { fetchTourDetailsByTourId } from "../../services/tourDetail.service";
+import { fetchTourImagesByTourId } from "../../services/tourImage.service";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
 import { TabReview } from "../tourDetail/TabReview";
 import Skeleton from "react-loading-skeleton";
@@ -50,17 +50,17 @@ const TourDetail: React.FC = () => {
       if (!slug) return;
       setLoading(true);
       setError(null);
-      
+
       try {
         const tourData = await fetchTourBySlug(slug);
         if (tourData) {
           setTour(tourData);
           const [detail, imgs] = await Promise.all([
-            fetchTourDetail(tourData.id),
-            fetchTourImages(tourData.id),
+            fetchTourDetailsByTourId(tourData.id),
+            fetchTourImagesByTourId(tourData.id),
           ]);
-          setDays(detail);
-          setImages(imgs);
+          setDays(detail.data || []);
+          setImages(imgs.data || []);
           setLoading(false);
 
           // Delay hiển thị comment section để mượt mà hơn
@@ -150,10 +150,11 @@ const TourDetail: React.FC = () => {
           {TABS.map((tab) => (
             <button
               key={tab.key}
-              className={`px-4 py-2 font-semibold border-b-2 transition-colors duration-200 ${activeTab === tab.key
+              className={`px-4 py-2 font-semibold border-b-2 transition-colors duration-200 ${
+                activeTab === tab.key
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-600 hover:text-orange-500"
-                }`}
+              }`}
               onClick={() => setActiveTab(tab.key)}
             >
               {tab.label}
@@ -170,12 +171,12 @@ const TourDetail: React.FC = () => {
                     images.length > 0
                       ? images.filter((img) => img.is_featured)
                       : [
-                        {
-                          id: 0,
-                          image_url: tour.poster_url,
-                          alt_text: tour.title,
-                        },
-                      ]
+                          {
+                            id: 0,
+                            image_url: tour.poster_url,
+                            alt_text: tour.title,
+                          },
+                        ]
                   }
                   altDefault={tour.title}
                 />

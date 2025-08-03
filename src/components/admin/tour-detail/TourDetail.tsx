@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,20 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Edit, Trash2, Eye, Plus, ArrowLeft } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Edit, Trash2, Eye, Clock, Plus } from "lucide-react";
-import { providerTourDetailService } from "../../../services/provider/providerTourDetail.service";
-import { adminTourDetailService } from "../../../services/admin/adminTourDetail.service";
-import { adminTourService } from "../../../services/admin/adminTour.service";
-import type { TourDetail } from "../../../apis/provider/providerTourDetail.api";
-import type { AdminTourDetail } from "../../../apis/admin/adminTourDetail.api";
-import { AuthContext } from "../../../context/authContext";
+  fetchAllTourDetails,
+  deleteTourDetailService,
+} from "@/services/tourDetail.service";
+import type { TourDetail } from "@/apis/tourDetail.api";
+import { AuthContext } from "@/context/authContext";
 
 const TourDetails: React.FC = () => {
   const navigate = useNavigate();
@@ -36,72 +28,29 @@ const TourDetails: React.FC = () => {
   // Get tour_id from URL query parameter
   const tourIdFromUrl = searchParams.get("tour_id");
 
-  const [tourDetails, setTourDetails] = useState<
-    (TourDetail | AdminTourDetail)[]
-  >([]);
+  const [tourDetails, setTourDetails] = useState<TourDetail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string>(
     tourIdFromUrl || "all"
   );
-  const [availableTours, setAvailableTours] = useState<
-    { id: number; title: string }[]
-  >([]);
-
-  // Helper functions to normalize data between TourDetail and AdminTourDetail
-  const getTourInfo = (detail: TourDetail | AdminTourDetail) => {
-    // Handle case where tour property might be undefined
-    if (detail.tour) {
-      return {
-        id: detail.tour.id,
-        title: detail.tour.title,
-        poster_url: detail.tour.poster_url,
-        category_name: detail.tour.tour_category.name,
-      };
-    } else {
-      // Fallback for when tour info is not available
-      const tourId = "tour_id" in detail ? detail.tour_id : 0;
-      return {
-        id: tourId,
-        title: `Tour ID: ${tourId}`,
-        poster_url: "/avatar-default.jpg",
-        category_name: "Unknown",
-      };
-    }
-  };
 
   // Fetch tour details data
   const fetchTourDetails = async () => {
     setLoading(true);
     try {
-      let data;
-      if (isAdmin) {
-        const res = await adminTourDetailService.getAllTourDetails({
-          page: currentPage,
-          search: searchTerm,
-          tour_id:
-            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
-        });
-        data = res.data;
-        setTotalPages(res.pagination.totalPages);
-        setTotalItems(res.pagination.totalItems);
-      } else {
-        const res = await providerTourDetailService.getTourDetails({
-          page: currentPage,
-          search: searchTerm,
-          tour_id:
-            selectedTourId !== "all" ? Number(selectedTourId) : undefined,
-        });
-        data = res.data;
-        setTotalPages(res.pagination.totalPages);
-        setTotalItems(res.pagination.totalItems);
-      }
-      setTourDetails(data);
+      const res = await fetchAllTourDetails({
+        page: currentPage,
+        tour_id: selectedTourId !== "all" ? Number(selectedTourId) : undefined,
+      });
+
+      setTourDetails(res.data);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.totalItems);
     } catch (error) {
+      console.error("Error fetching tour details:", error);
       setTourDetails([]);
     } finally {
       setLoading(false);
@@ -109,33 +58,16 @@ const TourDetails: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      // Lấy danh sách tour cho admin
-      adminTourService.getAllTours({ page: 1, limit: 100 }).then((res) => {
-        if (res.data && Array.isArray(res.data)) {
-          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
-        }
-      });
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
     fetchTourDetails();
-  }, [isAdmin, currentPage, searchTerm, selectedTourId]);
-
-  // Handle search
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
+  }, [currentPage, selectedTourId]);
 
   // Handle view detail
-  const handleViewDetail = (detail: TourDetail | AdminTourDetail) => {
+  const handleViewDetail = (detail: TourDetail) => {
     navigate(`/admin/tours/details/view/${detail.id}`);
   };
 
   // Handle edit detail
-  const handleEditDetail = (detail: TourDetail | AdminTourDetail) => {
+  const handleEditDetail = (detail: TourDetail) => {
     if (isAdmin) {
       alert("Admin không có quyền chỉnh sửa chi tiết tour.");
       return;
@@ -151,7 +83,7 @@ const TourDetails: React.FC = () => {
     }
     if (window.confirm("Bạn có chắc chắn muốn xóa chi tiết tour này?")) {
       try {
-        await providerTourDetailService.deleteTourDetail(id);
+        await deleteTourDetailService(id);
         fetchTourDetails();
       } catch (error) {
         console.error("Failed to delete tour detail:", error);
@@ -166,26 +98,34 @@ const TourDetails: React.FC = () => {
       alert("Admin không có quyền tạo chi tiết tour.");
       return;
     }
-    navigate("/admin/tours/details/new");
-  };
-
-  const handleTourChange = (tourId: string) => {
-    setSelectedTourId(tourId);
-    setLoading(true); // show loading until list update
+    navigate(
+      tourIdFromUrl
+        ? `/admin/tours/details/new?tour_id=${tourIdFromUrl}`
+        : "/admin/tours/details/new"
+    );
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Quản Lý Chi Tiết Tours</h1>
-          <p className="text-muted-foreground">
-            Quản lý lịch trình chi tiết của các tours ({totalItems} chi tiết)
-            {isAdmin && (
-              <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
-            )}
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/admin/tours/view/${selectedTourId}`)}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Trở về Tour
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Quản Lý Chi Tiết Tours</h1>
+            <p className="text-muted-foreground">
+              Quản lý lịch trình chi tiết của các tours ({totalItems} chi tiết)
+              {isAdmin && (
+                <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+              )}
+            </p>
+          </div>
         </div>
         {!isAdmin && (
           <Button
@@ -197,41 +137,6 @@ const TourDetails: React.FC = () => {
           </Button>
         )}
       </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tìm Kiếm & Bộ Lọc</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm theo tiêu đề chi tiết..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10 max-w-sm"
-              />
-            </div>
-            <div className="w-64">
-              <Select value={selectedTourId} onValueChange={handleTourChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn tour..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả tours</SelectItem>
-                  {tours.map((t) => (
-                    <SelectItem key={t.id} value={t.id.toString()}>
-                      {t.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tour Details Table */}
       <Card>
@@ -250,10 +155,8 @@ const TourDetails: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tour</TableHead>
                   <TableHead>Tiêu Đề</TableHead>
                   <TableHead>Thứ Tự</TableHead>
-                  <TableHead>Danh Mục</TableHead>
                   <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -262,29 +165,10 @@ const TourDetails: React.FC = () => {
                   tourDetails.map((detail) => (
                     <TableRow key={detail.id}>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={getTourInfo(detail).poster_url}
-                            alt={getTourInfo(detail).title}
-                            className="w-12 h-8 object-cover rounded"
-                          />
-                          <div>
-                            <p className="font-medium text-sm">
-                              {getTourInfo(detail).title}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
                         <p className="font-medium">{detail.title}</p>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">Ngày {detail.order}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {getTourInfo(detail).category_name}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -320,7 +204,7 @@ const TourDetails: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={3} className="text-center py-8">
                       {loading
                         ? "Đang tải..."
                         : "Không có chi tiết tour nào được tìm thấy."}

@@ -3,6 +3,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { AuthContext } from "@/context/authContext";
 import {
   Table,
@@ -13,21 +22,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Edit, Trash2, Eye, Plus, Calendar, Users } from "lucide-react";
+  Edit,
+  Trash2,
+  Eye,
+  Plus,
+  Calendar,
+  Users,
+  ArrowLeft,
+  Copy,
+} from "lucide-react";
 import {
   fetchAllTourSchedules,
   deleteTourScheduleService,
+  createTourScheduleService,
 } from "@/services/tourSchedule.service";
-import { fetchTours, fetchTourById } from "@/services/tour.service";
+import { fetchTourById } from "@/services/tour.service";
 import type { TourSchedule } from "@/apis/tourSchedule.api";
 
-const TourSchedulesManagement: React.FC = () => {
+const TourSchedulesList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
@@ -35,98 +47,54 @@ const TourSchedulesManagement: React.FC = () => {
 
   // Get tour_id from URL query parameter
   const tourIdFromUrl = searchParams.get("tour_id");
+  const tourId = tourIdFromUrl ? parseInt(tourIdFromUrl) : null;
 
   const [tourSchedules, setTourSchedules] = useState<TourSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [tourInfo, setTourInfo] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
 
-  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
-  const [selectedTourId, setSelectedTourId] = useState<string>(
-    tourIdFromUrl || "all"
+  // State for duplicate schedule modal
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<TourSchedule | null>(
+    null
   );
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [tourInfoMap, setTourInfoMap] = useState<{
-    [key: number]: { title: string };
-  }>({});
-  const [loadingTours, setLoadingTours] = useState<{ [key: number]: boolean }>(
-    {}
-  );
+  const [duplicateCount, setDuplicateCount] = useState(1);
+  const [duplicating, setDuplicating] = useState(false);
 
-  // Helper functions
-  const getTourInfo = (schedule: TourSchedule) => {
-    const tourInfo = tourInfoMap[schedule.tour_id];
-    return {
-      id: schedule.tour_id,
-      title: tourInfo?.title || `Tour ID: ${schedule.tour_id}`,
-    };
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      weekday: "long",
-    });
-  };
-
-  const formatStatus = (status: string): string => {
-    const statusMap: { [key: string]: string } = {
-      active: "Hoạt động",
-      inactive: "Tạm dừng",
-      completed: "Hoàn thành",
-      cancelled: "Đã hủy",
-    };
-    return statusMap[status] || status;
-  };
-
-  // Function to fetch tour information
+  // Fetch tour information
   const fetchTourInfo = async (tourId: number) => {
-    if (tourInfoMap[tourId] || loadingTours[tourId]) return;
-
     try {
-      setLoadingTours((prev) => ({ ...prev, [tourId]: true }));
-      const response = await fetchTourById(tourId);
-      const tourData = response;
-
-      setTourInfoMap((prev) => ({
-        ...prev,
-        [tourId]: {
-          title: tourData.title,
-        },
-      }));
+      const tourData = await fetchTourById(tourId);
+      setTourInfo({
+        id: tourData.id,
+        title: tourData.title,
+      });
     } catch (error) {
       console.error(`Error fetching tour info for tour ${tourId}:`, error);
-      // Set fallback data
-      setTourInfoMap((prev) => ({
-        ...prev,
-        [tourId]: {
-          title: `Tour ID: ${tourId}`,
-        },
-      }));
-    } finally {
-      setLoadingTours((prev) => ({ ...prev, [tourId]: false }));
+      setTourInfo({
+        id: tourId,
+        title: `Tour ID: ${tourId}`,
+      });
     }
   };
 
   // Fetch tour schedules data from API
   const fetchTourSchedules = async () => {
+    if (!tourId) return;
+
     setLoading(true);
     try {
-      const status =
-        selectedStatus !== "all"
-          ? (selectedStatus as "available" | "full" | "cancelled")
-          : undefined;
-
       const res = await fetchAllTourSchedules({
         page: currentPage,
-        tour_id: selectedTourId !== "all" ? Number(selectedTourId) : undefined,
-        status,
+        tour_id: tourId,
       });
 
-            // The response should have the correct structure now
       setTourSchedules(res.data);
       setTotalPages(res.pagination.totalPages);
       setTotalItems(res.pagination.totalItems);
@@ -139,32 +107,15 @@ const TourSchedulesManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    // Lấy danh sách tour
-    fetchTours({ page: 1, limit: 100 }).then((res: any) => {
-      if (res.data && Array.isArray(res.data)) {
-        setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    fetchTourSchedules();
-  }, [currentPage, selectedTourId, selectedStatus]);
-
-
-
-  // Fetch tour info for all schedules
-  useEffect(() => {
-    if (tourSchedules.length > 0) {
-      tourSchedules.forEach((schedule) => {
-        fetchTourInfo(schedule.tour_id);
-      });
+    if (tourId) {
+      fetchTourInfo(tourId);
+      fetchTourSchedules();
     }
-  }, [tourSchedules]);
+  }, [tourId, currentPage]);
 
   // Handle view schedule
   const handleViewSchedule = (schedule: TourSchedule) => {
-    navigate(`/admin/tours/schedules/view/${schedule.id}`);
+    navigate(`/admin/tours/schedules/view/${schedule.id}?tour_id=${tourId}`);
   };
 
   // Handle edit schedule
@@ -173,7 +124,7 @@ const TourSchedulesManagement: React.FC = () => {
       alert("Admin không có quyền chỉnh sửa.");
       return;
     }
-    navigate(`/admin/tours/schedules/edit/${schedule.id}`);
+    navigate(`/admin/tours/schedules/edit/${schedule.id}?tour_id=${tourId}`);
   };
 
   // Handle delete schedule
@@ -191,6 +142,74 @@ const TourSchedulesManagement: React.FC = () => {
         alert("Không thể xóa lịch trình tour. Vui lòng thử lại.");
       }
     }
+  };
+
+  // Handle create new schedule
+  const handleCreateSchedule = () => {
+    navigate(`/admin/tours/schedules/new?tour_id=${tourId}`);
+  };
+
+  // Handle back to tour
+  const handleBackToTour = () => {
+    navigate(`/admin/tours/view/${tourId}`);
+  };
+
+  // Handle duplicate schedule
+  const handleDuplicateSchedule = (schedule: TourSchedule) => {
+    setSelectedSchedule(schedule);
+    setDuplicateCount(1);
+    setDuplicateModalOpen(true);
+  };
+
+  const handleConfirmDuplicate = async () => {
+    if (!selectedSchedule || !tourId) return;
+
+    setDuplicating(true);
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < duplicateCount; i++) {
+        try {
+          const scheduleData = {
+            tour_id: tourId,
+            start_date: selectedSchedule.start_date,
+            participant: selectedSchedule.participant,
+          };
+
+          await createTourScheduleService(scheduleData);
+          successCount++;
+        } catch (error) {
+          console.error(`Error creating duplicate schedule ${i + 1}:`, error);
+          errorCount++;
+        }
+      }
+
+      if (errorCount === 0) {
+        alert(`Tạo thành công ${successCount} lịch trình!`);
+      } else {
+        alert(`Tạo thành công ${successCount} lịch trình, ${errorCount} lỗi.`);
+      }
+
+      // Refresh the list
+      fetchTourSchedules();
+      setDuplicateModalOpen(false);
+      setSelectedSchedule(null);
+    } catch (error) {
+      console.error("Error duplicating schedules:", error);
+      alert("Có lỗi xảy ra khi tạo lịch trình. Vui lòng thử lại.");
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long",
+    });
   };
 
   // Get status badge variant
@@ -225,32 +244,38 @@ const TourSchedulesManagement: React.FC = () => {
     }
   };
 
-  const handleTourChange = (tourId: string) => {
-    setSelectedTourId(tourId);
-    setLoading(true); // show loading until list update
-  };
-  const handleStatusChange = (status: string) => {
-    setSelectedStatus(status);
-    setLoading(true); // show loading until list update
-  };
+  if (!tourId) {
+    return <div className="text-red-500">Không tìm thấy tour ID</div>;
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Quản Lý Lịch Trình Tours</h1>
-          <p className="text-muted-foreground">
-            Quản lý lịch trình và thời gian biểu của các tours ({totalItems}{" "}
-            lịch trình)
-            {isAdmin && (
-              <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
-            )}
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={handleBackToTour}
+            className="flex items-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Quay lại Tour
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">
+              Lịch Trình Tour: {tourInfo?.title || `Tour ID: ${tourId}`}
+            </h1>
+            <p className="text-muted-foreground">
+              Quản lý lịch trình và thời gian biểu của tour ({totalItems} lịch
+              trình)
+              {isAdmin && (
+                <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+              )}
+            </p>
+          </div>
         </div>
         {!isAdmin && (
           <Button
-            onClick={() => navigate("/admin/tours/schedules/new")}
+            onClick={handleCreateSchedule}
             className="bg-black hover:bg-gray-800 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -259,50 +284,10 @@ const TourSchedulesManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Bộ Lọc</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="w-56">
-              <Select value={selectedTourId} onValueChange={handleTourChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn tour" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả tours</SelectItem>
-                  {tours.map((t) => (
-                    <SelectItem key={t.id} value={t.id.toString()}>
-                      {t.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-40">
-              <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="available">Còn chỗ</SelectItem>
-                  <SelectItem value="full">Hết chỗ</SelectItem>
-                  <SelectItem value="cancelled">Đã hủy</SelectItem>
-                  <SelectItem value="completed">Hoàn thành</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Tour Schedules Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Danh Sách Lịch Trình Tours</CardTitle>
+          <CardTitle>Danh Sách Lịch Trình</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -316,35 +301,16 @@ const TourSchedulesManagement: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tour</TableHead>
                   <TableHead>Ngày Khởi Hành</TableHead>
                   <TableHead>Số Người Tham Gia</TableHead>
                   <TableHead>Trạng Thái</TableHead>
-                  <TableHead>ID Tour</TableHead>
                   <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                
                 {Array.isArray(tourSchedules) && tourSchedules.length > 0 ? (
                   tourSchedules.map((schedule) => (
                     <TableRow key={schedule.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          {loadingTours[schedule.tour_id] ? (
-                            <div className="animate-pulse">
-                              <div className="h-4 bg-gray-200 rounded w-24"></div>
-                            </div>
-                          ) : (
-                            <div>
-                              <p className="font-medium text-sm">
-                                {tourInfoMap[schedule.tour_id]?.title ||
-                                  `Tour ID: ${schedule.tour_id}`}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-blue-600" />
@@ -369,11 +335,6 @@ const TourSchedulesManagement: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
-                          Tour #{schedule.tour_id}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
@@ -395,6 +356,16 @@ const TourSchedulesManagement: React.FC = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() =>
+                                  handleDuplicateSchedule(schedule)
+                                }
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
                                   handleDeleteSchedule(schedule.id)
                                 }
                                 className="text-red-600 hover:text-red-800"
@@ -409,7 +380,7 @@ const TourSchedulesManagement: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       {loading
                         ? "Đang tải..."
                         : "Không có lịch trình nào được tìm thấy."}
@@ -457,8 +428,69 @@ const TourSchedulesManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Duplicate Schedule Modal */}
+      <Dialog open={duplicateModalOpen} onOpenChange={setDuplicateModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nhân Số Lượng Lịch Trình</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="duplicate-count">Số lượng cần tạo:</Label>
+              <Input
+                id="duplicate-count"
+                type="number"
+                min="1"
+                max="20"
+                value={duplicateCount}
+                onChange={(e) =>
+                  setDuplicateCount(parseInt(e.target.value) || 1)
+                }
+                className="mt-1"
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Nhập số lượng lịch trình muốn tạo (tối đa 20)
+              </p>
+            </div>
+
+            {selectedSchedule && (
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-sm font-medium">Thông tin lịch trình gốc:</p>
+                <p className="text-sm text-muted-foreground">
+                  Ngày: {formatDate(selectedSchedule.start_date)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Tour:{" "}
+                  {tourInfo?.title || `Tour ID: ${selectedSchedule.tour_id}`}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDuplicateModalOpen(false)}
+                disabled={duplicating}
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={handleConfirmDuplicate}
+                disabled={
+                  duplicating || duplicateCount < 1 || duplicateCount > 20
+                }
+              >
+                {duplicating
+                  ? "Đang tạo..."
+                  : `Tạo ${duplicateCount} lịch trình`}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default TourSchedulesManagement;
+export default TourSchedulesList;

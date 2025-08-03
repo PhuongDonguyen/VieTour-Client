@@ -14,12 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AuthContext } from "@/context/authContext";
-import { providerTourDetailService } from "@/services/provider/providerTourDetail.service";
-import { adminTourDetailService } from "@/services/admin/adminTourDetail.service";
-import { providerTourApi } from "@/apis/provider/providerTour.api";
-import type { TourDetail } from "@/apis/provider/providerTourDetail.api";
-import type { AdminTourDetail } from "@/apis/admin/adminTourDetail.api";
-import { adminTourService } from "@/services/admin/adminTour.service";
+import { fetchTourDetailById } from "@/services/tourDetail.service";
+import { fetchTourById } from "@/services/tour.service";
+import type { TourDetail } from "@/apis/tourDetail.api";
 
 interface TourDetailViewContentProps {
   detailId?: string;
@@ -37,9 +34,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
-  const [tourDetail, setTourDetail] = useState<
-    TourDetail | AdminTourDetail | null
-  >(null);
+  const [tourDetail, setTourDetail] = useState<TourDetail | null>(null);
   const [tourInfo, setTourInfo] = useState<{
     title: string;
     poster_url: string;
@@ -50,7 +45,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
   const actualDetailId = detailId || id;
 
   // Helper function to get tour information safely
-  const getTourInfo = (detail: TourDetail | AdminTourDetail) => {
+  const getTourInfo = (detail: TourDetail) => {
     if (detail.tour) {
       return {
         title: detail.tour.title,
@@ -61,7 +56,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
       return tourInfo;
     } else {
       return {
-        title: `Tour ID: ${"tour_id" in detail ? detail.tour_id : ""}`,
+        title: `Tour ID: ${detail.tour_id}`,
         poster_url: "/public/VieTour-Logo.png",
         category_name: "Chưa phân loại",
       };
@@ -74,65 +69,35 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
       if (!actualDetailId) return;
       setLoading(true);
       try {
-        let detailData;
-        if (user?.role === "admin") {
-          detailData = await adminTourDetailService.getTourDetail(
-            Number(actualDetailId)
-          );
-        } else if (user?.role === "provider") {
-          detailData = await providerTourDetailService.getTourDetail(
-            Number(actualDetailId)
-          );
-        } else {
-          setTourDetail(null);
-          setTourInfo(null);
-          setLoading(false);
-          return;
-        }
+        const detailData = await fetchTourDetailById(Number(actualDetailId));
         setTourDetail(detailData);
-        // Nếu có tour_id, fetch thêm thông tin tour
-        const tourId = "tour_id" in detailData ? detailData.tour_id : undefined;
-        if (!detailData.tour && tourId) {
+
+        // Nếu có tour_id nhưng không có tour object, fetch thêm thông tin tour
+        if (!detailData.tour && detailData.tour_id) {
           try {
-            let tourRes;
-            if (user?.role === "admin") {
-              tourRes = await adminTourService.getTour(tourId);
-              setTourInfo({
-                title: tourRes.title,
-                poster_url: tourRes.poster_url,
-                category_name: tourRes.tour_category?.name || "Chưa phân loại",
-              });
-            } else if (user?.role === "provider") {
-              const tourResponse = await providerTourApi.getTourById(tourId);
-              const tourData = tourResponse.data.data;
-              setTourInfo({
-                title: tourData.title,
-                poster_url: tourData.poster_url,
-                category_name: tourData.tour_category?.name || "Chưa phân loại",
-              });
-            } else {
-              setTourInfo({
-                title: `Tour ID: ${tourId}`,
-                poster_url: "/public/VieTour-Logo.png",
-                category_name: "Chưa phân loại",
-              });
-            }
+            const tourData = await fetchTourById(detailData.tour_id);
+            setTourInfo({
+              title: tourData.title,
+              poster_url: tourData.poster_url,
+              category_name: tourData.tour_category?.name || "Chưa phân loại",
+            });
           } catch {
             setTourInfo({
-              title: `Tour ID: ${tourId}`,
+              title: `Tour ID: ${detailData.tour_id}`,
               poster_url: "/public/VieTour-Logo.png",
               category_name: "Chưa phân loại",
             });
           }
         }
       } catch (error) {
+        console.error("Error loading tour detail:", error);
         setTourDetail(null);
       } finally {
         setLoading(false);
       }
     };
     loadTourDetailData();
-  }, [actualDetailId, user?.role]);
+  }, [actualDetailId]);
 
   if (loading) {
     return (
@@ -163,12 +128,18 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
             Chi tiết tour bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.
           </p>
           {onBack ? (
-            <Button onClick={onBack}>
+            <Button
+              onClick={onBack}
+              className="bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại
             </Button>
           ) : (
-            <Button onClick={() => navigate("/admin/tours/details")}>
+            <Button
+              onClick={() => navigate("/admin/tours/details")}
+              className="bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại danh sách
             </Button>
@@ -186,18 +157,22 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
           <div className="flex items-center space-x-4">
             {onBack ? (
               <Button
-                variant="ghost"
                 onClick={onBack}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Quay lại</span>
               </Button>
             ) : (
               <Button
-                variant="ghost"
-                onClick={() => navigate("/admin/tours/details")}
-                className="flex items-center space-x-2"
+                onClick={() =>
+                  navigate(
+                    tourDetail.tour_id
+                      ? `/admin/tours/details?tour_id=${tourDetail.tour_id}`
+                      : "/admin/tours/details"
+                  )
+                }
+                className="flex items-center space-x-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Về danh sách chi tiết tour</span>
@@ -272,9 +247,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
                   <p className="font-medium text-sm text-muted-foreground">
                     Mã Tour
                   </p>
-                  <p className="font-mono text-sm">
-                    {"tour_id" in tourDetail ? tourDetail.tour_id : ""}
-                  </p>
+                  <p className="font-mono text-sm">{tourDetail.tour_id}</p>
                 </div>
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
@@ -371,11 +344,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
               <Button
                 variant="outline"
                 onClick={() =>
-                  navigate(
-                    `/admin/tours/view/${
-                      "tour_id" in tourDetail ? tourDetail.tour_id : ""
-                    }`
-                  )
+                  navigate(`/admin/tours/view/${tourDetail.tour_id}`)
                 }
                 className="w-full"
               >
@@ -411,9 +380,7 @@ const TourDetailViewContent: React.FC<TourDetailViewContentProps> = ({
                 <label className="text-sm font-medium text-muted-foreground">
                   Mã Tour
                 </label>
-                <p className="font-mono text-sm">
-                  {"tour_id" in tourDetail ? tourDetail.tour_id : ""}
-                </p>
+                <p className="font-mono text-sm">{tourDetail.tour_id}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">

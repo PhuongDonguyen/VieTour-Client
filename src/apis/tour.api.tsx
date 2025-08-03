@@ -1,4 +1,33 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
+
+// ============================================================================
+// TOUR API ENDPOINTS SUMMARY
+// ============================================================================
+//
+// CRUD Operations:
+// - GET    /api/tours                    - Get all tours with filters
+// - GET    /api/tours/{id}               - Get tour by ID
+// - POST   /api/tours                    - Create new tour
+// - PUT    /api/tours/{id}               - Update tour
+// - DELETE /api/tours/{id}               - Delete tour
+// - PATCH  /api/tours/{id}/toggle-status - Toggle tour status
+// - PATCH  /api/tours/{id}/increment-view - Increment view count
+//
+// Query Parameters:
+// - include=tour_category    - Include category data
+// - page={number}           - Page number for pagination
+// - limit={number}          - Items per page
+// - search={string}         - Search by title
+// - tour_category_id={id}   - Filter by category
+// - is_active={boolean}     - Filter by status
+// - provider_id={id}        - Filter by provider
+// - slug={string}           - Get tour by slug
+//
+// Legacy Endpoints:
+// - GET /api/tour_details?tour_id={id}   - Get tour details
+// - GET /api/tour_images?tour_id={id}    - Get tour images
+// - GET /api/tours/top-booked?limit={n}  - Get top booked tours
+// ============================================================================
 
 // Tour interfaces
 export interface Tour {
@@ -15,8 +44,20 @@ export interface Tour {
   created_at: string;
   updated_at: string;
   view_count?: number;
-  totalStar?: number;
-  totalReview?: number;
+  total_star?: number; // Changed from totalStar
+  review_count?: number; // Changed from totalReview
+  // Additional properties for tour management
+  capacity?: number;
+  transportation?: string;
+  accommodation?: string;
+  destination_intro?: string;
+  tour_info?: string;
+  live_commentary?: string;
+  booked_count?: number;
+  tour_category?: {
+    id: number;
+    name: string;
+  };
 }
 
 export interface TourQueryParams {
@@ -26,6 +67,7 @@ export interface TourQueryParams {
   limit?: number;
   search?: string;
   slug?: string;
+  provider_id?: number;
 }
 
 export interface TourResponse {
@@ -45,13 +87,45 @@ export interface TourDetailResponse {
   data: Tour;
 }
 
+export interface TourCreateResponse {
+  success: boolean;
+  data: Tour;
+  message?: string;
+}
+
+export interface TourUpdateResponse {
+  success: boolean;
+  data: Tour;
+  message?: string;
+}
+
+export interface TourDeleteResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface TourToggleResponse {
+  success: boolean;
+  data: Tour;
+  message?: string;
+}
+
 // API Functions
 
 /**
  * Get all tours with optional filters
  */
-export const getAllTours = async (params?: TourQueryParams): Promise<TourResponse> => {
-  const response = await axiosInstance.get('/api/tours', { params });
+export const getAllTours = async (
+  params?: TourQueryParams
+): Promise<TourResponse> => {
+  const queryParams = {
+    ...params,
+    // Only include tour_category if not filtering by tour_category_id
+    ...(params?.tour_category_id ? {} : { include: "tour_category" }),
+  };
+  const response = await axiosInstance.get("/api/tours", {
+    params: queryParams,
+  });
   return response.data;
 };
 
@@ -59,9 +133,64 @@ export const getAllTours = async (params?: TourQueryParams): Promise<TourRespons
  * Get tour by ID
  */
 export const getTourById = async (id: number): Promise<TourDetailResponse> => {
-  const response = await axiosInstance.get(`/api/tours/${id}`);
+  const response = await axiosInstance.get(
+    `/api/tours/${id}?include=tour_category`
+  );
   return response.data;
 };
+
+/**
+ * Create new tour
+ */
+export const createTour = async (
+  tourData: FormData
+): Promise<TourCreateResponse> => {
+  const response = await axiosInstance.post("/api/tours", tourData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Update tour
+ */
+export const updateTour = async (
+  id: number,
+  tourData: FormData
+): Promise<TourUpdateResponse> => {
+  const response = await axiosInstance.put(`/api/tours/${id}`, tourData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Delete tour
+ */
+export const deleteTour = async (id: number): Promise<TourDeleteResponse> => {
+  const response = await axiosInstance.delete(`/api/tours/${id}`);
+  return response.data;
+};
+
+/**
+ * Toggle tour status (active/inactive)
+ */
+export const toggleTourStatus = async (
+  id: number
+): Promise<TourToggleResponse> => {
+  const response = await axiosInstance.patch(`/api/tours/${id}/toggle-status`);
+  return response.data;
+};
+
+/**
+ * Increment tour view count
+ */
+export const incrementTourViewCount = (id: number) =>
+  axiosInstance.patch(`/api/tours/${id}/increment-view`);
 
 // Legacy functions for backward compatibility
 export const getTourBySlug = (slug: string) =>
@@ -85,9 +214,5 @@ export const getToursByCatId = (catId: number) =>
 export const getToursByIsActive = (active: boolean) =>
   axiosInstance.get(`/api/tours?is_active=${active}`);
 
-export const incrementTourViewCount = (id: number) =>
-  axiosInstance.patch(`/api/tours/${id}/increment-view`)
-
 export const getAllToursByProviderId = (providerId: number | null) =>
   axiosInstance.get(`/api/tours?provider_id=${providerId}`);
-

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthContext } from "@/context/authContext";
@@ -21,37 +20,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Search,
-  Trash2,
+  ArrowLeft,
   Eye,
   Plus,
   Calendar,
   ToggleLeft,
   ToggleRight,
-  Clock,
   Edit,
   Loader2,
-  ArrowLeft,
+  Trash2,
 } from "lucide-react";
 import {
   fetchAllTourPriceOverrides,
   deleteTourPriceOverrideService,
   toggleActiveTourPriceOverrideService,
 } from "../../../services/tourPriceOverride.service";
-import { fetchAllToursByProviderId } from "../../../services/tour.service";
+import { fetchTourById } from "../../../services/tour.service";
 import type { TourPriceOverride } from "../../../apis/tourPriceOverride.api";
 import TourPriceOverrideViewContent from "./TourPriceOverrideViewContent";
 import TourPriceOverrideEditor from "./TourPriceOverrideEditor";
 
-const TourPriceOverridesManagement: React.FC = () => {
+const TourPriceOverridesList: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === "admin";
 
@@ -65,28 +56,33 @@ const TourPriceOverridesManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [selectedOverride, setSelectedOverride] =
-    useState<TourPriceOverride | null>(null);
   const [selectedOverrideType, setSelectedOverrideType] =
     useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [availableTours, setAvailableTours] = useState<
-    { id: number; title: string }[]
-  >([]);
-  const [availableTourPrices, setAvailableTourPrices] = useState<
-    { id: number; tour_title: string; adult_price: number }[]
-  >([]);
   const [mode, setMode] = useState<"list" | "view" | "edit" | "create">("list");
   const [selectedOverrideId, setSelectedOverrideId] = useState<string | null>(
     null
   );
   const [loadingActiveIds, setLoadingActiveIds] = useState<number[]>([]);
-  const [tours, setTours] = useState<{ id: number; title: string }[]>([]);
-  const [selectedTourId, setSelectedTourId] = useState<string>("all");
-  const [searchParams] = useSearchParams();
+  const [tourInfo, setTourInfo] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
 
-  // Get tour_id from URL query parameter
+  // Lấy tour_id từ URL
   const tourIdFromUrl = searchParams.get("tour_id");
+
+  // Fetch tour info
+  useEffect(() => {
+    if (tourIdFromUrl) {
+      fetchTourById(parseInt(tourIdFromUrl)).then((res) => {
+        setTourInfo({
+          id: res.id,
+          title: res.title,
+        });
+      });
+    }
+  }, [tourIdFromUrl]);
 
   // Fetch price overrides data from API
   const fetchPriceOverrides = async () => {
@@ -102,8 +98,7 @@ const TourPriceOverridesManagement: React.FC = () => {
         override_type: overrideType,
         is_active:
           selectedStatus !== "all" ? selectedStatus === "true" : undefined,
-        tour_id:
-          selectedTourId !== "all" ? parseInt(selectedTourId) : undefined,
+        tour_id: tourIdFromUrl ? parseInt(tourIdFromUrl) : undefined,
       });
 
       setAllPriceOverrides(res.data);
@@ -116,14 +111,9 @@ const TourPriceOverridesManagement: React.FC = () => {
     }
   };
 
-  // Filter price overrides based on selectedTourId, selectedOverrideType, selectedStatus
+  // Filter price overrides based on selectedOverrideType, selectedStatus
   useEffect(() => {
     let filtered = allPriceOverrides;
-    if (selectedTourId !== "all") {
-      filtered = filtered.filter(
-        (item) => item.tour_price?.tour?.id === parseInt(selectedTourId)
-      );
-    }
     if (selectedOverrideType !== "all") {
       filtered = filtered.filter(
         (item) => item.override_type === selectedOverrideType
@@ -135,41 +125,11 @@ const TourPriceOverridesManagement: React.FC = () => {
       );
     }
     setFilteredPriceOverrides(filtered);
-  }, [allPriceOverrides, selectedTourId, selectedOverrideType, selectedStatus]);
-
-  useEffect(() => {
-    if (isAdmin) {
-      // Lấy danh sách tour cho admin
-      fetchAllToursByProviderId(null).then((res) => {
-        if (res.data && Array.isArray(res.data)) {
-          setTours(res.data.map((t: any) => ({ id: t.id, title: t.title })));
-        }
-      });
-    }
-  }, [isAdmin]);
+  }, [allPriceOverrides, selectedOverrideType, selectedStatus]);
 
   useEffect(() => {
     fetchPriceOverrides();
-  }, [
-    isAdmin,
-    currentPage,
-    selectedOverrideType,
-    selectedStatus,
-    selectedTourId,
-  ]);
-
-  // Khi priceOverrides đã cập nhật xong, mới tắt loading
-  useEffect(() => {
-    setLoading(false);
-  }, [allPriceOverrides]);
-
-  useEffect(() => {
-    // Nếu có tour_id trên URL, tự động set selectedTourId và show loading
-    if (tourIdFromUrl && tourIdFromUrl !== selectedTourId) {
-      setLoading(true);
-      setSelectedTourId(tourIdFromUrl);
-    }
-  }, [tourIdFromUrl, selectedTourId]);
+  }, [currentPage, selectedOverrideType, selectedStatus, tourIdFromUrl]);
 
   // Handle view override
   const handleViewOverride = (override: TourPriceOverride) => {
@@ -333,19 +293,11 @@ const TourPriceOverridesManagement: React.FC = () => {
       {mode === "list" && (
         <>
           {/* Header */}
-          <div className="flex justify-between items-start">
-            <div className="flex items-start gap-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
               <Button
                 variant="outline"
-                onClick={() =>
-                  navigate(
-                    `/admin/tours/view/${
-                      tourIdFromUrl ||
-                      (selectedTourId !== "all" ? selectedTourId : "")
-                    }`
-                  )
-                }
-                disabled={!tourIdFromUrl && selectedTourId === "all"}
+                onClick={() => navigate(`/admin/tours/view/${tourIdFromUrl}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Trở về Tour
@@ -357,8 +309,8 @@ const TourPriceOverridesManagement: React.FC = () => {
                     : "Quản Lý Ghi Đè Giá Tours"}
                 </h1>
                 <p className="text-muted-foreground">
-                  {isAdmin
-                    ? `Xem tất cả price overrides trong hệ thống (${totalItems} quy tắc) - Chỉ xem`
+                  {tourInfo
+                    ? `Giá đặc biệt cho tour: ${tourInfo.title} (${totalItems} quy tắc)`
                     : `Quản lý các quy tắc ghi đè giá theo ngày và thời gian (${totalItems} quy tắc)`}
                 </p>
               </div>
@@ -374,13 +326,31 @@ const TourPriceOverridesManagement: React.FC = () => {
             )}
           </div>
 
-          {/* Filter by status only */}
+          {/* Filters */}
           <Card>
             <CardHeader>
-              <CardTitle>Bộ Lọc Trạng Thái</CardTitle>
+              <CardTitle>Bộ Lọc</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-4">
+                <div className="w-48">
+                  <Select
+                    value={selectedOverrideType}
+                    onValueChange={setSelectedOverrideType}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Loại ghi đè" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả loại</SelectItem>
+                      <SelectItem value="single_date">Ngày cụ thể</SelectItem>
+                      <SelectItem value="date_range">
+                        Khoảng thời gian
+                      </SelectItem>
+                      <SelectItem value="weekly">Theo thứ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="w-40">
                   <Select
                     value={selectedStatus}
@@ -417,7 +387,6 @@ const TourPriceOverridesManagement: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tour</TableHead>
                       <TableHead>Thời Gian Áp Dụng</TableHead>
                       <TableHead>Loại Ghi Đè</TableHead>
                       <TableHead>Giá Người Lớn</TableHead>
@@ -431,35 +400,6 @@ const TourPriceOverridesManagement: React.FC = () => {
                     filteredPriceOverrides.length > 0 ? (
                       filteredPriceOverrides.map((override) => (
                         <TableRow key={override.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              {override.tour_price?.tour?.poster_url ? (
-                                <img
-                                  src={override.tour_price.tour.poster_url}
-                                  alt={override.tour_price.tour.title}
-                                  className="w-12 h-8 object-cover rounded"
-                                />
-                              ) : (
-                                <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">
-                                  <span className="text-xs text-gray-500">
-                                    N/A
-                                  </span>
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium text-sm">
-                                  {override.tour_price?.tour?.title ||
-                                    `Tour Price ID: ${override.tour_price_id}`}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Giá gốc:{" "}
-                                  {formatCurrency(
-                                    override.tour_price?.adult_price || 0
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-blue-600" />
@@ -567,7 +507,7 @@ const TourPriceOverridesManagement: React.FC = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">
+                        <TableCell colSpan={6} className="text-center py-8">
                           <div className="flex flex-col items-center space-y-2">
                             <Calendar className="w-12 h-12 text-muted-foreground/50" />
                             <p className="text-muted-foreground">
@@ -650,4 +590,4 @@ const TourPriceOverridesManagement: React.FC = () => {
   );
 };
 
-export default TourPriceOverridesManagement;
+export default TourPriceOverridesList;

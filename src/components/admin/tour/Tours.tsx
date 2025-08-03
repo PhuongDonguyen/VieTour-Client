@@ -33,13 +33,14 @@ import {
   MapPin,
   Clock,
 } from "lucide-react";
-import { providerTourService } from "../../../services/provider/providerTour.service";
-import { adminTourService } from "../../../services/admin/adminTour.service";
-import { fetchActiveTourCategories } from "../../../services/tourCategory.service";
-import type { ProviderTour } from "../../../apis/provider/providerTour.api";
-import type { AdminTour } from "../../../apis/admin/adminTour.api";
-import { providerTourCategoryApi } from "../../../apis/provider/providerTourCategory.api";
-import { getAllProviders } from "../../../apis/admin/adminTour.api";
+import {
+  fetchTours,
+  deleteTourService,
+  toggleTourStatusService,
+} from "@/services/tour.service";
+import { fetchActiveTourCategories } from "@/services/tourCategory.service";
+import { fetchAllProviderProfiles } from "@/services/providerProfile.service";
+import type { Tour } from "@/apis/tour.api";
 
 const ProviderTours: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ const ProviderTours: React.FC = () => {
   // Get category_id from URL parameter
   const categoryIdFromUrl = searchParams.get("category_id");
 
-  const [tours, setTours] = useState<(ProviderTour | AdminTour)[]>([]);
+  const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState(""); // input value
@@ -61,15 +62,11 @@ const ProviderTours: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
     categoryIdFromUrl || "all"
   );
-  const [filteredTours, setFilteredTours] = useState<
-    (ProviderTour | AdminTour)[]
-  >([]);
-  const [loadingTourId, setLoadingTourId] = useState<number | null>(null);
-  // Sửa kiểu dữ liệu providers để chấp nhận cả company_name và business_name
-  const [providers, setProviders] = useState<
-    { id: number; business_name?: string; company_name?: string }[]
-  >([]);
+  const [providers, setProviders] = useState<any[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>("all");
+  const [filteredTours, setFilteredTours] = useState<Tour[]>([]);
+  const [loadingTourId, setLoadingTourId] = useState<number | null>(null);
+  const [categoryMap, setCategoryMap] = useState<{ [key: number]: string }>({});
 
   // Set category filter from URL parameter on mount
   useEffect(() => {
@@ -78,92 +75,135 @@ const ProviderTours: React.FC = () => {
     }
   }, [categoryIdFromUrl]);
 
-  // Helper functions to normalize data between AdminTour and ProviderTour
-  const getTourCapacity = (tour: ProviderTour | AdminTour): number => {
-    return "capacity" in tour ? tour.capacity : tour.max_participants;
+  // Helper function to get category name
+  const getCategoryName = (tour: Tour): string => {
+    console.log("getCategoryName - tour:", tour);
+    console.log("getCategoryName - tour.tour_category:", tour.tour_category);
+    console.log(
+      "getCategoryName - tour.tour_category_id:",
+      tour.tour_category_id
+    );
+    console.log("getCategoryName - categoryMap:", categoryMap);
+
+    if (tour.tour_category?.name) {
+      console.log("Using tour.tour_category.name:", tour.tour_category.name);
+      return tour.tour_category.name;
+    }
+    if (tour.tour_category_id && categoryMap[tour.tour_category_id]) {
+      console.log("Using categoryMap:", categoryMap[tour.tour_category_id]);
+      return categoryMap[tour.tour_category_id];
+    }
+    console.log(
+      "Using fallback:",
+      tour.tour_category_id
+        ? `Category ${tour.tour_category_id}`
+        : "Không xác định"
+    );
+    return tour.tour_category_id
+      ? `Category ${tour.tour_category_id}`
+      : "Không xác định";
   };
 
-  const getTourRating = (tour: ProviderTour | AdminTour): number => {
-    return "total_star" in tour ? tour.total_star : tour.average_rating;
+  // Helper functions to normalize data
+  const getTourCapacity = (tour: Tour): number => {
+    return tour.capacity || 0;
   };
 
-  const getTourReviewCount = (tour: ProviderTour | AdminTour): number => {
-    return "review_count" in tour ? tour.review_count : tour.total_reviews;
+  const getTourRating = (tour: Tour): number => {
+    if (tour.total_star && tour.review_count && tour.review_count > 0) {
+      return tour.total_star / tour.review_count;
+    }
+    return 0;
   };
 
-  const getTourBookedCount = (tour: ProviderTour | AdminTour): number => {
-    return "booked_count" in tour ? tour.booked_count : tour.booking_count;
+  const getTourReviewCount = (tour: Tour): number => {
+    return tour.review_count || 0;
   };
 
-  const getTourViewCount = (tour: ProviderTour | AdminTour): string => {
+  const getTourBookedCount = (tour: Tour): number => {
+    return tour.booked_count || 0;
+  };
+
+  const getTourViewCount = (tour: Tour): string => {
     const viewCount = tour.view_count;
-    return typeof viewCount === "string" ? viewCount : viewCount.toString();
+    return typeof viewCount === "string"
+      ? viewCount
+      : viewCount?.toString() || "0";
   };
 
-  const getTourTransportation = (tour: ProviderTour | AdminTour): string => {
-    return "transportation" in tour ? tour.transportation : tour.location;
+  const getTourTransportation = (tour: Tour): string => {
+    return tour.transportation || "Không có thông tin";
   };
 
-  const getTourAccommodation = (tour: ProviderTour | AdminTour): string => {
-    return "accommodation" in tour ? tour.accommodation : "Không có thông tin";
+  const getTourAccommodation = (tour: Tour): string => {
+    return tour.accommodation || "Không có thông tin";
   };
 
-  const getTourDestinationIntro = (
-    tour: ProviderTour | AdminTour
-  ): string | null => {
-    return "destination_intro" in tour ? tour.destination_intro : null;
+  const getTourDestinationIntro = (tour: Tour): string | null => {
+    return tour.destination_intro || null;
   };
 
-  const getTourInfo = (tour: ProviderTour | AdminTour): string | null => {
-    return "tour_info" in tour ? tour.tour_info : null;
+  const getTourInfo = (tour: Tour): string | null => {
+    return tour.tour_info || null;
   };
 
-  const getTourLiveCommentary = (
-    tour: ProviderTour | AdminTour
-  ): string | null => {
-    return "live_commentary" in tour ? tour.live_commentary : null;
+  const getTourLiveCommentary = (tour: Tour): string | null => {
+    return tour.live_commentary || null;
   };
 
   // Fetch tours data
   useEffect(() => {
-    if (isAdmin) {
-      // Lấy danh sách provider cho admin
-      getAllProviders().then((res) => {
-        if (res.data.success) setProviders(res.data.data);
-      });
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    const fetchTours = async () => {
+    const fetchToursData = async () => {
       setLoading(true);
       try {
-        let data;
-        if (isAdmin) {
-          // Chỉ dùng admin API khi là admin - không gửi category_id xuống BE
-          const res = await adminTourService.getAllTours({
-            page: currentPage,
-            search: searchTerm,
-            provider_id:
-              selectedProviderId !== "all"
-                ? Number(selectedProviderId)
-                : undefined,
-          });
-          data = res.data;
-          setTotalPages(res.pagination.totalPages);
-          setTotalItems(res.pagination.totalItems);
-        } else {
-          // ... giữ nguyên logic cũ cho provider
-          const res = await providerTourService.getTours({
-            page: currentPage,
-            limit: 10,
-            search: searchTerm || undefined,
-          });
-          data = res.data;
-          setTotalPages(res.pagination.totalPages);
-          setTotalItems(res.pagination.totalItems);
+        const params: any = {
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_category_id:
+            selectedCategoryId !== "all"
+              ? Number(selectedCategoryId)
+              : undefined,
+        };
+
+        // Debug: log user info
+        console.log("User info:", {
+          role: user?.role,
+          provider_id: user?.provider_id,
+          providerId: user?.providerId,
+          id: user?.id,
+          user: user,
+        });
+
+        // Thêm provider_id nếu role là provider hoặc admin chọn provider
+        let providerId = null;
+        if (user?.role === "provider") {
+          // Kiểm tra nhiều trường hợp có thể có provider_id
+          providerId = user?.provider_id || user?.providerId || user?.id;
+        } else if (user?.role === "admin" && selectedProviderId !== "all") {
+          // Admin chọn provider để filter
+          providerId = selectedProviderId;
         }
-        setTours(data);
+
+        if (providerId) {
+          params.provider_id = providerId;
+          console.log("Added provider_id to params:", providerId);
+        } else {
+          console.log(
+            "Not adding provider_id - role:",
+            user?.role,
+            "providerId:",
+            providerId
+          );
+        }
+
+        console.log("Fetching tours with params:", params);
+        const res = await fetchTours(params);
+
+        console.log("Tours data:", res.data); // Debug log to check structure
+        setTours(res.data);
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
       } catch (error) {
         console.error("Error fetching tours:", error);
         setTours([]);
@@ -171,28 +211,32 @@ const ProviderTours: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchTours();
-  }, [isAdmin, currentPage, searchTerm, selectedProviderId]);
+    fetchToursData();
+  }, [
+    currentPage,
+    searchTerm,
+    selectedCategoryId,
+    selectedProviderId,
+    user?.role,
+    user?.provider_id,
+  ]);
 
-  // FE search/filter - thêm lọc theo category
+  // FE search/filter - chỉ lọc theo search term, không lọc theo category (vì đã lọc ở backend)
   useEffect(() => {
+    console.log("Filter effect - tours:", tours);
+    console.log("Filter effect - selectedCategoryId:", selectedCategoryId);
+    console.log("Filter effect - searchTerm:", searchTerm);
+
     let filtered = tours;
 
-    // Lọc theo category
-    if (selectedCategoryId !== "all") {
-      filtered = filtered.filter((tour) => {
-        const tourCategoryId = tour.tour_category?.id;
-        return tourCategoryId === Number(selectedCategoryId);
-      });
-    }
-
-    // Lọc theo search term
+    // Chỉ lọc theo search term, không lọc theo category vì đã lọc ở backend
     if (searchTerm) {
       filtered = filtered.filter((tour) =>
         tour.title.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
+    console.log("Filter effect - filtered result:", filtered);
     setFilteredTours(filtered);
   }, [searchTerm, tours, selectedCategoryId]);
 
@@ -212,10 +256,38 @@ const ProviderTours: React.FC = () => {
     }
   };
 
+  // Fetch providers for admin
+  useEffect(() => {
+    const fetchProvidersData = async () => {
+      if (user?.role === "admin") {
+        try {
+          const providersRes = await fetchAllProviderProfiles({
+            limit: 1000,
+            is_verified: true,
+          });
+          setProviders(providersRes || []);
+          console.log("Providers for admin:", providersRes);
+        } catch (error) {
+          console.error("Error fetching providers:", error);
+          setProviders([]);
+        }
+      }
+    };
+    fetchProvidersData();
+  }, [user?.role]);
+
   // Fetch tour categories on mount
   useEffect(() => {
     fetchActiveTourCategories().then((data) => {
+      console.log("Loaded tour categories:", data);
       setTourCategories(data);
+      // Build category map for quick lookup
+      const map: { [key: number]: string } = {};
+      data.forEach((cat: any) => {
+        map[cat.id] = cat.name;
+      });
+      console.log("Built category map:", map);
+      setCategoryMap(map);
     });
   }, []);
 
@@ -235,6 +307,11 @@ const ProviderTours: React.FC = () => {
     // Không cần set loading vì lọc trên Frontend
   };
 
+  const handleProviderChange = (value: string) => {
+    setSelectedProviderId(value);
+    setCurrentPage(1); // Reset to first page when changing provider
+  };
+
   // Handle delete tour
   const handleDeleteTour = async (id: number) => {
     if (isAdmin) {
@@ -243,9 +320,34 @@ const ProviderTours: React.FC = () => {
     }
     if (window.confirm("Bạn có chắc chắn muốn xóa tour này?")) {
       try {
-        await providerTourService.deleteTour(id);
-        // Xóa hoặc cập nhật các tham chiếu fetchTours không còn dùng nữa
-        // setTours(tours.filter(tour => tour.id !== id)); // This line was removed
+        await deleteTourService(id);
+        // Refresh the tours list với provider_id nếu cần
+        const refreshParams: any = {
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_category_id:
+            selectedCategoryId !== "all"
+              ? Number(selectedCategoryId)
+              : undefined,
+        };
+
+        // Thêm provider_id nếu role là provider hoặc admin chọn provider
+        let providerId = null;
+        if (user?.role === "provider") {
+          // Kiểm tra nhiều trường hợp có thể có provider_id
+          providerId = user?.provider_id || user?.providerId || user?.id;
+        } else if (user?.role === "admin" && selectedProviderId !== "all") {
+          // Admin chọn provider để filter
+          providerId = selectedProviderId;
+        }
+
+        if (providerId) {
+          refreshParams.provider_id = providerId;
+        }
+
+        const res = await fetchTours(refreshParams);
+        setTours(res.data);
       } catch (error) {
         console.error("Failed to delete tour:", error);
         alert("Không thể xóa tour. Vui lòng thử lại.");
@@ -261,7 +363,7 @@ const ProviderTours: React.FC = () => {
     }
     try {
       setLoadingTourId(id);
-      await providerTourService.toggleTourStatus(id);
+      await toggleTourStatusService(id);
       // Cập nhật trạng thái tour ngay trên FE, không fetch lại cả list
       setTours((prevTours) =>
         prevTours.map((tour) =>
@@ -277,7 +379,7 @@ const ProviderTours: React.FC = () => {
   };
 
   // Handle view tour details
-  const handleViewTour = (tour: ProviderTour | AdminTour) => {
+  const handleViewTour = (tour: Tour) => {
     navigate(`/admin/tours/view/${tour.id}`);
   };
 
@@ -291,7 +393,7 @@ const ProviderTours: React.FC = () => {
   };
 
   // Handle edit tour
-  const handleEditTour = (tour: ProviderTour | AdminTour) => {
+  const handleEditTour = (tour: Tour) => {
     if (isAdmin) {
       alert("Admin không có quyền chỉnh sửa tour.");
       return;
@@ -340,6 +442,32 @@ const ProviderTours: React.FC = () => {
                 className="pl-10 max-w-sm"
               />
             </div>
+            {isAdmin && (
+              <div className="w-56">
+                <Select
+                  value={selectedProviderId}
+                  onValueChange={handleProviderChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nhà cung cấp" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
+                    {providers.length > 0 ? (
+                      providers.map((p) => (
+                        <SelectItem key={p.id} value={p.id.toString()}>
+                          {p.company_name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-providers" disabled>
+                        Không có nhà cung cấp
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="w-56">
               <Select
                 value={selectedCategoryId}
@@ -358,26 +486,6 @@ const ProviderTours: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            {isAdmin && (
-              <div className="w-56">
-                <Select
-                  value={selectedProviderId}
-                  onValueChange={setSelectedProviderId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn nhà cung cấp" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
-                    {providers.map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
-                        {p.company_name || p.business_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -433,13 +541,13 @@ const ProviderTours: React.FC = () => {
                             {tour.title}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {tour.duration}
+                            {tour.duration} ngày
                           </p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {tour.tour_category.name}
+                          {getCategoryName(tour)}
                         </Badge>
                       </TableCell>
                       <TableCell>

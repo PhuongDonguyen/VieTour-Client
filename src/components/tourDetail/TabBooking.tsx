@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { tourScheduleService } from "../../services/tourSchedule.service";
-import { fetchUserProfile } from "../../services/userProfile.service";
-import { bookingService } from "../../services/booking.service";
-import { paymentService } from "../../services/payment.service";
+import { fetchAllTourSchedules } from "@/services/tourSchedule.service";
+import { fetchUserProfile } from "@/services/userProfile.service";
+import { bookingService } from "@/services/booking.service";
+import { paymentService } from "@/services/payment.service";
 import {
   processPayment,
   getPaymentMethodDisplayName,
-} from "../../services/paymentGateway.service";
-import { getTourPricesByTourIdAndDate } from "../../apis/tourPrice.api";
-import { useAuth } from "../../hooks/useAuth";
-import Modal from "../Modal";
-import LoginForm from "../authentication/LoginForm";
-import SignupForm from "../authentication/SignupForm";
-import { TourCalendar } from "./TourCalendar";
-import type { BookingRequest, BookingDetail } from "../../apis/booking.api";
-import type { PaymentMethod } from "../../apis/payment.api";
+} from "@/services/paymentGateway.service";
+import { getTourPricesByTourIdAndDate } from "@/apis/tourPrice.api";
+import { useAuth } from "@/hooks/useAuth";
+import Modal from "@/components/Modal";
+import LoginForm from "@/components/authentication/LoginForm";
+import SignupForm from "@/components/authentication/SignupForm";
+import { TourCalendar } from "@/components/tourDetail/TourCalendar";
+import type { BookingRequest, BookingDetail } from "@/apis/booking.api";
+import type { PaymentMethod } from "@/apis/payment.api";
 import { toast } from "sonner";
 
 // Constants - có thể tùy chỉnh theo business logic
@@ -24,7 +24,7 @@ const BOOKING_CONSTANTS = {
   MIN_BOOKING_DAYS_AHEAD: 2, // Đặt tour trước ít nhất 2 ngày
   LOCALSTORAGE_EXPIRY_HOURS: 24, // 24 giờ
   RESTORE_MESSAGE_TIMEOUT: 5000, // 5 giây
-  TOTAL_STEPS: 5,
+  TOTAL_STEPS: 5, // Giữ nguyên 5 bước
 };
 
 interface TabBookingProps {
@@ -91,6 +91,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   const [formData, setFormData] = useState({
     // Bước 1: Thông tin tour
     startDate: "",
+    selectedScheduleId: null as number | null, // Thêm selectedScheduleId
     numDays: duration,
     selectedPrices: {} as Record<number, { adults: number; children: number }>,
 
@@ -132,6 +133,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
         setCurrentStep(1);
         setFormData({
           startDate: "",
+          selectedScheduleId: null,
           numDays: duration,
           selectedPrices: {},
           customerName: "",
@@ -151,6 +153,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       setCurrentStep(1);
       setFormData({
         startDate: "",
+        selectedScheduleId: null,
         numDays: duration,
         selectedPrices: {},
         customerName: "",
@@ -168,6 +171,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       setCurrentStep(1);
       setFormData({
         startDate: "",
+        selectedScheduleId: null,
         numDays: duration,
         selectedPrices: {},
         customerName: "",
@@ -290,22 +294,17 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       try {
         setIsRefreshing(true);
         console.log("Loading tour schedules for tourId:", tourId);
-        const schedulesData = await tourScheduleService.getTourSchedules(
-          tourId
-        );
+        const schedulesData = await fetchAllTourSchedules({
+          tour_id: tourId,
+        });
         console.log("Tour schedules data:", schedulesData);
 
-        if (schedulesData.success) {
-          // Filter chỉ lấy những ngày từ 2 ngày sau ngày hiện tại
-          const validDates = schedulesData.data.filter((date: AvailableDate) =>
-            isValidBookingDate(date.start_date)
-          );
-          setAvailableDates(validDates);
-          console.log("Available dates set (filtered):", validDates);
-        } else {
-          console.log("No success in schedules response");
-          setAvailableDates([]);
-        }
+        // Filter chỉ lấy những ngày từ 2 ngày sau ngày hiện tại
+        const validDates = schedulesData.data.filter((date: AvailableDate) =>
+          isValidBookingDate(date.start_date)
+        );
+        setAvailableDates(validDates);
+        console.log("Available dates set (filtered):", validDates);
       } catch (error) {
         console.error("Error loading tour schedules:", error);
         setAvailableDates([]);
@@ -464,6 +463,12 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
   const handleDateSelect = (dateString: string) => {
     handleInputChange("startDate", dateString);
+    // Reset selectedScheduleId khi chọn ngày mới
+    handleInputChange("selectedScheduleId", null);
+  };
+
+  const handleScheduleSelect = (scheduleId: number) => {
+    handleInputChange("selectedScheduleId", scheduleId);
   };
 
   const handleNext = () => {
@@ -472,10 +477,25 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
     // Kiểm tra validation cho từng bước
     if (currentStep === 1) {
-      // Bước 1: Phải chọn ngày khởi hành
+      // Bước 1: Phải chọn ngày khởi hành và tour_schedule
       if (!formData.startDate) {
         setErrors({ startDate: "Vui lòng chọn ngày khởi hành!" });
         return;
+      }
+
+      // Kiểm tra xem có nhiều tour_schedule cho ngày này không
+      const schedulesForDate = availableDates.filter(
+        (date) => date.start_date === formData.startDate
+      );
+
+      if (schedulesForDate.length > 1 && !formData.selectedScheduleId) {
+        setErrors({ schedule: "Vui lòng chọn lịch trình cụ thể!" });
+        return;
+      }
+
+      // Nếu chỉ có 1 schedule, tự động chọn
+      if (schedulesForDate.length === 1 && !formData.selectedScheduleId) {
+        handleInputChange("selectedScheduleId", schedulesForDate[0].id);
       }
     }
 
@@ -488,13 +508,13 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       }
 
       // Kiểm tra capacity
-      const selectedDate = availableDates.find(
-        (date) => date.start_date === formData.startDate
+      const selectedSchedule = availableDates.find(
+        (date) => date.id === formData.selectedScheduleId
       );
-      if (selectedDate) {
+      if (selectedSchedule) {
         const totalSelected =
           totalPeople.totalAdults + totalPeople.totalChildren;
-        const remainingCapacity = tourCapacity - selectedDate.participant;
+        const remainingCapacity = tourCapacity - selectedSchedule.participant;
 
         if (totalSelected > remainingCapacity) {
           setErrors({
@@ -550,28 +570,43 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting) return; // Prevent double submission
-
-    // Final validation before submission
-    if (!selectedPaymentMethod) {
-      setErrors({ paymentMethod: "Vui lòng chọn phương thức thanh toán!" });
-      toast.error("Vui lòng chọn phương thức thanh toán!");
-      return;
-    }
-
-    // Đánh dấu đang chuyển hướng ngay từ đầu để tránh cảnh báo beforeunload
     setIsRedirectingToPayment(true);
     setIsSubmitting(true);
     setShowPaymentLoading(true);
 
     try {
-      // Tìm schedule_id từ ngày đã chọn
-      const selectedDate = availableDates.find(
-        (date) => date.start_date === formData.startDate
-      );
-      if (!selectedDate) {
-        toast.error("Không tìm thấy lịch trình cho ngày đã chọn!");
+      // Sử dụng selectedScheduleId đã chọn
+      if (!formData.selectedScheduleId) {
+        toast.error("Không tìm thấy lịch trình đã chọn!");
         setIsRedirectingToPayment(false); // Reset state khi có lỗi
+        return;
+      }
+
+      // Debug: Kiểm tra schedule_id có hợp lệ không
+      console.log("Debug - selectedScheduleId:", formData.selectedScheduleId);
+      console.log("Debug - availableDates:", availableDates);
+
+      // Kiểm tra xem schedule_id có tồn tại trong availableDates không
+      const selectedSchedule = availableDates.find(
+        (date) => date.id === formData.selectedScheduleId
+      );
+
+      if (!selectedSchedule) {
+        console.error(
+          "Schedule not found in availableDates:",
+          formData.selectedScheduleId
+        );
+        toast.error("Lịch trình đã chọn không hợp lệ!");
+        setIsRedirectingToPayment(false);
+        return;
+      }
+
+      console.log("Debug - selectedSchedule:", selectedSchedule);
+
+      // Đảm bảo schedule_id không null
+      if (!formData.selectedScheduleId) {
+        toast.error("Lịch trình đã chọn không hợp lệ!");
+        setIsRedirectingToPayment(false);
         return;
       }
 
@@ -597,16 +632,44 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
       // Tạo booking request data
       const bookingData: BookingRequest = {
-        schedule_id: selectedDate.id,
+        schedule_id: formData.selectedScheduleId!, // Non-null assertion since we validated above
         total: calculateTotalPrice(),
         client_name: formData.customerName,
         client_phone: formData.phone,
         note: formData.specialRequests || "",
-        payment_id: selectedPaymentMethod, // Add payment method ID
+        payment_id: selectedPaymentMethod!, // Non-null assertion since we validated above
         booking_details: bookingDetails,
       };
 
       console.log("Sending booking data:", bookingData);
+      console.log("Debug - schedule_id type:", typeof bookingData.schedule_id);
+      console.log("Debug - schedule_id value:", bookingData.schedule_id);
+
+      // Validation thêm cho các trường khác
+      console.log("Debug - client_name:", bookingData.client_name);
+      console.log("Debug - client_phone:", bookingData.client_phone);
+      console.log("Debug - total:", bookingData.total);
+      console.log("Debug - payment_id:", bookingData.payment_id);
+      console.log("Debug - booking_details:", bookingData.booking_details);
+
+      // Kiểm tra độ dài các trường text
+      if (bookingData.client_name.length > 100) {
+        toast.error("Tên khách hàng quá dài!");
+        setIsRedirectingToPayment(false);
+        return;
+      }
+
+      if (bookingData.client_phone.length > 20) {
+        toast.error("Số điện thoại quá dài!");
+        setIsRedirectingToPayment(false);
+        return;
+      }
+
+      if (bookingData.note.length > 500) {
+        toast.error("Ghi chú quá dài!");
+        setIsRedirectingToPayment(false);
+        return;
+      }
 
       // Gửi API request
       const response = await bookingService.createBooking(bookingData);
@@ -653,6 +716,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
       setCurrentStep(1);
       setFormData({
         startDate: "",
+        selectedScheduleId: null,
         numDays: duration,
         selectedPrices: {},
         customerName: "",
@@ -710,6 +774,34 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     return total;
   };
 
+  // Function để test schedule_id
+  const testScheduleId = () => {
+    console.log("=== TEST SCHEDULE ID ===");
+    console.log("formData.selectedScheduleId:", formData.selectedScheduleId);
+    console.log(
+      "Type of selectedScheduleId:",
+      typeof formData.selectedScheduleId
+    );
+    console.log("Available dates:", availableDates);
+
+    if (formData.selectedScheduleId) {
+      const found = availableDates.find(
+        (date) => date.id === formData.selectedScheduleId
+      );
+      console.log("Found schedule:", found);
+      if (found) {
+        console.log("Schedule details:", {
+          id: found.id,
+          start_date: found.start_date,
+          participant: found.participant,
+          status: found.status,
+          tour_id: found.tour_id,
+        });
+      }
+    }
+    console.log("=== END TEST ===");
+  };
+
   const getTotalPeople = () => {
     let totalAdults = 0;
     let totalChildren = 0;
@@ -745,6 +837,99 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                 {errors.startDate}
               </div>
             )}
+
+            {/* Hiển thị tour schedules nếu đã chọn ngày */}
+            {formData.startDate && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Chọn lịch trình cụ thể
+                </h3>
+
+                {(() => {
+                  const schedulesForDate = availableDates.filter(
+                    (date) => date.start_date === formData.startDate
+                  );
+
+                  if (schedulesForDate.length === 0) {
+                    return (
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+                        Không có lịch trình nào cho ngày này.
+                      </div>
+                    );
+                  }
+
+                  if (schedulesForDate.length === 1) {
+                    // Tự động chọn nếu chỉ có 1 schedule
+                    if (!formData.selectedScheduleId) {
+                      handleInputChange(
+                        "selectedScheduleId",
+                        schedulesForDate[0].id
+                      );
+                    }
+                    return (
+                      <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+                        <p className="font-medium">
+                          Lịch trình đã được chọn tự động
+                        </p>
+                        <p className="text-sm">
+                          Ngày: {formData.startDate} | Số vé còn lại:{" "}
+                          {tourCapacity - schedulesForDate[0].participant}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  // Hiển thị danh sách schedules nếu có nhiều
+                  return (
+                    <div className="space-y-3">
+                      {schedulesForDate.map((schedule) => {
+                        const remainingCapacity =
+                          tourCapacity - schedule.participant;
+                        const isSelected =
+                          formData.selectedScheduleId === schedule.id;
+
+                        return (
+                          <div
+                            key={schedule.id}
+                            className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                              isSelected
+                                ? "border-orange-500 bg-orange-50"
+                                : "border-gray-200 hover:border-orange-300"
+                            }`}
+                            onClick={() => handleScheduleSelect(schedule.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-gray-800">
+                                  Lịch trình #{schedule.id}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Ngày: {schedule.start_date}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-gray-800">
+                                  Còn lại: {remainingCapacity} vé
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Đã đặt: {schedule.participant} người
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {errors.schedule && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {errors.schedule}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -761,6 +946,12 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                   <span className="font-semibold">Ngày khởi hành:</span>{" "}
                   {formData.startDate}
                 </p>
+                {formData.selectedScheduleId && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    <span className="font-semibold">Lịch trình:</span> #
+                    {formData.selectedScheduleId}
+                  </p>
+                )}
               </div>
             )}
 
@@ -1271,17 +1462,29 @@ export const TabBooking: React.FC<TabBookingProps> = ({
 
           {/* Navigation buttons */}
           <div className="flex justify-between">
-            <button
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-              className={`px-6 py-2 rounded-md font-medium ${
-                currentStep === 1
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-              }`}
-            >
-              Quay lại
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePrevious}
+                disabled={currentStep === 1}
+                className={`px-6 py-2 rounded-md font-medium ${
+                  currentStep === 1
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+                }`}
+              >
+                Quay lại
+              </button>
+
+              {/* Debug button - chỉ hiển thị trong development */}
+              {process.env.NODE_ENV === "development" && (
+                <button
+                  onClick={testScheduleId}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600 transition-colors text-sm"
+                >
+                  Test Schedule
+                </button>
+              )}
+            </div>
 
             {currentStep < BOOKING_CONSTANTS.TOTAL_STEPS ? (
               <button
