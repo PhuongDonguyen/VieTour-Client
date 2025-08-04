@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { MessageCircle, User, Send } from "lucide-react";
 import { fetchTourBySlug } from "../services/tour.service";
@@ -11,6 +11,10 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { RepliesSection } from "./renderReplies";
 import { LoadingChat } from "@/pages/admin/AdminSupport";
+import CommentBox from "./commentBox";
+import { io } from "socket.io-client";
+import type { Socket } from "socket.io-client";
+import { da } from "date-fns/locale";
 
 interface Question {
   id: number;
@@ -29,6 +33,17 @@ interface User {
   last_name: string;
   avatar?: string;
 }
+
+// interface Comment{
+//   id: number,
+//   user: User,
+//   tour_id: number;
+//   parent_question_id: number | null;
+//   text: string;
+//   created_at: string;
+//   reported: boolean;
+//   questions?: Qu
+// }
 
 export const loadChat = () => {
   return (
@@ -81,12 +96,74 @@ export const CommentSection = () => {
   const [countQuestion, setCountQuestion] = useState<number>(0);
   const [loadingQuestion, setLoadingQuestion] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    const socket = io("http://localhost:8000", { withCredentials: false });
+    socketRef.current = socket;
+    console.log("khởi động real time");
+    socket.on("connect", () => {
+      console.log("✅ Socket connected:", socket.id);
+      console.log("Tour id: ", tourId);
+      if (tourId) {
+        socket.emit("joinRoom", tourId);
+      }
+    });
+
+    socket.on("receiveComment", (data: Question) => {
+      console.log("data: ", data);
+      const newQuestion: Question = {
+        id: data.id,
+        user_id: data.user_id, // hoặc tạm thời sinh id từ timestamp
+        tour_id: data.tour_id,
+        parent_question_id: null,
+        text: data.text,
+        created_at: data.created_at,
+        user: data.user,
+        questions: [],
+      };
+      console.log("new", newQuestion);
+      addQuestion(newQuestion);
+    });
+
+    socket.on("receiveReply", (data: Question) => {
+      console.log(questions);
+      console.log("data: ", data);
+      const newQuestion: Question = {
+        id: data.id,
+        user_id: data.user_id, // hoặc tạm thời sinh id từ timestamp
+        tour_id: data.tour_id,
+        parent_question_id: data.parent_question_id,
+        text: data.text,
+        created_at: data.created_at,
+        user: data.user,
+        questions: [],
+      };
+      console.log("new", newQuestion);
+      handleAddReply(data.parent_question_id!, newQuestion);
+    });
+
+    
+    
+    socket.on("receiveDelete", (id: number) => {
+      console.log("id delete", id);
+      setQuestions((prev) => prev.filter((q) => q.id !== id));
+    })
+
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [tourId]);
+
   useEffect(() => {
     const loadTour = async () => {
       try {
         if (!slug) {
           return;
         }
+        console.log("token", localStorage.getItem("token"));
+
         const res = await fetchTourBySlug(slug);
         console.log("res:", res);
         setTourId(res.id);
@@ -133,53 +210,8 @@ export const CommentSection = () => {
     console.log("Questions: ", questions);
   }, [questions]);
 
-  // Hàm thêm thông tin user cho mỗi câu hỏi
-  // const addUsersToQuestions = async (
-  //   questions: Question[]
-  // ): Promise<Question[]> => {
-  //   return Promise.all(
-  //     questions.map(async (q) => {
-  //       try {
-  //         // For now, we'll use a default user structure since we don't have fetchUserById
-  //         // In a real implementation, you might want to fetch user details from an API
-  //         const defaultUser = {
-  //           id: q.user_id,
-  //           first_name: "Ẩn",
-  //           last_name: "Danh",
-  //           avatar: "", // hoặc icon mặc định
-  //         };
-  //         return {
-  //           ...q,
-  //           user: defaultUser,
-  //           replies: [],
-  //         };
-  //       } catch (error) {
-  //         console.error(`Lỗi khi tải user với id ${q.user_id}:`, error);
-  //         // Gán user mặc định khi có lỗi
-  //         const defaultUser = {
-  //           id: q.user_id,
-  //           first_name: "Ẩn",
-  //           last_name: "Danh",
-  //           avatar: "", // hoặc icon mặc định
-  //         };
-  //         return {
-  //           ...q,
-  //           user: defaultUser,
-  //           replies: [],
-  //         };
-  //       }
-  //     })
-  //   );
-  // };
-
-  // function nestQuestions(data: Question[]): Question[] {
-  //   setLoading(true);
-  //   const qt = data.map
-  //   setLoading(false);
-  //   return roots;
-  // }
-
   const addQuestion = (newQuestion: Question) => {
+    console.log("new Qt: ", newQuestion);
     setQuestions((prev) => [newQuestion, ...prev]);
   };
 
@@ -203,13 +235,26 @@ export const CommentSection = () => {
         user: user,
         questions: [],
       };
-      addQuestion(newQuestion);
+      
+      socketRef.current?.emit("sendComment", {
+        id: dataRes.id,
+        user: {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          avatar: user.avatar
+        },
+        tour_id: tourId,
+        parent_question_id: null,
+        text: commentText,
+        reported: false
+      });
+      // addQuestion(newQuestion);
       setCommentText("");
       const data = await res.data.json();
       console.log("Gửi câu hỏi thành công:", data);
       setLoadingQuestion(false);
       return data;
-      
     } catch (error) {
       console.error("Lỗi khi gửi câu hỏi:", error);
       setLoadingQuestion(false);
@@ -223,7 +268,7 @@ export const CommentSection = () => {
     }
   };
 
-  const handleReplySubmit = async (parrent_id: number) => {
+  const handleReplySubmit = async (parent_id: number) => {
     try {
       if (!user) {
         alert("Vui lòng đăng nhập!");
@@ -233,24 +278,40 @@ export const CommentSection = () => {
       const res = await sendQuestion(
         user.id,
         tourId,
-        parrent_id,
+        parent_id,
         replyText,
         false
       );
 
       const dataRes = res.data;
-
-      const newQuestion: Question = {
+      console.log("Parent id: ", parent_id);
+      socketRef.current?.emit("sendReply", {
+        id: dataRes.id,
+        user: {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          avatar: user.avatar
+        },
+        user_id: user.id,
+        tour_id: tourId,
+        parent_question_id: parent_id,
+        text: replyText,
+        reported: false,
+      });
+            const newQuestion: Question = {
         id: dataRes.id, // hoặc tạm thời sinh id từ timestamp
         user_id: user.id,
         tour_id: tourId,
-        parent_question_id: parrent_id,
+        parent_question_id: parent_id,
         text: replyText,
         created_at: dataRes.created_at,
         user: user,
         questions: [],
       };
-      handleAddReply(parrent_id, newQuestion);
+
+      // handleAddReply(parrent_id, newQuestion);
+      console.log("Question1:" , questions);
       setReplyText("");
       console.log("Gửi câu hỏi thành công:");
       setActiveReplyId(null);
@@ -263,8 +324,10 @@ export const CommentSection = () => {
     }
   };
 
-  const handleAddReply = (parentId: number, reply: Question) => {
+  const handleAddReply = (parentId: number, reply: Question ) => {
+    console.log("Question:", questions);
     const updatedQuestions = addReplyToTree(questions, parentId, reply);
+    console.log("Update:" , updatedQuestions);
     setQuestions(updatedQuestions); // ✅ Trigger rerender
   };
 
@@ -298,7 +361,11 @@ export const CommentSection = () => {
     if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
     try {
       await delQuestion(questionId);
-      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+      socketRef.current?.emit("sendDelete", {
+        id: questionId,
+        tour_id: tourId
+      });
+
     } catch (error) {
       console.error("Lỗi khi xóa bình luận:", error);
     }
@@ -314,7 +381,7 @@ export const CommentSection = () => {
           {countQuestion} bình luận
         </span>
       </div>
-
+      <CommentBox tourId={tourId} />
       {/* Form nhập bình luận */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
         <div className="space-y-4">
@@ -399,7 +466,7 @@ export const CommentSection = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-bold text-gray-800">
-                          {!!q.user_id
+                          {!!q.user
                             ? q.user?.first_name + " " + q.user?.last_name
                             : "Quản trị viên"}
                         </h4>
