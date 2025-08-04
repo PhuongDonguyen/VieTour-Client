@@ -101,7 +101,7 @@ export interface UpdateTourPriceOverrideData {
 export const getAllTourPriceOverrides = async (
   params?: TourPriceOverrideQueryParams
 ): Promise<TourPriceOverrideResponse> => {
-  const response = await axiosInstance.get("/api/tour_price_overrides", {
+  const response = await axiosInstance.get("/api/tour-price-overrides", {
     params,
   });
   return response.data;
@@ -110,14 +110,14 @@ export const getAllTourPriceOverrides = async (
 export const getTourPriceOverrideById = async (
   id: number
 ): Promise<TourPriceOverride> => {
-  const response = await axiosInstance.get(`/api/tour_price_overrides/${id}`);
+  const response = await axiosInstance.get(`/api/tour-price-overrides/${id}`);
   return response.data.data;
 };
 
 export const createTourPriceOverride = async (
   data: CreateTourPriceOverrideData
 ): Promise<TourPriceOverrideCreateResponse> => {
-  const response = await axiosInstance.post("/api/tour_price_overrides", data);
+  const response = await axiosInstance.post("/api/tour-price-overrides", data);
   return response.data;
 };
 
@@ -126,7 +126,7 @@ export const updateTourPriceOverride = async (
   data: UpdateTourPriceOverrideData
 ): Promise<TourPriceOverrideUpdateResponse> => {
   const response = await axiosInstance.put(
-    `/api/tour_price_overrides/${id}`,
+    `/api/tour-price-overrides/${id}`,
     data
   );
   return response.data;
@@ -136,7 +136,7 @@ export const deleteTourPriceOverride = async (
   id: number
 ): Promise<TourPriceOverrideDeleteResponse> => {
   const response = await axiosInstance.delete(
-    `/api/tour_price_overrides/${id}`
+    `/api/tour-price-overrides/${id}`
   );
   return response.data;
 };
@@ -145,14 +145,14 @@ export const toggleActiveTourPriceOverride = async (
   id: number
 ): Promise<TourPriceOverrideUpdateResponse> => {
   const response = await axiosInstance.patch(
-    `/api/tour_price_overrides/${id}/toggle-active`
+    `/api/tour-price-overrides/${id}/toggle-active`
   );
   return response.data;
 };
 
 // Legacy functions for backward compatibility
 export const getTourPriceOverrides = () =>
-  axiosInstance.get("/api/tour_price_overrides");
+  axiosInstance.get("/api/tour-price-overrides");
 
 export const getTourPriceOverridesLimit = (page: number, limit: number) =>
-  axiosInstance.get(`/api/tour_price_overrides?page=${page}&limit=${limit}`);
+  axiosInstance.get(`/api/tour-price-overrides?page=${page}&limit=${limit}`);

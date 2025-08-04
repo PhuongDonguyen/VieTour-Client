@@ -24,8 +24,8 @@ import axiosInstance from "./axiosInstance";
 // - slug={string}           - Get tour by slug
 //
 // Legacy Endpoints:
-// - GET /api/tour_details?tour_id={id}   - Get tour details
-// - GET /api/tour_images?tour_id={id}    - Get tour images
+// - GET /api/tour-details?tour_id={id}   - Get tour details
+// - GET /api/tour-images?tour_id={id}    - Get tour images
 // - GET /api/tours/top-booked?limit={n}  - Get top booked tours
 // ============================================================================
 
@@ -197,10 +197,10 @@ export const getTourBySlug = (slug: string) =>
   axiosInstance.get(`/api/tours?slug=${slug}`);
 
 export const getTourDetail = (tour_id: number) =>
-  axiosInstance.get(`/api/tour_details?tour_id=${tour_id}`);
+  axiosInstance.get(`/api/tour-details?tour_id=${tour_id}`);
 
 export const getTourImages = (tour_id: number) =>
-  axiosInstance.get(`/api/tour_images?tour_id=${tour_id}`);
+  axiosInstance.get(`/api/tour-images?tour_id=${tour_id}`);
 
 export const getTopBookedTours = (limit: number) =>
   axiosInstance.get(`/api/tours/top-booked?limit=${limit}`);
