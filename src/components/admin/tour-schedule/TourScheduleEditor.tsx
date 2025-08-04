@@ -111,7 +111,7 @@ const TourScheduleEditor: React.FC = () => {
 
           setFormData({
             tour_id: schedule.tour_id.toString(),
-            start_date: schedule.start_date.split("T")[0], // Convert to date input format
+            start_date: schedule.start_date.split("T")[0], // Already in YYYY-MM-DD format from API
             status: schedule.status,
           });
 
@@ -174,7 +174,7 @@ const TourScheduleEditor: React.FC = () => {
           try {
             const scheduleData = {
               tour_id: tourId,
-              start_date: date.toISOString().split("T")[0], // Format as YYYY-MM-DD
+              start_date: date.toLocaleDateString("sv-SE"), // Returns YYYY-MM-DD in local timezone
               participant: 0, // Default participant count
             };
 
@@ -182,9 +182,9 @@ const TourScheduleEditor: React.FC = () => {
             successCount++;
           } catch (error) {
             console.error(
-              `Error creating schedule for ${
-                date.toISOString().split("T")[0]
-              }:`,
+              `Error creating schedule for ${date.toLocaleDateString(
+                "sv-SE"
+              )}:`,
               error
             );
             errorCount++;

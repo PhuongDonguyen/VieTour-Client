@@ -37,7 +37,12 @@ interface CancellationRequest {
   request_date: string;
   refund_amount: number;
   status: string;
+  cancel_reason?: string;
   transaction_image?: string | null;
+  recipient_name?: string;
+  bank_name?: string;
+  account_number?: string;
+  phone_number?: string;
   booking?: {
     client_name: string;
     client_phone: string;
@@ -393,6 +398,8 @@ const AdminCancellationRequestsTable: React.FC = () => {
                   <TableHead>SĐT</TableHead>
                   <TableHead>Ngày yêu cầu</TableHead>
                   <TableHead>Số tiền hoàn</TableHead>
+                  <TableHead>Lý do hoàn tiền</TableHead>
+                  <TableHead>Thông tin ngân hàng</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Ảnh giao dịch</TableHead>
                   {user?.role === "admin" && <TableHead>Hành động</TableHead>}
@@ -402,7 +409,7 @@ const AdminCancellationRequestsTable: React.FC = () => {
                 {requests.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={user?.role === "admin" ? 8 : 7}
+                      colSpan={user?.role === "admin" ? 10 : 9}
                       className="text-center py-8 text-gray-500"
                     >
                       Không có kết quả phù hợp.
@@ -419,6 +426,37 @@ const AdminCancellationRequestsTable: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {req.refund_amount.toLocaleString()} đ
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm max-w-xs">
+                          <div
+                            className="truncate cursor-help"
+                            title={req.cancel_reason || "Không có lý do"}
+                          >
+                            {req.cancel_reason
+                              ? req.cancel_reason.length > 50
+                                ? `${req.cancel_reason.substring(0, 50)}...`
+                                : req.cancel_reason
+                              : "Không có lý do"}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm space-y-1">
+                          <div>
+                            <strong>Người nhận:</strong>{" "}
+                            {req.recipient_name || "-"}
+                          </div>
+                          <div>
+                            <strong>Ngân hàng:</strong> {req.bank_name || "-"}
+                          </div>
+                          <div>
+                            <strong>Số TK:</strong> {req.account_number || "-"}
+                          </div>
+                          <div>
+                            <strong>SĐT:</strong> {req.phone_number || "-"}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge className={statusColor(req.status)}>
