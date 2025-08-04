@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { MessageCircle, User, Send } from "lucide-react";
 import { fetchTourBySlug } from "../services/tour.service";
@@ -11,7 +11,6 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { RepliesSection } from "./renderReplies";
 import { LoadingChat } from "@/pages/admin/AdminSupport";
-import CommentBox from "./commentBox";
 import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import { da } from "date-fns/locale";
@@ -96,146 +95,211 @@ export const CommentSection = () => {
   const [countQuestion, setCountQuestion] = useState<number>(0);
   const [loadingQuestion, setLoadingQuestion] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+  const [deletedQuestionIds, setDeletedQuestionIds] = useState<Set<number>>(new Set());
   const socketRef = useRef<Socket | null>(null);
+  const isInitializedRef = useRef(false);
 
+  // Khởi tạo socket connection một lần duy nhất
   useEffect(() => {
+    if (isInitializedRef.current) return;
+    
     const socket = io("http://localhost:8000", { withCredentials: false });
     socketRef.current = socket;
-    console.log("khởi động real time");
+    isInitializedRef.current = true;
+    
+    console.log("✅ Socket initialized:", socket.id);
+
     socket.on("connect", () => {
       console.log("✅ Socket connected:", socket.id);
-      console.log("Tour id: ", tourId);
       if (tourId) {
         socket.emit("joinRoom", tourId);
       }
     });
 
     socket.on("receiveComment", (data: Question) => {
-      console.log("data: ", data);
-      const newQuestion: Question = {
-        id: data.id,
-        user_id: data.user_id, // hoặc tạm thời sinh id từ timestamp
-        tour_id: data.tour_id,
-        parent_question_id: null,
-        text: data.text,
-        created_at: data.created_at,
-        user: data.user,
-        questions: [],
-      };
-      console.log("new", newQuestion);
-      addQuestion(newQuestion);
+      console.log("📨 Received new comment:", data);
+      setQuestions((prev) => {
+        // Kiểm tra xem comment đã tồn tại chưa
+        const exists = prev.some(q => q.id === data.id);
+        if (exists) {
+          console.log("⚠️ Comment already exists, skipping...");
+          return prev;
+        }
+        
+        const newQuestion: Question = {
+          id: data.id,
+          user_id: data.user_id,
+          tour_id: data.tour_id,
+          parent_question_id: null,
+          text: data.text,
+          created_at: data.created_at,
+          user: data.user,
+          questions: [],
+        };
+        
+        const updatedQuestions = [newQuestion, ...prev];
+        const totalQuestions = countTotalQuestions(updatedQuestions);
+        setCountQuestion(totalQuestions);
+        return updatedQuestions;
+      });
     });
 
     socket.on("receiveReply", (data: Question) => {
-      console.log(questions);
-      console.log("data: ", data);
-      const newQuestion: Question = {
-        id: data.id,
-        user_id: data.user_id, // hoặc tạm thời sinh id từ timestamp
-        tour_id: data.tour_id,
-        parent_question_id: data.parent_question_id,
-        text: data.text,
-        created_at: data.created_at,
-        user: data.user,
-        questions: [],
-      };
-      console.log("new", newQuestion);
-      handleAddReply(data.parent_question_id!, newQuestion);
+      console.log("📨 Received new reply:", data);
+      setQuestions((prev) => {
+        const updatedQuestions = addReplyToTree(prev, data.parent_question_id!, data);
+        const totalQuestions = countTotalQuestions(updatedQuestions);
+        setCountQuestion(totalQuestions);
+        return updatedQuestions;
+      });
     });
 
-    
-    
     socket.on("receiveDelete", (id: number) => {
-      console.log("id delete", id);
-      setQuestions((prev) => prev.filter((q) => q.id !== id));
-    })
-
+      console.log("🗑️ Received delete for id:", id);
+      setDeletedQuestionIds(prev => new Set([...prev, id]));
+      
+      setQuestions((prevQuestions) => {
+        const updatedQuestions = removeQuestionFromTree(prevQuestions, id);
+        const totalQuestions = countTotalQuestions(updatedQuestions);
+        setCountQuestion(totalQuestions);
+        return updatedQuestions;
+      });
+    });
 
     return () => {
+      console.log("🔌 Disconnecting socket");
       socket.disconnect();
+      isInitializedRef.current = false;
     };
+  }, []); // Empty dependency array - chỉ chạy một lần
+
+  // Join room khi tourId thay đổi
+  useEffect(() => {
+    if (tourId && socketRef.current?.connected) {
+      console.log("🏠 Joining room:", tourId);
+      socketRef.current.emit("joinRoom", tourId);
+    }
   }, [tourId]);
 
   useEffect(() => {
     const loadTour = async () => {
       try {
-        if (!slug) {
-          return;
-        }
-        console.log("token", localStorage.getItem("token"));
-
+        if (!slug) return;
+        
         const res = await fetchTourBySlug(slug);
-        console.log("res:", res);
+        console.log("📋 Tour loaded:", res);
         setTourId(res.id);
       } catch (error) {
-        console.log("Không thể tải dữ liệu tour");
+        console.error("❌ Error loading tour:", error);
       }
     };
     loadTour();
-  }, []);
-
-  useEffect(() => {
-    console.log("Tour id: ", tourId);
-  }, [tourId]);
+  }, [slug]);
 
   useEffect(() => {
     const loadQuestions = async () => {
+      if (!tourId) return;
+      
       try {
         setLoadingQuestion(true);
         const res = await fetchQuestionsByTourId(tourId);
-        console.log("Tour id: ", res);
+        console.log("📝 Questions loaded:", res.data.length);
 
-        setCountQuestion(res.data.length);
-
-        const rawData = res.data;
-
-        const transformedData = rawData.map((q: any) => ({
+        const transformedData = res.data.map((q: any) => ({
           ...q,
           questions: q.questions || [],
         }));
 
         setQuestions(transformedData);
+        setCountQuestion(res.data.length);
         setLoadingQuestion(false);
       } catch (error) {
+        console.error("❌ Error loading questions:", error);
         setLoadingQuestion(false);
-        console.error("Lỗi khi tải câu hỏi:", error);
       }
     };
 
     loadQuestions();
   }, [tourId]);
 
-  // Log ra khi questions thay đổi
-  useEffect(() => {
-    console.log("Questions: ", questions);
-  }, [questions]);
+  const countTotalQuestions = useCallback((questions: Question[]): number => {
+    let count = 0;
+    questions.forEach((question) => {
+      count++;
+      if (question.questions && question.questions.length > 0) {
+        count += countTotalQuestions(question.questions);
+      }
+    });
+    return count;
+  }, []);
 
-  const addQuestion = (newQuestion: Question) => {
-    console.log("new Qt: ", newQuestion);
-    setQuestions((prev) => [newQuestion, ...prev]);
-  };
+  const addReplyToTree = useCallback((
+    questions: Question[],
+    parentId: number,
+    reply: Question
+  ): Question[] => {
+    return questions.map((question) => {
+      if (question.id === parentId) {
+        // Kiểm tra xem reply đã tồn tại chưa
+        const replyExists = question.questions?.some(r => r.id === reply.id);
+        if (replyExists) {
+          return question;
+        }
+        
+        return {
+          ...question,
+          questions: [...(question.questions || []), reply],
+        };
+      }
+
+      if (question.questions && question.questions.length > 0) {
+        return {
+          ...question,
+          questions: addReplyToTree(question.questions, parentId, reply),
+        };
+      }
+
+      return question;
+    });
+  }, []);
+
+  const removeQuestionFromTree = useCallback((
+    questions: Question[],
+    questionIdToDelete: number
+  ): Question[] => {
+    return questions.filter((question) => {
+      if (question.id === questionIdToDelete) {
+        return false;
+      }
+
+      if (question.questions && question.questions.length > 0) {
+        const updatedReplies = removeQuestionFromTree(question.questions, questionIdToDelete);
+        if (updatedReplies.length !== question.questions.length) {
+          return {
+            ...question,
+            questions: updatedReplies
+          };
+        }
+      }
+
+      return question;
+    });
+  }, []);
 
   const submitQuestion = async () => {
+    if (!user || !commentText.trim()) {
+      alert("Vui lòng đăng nhập và nhập nội dung!");
+      return;
+    }
+
     try {
-      if (!user) {
-        alert("Vui lòng đăng nhập!");
-        return;
-      }
       setLoadingQuestion(true);
       const res = await sendQuestion(user.id, tourId, null, commentText, false);
-      console.log("res par ", res);
-      const dataRes = res.data;
-      const newQuestion: Question = {
-        id: dataRes.id, // hoặc tạm thời sinh id từ timestamp
-        user_id: dataRes.user_id,
-        tour_id: dataRes.tour_id,
-        parent_question_id: null,
-        text: dataRes.text,
-        created_at: dataRes.created_at,
-        user: user,
-        questions: [],
-      };
+      console.log("📤 Question sent:", res.data);
       
+      const dataRes = res.data;
+      
+      // Emit socket event
       socketRef.current?.emit("sendComment", {
         id: dataRes.id,
         user: {
@@ -249,16 +313,12 @@ export const CommentSection = () => {
         text: commentText,
         reported: false
       });
-      // addQuestion(newQuestion);
+      
       setCommentText("");
-      const data = await res.data.json();
-      console.log("Gửi câu hỏi thành công:", data);
       setLoadingQuestion(false);
-      return data;
     } catch (error) {
-      console.error("Lỗi khi gửi câu hỏi:", error);
+      console.error("❌ Error sending question:", error);
       setLoadingQuestion(false);
-      return null;
     }
   };
 
@@ -269,22 +329,19 @@ export const CommentSection = () => {
   };
 
   const handleReplySubmit = async (parent_id: number) => {
+    if (!user || !replyText.trim()) {
+      alert("Vui lòng đăng nhập và nhập nội dung!");
+      return;
+    }
+
     try {
-      if (!user) {
-        alert("Vui lòng đăng nhập!");
-        return;
-      }
       setLoadingQuestion(true);
-      const res = await sendQuestion(
-        user.id,
-        tourId,
-        parent_id,
-        replyText,
-        false
-      );
+      const res = await sendQuestion(user.id, tourId, parent_id, replyText, false);
+      console.log("📤 Reply sent:", res.data);
 
       const dataRes = res.data;
-      console.log("Parent id: ", parent_id);
+      
+      // Emit socket event
       socketRef.current?.emit("sendReply", {
         id: dataRes.id,
         user: {
@@ -299,75 +356,43 @@ export const CommentSection = () => {
         text: replyText,
         reported: false,
       });
-            const newQuestion: Question = {
-        id: dataRes.id, // hoặc tạm thời sinh id từ timestamp
-        user_id: user.id,
-        tour_id: tourId,
-        parent_question_id: parent_id,
-        text: replyText,
-        created_at: dataRes.created_at,
-        user: user,
-        questions: [],
-      };
 
-      // handleAddReply(parrent_id, newQuestion);
-      console.log("Question1:" , questions);
       setReplyText("");
-      console.log("Gửi câu hỏi thành công:");
       setActiveReplyId(null);
       setLoadingQuestion(false);
-      return res;
     } catch (error) {
-      console.error("Lỗi khi gửi câu hỏi:", error);
+      console.error("❌ Error sending reply:", error);
       setLoadingQuestion(false);
-      return null;
     }
-  };
-
-  const handleAddReply = (parentId: number, reply: Question ) => {
-    console.log("Question:", questions);
-    const updatedQuestions = addReplyToTree(questions, parentId, reply);
-    console.log("Update:" , updatedQuestions);
-    setQuestions(updatedQuestions); // ✅ Trigger rerender
-  };
-
-  const addReplyToTree = (
-    questions: Question[],
-    parentId: number,
-    reply: Question
-  ): Question[] => {
-    return questions.map((question) => {
-      if (question.id === parentId) {
-        // Nếu tìm thấy đúng parent, thêm reply vào replies
-        return {
-          ...question,
-          questions: [...(question.questions || []), reply],
-        };
-      }
-
-      // Nếu có questions thì duyệt tiếp (đệ quy)
-      if (question.questions && question.questions.length > 0) {
-        return {
-          ...question,
-          questions: addReplyToTree(question.questions, parentId, reply),
-        };
-      }
-
-      return question;
-    });
   };
 
   const handleDeleteQuestion = async (questionId: number) => {
     if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
+    
     try {
+      console.log("🗑️ Deleting question:", questionId);
+      
+      // Thêm vào deletedQuestionIds ngay lập tức
+      setDeletedQuestionIds(prev => new Set([...prev, questionId]));
+      
       await delQuestion(questionId);
+      
+      // Emit socket event
       socketRef.current?.emit("sendDelete", {
         id: questionId,
         tour_id: tourId
       });
 
+      // Xóa khỏi state
+      setQuestions((prevQuestions) => {
+        const updatedQuestions = removeQuestionFromTree(prevQuestions, questionId);
+        const totalQuestions = countTotalQuestions(updatedQuestions);
+        setCountQuestion(totalQuestions);
+        return updatedQuestions;
+      });
+
     } catch (error) {
-      console.error("Lỗi khi xóa bình luận:", error);
+      console.error("❌ Error deleting question:", error);
     }
   };
 
@@ -381,24 +406,13 @@ export const CommentSection = () => {
           {countQuestion} bình luận
         </span>
       </div>
-      <CommentBox tourId={tourId} />
+
       {/* Form nhập bình luận */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
         <div className="space-y-4">
-          {/* <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tên của bạn"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 transition-all"
-            />
-          </div> */}
-
           <div className="relative">
             <textarea
-              placeholder="Viết bình luận của bạn... (Enter để gửi)"
+              placeholder="Viết bình luận của bạn... (Ctrl+Enter để gửi)"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -410,13 +424,7 @@ export const CommentSection = () => {
           <div className="flex justify-end">
             <button
               onClick={submitQuestion}
-              disabled={!user || !commentText.trim() || loading}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  submitQuestion();
-                }
-              }}
+              disabled={!user || !commentText.trim() || loadingQuestion}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all transform hover:scale-105 active:scale-95 shadow-lg"
             >
               <Send className="w-4 h-4" />
@@ -428,7 +436,7 @@ export const CommentSection = () => {
 
       {/* Danh sách bình luận */}
       <div className="space-y-4">
-        {loading ? (
+        {loadingQuestion ? (
           <Loading />
         ) : (
           <div>
@@ -441,10 +449,12 @@ export const CommentSection = () => {
                 </p>
               </div>
             ) : (
-              questions.map((q) => (
+              questions
+                .filter(q => !deletedQuestionIds.has(q.id))
+                .map((q) => (
                 <div
                   key={q.id}
-                  className="bg-white mt-2 p-6 rounded-2xl  hover:shadow-sm transition-all duration-200 transform border-2 border-gray-200"
+                  className="bg-white mt-2 p-6 rounded-2xl hover:shadow-sm transition-all duration-200 transform border-2 border-gray-200"
                 >
                   <div className="flex items-start gap-4">
                     {/* Avatar chữ cái đầu tên */}
@@ -504,9 +514,10 @@ export const CommentSection = () => {
                           Xóa
                         </button>
                       )}
+                      
                       {/* Ô nhập trả lời */}
                       {activeReplyId === q.id && (
-                        <div className=" mt-2 space-y-2">
+                        <div className="mt-2 space-y-2">
                           {loadingQuestion ? (
                             <LoadingChat />
                           ) : (
@@ -515,7 +526,7 @@ export const CommentSection = () => {
                                 rows={2}
                                 placeholder="Trả lời..."
                                 value={replyText}
-                                disabled={loading}
+                                disabled={loadingQuestion}
                                 onChange={(e) => setReplyText(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" && !e.shiftKey) {
@@ -545,6 +556,7 @@ export const CommentSection = () => {
                       {/* Danh sách trả lời */}
                       {q.questions && q.questions.length > 0 && (
                         <RepliesSection
+                          key={`replies-${q.id}-${q.questions.length}`}
                           questions={q.questions}
                           user={user!}
                           activeReplyId={activeReplyId}
@@ -554,6 +566,7 @@ export const CommentSection = () => {
                           handleReplySubmit={handleReplySubmit}
                           handleDeleteQuestion={handleDeleteQuestion}
                           loading={loadingQuestion}
+                          deletedQuestionIds={deletedQuestionIds}
                         />
                       )}
                     </div>
@@ -567,5 +580,3 @@ export const CommentSection = () => {
     </div>
   );
 };
-
-// export default CommentSection;
