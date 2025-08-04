@@ -5,6 +5,7 @@ import { fetchBookingById } from "../services/booking.service";
 import { refundRateService } from "../services/refundRate.service";
 import { cancellationRequestService } from "../services/cancellationRequest.service";
 import { bookingService } from "../services/booking.service";
+import BankSelector from "../components/BankSelector";
 
 // Mock data - bạn sẽ thay thế bằng API thực tế
 const mockBookingData = {
@@ -51,8 +52,21 @@ const CancelBooking: React.FC = () => {
     accountNumber: "",
     phone: "",
   });
+  const [cancelReason, setCancelReason] = useState("");
+
+  // Các lý do hủy phổ biến
+  const commonReasons = [
+    "Thay đổi lịch trình cá nhân",
+    "Có việc đột xuất không thể tham gia",
+    "Thời tiết không thuận lợi",
+    "Sức khỏe không đảm bảo",
+    "Thay đổi địa điểm du lịch",
+    "Lý do khác",
+  ];
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCancellationLoading, setShowCancellationLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load booking data & refund rates khi mở trang
   useEffect(() => {
@@ -113,6 +127,9 @@ const CancelBooking: React.FC = () => {
   }, [bookingData, refundRates]);
 
   const handleNext = () => {
+    // Clear previous errors
+    setErrors({});
+
     if (currentStep === 1) {
       if (refundInfo.refundPercentage === 0) {
         toast.error(
@@ -123,33 +140,47 @@ const CancelBooking: React.FC = () => {
       setCurrentStep(2);
     } else if (currentStep === 2) {
       // Validate bank info
+      const newErrors: Record<string, string> = {};
+
+      if (!cancelReason.trim()) {
+        newErrors.cancelReason = "Vui lòng nhập lý do hủy tour!";
+      }
+
       if (!bankInfo.recipientName.trim()) {
-        toast.error("Vui lòng nhập tên người nhận!");
-        return;
+        newErrors.recipientName = "Vui lòng nhập tên người nhận!";
       }
+
       if (!bankInfo.bankName.trim()) {
-        toast.error("Vui lòng nhập tên ngân hàng!");
-        return;
+        newErrors.bankName = "Vui lòng nhập tên ngân hàng!";
       }
+
       if (!bankInfo.accountNumber.trim()) {
-        toast.error("Vui lòng nhập số tài khoản!");
-        return;
+        newErrors.accountNumber = "Vui lòng nhập số tài khoản!";
       }
+
       if (!bankInfo.phone.trim()) {
-        toast.error("Vui lòng nhập số điện thoại!");
+        newErrors.phone = "Vui lòng nhập số điện thoại!";
+      } else if (!/^[0-9]{10}$/.test(bankInfo.phone.replace(/\s/g, ""))) {
+        newErrors.phone = "Số điện thoại phải có đúng 10 chữ số!";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
         return;
       }
+
       setCurrentStep(3);
     }
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    setShowCancellationLoading(true);
     try {
       // Gọi API tạo yêu cầu hủy
       await cancellationRequestService.createCancellationRequest({
         booking_id: bookingData.id,
-        cancel_reason: "Yêu cầu hủy đặt tour", // Có thể lấy từ form nếu có
+        cancel_reason: cancelReason,
         recipient_name: bankInfo.recipientName,
         bank_name: bankInfo.bankName,
         account_number: bankInfo.accountNumber,
@@ -160,9 +191,15 @@ const CancelBooking: React.FC = () => {
         bookingData.id,
         "refund_requested"
       );
-      toast.success("Yêu cầu hủy đặt tour đã được gửi thành công!");
-      navigate("/user/my-bookings");
+
+      // Hiển thị thông báo thành công và chuyển hướng sau 2 giây
+      setTimeout(() => {
+        setShowCancellationLoading(false);
+        toast.success("Yêu cầu hủy đặt tour đã được gửi thành công!");
+        navigate("/user/my-bookings");
+      }, 2000);
     } catch (error) {
+      setShowCancellationLoading(false);
       toast.error("Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại!");
     } finally {
       setIsSubmitting(false);
@@ -302,6 +339,36 @@ const CancelBooking: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lý do hủy tour *
+            </label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.cancelReason ? "border-red-500" : "border-gray-300"
+              }`}
+              placeholder="Nhập lý do hủy tour..."
+              rows={3}
+            />
+            {errors.cancelReason && (
+              <p className="mt-1 text-sm text-red-600">{errors.cancelReason}</p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {commonReasons.map((reason, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setCancelReason(reason)}
+                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Tên người nhận *
             </label>
             <input
@@ -313,24 +380,32 @@ const CancelBooking: React.FC = () => {
                   recipientName: e.target.value,
                 }))
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.recipientName ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Nhập tên chủ tài khoản ngân hàng"
             />
+            {errors.recipientName && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.recipientName}
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tên ngân hàng *
             </label>
-            <input
-              type="text"
+            <BankSelector
               value={bankInfo.bankName}
-              onChange={(e) =>
-                setBankInfo((prev) => ({ ...prev, bankName: e.target.value }))
+              onChange={(bankName) =>
+                setBankInfo((prev) => ({ ...prev, bankName }))
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Ví dụ: Vietcombank, Techcombank, BIDV..."
+              placeholder="Tìm kiếm và chọn ngân hàng..."
             />
+            {errors.bankName && (
+              <p className="mt-1 text-sm text-red-600">{errors.bankName}</p>
+            )}
           </div>
 
           <div>
@@ -346,9 +421,16 @@ const CancelBooking: React.FC = () => {
                   accountNumber: e.target.value,
                 }))
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.accountNumber ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Nhập số tài khoản ngân hàng"
             />
+            {errors.accountNumber && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.accountNumber}
+              </p>
+            )}
           </div>
 
           <div>
@@ -361,9 +443,14 @@ const CancelBooking: React.FC = () => {
               onChange={(e) =>
                 setBankInfo((prev) => ({ ...prev, phone: e.target.value }))
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.phone ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="Số điện thoại để liên hệ xác nhận"
             />
+            {errors.phone && (
+              <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+            )}
           </div>
         </div>
 
@@ -406,6 +493,15 @@ const CancelBooking: React.FC = () => {
                 (bookingData?.total || bookingData?.totalAmount || 0) as number
               ).toLocaleString()}{" "}
               VND
+            </p>
+          </div>
+
+          <div className="bg-white p-4 rounded border">
+            <h4 className="font-semibold text-gray-800 mb-2">
+              Lý do hủy tour:
+            </h4>
+            <p>
+              <span className="font-medium">Lý do:</span> {cancelReason}
             </p>
           </div>
 
@@ -542,19 +638,19 @@ const CancelBooking: React.FC = () => {
 
           {/* Actions */}
           <div className="bg-gray-50 p-6">
-            <div className="flex justify-between">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
               <button
                 onClick={() => navigate("/user/my-bookings")}
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors w-full sm:w-auto"
               >
                 Hủy
               </button>
 
-              <div className="space-x-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 {currentStep > 1 && (
                   <button
                     onClick={() => setCurrentStep(currentStep - 1)}
-                    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors w-full sm:w-auto"
                   >
                     Bước trước
                   </button>
@@ -566,7 +662,7 @@ const CancelBooking: React.FC = () => {
                     disabled={
                       currentStep === 1 && refundInfo.refundPercentage === 0
                     }
-                    className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                    className={`px-6 py-2 rounded-md font-medium transition-colors w-full sm:w-auto ${
                       currentStep === 1 && refundInfo.refundPercentage === 0
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                         : "bg-red-500 text-white hover:bg-red-600"
@@ -578,12 +674,15 @@ const CancelBooking: React.FC = () => {
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                    className={`px-6 py-2 rounded-md font-medium transition-colors flex items-center justify-center gap-2 w-full sm:w-auto ${
                       isSubmitting
                         ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                         : "bg-red-600 text-white hover:bg-red-700"
                     }`}
                   >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
                     {isSubmitting ? "Đang gửi..." : "Xác nhận hủy đặt tour"}
                   </button>
                 )}
@@ -592,6 +691,19 @@ const CancelBooking: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Overlay loading khi đang xử lý hủy tour */}
+      {showCancellationLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-500 mb-6"></div>
+          <div className="text-lg font-semibold text-red-600">
+            Đang xử lý yêu cầu hủy tour...
+          </div>
+          <div className="text-gray-500 mt-2">
+            Vui lòng không tắt trình duyệt hoặc rời khỏi trang này.
+          </div>
+        </div>
+      )}
     </div>
   );
 };
