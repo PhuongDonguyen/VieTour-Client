@@ -2,6 +2,7 @@ import React from "react";
 import AdminLayout from "./AdminLayout";
 import DashboardStats from "./DashboardStats";
 import OverviewCard from "./OverviewCard";
+import RevenueChart from "./RevenueChart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, TrendingUp, Users, Calendar } from "lucide-react";
@@ -11,6 +12,11 @@ const AdminDashboard: React.FC = () => {
         <AdminLayout title="Dashboard">
             {/* Stats Grid */}
             <DashboardStats />
+
+            {/* Revenue Chart */}
+            <div className="mb-6">
+                <RevenueChart />
+            </div>
 
             {/* Overview Section */}
             <OverviewCard title="Dashboard Overview">

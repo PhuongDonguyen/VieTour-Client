@@ -12,7 +12,6 @@ import TourScheduleView from "../pages/admin/TourScheduleView";
 import TourScheduleEditor from "../components/admin/tour-schedule/TourScheduleEditor";
 import TourPricesManagement from "../components/admin/tour-price/TourPrice";
 import TourDetails from "../components/admin/tour-detail/TourDetail";
-import TourSchedulesManagement from "../components/admin/tour-schedule/TourSchedule";
 import TourSchedulesListPage from "../pages/admin/TourSchedulesListPage";
 import TourImagesManagement from "../components/admin/tour-image/TourImage";
 import TourPriceOverridesListPage from "../pages/admin/TourPriceOverridesListPage";
@@ -31,7 +30,6 @@ import {
 import TourImageViewContent from "../components/admin/tour-image/TourImageViewContent";
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
-import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
 import AdminSupport from "@/pages/admin/AdminSupport";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages

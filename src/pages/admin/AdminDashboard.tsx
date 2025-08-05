@@ -1,12 +1,16 @@
 import React from "react";
 import DashboardStats from "../../components/admin/DashboardStats";
 import OverviewCard from "../../components/admin/OverviewCard";
+import RevenueChart from "../../components/admin/RevenueChart";
 
 const AdminDashboard: React.FC = () => {
   return (
     <>
       {/* Stats Grid */}
       <DashboardStats className="mb-6" />
+
+      {/* Revenue Chart */}
+      <RevenueChart className="mb-6" />
 
       {/* Overview Section */}
       <OverviewCard title="Dashboard Overview">
