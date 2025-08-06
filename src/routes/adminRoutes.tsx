@@ -31,9 +31,6 @@ import TourImageViewContent from "../components/admin/tour-image/TourImageViewCo
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
 import AdminSupport from "@/pages/admin/AdminSupport";
-import AdminStats from "@/pages/admin/AdminStats";
-import TopToursStats from "@/pages/admin/TopToursStats";
-import TopProvidersStats from "@/pages/admin/TopProvidersStats";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -114,16 +111,6 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/tours/prices/new",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Create New Tour Price">
-          <TourPriceEditor />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
     path: "/admin/tours/prices/edit/:id",
     element: (
       <RequireAdminAccess>
@@ -137,18 +124,8 @@ export const adminRoutes = [
     path: "/admin/tours/prices/view/:id",
     element: (
       <RequireAdminAccess>
-        <AdminLayout title="Tour Price View">
+        <AdminLayout title="Tour Price Details">
           <TourPriceView />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
-    path: "/admin/tours/price-overrides",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Tour Price Overrides">
-          <TourPriceOverridesListPage />
         </AdminLayout>
       </RequireAdminAccess>
     ),
@@ -164,16 +141,6 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/tours/schedules/view/:id",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Tour Schedule View">
-          <TourScheduleView />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
     path: "/admin/tours/schedules/edit/:id",
     element: (
       <RequireAdminAccess>
@@ -184,55 +151,11 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/tours/schedules/new",
+    path: "/admin/tours/schedules/view/:id",
     element: (
       <RequireAdminAccess>
-        <AdminLayout title="Create New Tour Schedule">
-          <TourScheduleEditor />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
-    path: "/admin/tours/images",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Tour Images">
-          <TourImagesManagement />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
-    path: "/admin/tours/images/view/:id",
-    element: <TourImageViewContent />,
-  },
-  {
-    path: "/admin/tours/images/new",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Create Tour Image">
-          <TourImageEditor mode="create" />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
-    path: "/admin/tours/images/edit/:id",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Edit Tour Image">
-          <TourImageEditor mode="edit" />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
-    path: "/admin/tours/images/view/:id",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Tour Image Details">
-          <TourImageView />
+        <AdminLayout title="Tour Schedule Details">
+          <TourScheduleView />
         </AdminLayout>
       </RequireAdminAccess>
     ),
@@ -241,18 +164,8 @@ export const adminRoutes = [
     path: "/admin/tours/details",
     element: (
       <RequireAdminAccess>
-        <AdminLayout title="Tour Details">
+        <AdminLayout title="Tour Details Management">
           <TourDetails />
-        </AdminLayout>
-      </RequireAdminAccess>
-    ),
-  },
-  {
-    path: "/admin/tours/details/new",
-    element: (
-      <RequireAdminAccess>
-        <AdminLayout title="Create New Tour Detail">
-          <TourDetailEditor />
         </AdminLayout>
       </RequireAdminAccess>
     ),
@@ -278,32 +191,55 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "/admin/tours/categories",
+    path: "/admin/tours/images",
     element: (
-      <RequireAdminOnly>
-        <AdminLayout title="Tour Categories">
-          <TourCategory />
+      <RequireAdminAccess>
+        <AdminLayout title="Tour Images">
+          <TourImagesManagement />
         </AdminLayout>
-      </RequireAdminOnly>
+      </RequireAdminAccess>
     ),
   },
   {
-    path: "/admin/users",
+    path: "/admin/tours/images/edit/:id",
     element: (
-      <RequireAdminOnly>
-        <AdminLayout title="User Management">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">User Management</h1>
-            <p className="text-muted-foreground">
-              Manage users and permissions.
-            </p>
-          </div>
+      <RequireAdminAccess>
+        <AdminLayout title="Edit Tour Image">
+          <TourImageEditor mode="edit" />
         </AdminLayout>
-      </RequireAdminOnly>
+      </RequireAdminAccess>
     ),
   },
-
-  // Blog routes
+  {
+    path: "/admin/tours/images/view/:id",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Tour Image Details">
+          <TourImageView />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/tours/price-overrides",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Tour Price Overrides">
+          <TourPriceOverridesListPage />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/tours/categories",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Tour Categories">
+          <TourCategory />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
   {
     path: "/admin/blog",
     element: (
@@ -318,7 +254,7 @@ export const adminRoutes = [
     path: "/admin/blog/new",
     element: (
       <RequireAdminAccess>
-        <AdminLayout title="Create Blog Post">
+        <AdminLayout title="Create New Blog Post">
           <BlogEditor />
         </AdminLayout>
       </RequireAdminAccess>
@@ -337,24 +273,21 @@ export const adminRoutes = [
   {
     path: "/admin/blog/categories",
     element: (
-      <RequireAdminOnly>
+      <RequireAdminAccess>
         <AdminLayout title="Blog Categories">
           <BlogCategories />
         </AdminLayout>
-      </RequireAdminOnly>
+      </RequireAdminAccess>
     ),
   },
   {
-    path: "/admin/settings",
+    path: "/admin/support",
     element: (
-      <RequireAdminOnly>
-        <AdminLayout title="Settings">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">System Settings</h1>
-            <p className="text-muted-foreground">Configure system settings.</p>
-          </div>
+      <RequireAdminAccess>
+        <AdminLayout title="Support Management">
+          <AdminSupport />
         </AdminLayout>
-      </RequireAdminOnly>
+      </RequireAdminAccess>
     ),
   },
   // Provider-only routes
@@ -364,33 +297,13 @@ export const adminRoutes = [
       <RequireProviderOnly>
         <AdminLayout title="My Tours">
           <div className="p-6">
-            <h1 className="text-2xl font-bold">My Tour Packages</h1>
+            <h1 className="text-2xl font-bold">My Tours</h1>
             <p className="text-muted-foreground">
-              Manage your own tour packages and itineraries.
-            </p>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-blue-800 text-sm">
-                📦 View and edit tours created by your company
-              </p>
-            </div>
-          </div>
-        </AdminLayout>
-      </RequireProviderOnly>
-    ),
-  },
-  {
-    path: "/admin/my-bookings",
-    element: (
-      <RequireProviderOnly>
-        <AdminLayout title="My Bookings">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold">My Tour Bookings</h1>
-            <p className="text-muted-foreground">
-              View bookings for your tour packages.
+              Manage your tour listings and availability.
             </p>
             <div className="mt-4 p-4 bg-green-50 rounded-lg">
               <p className="text-green-800 text-sm">
-                📅 Track customer bookings for your tours only
+                🗺️ Create, edit, and manage your tour offerings
               </p>
             </div>
           </div>
@@ -398,7 +311,6 @@ export const adminRoutes = [
       </RequireProviderOnly>
     ),
   },
-
   {
     path: "/admin/earnings",
     element: (
@@ -438,36 +350,6 @@ export const adminRoutes = [
           </div>
         </AdminLayout>
       </RequireProviderOnly>
-    ),
-  },
-  {
-    path: "/admin/stats",
-    element: (
-      <RequireAdminOnly>
-        <AdminLayout title="Thống kê">
-          <AdminStats />
-        </AdminLayout>
-      </RequireAdminOnly>
-    ),
-  },
-  {
-    path: "/admin/stats/top-tours",
-    element: (
-      <RequireAdminOnly>
-        <AdminLayout title="Top Tours - Thống kê">
-          <TopToursStats />
-        </AdminLayout>
-      </RequireAdminOnly>
-    ),
-  },
-  {
-    path: "/admin/stats/top-providers",
-    element: (
-      <RequireAdminOnly>
-        <AdminLayout title="Top Providers - Thống kê">
-          <TopProvidersStats />
-        </AdminLayout>
-      </RequireAdminOnly>
     ),
   },
   {

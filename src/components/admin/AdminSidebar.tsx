@@ -108,25 +108,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["admin"],
       },
       {
-        label: "Thống kê",
-        icon: <BarChart3 className="w-4 h-4" />,
-        allowedRoles: ["admin"],
-        subItems: [
-          {
-            label: "Top Tours",
-            href: "/admin/stats/top-tours",
-            icon: <MapPin className="w-4 h-4" />,
-            allowedRoles: ["admin"],
-          },
-          {
-            label: "Top Providers",
-            href: "/admin/stats/top-providers",
-            icon: <Building className="w-4 h-4" />,
-            allowedRoles: ["admin"],
-          },
-        ],
-      },
-      {
         label: "Yêu cầu hoàn tiền",
         href: "/admin/cancellation-requests",
         icon: <DollarSign className="w-4 h-4" />,
