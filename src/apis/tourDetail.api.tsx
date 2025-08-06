@@ -69,21 +69,21 @@ export const getAllTourDetails = async (
   if (page !== undefined) queryParams.page = page;
   if (limit !== undefined) queryParams.limit = limit;
   if (tour_id !== undefined) queryParams.tour_id = tour_id;
-  const response = await axiosInstance.get("/api/tour_details", {
+  const response = await axiosInstance.get("/api/tour-details", {
     params: queryParams,
   });
   return response.data;
 };
 
 export const getTourDetailById = async (id: number): Promise<TourDetail> => {
-  const response = await axiosInstance.get(`/api/tour_details/${id}`);
+  const response = await axiosInstance.get(`/api/tour-details/${id}`);
   return response.data.data;
 };
 
 export const getTourDetailsByTourId = async (
   tour_id: number
 ): Promise<TourDetailResponse> => {
-  const response = await axiosInstance.get(`/api/tour_details`, {
+  const response = await axiosInstance.get(`/api/tour-details`, {
     params: { tour_id },
   });
   return response.data;
@@ -98,7 +98,7 @@ export const createTourDetail = async (tourDetailData: {
   afternoon_description: string;
 }): Promise<TourDetailCreateResponse> => {
   const response = await axiosInstance.post(
-    "/api/tour_details",
+    "/api/tour-details",
     tourDetailData
   );
   return response.data;
@@ -116,7 +116,7 @@ export const updateTourDetail = async (
   }
 ): Promise<TourDetailUpdateResponse> => {
   const response = await axiosInstance.put(
-    `/api/tour_details/${id}`,
+    `/api/tour-details/${id}`,
     tourDetailData
   );
   return response.data;
@@ -125,12 +125,12 @@ export const updateTourDetail = async (
 export const deleteTourDetail = async (
   id: number
 ): Promise<TourDetailDeleteResponse> => {
-  const response = await axiosInstance.delete(`/api/tour_details/${id}`);
+  const response = await axiosInstance.delete(`/api/tour-details/${id}`);
   return response.data;
 };
 
 // Legacy functions for backward compatibility
-export const getTourDetails = () => axiosInstance.get("/api/tour_details");
+export const getTourDetails = () => axiosInstance.get("/api/tour-details");
 
 export const getTourDetailByTourId = (tour_id: number) =>
-  axiosInstance.get(`/api/tour_details?tour_id=${tour_id}`);
+  axiosInstance.get(`/api/tour-details?tour_id=${tour_id}`);

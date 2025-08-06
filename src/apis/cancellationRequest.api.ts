@@ -18,9 +18,19 @@ export interface CancellationRequest {
   booking: any;
 }
 
+export interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export interface CancellationRequestsResponse {
   success: boolean;
   data: CancellationRequest[];
+  pagination?: PaginationInfo;
   message?: string;
 }
 
@@ -30,14 +40,36 @@ export interface CancellationRequestResponse {
   message?: string;
 }
 
+// Utility function to convert UTC time to UTC+7
+export const convertToUTC7 = (utcTime: string): string => {
+  const date = new Date(utcTime);
+  const utc7Date = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Add 7 hours
+  return utc7Date.toISOString();
+};
+
+// Utility function to format date for display in UTC+7
+export const formatDateUTC7 = (utcTime: string): string => {
+  const date = new Date(utcTime);
+  const utc7Date = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Add 7 hours
+  return utc7Date.toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
 // Lấy tất cả yêu cầu hủy của user
-export const getMyCancellationRequests =
-  async (): Promise<CancellationRequestsResponse> => {
-    const response = await axiosInstance.get(
-      "/api/cancellation-requests/my-requests"
-    );
-    return response.data;
-  };
+export const getMyCancellationRequests = async (
+  query?: string
+): Promise<CancellationRequestsResponse> => {
+  const url = "/api/cancellation-requests/my-requests" + (query || "");
+  const response = await axiosInstance.get(url);
+  return response.data;
+};
 
 // Lấy chi tiết 1 yêu cầu hủy
 export const getCancellationRequestById = async (

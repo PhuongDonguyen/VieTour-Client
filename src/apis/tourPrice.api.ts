@@ -69,14 +69,14 @@ export const getAllTourPrices = async (
   if (params.price_type) queryParams.append("price_type", params.price_type);
 
   const response = await axiosInstance.get(
-    `/api/tour_prices?${queryParams.toString()}`
+    `/api/tour-prices?${queryParams.toString()}`
   );
   return response.data;
 };
 
 // Get tour price by ID
 export const getTourPriceById = async (id: number): Promise<TourPrice> => {
-  const response = await axiosInstance.get(`/api/tour_prices/${id}`);
+  const response = await axiosInstance.get(`/api/tour-prices/${id}`);
   return response.data.data;
 };
 
@@ -85,14 +85,14 @@ export const getTourPricesByTourId = async (
   tourId: number
 ): Promise<TourPriceResponse> => {
   const response = await axiosInstance.get(
-    `/api/tour_prices?tour_id=${tourId}`
+    `/api/tour-prices?tour_id=${tourId}`
   );
   return response.data;
 };
 
 // Get all sorted tour prices
 export const getAllSortedTourPrices = async (): Promise<TourPriceResponse> => {
-  const response = await axiosInstance.get("/api/tour_prices/sorted");
+  const response = await axiosInstance.get("/api/tour-prices/sorted");
   return response.data;
 };
 
@@ -104,7 +104,7 @@ export const createTourPrice = async (data: {
   note?: string;
   price_type?: string;
 }): Promise<TourPriceCreateResponse> => {
-  const response = await axiosInstance.post("/api/tour_prices", data);
+  const response = await axiosInstance.post("/api/tour-prices", data);
   return response.data;
 };
 
@@ -118,7 +118,7 @@ export const updateTourPrice = async (
     price_type?: string;
   }
 ): Promise<TourPriceUpdateResponse> => {
-  const response = await axiosInstance.put(`/api/tour_prices/${id}`, data);
+  const response = await axiosInstance.put(`/api/tour-prices/${id}`, data);
   return response.data;
 };
 
@@ -126,7 +126,7 @@ export const updateTourPrice = async (
 export const deleteTourPrice = async (
   id: number
 ): Promise<TourPriceDeleteResponse> => {
-  const response = await axiosInstance.delete(`/api/tour_prices/${id}`);
+  const response = await axiosInstance.delete(`/api/tour-prices/${id}`);
   return response.data;
 };
 

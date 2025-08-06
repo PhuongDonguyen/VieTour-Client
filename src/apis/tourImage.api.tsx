@@ -62,21 +62,21 @@ export interface TourImageDeleteResponse {
 export const getAllTourImages = async (
   params?: TourImageQueryParams
 ): Promise<TourImageResponse> => {
-  const response = await axiosInstance.get("/api/tour_images", {
+  const response = await axiosInstance.get("/api/tour-images", {
     params,
   });
   return response.data;
 };
 
 export const getTourImageById = async (id: number): Promise<TourImage> => {
-  const response = await axiosInstance.get(`/api/tour_images/${id}`);
+  const response = await axiosInstance.get(`/api/tour-images/${id}`);
   return response.data.data;
 };
 
 export const getTourImagesByTourId = async (
   tour_id: number
 ): Promise<TourImageResponse> => {
-  const response = await axiosInstance.get(`/api/tour_images`, {
+  const response = await axiosInstance.get(`/api/tour-images`, {
     params: { tour_id },
   });
   return response.data;
@@ -85,7 +85,7 @@ export const getTourImagesByTourId = async (
 export const createTourImage = async (
   formData: FormData
 ): Promise<TourImageCreateResponse> => {
-  const response = await axiosInstance.post("/api/tour_images", formData, {
+  const response = await axiosInstance.post("/api/tour-images", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -97,7 +97,7 @@ export const updateTourImage = async (
   id: number,
   formData: FormData
 ): Promise<TourImageUpdateResponse> => {
-  const response = await axiosInstance.put(`/api/tour_images/${id}`, formData, {
+  const response = await axiosInstance.put(`/api/tour-images/${id}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -108,7 +108,7 @@ export const updateTourImage = async (
 export const deleteTourImage = async (
   id: number
 ): Promise<TourImageDeleteResponse> => {
-  const response = await axiosInstance.delete(`/api/tour_images/${id}`);
+  const response = await axiosInstance.delete(`/api/tour-images/${id}`);
   return response.data;
 };
 
@@ -116,13 +116,13 @@ export const toggleTourImageFeatured = async (
   id: number
 ): Promise<TourImageUpdateResponse> => {
   const response = await axiosInstance.patch(
-    `/api/tour_images/${id}/toggle-featured`
+    `/api/tour-images/${id}/toggle-featured`
   );
   return response.data;
 };
 
 // Legacy functions for backward compatibility
-export const getTourImages = () => axiosInstance.get("/api/tour_images");
+export const getTourImages = () => axiosInstance.get("/api/tour-images");
 
 export const getTourImagesLimit = (page: number, limit: number) =>
-  axiosInstance.get(`/api/tour_images?page=${page}&limit=${limit}`);
+  axiosInstance.get(`/api/tour-images?page=${page}&limit=${limit}`);

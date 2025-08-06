@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import TourScheduleViewContent from "@/components/admin/tour-schedule/TourScheduleViewContent";
+import TourScheduleViewContent from "../../components/admin/tour-schedule/TourScheduleViewContent";
 
 const TourScheduleView: React.FC = () => {
   const { id } = useParams();

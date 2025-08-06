@@ -30,6 +30,19 @@ import {
 } from "../ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Search } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "../ui/pagination";
+import {
+  formatDateUTC7,
+  PaginationInfo,
+} from "../../apis/cancellationRequest.api";
 
 interface CancellationRequest {
   id: number;
@@ -37,7 +50,12 @@ interface CancellationRequest {
   request_date: string;
   refund_amount: number;
   status: string;
+  cancel_reason?: string;
   transaction_image?: string | null;
+  recipient_name?: string;
+  bank_name?: string;
+  account_number?: string;
+  phone_number?: string;
   booking?: {
     client_name: string;
     client_phone: string;
@@ -68,11 +86,21 @@ const AdminCancellationRequestsTable: React.FC = () => {
   const [providers, setProviders] = useState<any[]>([]);
   const [tours, setTours] = useState<any[]>([]);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [itemsPerPage] = useState(10);
+
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, status, tourId, providerId]);
 
   // Fetch providers and tours for admin, tours for provider
   useEffect(() => {
@@ -141,16 +169,16 @@ const AdminCancellationRequestsTable: React.FC = () => {
     }
   }, [providers]);
 
-  // Filter tours based on selected provider (admin only) - REMOVED
-  // We'll filter at backend level instead of frontend
-
   // Fetch cancellation requests
   useEffect(() => {
     const fetchRequests = async () => {
       setLoading(true);
       try {
-        let query = "?";
         const params = new URLSearchParams();
+
+        // Add pagination parameters
+        params.append("page", currentPage.toString());
+        params.append("limit", itemsPerPage.toString());
 
         if (debouncedSearch) params.append("search", debouncedSearch);
         if (status) params.append("status", status);
@@ -197,6 +225,7 @@ const AdminCancellationRequestsTable: React.FC = () => {
           );
 
         setRequests(response.data || []);
+        setPagination(response.pagination || null);
       } catch (error) {
         console.error("Error fetching requests:", error);
         toast.error("Không thể tải danh sách yêu cầu hoàn tiền");
@@ -215,6 +244,7 @@ const AdminCancellationRequestsTable: React.FC = () => {
     user?.provider_id,
     user?.providerId,
     user?.id,
+    currentPage, // Thêm currentPage vào dependency
   ]);
 
   const handleUpload = async () => {
@@ -236,24 +266,30 @@ const AdminCancellationRequestsTable: React.FC = () => {
       setPreview(null);
 
       // Refresh data - sử dụng chung API với provider_id nếu cần
-      let refreshQuery = "";
+      const refreshParams = new URLSearchParams();
+      refreshParams.append("page", currentPage.toString());
+      refreshParams.append("limit", itemsPerPage.toString());
+
       if (user?.role === "provider") {
         let providerId = null;
         providerId = user?.provider_id || user?.providerId || user?.id;
 
         if (providerId) {
-          refreshQuery = `?provider_id=${providerId}`;
+          refreshParams.append("provider_id", providerId.toString());
         }
       } else if (user?.role === "admin" && providerId) {
         // Admin chọn provider để filter
-        refreshQuery = `?provider_id=${providerId}`;
+        refreshParams.append("provider_id", providerId);
       }
+
+      const refreshQuery = `?${refreshParams.toString()}`;
 
       const response =
         await cancellationRequestService.getAllCancellationRequests(
           refreshQuery
         );
       setRequests(response.data || []);
+      setPagination(response.pagination || null);
     } catch (error) {
       console.error("Error updating request:", error);
       toast.error("Có lỗi xảy ra khi cập nhật");
@@ -393,6 +429,8 @@ const AdminCancellationRequestsTable: React.FC = () => {
                   <TableHead>SĐT</TableHead>
                   <TableHead>Ngày yêu cầu</TableHead>
                   <TableHead>Số tiền hoàn</TableHead>
+                  <TableHead>Lý do hoàn tiền</TableHead>
+                  <TableHead>Thông tin ngân hàng</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Ảnh giao dịch</TableHead>
                   {user?.role === "admin" && <TableHead>Hành động</TableHead>}
@@ -402,7 +440,7 @@ const AdminCancellationRequestsTable: React.FC = () => {
                 {requests.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={user?.role === "admin" ? 8 : 7}
+                      colSpan={user?.role === "admin" ? 10 : 9}
                       className="text-center py-8 text-gray-500"
                     >
                       Không có kết quả phù hợp.
@@ -414,11 +452,40 @@ const AdminCancellationRequestsTable: React.FC = () => {
                       <TableCell>{req.id}</TableCell>
                       <TableCell>{req.booking?.client_name || "-"}</TableCell>
                       <TableCell>{req.booking?.client_phone || "-"}</TableCell>
-                      <TableCell>
-                        {new Date(req.request_date).toLocaleString()}
-                      </TableCell>
+                      <TableCell>{formatDateUTC7(req.request_date)}</TableCell>
                       <TableCell>
                         {req.refund_amount.toLocaleString()} đ
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm max-w-xs">
+                          <div
+                            className="truncate cursor-help"
+                            title={req.cancel_reason || "Không có lý do"}
+                          >
+                            {req.cancel_reason
+                              ? req.cancel_reason.length > 50
+                                ? `${req.cancel_reason.substring(0, 50)}...`
+                                : req.cancel_reason
+                              : "Không có lý do"}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm space-y-1">
+                          <div>
+                            <strong>Người nhận:</strong>{" "}
+                            {req.recipient_name || "-"}
+                          </div>
+                          <div>
+                            <strong>Ngân hàng:</strong> {req.bank_name || "-"}
+                          </div>
+                          <div>
+                            <strong>Số TK:</strong> {req.account_number || "-"}
+                          </div>
+                          <div>
+                            <strong>SĐT:</strong> {req.phone_number || "-"}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge className={statusColor(req.status)}>
@@ -473,6 +540,87 @@ const AdminCancellationRequestsTable: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination Info */}
+      {pagination && (
+        <div className="flex justify-between items-center py-4">
+          <div className="text-sm text-muted-foreground">
+            Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{" "}
+            {Math.min(currentPage * itemsPerPage, pagination.totalItems)} trong
+            tổng số {pagination.totalItems} yêu cầu
+          </div>
+
+          <div className="flex justify-center items-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    className={
+                      !pagination.hasPrevPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+
+                {/* Show page numbers */}
+                {Array.from(
+                  { length: Math.min(5, pagination.totalPages) },
+                  (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNum)}
+                          isActive={pageNum === currentPage}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                )}
+
+                {pagination.totalPages > 5 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(pagination.totalPages)}
+                        isActive={pagination.totalPages === currentPage}
+                        className="cursor-pointer"
+                      >
+                        {pagination.totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(pagination.totalPages, prev + 1)
+                      )
+                    }
+                    className={
+                      !pagination.hasNextPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </div>
+      )}
 
       {/* Modal upload ảnh giao dịch */}
       <Dialog

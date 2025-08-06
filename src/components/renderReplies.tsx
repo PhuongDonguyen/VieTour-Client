@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Loading } from './Loading';
 import { LoadingChat } from '@/pages/admin/AdminSupport';
@@ -70,10 +70,22 @@ type RepliesSectionProps = {
   handleReplySubmit: (id: number) => void;
   handleDeleteQuestion: (id: number) => void;
   loading: boolean;
+  deletedQuestionIds?: Set<number>;
 };
 
-export const RepliesSection = ({ questions, level = 1, user, activeReplyId, setActiveReplyId, replyText, setReplyText, handleReplySubmit, handleDeleteQuestion , loading} : RepliesSectionProps) => {
+export const RepliesSection = ({ questions, level = 1, user, activeReplyId, setActiveReplyId, replyText, setReplyText, handleReplySubmit, handleDeleteQuestion , loading, deletedQuestionIds = new Set()} : RepliesSectionProps) => {
   const [expandedReplyIds, setExpandedReplyIds] = useState<number[]>([]);
+  const [localDeletedIds, setLocalDeletedIds] = useState<Set<number>>(new Set());
+
+  // Đồng bộ hóa localDeletedIds với deletedQuestionIds
+  useEffect(() => {
+    if (deletedQuestionIds.size > 0) {
+      setLocalDeletedIds(prev => {
+        const newSet = new Set([...prev, ...deletedQuestionIds]);
+        return newSet;
+      });
+    }
+  }, [deletedQuestionIds, level]);
 
   const toggleReplyVisibility = (id: number) => {
     setExpandedReplyIds((prev) =>
@@ -81,12 +93,26 @@ export const RepliesSection = ({ questions, level = 1, user, activeReplyId, setA
     );
   };
 
+  const handleDeleteReply = (id: number) => {
+    console.log(`🗑️ Deleting reply at level ${level} with id:`, id);
+    // Thêm vào local deleted ids ngay lập tức
+    setLocalDeletedIds(prev => {
+      const newSet = new Set([...prev, id]);
+      console.log(`🗑️ Added to localDeletedIds immediately:`, id, "new set:", newSet);
+      return newSet;
+    });
+    // Gọi handleDeleteQuestion
+    handleDeleteQuestion(id);
+  };
+
   return (
-    <div className={`mt-4 pl-${2} border-l-2 border-orange-200 space-y-4`}>
-      {questions.map((rep) => {
+    <div className={`mt-4 pl-${2} border-l-2 border-orange-200 space-y-4`} key={`replies-${level}-${questions.length}-${localDeletedIds.size}`}>
+      {questions
+        .filter(rep => !localDeletedIds.has(rep.id))
+        .map((rep) => {
         const isExpanded = expandedReplyIds.includes(rep.id);
         return (
-          <div key={rep.id} className="text-sm flex items-start gap-3">
+          <div key={`reply-${rep.id}-${level}`} className="text-sm flex items-start gap-3">
             {/* Avatar */}
             <div className="ms-3 w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 flex-shrink-0">
               {rep.user?.avatar ? (
@@ -138,7 +164,7 @@ export const RepliesSection = ({ questions, level = 1, user, activeReplyId, setA
               {/* Nút xóa */}
               {rep.user?.id === user?.id && (
                 <button
-                  onClick={() => handleDeleteQuestion(rep.id)}
+                  onClick={() => handleDeleteReply(rep.id)}
                   className="mt-2 ms-6 text-sm text-orange-600 hover:underline"
                 >
                   Xóa
@@ -221,6 +247,7 @@ export const RepliesSection = ({ questions, level = 1, user, activeReplyId, setA
                     handleReplySubmit={handleReplySubmit}
                     handleDeleteQuestion={handleDeleteQuestion}
                     loading={loading}
+                    deletedQuestionIds={deletedQuestionIds}
                   />
                 </div>
               )}

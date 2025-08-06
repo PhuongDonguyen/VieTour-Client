@@ -1,10 +1,23 @@
 import { useEffect, useState } from "react";
 import { Loading } from "./Loading";
-import { cancellationRequestService } from "@/services/cancellationRequest.service";
-import { fetchTourScheduleById } from "@/services/tourSchedule.service";
-import { fetchTourById } from "@/services/tour.service";
+import { cancellationRequestService } from "../services/cancellationRequest.service";
+import { fetchTourScheduleById } from "../services/tourSchedule.service";
+import { fetchTourById } from "../services/tour.service";
 import { Calendar, DollarSign, FileText, Eye, X } from "lucide-react";
 import { AccountListSkeleton } from "./AccountSkeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "./ui/pagination";
+import {
+  formatDateUTC7,
+  PaginationInfo,
+} from "../apis/cancellationRequest.api";
 
 interface EnrichedCancellationRequest {
   id: number;
@@ -43,14 +56,29 @@ export default function CancellationRequestsList({
     url: string | null;
   }>({ open: false, url: null });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [itemsPerPage] = useState(3);
+
   useEffect(() => {
     const loadCancellationRequests = async () => {
       try {
         setLoadingCancellation(true);
+
+        // Build query parameters for pagination
+        const params = new URLSearchParams();
+        params.append("page", currentPage.toString());
+        params.append("limit", itemsPerPage.toString());
+        const query = `?${params.toString()}`;
+
         const res = adminMode
-          ? await cancellationRequestService.getAllCancellationRequests()
-          : await cancellationRequestService.getMyCancellationRequests();
+          ? await cancellationRequestService.getAllCancellationRequests(query)
+          : await cancellationRequestService.getMyCancellationRequests(query);
+
         const requests = res.data || [];
+        setPagination(res.pagination || null);
+
         // Enrich with schedule and tour info
         const scheduleCache: Record<number, any> = {};
         const tourCache: Record<number, any> = {};
@@ -92,7 +120,7 @@ export default function CancellationRequestsList({
       }
     };
     loadCancellationRequests();
-  }, []);
+  }, [currentPage, adminMode]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -165,7 +193,7 @@ export default function CancellationRequestsList({
                         <span>
                           Ngày yêu cầu:{" "}
                           {req.request_date
-                            ? new Date(req.request_date).toLocaleString()
+                            ? formatDateUTC7(req.request_date)
                             : "-"}
                         </span>
                       </div>
@@ -209,6 +237,87 @@ export default function CancellationRequestsList({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination && (
+        <div className="flex justify-between items-center py-4">
+          <div className="text-sm text-muted-foreground">
+            Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{" "}
+            {Math.min(currentPage * itemsPerPage, pagination.totalItems)} trong
+            tổng số {pagination.totalItems} yêu cầu
+          </div>
+
+          <div className="flex justify-center items-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    className={
+                      !pagination.hasPrevPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+
+                {/* Show page numbers */}
+                {Array.from(
+                  { length: Math.min(5, pagination.totalPages) },
+                  (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNum)}
+                          isActive={pageNum === currentPage}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                )}
+
+                {pagination.totalPages > 5 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(pagination.totalPages)}
+                        isActive={pagination.totalPages === currentPage}
+                        className="cursor-pointer"
+                      >
+                        {pagination.totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(pagination.totalPages, prev + 1)
+                      )
+                    }
+                    className={
+                      !pagination.hasNextPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </div>
       )}
 
