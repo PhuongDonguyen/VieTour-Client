@@ -4,12 +4,14 @@ import {
   createTourSchedule,
   updateTourSchedule,
   deleteTourSchedule,
+  getRemainingSchedulesCount,
   type TourSchedule,
   type TourScheduleQueryParams,
   type TourScheduleResponse,
   type TourScheduleCreateResponse,
   type TourScheduleUpdateResponse,
   type TourScheduleDeleteResponse,
+  type RemainingSchedulesResponse,
 } from "@/apis/tourSchedule.api";
 
 // Service functions
@@ -57,6 +59,13 @@ export const deleteTourScheduleService = async (
   const res = await deleteTourSchedule(id);
   return res;
 };
+
+// New service function for getting remaining schedules count
+export const fetchRemainingSchedulesCount =
+  async (): Promise<RemainingSchedulesResponse> => {
+    const res = await getRemainingSchedulesCount();
+    return res.data;
+  };
 
 // Export types for use in components
 export type { TourSchedule, TourScheduleQueryParams, TourScheduleResponse };
