@@ -33,6 +33,8 @@ import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
 import AdminBlogCategories from "@/pages/admin/AdminBlogCategories";
 import AdminSupport from "@/pages/admin/AdminSupport";
+import { ProviderRevenueStats } from "@/components/ProviderRevenueStats";
+import { ProviderRevenueStatsWrapper } from "@/components/ProviderRevenueStatsWrapper";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -402,17 +404,9 @@ export const adminRoutes = [
     path: "/admin/earnings",
     element: (
       <RequireProviderOnly>
-        <AdminLayout title="Earnings & Analytics">
+        <AdminLayout title="Thống kê doanh thu">
           <div className="p-6">
-            <h1 className="text-2xl font-bold">Earnings Dashboard</h1>
-            <p className="text-muted-foreground">
-              Track your revenue and payment analytics.
-            </p>
-            <div className="mt-4 p-4 bg-purple-50 rounded-lg">
-              <p className="text-purple-800 text-sm">
-                💰 View earnings, commission rates, and payout schedules
-              </p>
-            </div>
+            <ProviderRevenueStatsWrapper/>
           </div>
         </AdminLayout>
       </RequireProviderOnly>
@@ -483,4 +477,5 @@ export const adminRoutes = [
       </RequireProviderOnly>
     ),
   },
+  
 ];
