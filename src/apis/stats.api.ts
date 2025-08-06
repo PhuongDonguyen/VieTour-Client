@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
 
 export interface RevenueDataPoint {
   month: string;
@@ -20,22 +20,31 @@ export interface RevenueStatsResponse {
 }
 
 // Custom date range revenue stats
-export const getCustomDateRangeRevenue = async (startDate: string, endDate: string): Promise<RevenueStatsResponse> => {
-  const response = await axiosInstance.get(`/api/stats/revenue?startDate=${startDate}&endDate=${endDate}`);
+export const getCustomDateRangeRevenue = async (
+  startDate: string,
+  endDate: string
+): Promise<RevenueStatsResponse> => {
+  const response = await axiosInstance.get(
+    `/api/stats/revenue?startDate=${startDate}&endDate=${endDate}`
+  );
   return response.data;
 };
 
 // Current year revenue stats
-export const getCurrentYearRevenue = async (): Promise<RevenueStatsResponse> => {
-  const response = await axiosInstance.get('/api/stats/revenue/current-year');
-  return response.data;
-};
+export const getCurrentYearRevenue =
+  async (): Promise<RevenueStatsResponse> => {
+    const response = await axiosInstance.get("/api/stats/revenue/current-year");
+    return response.data;
+  };
 
 // Last 12 months revenue stats
-export const getLast12MonthsRevenue = async (): Promise<RevenueStatsResponse> => {
-  const response = await axiosInstance.get('/api/stats/revenue/last-12-months');
-  return response.data;
-};
+export const getLast12MonthsRevenue =
+  async (): Promise<RevenueStatsResponse> => {
+    const response = await axiosInstance.get(
+      "/api/stats/revenue/last-12-months"
+    );
+    return response.data;
+  };
 
 export interface TopTourStats {
   tour_id: number;

@@ -22,16 +22,19 @@ export interface ProviderRevenueData {
 // }
 
 export const getProviderRevenue = (providerId: number) =>
-  axiosInstance.get(`/api/provider-revenue-stats/provider/${providerId}`);
+  axiosInstance.get(`/api/stats/provider-revenue-stats/provider/${providerId}`);
 
 export const getProviderRevenueByDateRange = (
   providerId: number,
   startDate: string,
   endDate: string
 ) =>
-  axiosInstance.get(`/api/provider-revenue-stats/provider/${providerId}`, {
-    params: { start_date: startDate, end_date: endDate }
-  });
+  axiosInstance.get(
+    `/api/stats/provider-revenue-stats/provider/${providerId}`,
+    {
+      params: { start_date: startDate, end_date: endDate },
+    }
+  );
 
 export interface ProviderMonthlyRevenue {
   month: number;
@@ -46,7 +49,7 @@ export interface ProviderMonthlyRevenue {
 
 export const getProviderMonthlyRevenue = (providerId: number, year: number) =>
   axiosInstance.get<{ success: boolean; data: ProviderMonthlyRevenue[] }>(
-    `/api/provider-revenue-stats/provider/${providerId}/monthly`,
+    `/api/stats/provider-revenue-stats/provider/${providerId}/monthly`,
     { params: { year } }
   );
 
@@ -69,7 +72,7 @@ export const getProviderTourStats = (
   endDate: string
 ) =>
   axiosInstance.get<{ success: boolean; data: ProviderTourStat[] }>(
-    `/api/provider-revenue-stats/provider/${providerId}/tour`,
+    `/api/stats/provider-revenue-stats/provider/${providerId}/tour`,
     { params: { start_date: startDate, end_date: endDate } }
   );
 
@@ -91,7 +94,7 @@ export const getProviderCategoryStats = (
   endDate: string
 ) =>
   axiosInstance.get<{ success: boolean; data: ProviderCategoryStat[] }>(
-    `/api/provider-revenue-stats/provider/${providerId}/category`,
+    `/api/stats/provider-revenue-stats/provider/${providerId}/category`,
     { params: { start_date: startDate, end_date: endDate } }
   );
 
@@ -112,7 +115,7 @@ export const getProviderWeeklyStats = (
   endDate: string
 ) =>
   axiosInstance.get<{ success: boolean; data: ProviderWeeklyStat[] }>(
-    `/api/provider-revenue-stats/provider/${providerId}/weekly`,
+    `/api/stats/provider-revenue-stats/provider/${providerId}/weekly`,
     { params: { start_date: startDate, end_date: endDate } }
   );
 
@@ -131,6 +134,6 @@ export const getProviderDailyStats = (
   endDate: string
 ) =>
   axiosInstance.get<{ success: boolean; data: ProviderDailyStat[] }>(
-    `/api/provider-revenue-stats/provider/${providerId}/daily`,
+    `/api/stats/provider-revenue-stats/provider/${providerId}/daily`,
     { params: { start_date: startDate, end_date: endDate } }
-  ); 
+  );
