@@ -46,6 +46,17 @@ export interface TourScheduleDeleteResponse {
   message: string;
 }
 
+// New interface for remaining schedules count
+export interface RemainingScheduleCount {
+  tour_id: number;
+  remaining_schedules: number;
+}
+
+export interface RemainingSchedulesResponse {
+  success: boolean;
+  data: RemainingScheduleCount[];
+}
+
 export const getAllTourSchedules = (params?: TourScheduleQueryParams) =>
   axiosInstance.get("/api/tour-schedules", { params });
 
@@ -68,3 +79,8 @@ export const updateTourSchedule = (
 
 export const deleteTourSchedule = (id: number) =>
   axiosInstance.delete(`/api/tour-schedules/${id}`);
+
+// New API function for getting remaining schedules count
+export const getRemainingSchedulesCount =
+  (): Promise<RemainingSchedulesResponse> =>
+    axiosInstance.get("/api/tour-schedules/remaining-count");

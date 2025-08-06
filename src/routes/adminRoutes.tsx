@@ -31,6 +31,9 @@ import TourImageViewContent from "../components/admin/tour-image/TourImageViewCo
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
 import AdminSupport from "@/pages/admin/AdminSupport";
+import AdminStats from "@/pages/admin/AdminStats";
+import TopToursStats from "@/pages/admin/TopToursStats";
+import TopProvidersStats from "@/pages/admin/TopProvidersStats";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -435,6 +438,36 @@ export const adminRoutes = [
           </div>
         </AdminLayout>
       </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/stats",
+    element: (
+      <RequireAdminOnly>
+        <AdminLayout title="Thống kê">
+          <AdminStats />
+        </AdminLayout>
+      </RequireAdminOnly>
+    ),
+  },
+  {
+    path: "/admin/stats/top-tours",
+    element: (
+      <RequireAdminOnly>
+        <AdminLayout title="Top Tours - Thống kê">
+          <TopToursStats />
+        </AdminLayout>
+      </RequireAdminOnly>
+    ),
+  },
+  {
+    path: "/admin/stats/top-providers",
+    element: (
+      <RequireAdminOnly>
+        <AdminLayout title="Top Providers - Thống kê">
+          <TopProvidersStats />
+        </AdminLayout>
+      </RequireAdminOnly>
     ),
   },
   {
