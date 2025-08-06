@@ -32,6 +32,7 @@ import {
   Calendar,
   MapPin,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import {
   fetchTours,
@@ -40,7 +41,9 @@ import {
 } from "@/services/tour.service";
 import { fetchActiveTourCategories } from "@/services/tourCategory.service";
 import { fetchAllProviderProfiles } from "@/services/providerProfile.service";
+import { fetchRemainingSchedulesCount } from "@/services/tourSchedule.service";
 import type { Tour } from "@/apis/tour.api";
+import type { RemainingScheduleCount } from "@/apis/tourSchedule.api";
 
 const ProviderTours: React.FC = () => {
   const navigate = useNavigate();
@@ -67,6 +70,11 @@ const ProviderTours: React.FC = () => {
   const [filteredTours, setFilteredTours] = useState<Tour[]>([]);
   const [loadingTourId, setLoadingTourId] = useState<number | null>(null);
   const [categoryMap, setCategoryMap] = useState<{ [key: number]: string }>({});
+  const [remainingSchedules, setRemainingSchedules] = useState<
+    RemainingScheduleCount[]
+  >([]);
+  const [refreshingSchedules, setRefreshingSchedules] = useState(false);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
 
   // Set category filter from URL parameter on mount
   useEffect(() => {
@@ -276,6 +284,57 @@ const ProviderTours: React.FC = () => {
     fetchProvidersData();
   }, [user?.role]);
 
+  // Fetch remaining schedules count
+  const fetchRemainingSchedules = async () => {
+    try {
+      setRefreshingSchedules(true);
+      const response = await fetchRemainingSchedulesCount();
+      setRemainingSchedules(response.data || []);
+    } catch (error) {
+      console.error("Error fetching remaining schedules count:", error);
+      setRemainingSchedules([]);
+    } finally {
+      setRefreshingSchedules(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadSchedules = async () => {
+      setLoadingSchedules(true);
+      await fetchRemainingSchedules();
+      setLoadingSchedules(false);
+    };
+    loadSchedules();
+  }, []);
+
+  // Helper function to get remaining schedules count for a tour
+  const getRemainingSchedulesForTour = (tourId: number): number => {
+    const scheduleData = remainingSchedules.find((s) => s.tour_id === tourId);
+    return scheduleData?.remaining_schedules || 0;
+  };
+
+  // Helper function to get color for remaining schedules badge
+  const getRemainingSchedulesColor = (count: number): string => {
+    if (count < 20) return "bg-red-500 hover:bg-red-600";
+    if (count <= 50) return "bg-yellow-500 hover:bg-yellow-600";
+    return "bg-green-500 hover:bg-green-600";
+  };
+
+  // Calculate summary statistics for remaining schedules
+  const getRemainingSchedulesSummary = () => {
+    const lowSchedules = remainingSchedules.filter(
+      (s) => s.remaining_schedules < 20
+    ).length;
+    const mediumSchedules = remainingSchedules.filter(
+      (s) => s.remaining_schedules >= 20 && s.remaining_schedules <= 50
+    ).length;
+    const highSchedules = remainingSchedules.filter(
+      (s) => s.remaining_schedules > 50
+    ).length;
+
+    return { lowSchedules, mediumSchedules, highSchedules };
+  };
+
   // Fetch tour categories on mount
   useEffect(() => {
     fetchActiveTourCategories().then((data) => {
@@ -413,6 +472,35 @@ const ProviderTours: React.FC = () => {
               <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
             )}
           </p>
+          {!loadingSchedules && remainingSchedules.length > 0 && (
+            <div className="flex items-center gap-4 mt-2 text-sm">
+              <span className="font-medium">Tổng quan số lịch:</span>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-red-500 text-white">
+                  {getRemainingSchedulesSummary().lowSchedules}
+                </Badge>
+                <span>tours cần bổ sung gấp</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-yellow-500 text-white">
+                  {getRemainingSchedulesSummary().mediumSchedules}
+                </Badge>
+                <span>tours cần bổ sung sớm</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-500 text-white">
+                  {getRemainingSchedulesSummary().highSchedules}
+                </Badge>
+                <span>tours đủ lịch</span>
+              </div>
+            </div>
+          )}
+          {loadingSchedules && (
+            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span>Đang tải thông tin số lịch...</span>
+            </div>
+          )}
         </div>
         {/* Ẩn nút Thêm Tour Mới nếu là admin */}
         {!isAdmin && (
@@ -494,6 +582,37 @@ const ProviderTours: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>Danh Sách Tours</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span className="font-medium">Chú thích số lịch còn lại:</span>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-red-500 text-white">Dưới 20</Badge>
+                <span>- Cần bổ sung gấp</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-yellow-500 text-white">20-50</Badge>
+                <span>- Cần bổ sung sớm</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-500 text-white">Trên 50</Badge>
+                <span>- Đủ lịch</span>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchRemainingSchedules}
+              disabled={refreshingSchedules}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${
+                  refreshingSchedules ? "animate-spin" : ""
+                }`}
+              />
+              {refreshingSchedules ? "Đang làm mới..." : "Làm mới số lịch"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -509,12 +628,15 @@ const ProviderTours: React.FC = () => {
                 <TableRow>
                   <TableHead>Hình Ảnh</TableHead>
                   <TableHead>Tên Tour</TableHead>
-                  <TableHead>Danh Mục</TableHead>
+                  <TableHead className="text-center">Danh Mục</TableHead>
                   <TableHead>Trạng Thái</TableHead>
                   <TableHead>Số Lượng</TableHead>
                   <TableHead>Đánh Giá</TableHead>
                   <TableHead>Lượt Xem</TableHead>
                   <TableHead>Đã Đặt</TableHead>
+                  <TableHead className="text-center">
+                    Lịch Trình Còn Lại
+                  </TableHead>
                   <TableHead>{isAdmin ? "Xem" : "Thao Tác"}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -545,7 +667,7 @@ const ProviderTours: React.FC = () => {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge variant="secondary">
                           {getCategoryName(tour)}
                         </Badge>
@@ -588,6 +710,35 @@ const ProviderTours: React.FC = () => {
                           <Calendar className="w-4 h-4 text-muted-foreground" />
                           {getTourBookedCount(tour)}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {loadingSchedules ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-sm text-muted-foreground">
+                              Đang tải...
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <Badge
+                              variant="outline"
+                              className={`${getRemainingSchedulesColor(
+                                getRemainingSchedulesForTour(tour.id)
+                              )} text-white`}
+                              title={
+                                getRemainingSchedulesForTour(tour.id) < 20
+                                  ? "Ít hơn 20 lịch - Cần bổ sung gấp"
+                                  : getRemainingSchedulesForTour(tour.id) <= 50
+                                  ? "20-50 lịch - Cần bổ sung sớm"
+                                  : "Trên 50 lịch - Đủ lịch"
+                              }
+                            >
+                              {getRemainingSchedulesForTour(tour.id)}
+                            </Badge>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -641,7 +792,7 @@ const ProviderTours: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       {loading
                         ? "Đang tải..."
                         : "Không có tours nào được tìm thấy."}

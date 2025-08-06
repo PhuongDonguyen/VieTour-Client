@@ -46,17 +46,28 @@ export interface TourScheduleDeleteResponse {
   message: string;
 }
 
+// New interface for remaining schedules count
+export interface RemainingScheduleCount {
+  tour_id: number;
+  remaining_schedules: number;
+}
+
+export interface RemainingSchedulesResponse {
+  success: boolean;
+  data: RemainingScheduleCount[];
+}
+
 export const getAllTourSchedules = (params?: TourScheduleQueryParams) =>
-  axiosInstance.get("/api/tour_schedules", { params });
+  axiosInstance.get("/api/tour-schedules", { params });
 
 export const getTourScheduleById = (id: number) =>
-  axiosInstance.get(`/api/tour_schedules/${id}`);
+  axiosInstance.get(`/api/tour-schedules/${id}`);
 
 export const createTourSchedule = (data: {
   tour_id: number;
   start_date: string;
   participant: number;
-}) => axiosInstance.post("/api/tour_schedules", data);
+}) => axiosInstance.post("/api/tour-schedules", data);
 
 export const updateTourSchedule = (
   id: number,
@@ -64,7 +75,12 @@ export const updateTourSchedule = (
     start_date?: string;
     status?: "available" | "full" | "cancelled";
   }
-) => axiosInstance.put(`/api/tour_schedules/${id}`, data);
+) => axiosInstance.put(`/api/tour-schedules/${id}`, data);
 
 export const deleteTourSchedule = (id: number) =>
-  axiosInstance.delete(`/api/tour_schedules/${id}`);
+  axiosInstance.delete(`/api/tour-schedules/${id}`);
+
+// New API function for getting remaining schedules count
+export const getRemainingSchedulesCount =
+  (): Promise<RemainingSchedulesResponse> =>
+    axiosInstance.get("/api/tour-schedules/remaining-count");

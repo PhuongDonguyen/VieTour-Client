@@ -2,6 +2,7 @@ import React from "react";
 import DashboardStats from "../../components/admin/DashboardStats";
 import OverviewCard from "../../components/admin/OverviewCard";
 import { ProviderRevenueStatsWrapper } from '../../components/ProviderRevenueStatsWrapper';
+import RevenueChart from "../../components/admin/RevenueChart";
 
 const AdminDashboard: React.FC = () => {
   return (
@@ -9,6 +10,9 @@ const AdminDashboard: React.FC = () => {
       {/* Stats Grid */}
       <DashboardStats className="mb-6" />
       <ProviderRevenueStatsWrapper />
+
+      {/* Revenue Chart */}
+      <RevenueChart className="mb-6" />
 
       {/* Overview Section */}
       <OverviewCard title="Dashboard Overview">

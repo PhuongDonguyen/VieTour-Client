@@ -15,6 +15,7 @@ import {
   Building,
   FileText,
   HelpCircle,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -105,6 +106,25 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         href: "/admin/bookings",
         icon: <Calendar className="w-4 h-4" />,
         allowedRoles: ["admin"],
+      },
+      {
+        label: "Thống kê",
+        icon: <BarChart3 className="w-4 h-4" />,
+        allowedRoles: ["admin"],
+        subItems: [
+          {
+            label: "Top Tours",
+            href: "/admin/stats/top-tours",
+            icon: <MapPin className="w-4 h-4" />,
+            allowedRoles: ["admin"],
+          },
+          {
+            label: "Top Providers",
+            href: "/admin/stats/top-providers",
+            icon: <Building className="w-4 h-4" />,
+            allowedRoles: ["admin"],
+          },
+        ],
       },
       {
         label: "Yêu cầu hoàn tiền",

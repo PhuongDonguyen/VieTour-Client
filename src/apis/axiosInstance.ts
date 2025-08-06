@@ -55,7 +55,8 @@ axiosInstance.interceptors.response.use(
                     window.confirm('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
 
                     // Redirect to login page or home page
-                    window.location.href = '/';
+                    // window.location.href = '/';
+                    window.location.reload();
 
                     return Promise.reject(refreshError);
                 })

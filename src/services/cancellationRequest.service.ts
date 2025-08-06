@@ -1,7 +1,8 @@
 import * as cancellationRequestApi from "../apis/cancellationRequest.api";
 
 export const cancellationRequestService = {
-  getMyCancellationRequests: cancellationRequestApi.getMyCancellationRequests,
+  getMyCancellationRequests: (query?: string) =>
+    cancellationRequestApi.getMyCancellationRequests(query),
   getCancellationRequestById: cancellationRequestApi.getCancellationRequestById,
   createCancellationRequest: cancellationRequestApi.createCancellationRequest,
   updateCancellationRequest: cancellationRequestApi.updateCancellationRequest,
