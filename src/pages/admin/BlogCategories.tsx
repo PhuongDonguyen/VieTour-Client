@@ -57,8 +57,8 @@ const BlogCategories: React.FC = () => {
             const categories = await getAllCategories();
             setCategories(categories);
         } catch (err) {
-            setError('Failed to fetch blog categories');
-            console.error('Error fetching categories:', err);
+            setError('Không thể tải danh mục blog');
+            console.error('Lỗi khi tải danh mục:', err);
         } finally {
             setIsLoading(false);
         }
@@ -102,7 +102,7 @@ const BlogCategories: React.FC = () => {
             resetForm();
             setIsDialogOpen(false);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save category');
+            setError(err instanceof Error ? err.message : 'Không thể lưu danh mục');
         } finally {
             setIsLoading(false);
         }
@@ -120,7 +120,7 @@ const BlogCategories: React.FC = () => {
     };
 
     const handleDelete = async (categoryId: number) => {
-        if (!window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này? Hành động này không thể hoàn tác.')) {
             return;
         }
 
@@ -131,7 +131,7 @@ const BlogCategories: React.FC = () => {
             await deleteCategory(categoryId);
             await fetchCategories();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to delete category');
+            setError(err instanceof Error ? err.message : 'Không thể xóa danh mục');
         } finally {
             setIsLoading(false);
         }
@@ -150,7 +150,7 @@ const BlogCategories: React.FC = () => {
             });
             await fetchCategories();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to update category status');
+            setError(err instanceof Error ? err.message : 'Không thể cập nhật trạng thái danh mục');
         } finally {
             setIsLoading(false);
         }
@@ -194,9 +194,9 @@ const BlogCategories: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Blog Categories</h1>
+                    <h1 className="text-3xl font-bold">Danh mục Blog</h1>
                     <p className="text-muted-foreground">
-                        Organize your blog posts with categories and manage content structure
+                        Tổ chức bài viết blog với danh mục và quản lý cấu trúc nội dung
                     </p>
                 </div>
 
@@ -205,35 +205,35 @@ const BlogCategories: React.FC = () => {
                         <DialogTrigger asChild>
                             <Button onClick={() => setIsDialogOpen(true)} className="flex items-center space-x-2">
                                 <Plus className="w-4 h-4" />
-                                <span>Add Category</span>
+                                <span>Thêm Danh mục</span>
                             </Button>
                         </DialogTrigger>
                     <DialogContent className="max-w-md">
                         <DialogHeader>
                             <DialogTitle>
-                                {editingCategory ? 'Edit Category' : 'Create New Category'}
+                                {editingCategory ? 'Chỉnh sửa Danh mục' : 'Tạo Danh mục Mới'}
                             </DialogTitle>
                             <DialogDescription>
-                                {editingCategory ? 'Update category information' : 'Add a new category to organize your blog posts'}
+                                {editingCategory ? 'Cập nhật thông tin danh mục' : 'Thêm danh mục mới để tổ chức bài viết blog'}
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-4">
                             <div>
-                                <Label htmlFor="title">Category Title</Label>
+                                <Label htmlFor="title">Tiêu đề Danh mục</Label>
                                 <Input
                                     id="title"
-                                    placeholder="e.g. Travel Tips"
+                                    placeholder="Ví dụ: Mẹo Du lịch"
                                     value={formData.title}
                                     onChange={(e) => handleInputChange('title', e.target.value)}
                                 />
                             </div>
 
                             <div>
-                                <Label htmlFor="desc">Description</Label>
+                                <Label htmlFor="desc">Mô tả</Label>
                                 <Textarea
                                     id="desc"
-                                    placeholder="Brief description of this category..."
+                                    placeholder="Mô tả ngắn gọn về danh mục này..."
                                     value={formData.desc}
                                     onChange={(e) => handleInputChange('desc', e.target.value)}
                                     rows={3}
@@ -241,7 +241,7 @@ const BlogCategories: React.FC = () => {
                             </div>
 
                             <div>
-                                <Label htmlFor="thumbnail">Thumbnail URL</Label>
+                                <Label htmlFor="thumbnail">URL Hình ảnh</Label>
                                 <Input
                                     id="thumbnail"
                                     type="url"
@@ -259,16 +259,16 @@ const BlogCategories: React.FC = () => {
                                     onChange={(e) => handleInputChange('is_active', e.target.checked)}
                                     className="rounded"
                                 />
-                                <Label htmlFor="is_active">Active (visible to users)</Label>
+                                <Label htmlFor="is_active">Hoạt động (hiển thị cho người dùng)</Label>
                             </div>
                         </div>
 
                         <div className="flex justify-end space-x-2 mt-6">
                             <Button variant="outline" onClick={handleDialogClose}>
-                                Cancel
+                                Hủy
                             </Button>
                             <Button onClick={handleSubmit} disabled={isLoading}>
-                                {isLoading ? 'Saving...' : (editingCategory ? 'Update' : 'Create')} Category
+                                {isLoading ? 'Đang lưu...' : (editingCategory ? 'Cập nhật' : 'Tạo')} Danh mục
                             </Button>
                         </div>
                     </DialogContent>
@@ -280,33 +280,33 @@ const BlogCategories: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+                        <CardTitle className="text-sm font-medium">Tổng Danh mục</CardTitle>
                         <FolderOpen className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{totalCategories}</div>
                         <p className="text-xs text-muted-foreground">
-                            {activeCategories} active
+                            {activeCategories} hoạt động
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
+                        <CardTitle className="text-sm font-medium">Tổng Bài viết</CardTitle>
                         <Hash className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{totalPosts}</div>
                         <p className="text-xs text-muted-foreground">
-                            Across all categories
+                            Trên tất cả danh mục
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Avg Posts/Category</CardTitle>
+                        <CardTitle className="text-sm font-medium">TB Bài viết/Danh mục</CardTitle>
                         <Hash className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -314,7 +314,7 @@ const BlogCategories: React.FC = () => {
                             {totalCategories > 0 ? Math.round(totalPosts / totalCategories) : 0}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Posts per category
+                            Bài viết mỗi danh mục
                         </p>
                     </CardContent>
                 </Card>
@@ -327,14 +327,14 @@ const BlogCategories: React.FC = () => {
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                             <Input
-                                placeholder="Search categories..."
+                                placeholder="Tìm kiếm danh mục..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
                             />
                         </div>
                         <Button variant="outline" onClick={fetchCategories} disabled={isLoading}>
-                            {isLoading ? 'Loading...' : 'Refresh'}
+                            {isLoading ? 'Đang tải...' : 'Làm mới'}
                         </Button>
                     </div>
                 </CardHeader>
@@ -342,19 +342,19 @@ const BlogCategories: React.FC = () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Posts</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Created</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>Danh mục</TableHead>
+                                <TableHead>Mô tả</TableHead>
+                                <TableHead>Bài viết</TableHead>
+                                <TableHead>Trạng thái</TableHead>
+                                <TableHead>Ngày tạo</TableHead>
+                                <TableHead className="text-right">Thao tác</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredCategories.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                        {searchTerm ? 'No categories found matching your search' : 'No categories found'}
+                                        {searchTerm ? 'Không tìm thấy danh mục nào phù hợp với tìm kiếm' : 'Không tìm thấy danh mục nào'}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -382,12 +382,12 @@ const BlogCategories: React.FC = () => {
                                         </TableCell>
                                         <TableCell className="max-w-xs">
                                             <div className="truncate" title={category.desc}>
-                                                {category.desc || 'No description'}
+                                                {category.desc || 'Không có mô tả'}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="secondary">
-                                                {category.post_count || 0} posts
+                                                {category.post_count || 0} bài viết
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
@@ -399,11 +399,11 @@ const BlogCategories: React.FC = () => {
                                                     : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
-                                                {category.is_active ? 'Active' : 'Inactive'}
+                                                {category.is_active ? 'Hoạt động' : 'Không hoạt động'}
                                             </button>
                                         </TableCell>
                                         <TableCell>
-                                            {category.created_at ? new Date(category.created_at).toLocaleDateString() : 'N/A'}
+                                            {category.created_at ? new Date(category.created_at).toLocaleDateString('vi-VN') : 'N/A'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end space-x-2">
@@ -423,23 +423,23 @@ const BlogCategories: React.FC = () => {
                                                     </DialogTrigger>
                                                     <DialogContent>
                                                         <DialogHeader>
-                                                            <DialogTitle>Delete Category</DialogTitle>
+                                                            <DialogTitle>Xóa Danh mục</DialogTitle>
                                                             <DialogDescription>
-                                                                Are you sure you want to delete "{category.title}"?
-                                                                This will affect {category.post_count || 0} blog posts.
-                                                                This action cannot be undone.
+                                                                Bạn có chắc chắn muốn xóa "{category.title}"?
+                                                                Điều này sẽ ảnh hưởng đến {category.post_count || 0} bài viết blog.
+                                                                Hành động này không thể hoàn tác.
                                                             </DialogDescription>
                                                         </DialogHeader>
                                                         <div className="flex justify-end gap-2">
                                                             <DialogTrigger asChild>
-                                                                <Button variant="outline">Cancel</Button>
+                                                                <Button variant="outline">Hủy</Button>
                                                             </DialogTrigger>
                                                             <Button
                                                                 variant="destructive"
                                                                 onClick={() => handleDelete(category.id)}
                                                                 disabled={isLoading}
                                                             >
-                                                                {isLoading ? 'Deleting...' : 'Delete'}
+                                                                {isLoading ? 'Đang xóa...' : 'Xóa'}
                                                             </Button>
                                                         </div>
                                                     </DialogContent>

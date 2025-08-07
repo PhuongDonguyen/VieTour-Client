@@ -38,8 +38,8 @@ const AdminBlogCategories: React.FC = () => {
 
             console.log({ categories });
         } catch (err) {
-            setError('Failed to fetch blog categories');
-            console.error('Error fetching categories:', err);
+            setError('Không thể tải danh mục blog');
+            console.error('Lỗi khi tải danh mục:', err);
         } finally {
             setLoading(false);
         }
@@ -67,7 +67,7 @@ const AdminBlogCategories: React.FC = () => {
             resetForm();
             await fetchCategories();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save category');
+            setError(err instanceof Error ? err.message : 'Không thể lưu danh mục');
         } finally {
             setLoading(false);
         }
@@ -86,7 +86,7 @@ const AdminBlogCategories: React.FC = () => {
     };
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this category?')) {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
             return;
         }
 
@@ -95,7 +95,7 @@ const AdminBlogCategories: React.FC = () => {
             await BlogCategoryService.deleteCategory(id);
             await fetchCategories();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to delete category');
+            setError(err instanceof Error ? err.message : 'Không thể xóa danh mục');
         } finally {
             setLoading(false);
         }
@@ -126,10 +126,10 @@ const AdminBlogCategories: React.FC = () => {
         <div className="p-6">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    Blog Category Management
+                    Quản lý Danh mục Blog
                 </h1>
                 <p className="text-gray-600">
-                    Manage blog categories for organizing your content
+                    Quản lý danh mục blog để tổ chức nội dung của bạn
                 </p>
             </div>
 
@@ -143,14 +143,14 @@ const AdminBlogCategories: React.FC = () => {
             <div className="bg-white rounded-lg shadow mb-6">
                 <div className="p-6 border-b border-gray-200">
                     <h2 className="text-lg font-medium text-gray-900">
-                        {isEditing ? 'Edit Category' : 'Add New Category'}
+                        {isEditing ? 'Chỉnh sửa Danh mục' : 'Thêm Danh mục Mới'}
                     </h2>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Title *
+                                Tiêu đề *
                             </label>
                             <input
                                 type="text"
@@ -177,13 +177,13 @@ const AdminBlogCategories: React.FC = () => {
                                     onClick={generateSlugFromTitle}
                                     className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200 text-sm"
                                 >
-                                    Generate
+                                    Tạo tự động
                                 </button>
                             </div>
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description
+                                Mô tả
                             </label>
                             <textarea
                                 value={formData.desc}
@@ -194,7 +194,7 @@ const AdminBlogCategories: React.FC = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Thumbnail URL
+                                URL Hình ảnh
                             </label>
                             <input
                                 type="url"
@@ -211,7 +211,7 @@ const AdminBlogCategories: React.FC = () => {
                                     onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
                                     className="mr-2"
                                 />
-                                <span className="text-sm font-medium text-gray-700">Active</span>
+                                <span className="text-sm font-medium text-gray-700">Hoạt động</span>
                             </label>
                         </div>
                     </div>
@@ -222,7 +222,7 @@ const AdminBlogCategories: React.FC = () => {
                                 onClick={resetForm}
                                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                             >
-                                Cancel
+                                Hủy
                             </button>
                         )}
                         <button
@@ -230,7 +230,7 @@ const AdminBlogCategories: React.FC = () => {
                             disabled={loading}
                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                         >
-                            {loading ? 'Saving...' : (isEditing ? 'Update' : 'Create')}
+                            {loading ? 'Đang lưu...' : (isEditing ? 'Cập nhật' : 'Tạo mới')}
                         </button>
                     </div>
                 </form>
@@ -247,13 +247,13 @@ const AdminBlogCategories: React.FC = () => {
                                 onChange={(e) => setShowActiveOnly(e.target.checked)}
                                 className="mr-2"
                             />
-                            <span className="text-sm font-medium text-gray-700">Show Active Only</span>
+                            <span className="text-sm font-medium text-gray-700">Chỉ hiển thị danh mục hoạt động</span>
                         </label>
                         <button
                             onClick={fetchCategories}
                             className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
                         >
-                            Refresh
+                            Làm mới
                         </button>
                     </div>
                 </div>
@@ -262,16 +262,16 @@ const AdminBlogCategories: React.FC = () => {
             {/* Categories List */}
             <div className="bg-white rounded-lg shadow">
                 <div className="p-6 border-b border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900">Categories</h2>
+                    <h2 className="text-lg font-medium text-gray-900">Danh sách danh mục</h2>
                 </div>
 
                 {loading ? (
                     <div className="p-6 text-center">
-                        <p className="text-gray-500">Loading categories...</p>
+                        <p className="text-gray-500">Đang tải danh mục...</p>
                     </div>
                 ) : categories.length === 0 ? (
                     <div className="p-6 text-center">
-                        <p className="text-gray-500">No categories found</p>
+                        <p className="text-gray-500">Không tìm thấy danh mục nào</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -279,19 +279,19 @@ const AdminBlogCategories: React.FC = () => {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Title
+                                        Tiêu đề
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Slug
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Posts
+                                        Số bài viết
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
+                                        Trạng thái
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
+                                        Thao tác
                                     </th>
                                 </tr>
                             </thead>
@@ -321,7 +321,7 @@ const AdminBlogCategories: React.FC = () => {
                                                 ? 'bg-green-100 text-green-800'
                                                 : 'bg-red-100 text-red-800'
                                                 }`}>
-                                                {category.is_active ? 'Active' : 'Inactive'}
+                                                {category.is_active ? 'Hoạt động' : 'Không hoạt động'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -329,13 +329,13 @@ const AdminBlogCategories: React.FC = () => {
                                                 onClick={() => handleEdit(category)}
                                                 className="text-blue-600 hover:text-blue-900 mr-4"
                                             >
-                                                Edit
+                                                Sửa
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(category.id)}
                                                 className="text-red-600 hover:text-red-900"
                                             >
-                                                Delete
+                                                Xóa
                                             </button>
                                         </td>
                                     </tr>
@@ -350,7 +350,7 @@ const AdminBlogCategories: React.FC = () => {
                     <div className="px-6 py-3 border-t border-gray-200">
                         <div className="flex items-center justify-between">
                             <div className="text-sm text-gray-700">
-                                Page {currentPage} of {totalPages}
+                                Trang {currentPage} của {totalPages}
                             </div>
                             <div className="flex space-x-2">
                                 <button
@@ -358,14 +358,14 @@ const AdminBlogCategories: React.FC = () => {
                                     disabled={currentPage === 1}
                                     className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
                                 >
-                                    Previous
+                                    Trước
                                 </button>
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
                                     className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
                                 >
-                                    Next
+                                    Tiếp
                                 </button>
                             </div>
                         </div>

@@ -45,7 +45,7 @@ const AdminBlog: React.FC = () => {
                 const categoryList = await getAllCategories();
                 setCategories(categoryList);
             } catch (error) {
-                console.error('Error loading categories:', error);
+                console.error('Lỗi khi tải danh mục:', error);
             }
         };
         loadCategories();
@@ -97,7 +97,7 @@ const AdminBlog: React.FC = () => {
                 setBlogs(blogsData);
                 setTotalPages(response.pagination?.totalPages || 1);
             } catch (error) {
-                console.error('Error loading blogs:', error);
+                console.error('Lỗi khi tải bài viết:', error);
                 setBlogs([]);
                 setTotalPages(0);
             } finally {
@@ -120,6 +120,15 @@ const AdminBlog: React.FC = () => {
         }
     };
 
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'published': return 'Đã xuất bản';
+            case 'draft': return 'Bản nháp';
+            case 'archived': return 'Đã lưu trữ';
+            default: return status;
+        }
+    };
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('vi-VN', {
             year: 'numeric',
@@ -130,7 +139,7 @@ const AdminBlog: React.FC = () => {
 
     const getCategoryName = (categoryId: number) => {
         const category = categories.find(cat => cat.id === categoryId);
-        return category ? category.title : 'Unknown';
+        return category ? category.title : 'Không xác định';
     };
 
     const handleDelete = async (blogId: number) => {
@@ -139,7 +148,7 @@ const AdminBlog: React.FC = () => {
                 await deleteBlog(blogId);
                 setBlogs(blogs.filter(blog => blog.id !== blogId));
             } catch (error) {
-                console.error('Error deleting blog:', error);
+                console.error('Lỗi khi xóa bài viết:', error);
                 alert('Có lỗi xảy ra khi xóa bài viết. Vui lòng thử lại.');
             }
         }
@@ -173,8 +182,8 @@ const AdminBlog: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Blog Management</h1>
-                    <p className="text-muted-foreground">Manage your blog posts and articles</p>
+                    <h1 className="text-3xl font-bold">Quản lý Blog</h1>
+                    <p className="text-muted-foreground">Quản lý bài viết và bài báo của bạn</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
@@ -182,11 +191,11 @@ const AdminBlog: React.FC = () => {
                         onClick={() => navigate('/admin/blog-categories')}
                         className="flex items-center gap-2"
                     >
-                        Manage Categories
+                        Quản lý Danh mục
                     </Button>
                     <Button onClick={() => navigate('/admin/blog/new')} className="flex items-center gap-2">
                         <Plus className="w-4 h-4" />
-                        New Post
+                        Bài viết mới
                     </Button>
                 </div>
             </div>
@@ -197,7 +206,7 @@ const AdminBlog: React.FC = () => {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">Total Posts</p>
+                                <p className="text-sm font-medium text-muted-foreground">Tổng bài viết</p>
                                 <p className="text-2xl font-bold">{blogs.length}</p>
                             </div>
                             <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -211,7 +220,7 @@ const AdminBlog: React.FC = () => {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">Published</p>
+                                <p className="text-sm font-medium text-muted-foreground">Đã xuất bản</p>
                                 <p className="text-2xl font-bold text-green-600">
                                     {blogs.filter(b => b.status === 'published').length}
                                 </p>
@@ -227,7 +236,7 @@ const AdminBlog: React.FC = () => {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">Drafts</p>
+                                <p className="text-sm font-medium text-muted-foreground">Bản nháp</p>
                                 <p className="text-2xl font-bold text-amber-600">
                                     {blogs.filter(b => b.status === 'draft').length}
                                 </p>
@@ -243,7 +252,7 @@ const AdminBlog: React.FC = () => {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">This Month</p>
+                                <p className="text-sm font-medium text-muted-foreground">Tháng này</p>
                                 <p className="text-2xl font-bold text-blue-600">
                                     {blogs.filter(b =>
                                         new Date(b.created_at).getMonth() === new Date().getMonth()
@@ -261,14 +270,14 @@ const AdminBlog: React.FC = () => {
             {/* Filters and Search */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Blog Posts</CardTitle>
+                    <CardTitle>Danh sách bài viết</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col sm:flex-row gap-4 mb-6">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                             <Input
-                                placeholder="Search blog posts..."
+                                placeholder="Tìm kiếm bài viết..."
                                 value={searchTerm}
                                 onChange={(e) => handleSearchChange(e.target.value)}
                                 className="pl-10"
@@ -279,7 +288,7 @@ const AdminBlog: React.FC = () => {
                             onChange={(e) => handleCategoryChange(e.target.value)}
                             className="px-3 py-2 border border-input bg-background rounded-md text-sm"
                         >
-                            <option value="all">All Categories</option>
+                            <option value="all">Tất cả danh mục</option>
                             {categories.map((category) => (
                                 <option key={category.id} value={category.id.toString()}>
                                     {category.title}
@@ -291,10 +300,10 @@ const AdminBlog: React.FC = () => {
                             onChange={(e) => handleStatusChange(e.target.value)}
                             className="px-3 py-2 border border-input bg-background rounded-md text-sm"
                         >
-                            <option value="all">All Status</option>
-                            <option value="published">Published</option>
-                            <option value="draft">Draft</option>
-                            <option value="archived">Archived</option>
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="published">Đã xuất bản</option>
+                            <option value="draft">Bản nháp</option>
+                            <option value="archived">Đã lưu trữ</option>
                         </select>
                     </div>
 
@@ -303,12 +312,12 @@ const AdminBlog: React.FC = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Author</TableHead>
-                                    <TableHead>Category</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Created</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Tiêu đề</TableHead>
+                                    <TableHead>Tác giả</TableHead>
+                                    <TableHead>Danh mục</TableHead>
+                                    <TableHead>Trạng thái</TableHead>
+                                    <TableHead>Ngày tạo</TableHead>
+                                    <TableHead className="text-right">Thao tác</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -339,7 +348,7 @@ const AdminBlog: React.FC = () => {
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={getStatusColor(blog.status)}>
-                                                {blog.status}
+                                                {getStatusText(blog.status)}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>{formatDate(blog.created_at)}</TableCell>
@@ -367,20 +376,20 @@ const AdminBlog: React.FC = () => {
                                                     </DialogTrigger>
                                                     <DialogContent>
                                                         <DialogHeader>
-                                                            <DialogTitle>Delete Blog Post</DialogTitle>
+                                                            <DialogTitle>Xóa bài viết</DialogTitle>
                                                             <DialogDescription>
-                                                                Are you sure you want to delete "{blog.title}"? This action cannot be undone.
+                                                                Bạn có chắc chắn muốn xóa "{blog.title}"? Hành động này không thể hoàn tác.
                                                             </DialogDescription>
                                                         </DialogHeader>
                                                         <div className="flex justify-end gap-2">
                                                             <DialogTrigger asChild>
-                                                                <Button variant="outline">Cancel</Button>
+                                                                <Button variant="outline">Hủy</Button>
                                                             </DialogTrigger>
                                                             <Button
                                                                 variant="destructive"
                                                                 onClick={() => handleDelete(blog.id)}
                                                             >
-                                                                Delete
+                                                                Xóa
                                                             </Button>
                                                         </div>
                                                     </DialogContent>
@@ -397,7 +406,7 @@ const AdminBlog: React.FC = () => {
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between mt-4">
                             <div className="text-sm text-muted-foreground">
-                                Showing {filteredBlogs.length} of {totalPages} pages
+                                Hiển thị {filteredBlogs.length} trong tổng số {totalPages} trang
                             </div>
                             <div className="flex space-x-2">
                                 <Button
@@ -406,7 +415,7 @@ const AdminBlog: React.FC = () => {
                                     onClick={() => setPage(prev => Math.max(1, prev - 1))}
                                     disabled={page === 1}
                                 >
-                                    Previous
+                                    Trước
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -414,7 +423,7 @@ const AdminBlog: React.FC = () => {
                                     onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={page === totalPages}
                                 >
-                                    Next
+                                    Tiếp
                                 </Button>
                             </div>
                         </div>

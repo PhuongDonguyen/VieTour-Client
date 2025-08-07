@@ -18,16 +18,16 @@ import { useAuth } from '@/hooks/useAuth';
 
 // Form validation schema
 const schema = yup.object({
-    title: yup.string().required('Title is required').min(3, 'Title must be at least 3 characters'),
-    content: yup.string().required('Content is required').min(10, 'Content must be at least 10 characters'),
-    excerpt: yup.string().required('Excerpt is required').max(200, 'Excerpt cannot exceed 200 characters'),
-    slug: yup.string().required('Slug is required').matches(/^[a-z0-9-]+$/, 'Slug must be lowercase, alphanumeric with hyphens'),
-    category_id: yup.string().required('Category is required'),
-    status: yup.string().oneOf(['draft', 'published', 'archived'], 'Invalid status').required('Status is required'),
-    thumbnail: yup.mixed().required('Featured image is required').test('is-file-or-string', 'Featured image is required', function(value) {
+    title: yup.string().required('Tiêu đề là bắt buộc').min(3, 'Tiêu đề phải có ít nhất 3 ký tự'),
+    content: yup.string().required('Nội dung là bắt buộc').min(10, 'Nội dung phải có ít nhất 10 ký tự'),
+    excerpt: yup.string().required('Tóm tắt là bắt buộc').max(200, 'Tóm tắt không được vượt quá 200 ký tự'),
+    slug: yup.string().required('Slug là bắt buộc').matches(/^[a-z0-9-]+$/, 'Slug phải là chữ thường, số và dấu gạch ngang'),
+    category_id: yup.string().required('Danh mục là bắt buộc'),
+    status: yup.string().oneOf(['draft', 'published', 'archived'], 'Trạng thái không hợp lệ').required('Trạng thái là bắt buộc'),
+    thumbnail: yup.mixed().required('Hình ảnh đại diện là bắt buộc').test('is-file-or-string', 'Hình ảnh đại diện là bắt buộc', function(value) {
         return value instanceof File || (typeof value === 'string' && value.length > 0);
     }),
-    author: yup.string().required('Author is required').min(2, 'Author must be at least 2 characters'),
+    author: yup.string().required('Tác giả là bắt buộc').min(2, 'Tác giả phải có ít nhất 2 ký tự'),
 }).required();
 
 interface BlogFormData {
@@ -140,9 +140,9 @@ const BlogEditor: React.FC = () => {
                     }
                 }
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error('Lỗi khi tải dữ liệu:', error);
                 if (isEditing) {
-                    alert('Error loading blog data. Please try again.');
+                    alert('Lỗi khi tải dữ liệu blog. Vui lòng thử lại.');
                     navigate('/admin/blog');
                 }
             }
@@ -170,7 +170,7 @@ const BlogEditor: React.FC = () => {
         try {
             if (isEditing) {
                 if (!hasChanges && status === originalBlogData?.status) {
-                    alert('No changes detected.');
+                    alert('Không có thay đổi nào được phát hiện.');
                     return;
                 }
 
@@ -196,11 +196,11 @@ const BlogEditor: React.FC = () => {
                 await createBlog(formData);
             }
 
-            alert(isEditing ? 'Blog post updated successfully!' : 'Blog post created successfully!');
+            alert(isEditing ? 'Bài viết đã được cập nhật thành công!' : 'Bài viết đã được tạo thành công!');
             navigate('/admin/blog');
         } catch (error) {
-            console.error('Error saving blog post:', error);
-            alert('Error saving blog post. Please try again.');
+            console.error('Lỗi khi lưu bài viết:', error);
+            alert('Lỗi khi lưu bài viết. Vui lòng thử lại.');
         }
     };
 
@@ -215,14 +215,14 @@ const BlogEditor: React.FC = () => {
                 <div className="flex items-center space-x-4">
                     <Button variant="ghost" onClick={() => navigate('/admin/blog')}>
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Blog
+                        Quay lại Blog
                     </Button>
                     <div>
                         <h1 className="text-3xl font-bold">
-                            {isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}
+                            {isEditing ? 'Chỉnh sửa Bài viết' : 'Tạo Bài viết Mới'}
                         </h1>
                         <p className="text-muted-foreground">
-                            {isEditing ? 'Update your blog post' : 'Write and publish a new blog post'}
+                            {isEditing ? 'Cập nhật bài viết của bạn' : 'Viết và xuất bản bài viết mới'}
                         </p>
                     </div>
                 </div>
@@ -232,7 +232,7 @@ const BlogEditor: React.FC = () => {
                         disabled={isSubmitting || (isEditing && !hasChanges)}
                     >
                         <Save className="w-4 h-4 mr-2" />
-                        Publish
+                        Xuất bản
                     </Button>
                 </div>
             </div>
@@ -243,13 +243,13 @@ const BlogEditor: React.FC = () => {
                     {/* Blog Title Section */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Blog Title</CardTitle>
+                            <CardTitle>Tiêu đề Bài viết</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
                                 <Input
                                     {...register('title')}
-                                    placeholder="Enter blog post title..."
+                                    placeholder="Nhập tiêu đề bài viết..."
                                     className="text-lg"
                                 />
                                 {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
@@ -263,14 +263,14 @@ const BlogEditor: React.FC = () => {
                                 />
                                 {errors.slug && title.trim() !== '' && <p className="text-red-500 text-sm mt-1">{errors.slug.message}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Auto-generated from title. You can customize it manually.
+                                    Tự động tạo từ tiêu đề. Bạn có thể tùy chỉnh thủ công.
                                 </p>
                             </div>
                             <div>
-                                <Label htmlFor="author">Author</Label>
+                                <Label htmlFor="author">Tác giả</Label>
                                 <Input
                                     {...register('author')}
-                                    placeholder="Enter author name..."
+                                    placeholder="Nhập tên tác giả..."
                                     className="mt-1"
                                 />
                                 {errors.author && <p className="text-red-500 text-sm mt-1">{errors.author.message}</p>}
@@ -281,7 +281,7 @@ const BlogEditor: React.FC = () => {
                     {/* Content Editor */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Content</CardTitle>
+                            <CardTitle>Nội dung</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <TinyMCEEditor
@@ -301,12 +301,12 @@ const BlogEditor: React.FC = () => {
                     {/* Excerpt */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Excerpt</CardTitle>
+                            <CardTitle>Tóm tắt</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Textarea
                                 {...register('excerpt')}
-                                placeholder="Write a brief excerpt for your blog post..."
+                                placeholder="Viết tóm tắt ngắn gọn cho bài viết..."
                                 rows={3}
                             />
                             {errors.excerpt && <p className="text-red-500 text-sm mt-1">{errors.excerpt.message}</p>}
@@ -319,39 +319,39 @@ const BlogEditor: React.FC = () => {
                     {/* Publish Settings */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Publish Settings</CardTitle>
+                            <CardTitle>Cài đặt Xuất bản</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <Label htmlFor="status">Status</Label>
+                                <Label htmlFor="status">Trạng thái</Label>
                                 <select
                                     {...register('status')}
                                     className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
-                                    <option value="draft">Draft</option>
-                                    <option value="published">Published</option>
-                                    <option value="archived">Archived</option>
+                                    <option value="draft">Bản nháp</option>
+                                    <option value="published">Đã xuất bản</option>
+                                    <option value="archived">Đã lưu trữ</option>
                                 </select>
                                 {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
                             </div>
 
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="category_id">Category</Label>
+                                    <Label htmlFor="category_id">Danh mục</Label>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => navigate('/admin/blog-categories')}
                                         type="button"
                                     >
-                                        Manage Categories
+                                        Quản lý Danh mục
                                     </Button>
                                 </div>
                                 <select
                                     {...register('category_id')}
                                     className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
-                                    <option value="">Select category</option>
+                                    <option value="">Chọn danh mục</option>
                                     {categories.map((category) => (
                                         <option key={category.id} value={category.id.toString()}>
                                             {category.title}
@@ -366,14 +366,14 @@ const BlogEditor: React.FC = () => {
                     {/* Featured Image */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Featured Image</CardTitle>
+                            <CardTitle>Hình ảnh Đại diện</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {thumbnailPreview ? (
                                 <div className="space-y-4">
                                     <img
                                         src={thumbnailPreview}
-                                        alt="Thumbnail preview"
+                                        alt="Xem trước hình ảnh"
                                         className="w-full h-48 object-cover rounded-md"
                                     />
                                     <Button
@@ -381,7 +381,7 @@ const BlogEditor: React.FC = () => {
                                         onClick={handleRemoveImage}
                                         className="w-full"
                                     >
-                                        Remove Image
+                                        Xóa Hình ảnh
                                     </Button>
                                 </div>
                             ) : (
@@ -391,7 +391,7 @@ const BlogEditor: React.FC = () => {
                                 >
                                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                                     <p className="text-sm text-muted-foreground">
-                                        Click to upload featured image
+                                        Nhấp để tải lên hình ảnh đại diện
                                     </p>
                                 </div>
                             )}

@@ -31,7 +31,7 @@ const BlogCategory: React.FC = () => {
             const categories = await getAllCategories({ slug });
             const cat = categories[0]; // Get the first (and should be only) category with this slug
             if (!cat) {
-                throw new Error('Category not found');
+                throw new Error('Không tìm thấy danh mục');
             }
             setCategory(cat);
             const res = await fetchBlogs({ category_id: cat.id, status: 'published', limit: 1, page });
@@ -39,7 +39,7 @@ const BlogCategory: React.FC = () => {
             setBlogs(res.data || []);
             setPagination(res.pagination);
         } catch (err) {
-            setError('Không tìm thấy danh mục hoặc blog.');
+            setError('Không tìm thấy danh mục hoặc bài viết.');
         } finally {
             setLoading(false);
         }
@@ -183,7 +183,7 @@ const BlogCategory: React.FC = () => {
                 </>
             ) : (
                 <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg">Chưa có blog nào cho danh mục này.</p>
+                    <p className="text-gray-500 text-lg">Chưa có bài viết nào cho danh mục này.</p>
                 </div>
             )}
         </div>
