@@ -11,6 +11,7 @@ import {
   getLikesByUserIdAndReviewId,
   userLikeReview,
 } from "../../services/like.service";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Review {
   id: number;
@@ -44,6 +45,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const {user} = useAuth();
   const userCurrent = useRef<User | null>(null);
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -65,14 +67,14 @@ export const TabReview: React.FC<ReviewListProps> = ({
   useEffect(() => {
     const loadUserCurrent = async () => {
       try {
-        const res = await fetchUserProfile();
-        console.log("user cur: ", res.data);
-        const data = res.data;
+        // const res = await fetchUserProfile();
+        // console.log("user cur: ", res.data);
+        // const data = res.data;
         userCurrent.current = {
-          id: data.id,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          avatar: data.avatar,
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          avatar: user.avatar,
         };
       } catch (error) {
         console.log("Lỗi tải user current");
