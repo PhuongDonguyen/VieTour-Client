@@ -113,6 +113,16 @@ export const adminRoutes = [
     ),
   },
   {
+    path: "/admin/tours/prices/new",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Create New Tour Price">
+          <TourPriceEditor />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
     path: "/admin/tours/prices/edit/:id",
     element: (
       <RequireAdminAccess>
@@ -143,6 +153,16 @@ export const adminRoutes = [
     ),
   },
   {
+    path: "/admin/tours/schedules/new",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Create New Tour Schedule">
+          <TourScheduleEditor />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
     path: "/admin/tours/schedules/edit/:id",
     element: (
       <RequireAdminAccess>
@@ -168,6 +188,16 @@ export const adminRoutes = [
       <RequireAdminAccess>
         <AdminLayout title="Tour Details Management">
           <TourDetails />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/tours/details/new",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Create New Tour Detail">
+          <TourDetailEditor />
         </AdminLayout>
       </RequireAdminAccess>
     ),
