@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { fetchTourPricesByTourId } from "../../services/tourPrice.service";
+import { DollarSign } from "lucide-react";
 
 interface TabPriceProps {
   tourId: number;
@@ -40,56 +41,28 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
 
   if (loading) {
     return (
-      <div className="w-full max-w-7xl mx-auto">
-        <div className="p-8">
-          <h2 className="text-2xl font-bold text-blue-700 mb-6">Bảng giá</h2>
-          <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="py-3 px-4 font-semibold text-center">STT</th>
-                    <th className="py-3 px-4 font-semibold text-center">
-                      Giá người lớn
-                    </th>
-                    <th className="py-3 px-4 font-semibold text-center">
-                      Giá trẻ em
-                    </th>
-                    <th className="py-3 px-4 font-semibold text-center">
-                      Ghi chú
-                    </th>
-                    <th className="py-3 px-4 font-semibold text-center">
-                      Hành động
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...Array(2)].map((_, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-gray-200 last:border-b-0"
-                    >
-                      <td className="py-3 px-4 text-center">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-6 mx-auto"></div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="h-6 bg-gray-200 rounded animate-pulse w-24 mx-auto"></div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="h-6 bg-gray-200 rounded animate-pulse w-24 mx-auto"></div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mx-auto"></div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="h-8 bg-gray-200 rounded-full animate-pulse w-20 mx-auto"></div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+            <DollarSign className="w-5 h-5 text-orange-600" />
           </div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Bảng giá
+          </h2>
+        </div>
+        <div className="space-y-4">
+          {[1, 2].map((item) => (
+            <div key={item} className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 animate-pulse">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                <div className="h-6 bg-gray-300 rounded w-32"></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="h-16 bg-gray-200 rounded-lg"></div>
+                <div className="h-16 bg-gray-200 rounded-lg"></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -97,12 +70,20 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
 
   if (error) {
     return (
-      <div className="w-full max-w-7xl mx-auto">
-        <div className="p-8 text-center">
-          <div className="text-red-500 text-lg font-medium mb-2">{error}</div>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+            <DollarSign className="w-5 h-5 text-orange-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Bảng giá
+          </h2>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center">
+          <div className="text-red-500 text-lg font-medium mb-4">{error}</div>
           <button
             onClick={() => window.location.reload()}
-            className="text-blue-500 hover:text-blue-700 underline"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
           >
             Thử lại
           </button>
@@ -113,69 +94,76 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
 
   if (!prices.length) {
     return (
-      <div className="w-full max-w-7xl mx-auto">
-        <div className="p-8 text-center">
-          <div className="text-gray-500 text-lg">
-            Chưa có bảng giá cho tour này.
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+            <DollarSign className="w-5 h-5 text-orange-600" />
           </div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Bảng giá
+          </h2>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-12 text-center">
+          <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Chưa có bảng giá
+          </h3>
+          <p className="text-gray-600">
+            Chưa có bảng giá cho tour này.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto">
-      <div className="p-8">
-        <h2 className="text-2xl font-bold text-blue-700 mb-6">Bảng giá</h2>
-        <div className="border-2 border-blue-800 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-blue-800 text-white">
-                  <th className="py-3 px-4 font-semibold text-center">STT</th>
-                  <th className="py-3 px-4 font-semibold text-center">
-                    Giá người lớn
-                  </th>
-                  <th className="py-3 px-4 font-semibold text-center">
-                    Giá trẻ em
-                  </th>
-                  <th className="py-3 px-4 font-semibold text-center">
-                    Ghi chú
-                  </th>
-                  <th className="py-3 px-4 font-semibold text-center">
-                    Hành động
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {prices.map((row, idx) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-blue-800 last:border-b-0 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="py-3 px-4 text-center font-medium">
-                      {idx + 1}
-                    </td>
-                    <td className="py-3 px-4 font-bold text-lg text-gray-800 text-center">
-                      {row.adult_price.toLocaleString()} VND
-                    </td>
-                    <td className="py-3 px-4 font-bold text-lg text-gray-800 text-center">
-                      {row.kid_price.toLocaleString()} VND
-                    </td>
-                    <td className="py-3 px-4 text-gray-700 text-center">
-                      {row.note || "-"}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-full transition-all duration-200 hover:shadow-lg active:scale-95">
-                        ĐẶT NGAY
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+          <DollarSign className="w-5 h-5 text-orange-600" />
         </div>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Bảng giá ({prices.length} gói)
+        </h2>
+      </div>
+
+      <div className="space-y-4">
+        {prices.map((price, index) => (
+          <div
+            key={price.id}
+            className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-orange-600">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900">
+                    {price.note || `Gói ${index + 1}`}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Giá người lớn</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {price.adult_price.toLocaleString()} VND
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Giá trẻ em</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {price.kid_price.toLocaleString()} VND
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

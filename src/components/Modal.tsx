@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
   isOpen: boolean;
@@ -14,7 +15,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -45,6 +46,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
       )}
     </AnimatePresence>
   );
+
+  // Use portal to render at document root level
+  return createPortal(modalContent, document.body);
 };
 
 export default Modal; 
