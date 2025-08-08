@@ -16,6 +16,7 @@ import {
   FileText,
   HelpCircle,
   BarChart3,
+  Handshake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -114,6 +115,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["admin", "provider"],
       },
       {
+        label: "Yêu cầu đối tác",
+        href: "/admin/become-partners",
+        icon: <Handshake className="w-4 h-4" />,
+        allowedRoles: ["admin"],
+      },
+      {
+        label: "Câu hỏi thường gặp",
+        href: "/admin/general-questions",
+        icon: <HelpCircle className="w-4 h-4" />,
+        allowedRoles: ["admin"],
+      },
+      {
         label: "Blog",
         icon: <FileText className="w-4 h-4" />,
         allowedRoles: ["admin", "provider"],
@@ -172,7 +185,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       {
         label: "Questions",
         href: "/admin/questions",
-        icon: <HelpCircle className="w-4 h-4" />,
+        icon: <FileText className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their questions
       },
     ],
