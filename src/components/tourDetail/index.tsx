@@ -13,6 +13,7 @@ import { fetchTourDetailsByTourId } from "../../services/tourDetail.service";
 import { fetchTourImagesByTourId } from "../../services/tourImage.service";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
 import { TabReview } from "../tourDetail/TabReview";
+import { TabFAQ } from "../tourDetail/TabFAQ";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { CommentSection } from "../question";
@@ -25,6 +26,7 @@ const TABS = [
   { key: "condition", label: "Điều kiện tour", icon: "📝" },
   { key: "gallery", label: "Hình ảnh tour", icon: "📸" },
   { key: "review", label: "Đánh giá", icon: "⭐" },
+  { key: "faq", label: "Câu hỏi thường gặp", icon: "❓" },
 ];
 
 const TourDetail: React.FC = () => {
@@ -368,6 +370,12 @@ const TourDetail: React.FC = () => {
                   totalStar={tour.total_star}
                   reviewCount={tour.review_count}
                 />
+              </div>
+            )}
+
+            {activeTab === "faq" && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
+                <TabFAQ tourId={tour.id} />
               </div>
             )}
           </div>

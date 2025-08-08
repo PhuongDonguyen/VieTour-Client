@@ -64,7 +64,7 @@ const TourNamePrice: React.FC<TourNamePriceProps> = ({
               Tour du lịch chất lượng cao
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-6 leading-tight">
               <span className="bg-gradient-to-r from-blue-600 to-orange-600 bg-clip-text text-transparent">
                 {title}
               </span>
@@ -115,7 +115,7 @@ const TourNamePrice: React.FC<TourNamePriceProps> = ({
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
               <div className="text-center mb-6">
                 <div className="text-sm text-gray-500 mb-2">Giá chỉ từ</div>
-                <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-2">
+                <div className="text-2xl md:text-3xl font-bold text-orange-600 mb-2">
                   {formatPrice(price)}
                 </div>
                 <div className="text-sm text-gray-500">/người</div>
