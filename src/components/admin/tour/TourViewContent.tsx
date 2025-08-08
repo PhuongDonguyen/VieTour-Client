@@ -400,6 +400,16 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 <Tag className="w-4 h-4 mr-2" />
                 Quản lý ghi đè giá
               </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate(`/admin/general-questions?tour_id=${tour.id}`)
+                }
+                className="w-full"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Câu hỏi thường gặp
+              </Button>
             </CardContent>
           </Card>
 

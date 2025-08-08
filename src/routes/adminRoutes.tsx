@@ -33,9 +33,52 @@ import TourImageView from "../pages/admin/TourImageView";
 import AdminSupport from "@/pages/admin/AdminSupport";
 import { ProviderRevenueStats } from "@/components/ProviderRevenueStats";
 import { ProviderRevenueStatsWrapper } from "@/components/ProviderRevenueStatsWrapper";
+import GeneralQuestionsListPage from "@/pages/admin/GeneralQuestionsListPage";
+import GeneralQuestionView from "@/pages/admin/GeneralQuestionView";
+import GeneralQuestionEditor from "@/components/admin/general-question/GeneralQuestionEditor";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
+  {
+    path: "/admin/general-questions",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Câu hỏi thường gặp">
+          <GeneralQuestionsListPage />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/general-questions/view/:id",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Chi tiết câu hỏi">
+          <GeneralQuestionView />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/general-questions/new",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Thêm câu hỏi">
+          <GeneralQuestionEditor />
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/general-questions/edit/:id",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Chỉnh sửa câu hỏi">
+          <GeneralQuestionEditor />
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
   {
     path: "/admin/login",
     element: <AdminLogin />,
