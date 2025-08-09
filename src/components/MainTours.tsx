@@ -190,7 +190,11 @@ const MainTours: React.FC = () => {
     const loadTours = async () => {
       try {
         setLoading(true);
-        const tourRes = await fetchTours({ page: 1, limit: 6, is_active: true });
+        const tourRes = await fetchTours({
+          page: 1,
+          limit: 6,
+          is_active: true,
+        });
         console.log("paginantion: ", tourRes.pagination);
         const toursData = tourRes.data;
         const pagination = tourRes.pagination;
@@ -226,7 +230,11 @@ const MainTours: React.FC = () => {
       try {
         setLoadingMore(true);
         const nextPage = pagination.page + 1;
-        const tourRes = await fetchTours({ page: nextPage, limit: 6, is_active: true });
+        const tourRes = await fetchTours({
+          page: nextPage,
+          limit: 6,
+          is_active: true,
+        });
         const toursData = tourRes.data;
         const newPagination = tourRes.pagination;
 
@@ -259,9 +267,9 @@ const MainTours: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br bg-white py-12 px-4">
+    <div className="bg-gradient-to-br bg-white py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h2 className="text-4xl font-bold text-[#015294] mb-4">TOUR CHÍNH</h2>
           <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
         </div>
@@ -276,7 +284,7 @@ const MainTours: React.FC = () => {
         )}
 
         {existTourMore && (
-          <div className="text-center mt-12">
+          <div className="text-center mt-8">
             {loadingMore ? (
               <Loading />
             ) : (
