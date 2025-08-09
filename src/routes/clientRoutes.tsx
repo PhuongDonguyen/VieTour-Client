@@ -18,6 +18,7 @@ import BlogCategory from "../pages/BlogCategory";
 import TourImageGallery from "@/pages/TourImageGallery";
 import VerifyEmail from "../pages/VerifyEmail";
 import BecomePartner from "../pages/BecomePartner";
+import SearchTours from "../pages/SearchTours";
 
 export const clientRoutes = [
   {
@@ -39,6 +40,7 @@ export const clientRoutes = [
       { path: "payment/success", element: <PaymentSuccess /> },
       { path: "payment/failed", element: <PaymentFailed /> },
       { path: "gallery", element: <TourImageGallery /> },
+      { path: "search", element: <SearchTours /> },
       {
         path: "cancel-booking/:bookingId",
         element: (

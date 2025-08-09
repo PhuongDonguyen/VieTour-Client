@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Calendar, Users } from "lucide-react";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay } from 'swiper/modules';
-import 'swiper/css';
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
+import "swiper/css";
 import { getCarouselData } from "../../apis/carousel.api";
 
 export const HeroSection = () => {
@@ -22,8 +22,10 @@ export const HeroSection = () => {
               id: tour.id,
               image: tour.poster_url,
               title: tour.title,
-              price: priceObj ? `${priceObj.adult_price.toLocaleString()} VND` : '',
-              duration: tour.duration || '',
+              price: priceObj
+                ? `${priceObj.adult_price.toLocaleString()} VND`
+                : "",
+              duration: tour.duration || "",
               slug: tour.slug,
             };
           });
@@ -137,7 +139,7 @@ export const HeroSection = () => {
                         </div>
                         <div className="flex items-center space-x-2">
                           <Calendar className="w-5 h-5 text-orange-500" />
-                          <span>{slide.duration || '3 ngày 2 đêm'}</span>
+                          <span>{slide.duration || "3 ngày 2 đêm"}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Users className="w-5 h-5 text-orange-500" />

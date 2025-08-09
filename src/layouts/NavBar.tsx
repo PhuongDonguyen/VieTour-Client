@@ -171,6 +171,14 @@ export const NavBar = ({ textDark = false }) => {
                 )}
               </div>
               <Link
+                to="/search"
+                className={`px-2 py-2 hover:text-orange-500 transition-colors ${
+                  isScrolled || textDark ? "text-gray-700" : "text-white"
+                }`}
+              >
+                TÌM KIẾM
+              </Link>
+              <Link
                 to="/pricing"
                 className={`px-2 py-2 hover:text-orange-500 transition-colors ${
                   isScrolled || textDark ? "text-gray-700" : "text-white"
@@ -192,7 +200,7 @@ export const NavBar = ({ textDark = false }) => {
                   isScrolled || textDark ? "text-gray-700" : "text-white"
                 }`}
               >
-                TRỞ THÀNH ĐỐI TÁC
+                LIÊN HỆ
               </Link>
             </div>
 
@@ -396,6 +404,12 @@ export const NavBar = ({ textDark = false }) => {
                   </div>
                 </div>
                 <Link
+                  to="/search"
+                  className="block px-3 py-2 text-gray-700 hover:text-orange-500"
+                >
+                  TÌM KIẾM
+                </Link>
+                <Link
                   to="/pricing"
                   className="block px-3 py-2 text-gray-700 hover:text-orange-500"
                 >
@@ -423,7 +437,7 @@ export const NavBar = ({ textDark = false }) => {
                   to="/become-partner"
                   className="block px-3 py-2 text-gray-700 hover:text-orange-500"
                 >
-                  TRỞ THÀNH ĐỐI TÁC
+                  LIÊN HỆ
                 </Link>
                 {/* Mobile User Menu */}
                 <div className="border-t pt-2 mt-2">

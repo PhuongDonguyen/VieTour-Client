@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
-import { fetchTopBookedTours } from '../services/tour.service';
-import { Link } from 'react-router-dom';
+import { fetchTopBookedTours } from "../services/tour.service";
+import { Link } from "react-router-dom";
+import "swiper/css";
+import "swiper/css/navigation";
 
 export const FeaturedTours: React.FC = () => {
   const [tours, setTours] = useState<any[]>([]);
@@ -16,25 +18,32 @@ export const FeaturedTours: React.FC = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError('Không thể tải dữ liệu tour nổi bật.');
+        setError("Không thể tải dữ liệu tour nổi bật.");
         setLoading(false);
       });
   }, []);
 
   if (loading) {
     return (
-      <div className="w-full py-8 text-center text-lg text-gray-500">Đang tải tour nổi bật...</div>
+      <div className="w-full py-16 text-center text-lg text-gray-500 flex items-center justify-center">
+        Đang tải tour nổi bật...
+      </div>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full py-8 text-center text-red-500">{error}</div>
+      <div className="w-full py-16 text-center text-red-500 flex items-center justify-center">
+        {error}
+      </div>
     );
   }
 
   return (
-    <div className="w-full py-8">
+    <div
+      className="w-full py-16 flex flex-col justify-center"
+      data-section="featured-tours"
+    >
       <h2 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
         TOUR NỔI BẬT TRONG THÁNG
       </h2>
@@ -74,13 +83,13 @@ export const FeaturedTours: React.FC = () => {
                   <h3 className="text-lg font-bold text-orange-400 mb-1 uppercase text-center drop-shadow">
                     {tour.title}
                   </h3>
-                  <div className="text-sm text-white mb-1 text-center drop-shadow">{tour.duration}</div>
+                  <div className="text-sm text-white mb-1 text-center drop-shadow">
+                    {tour.duration}
+                  </div>
                   <div className="text-base font-semibold text-white mb-2 text-center drop-shadow">
                     Giá: {tour.price}
                   </div>
-                  <span
-                    className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center"
-                  >
+                  <span className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center">
                     ĐẶT NGAY
                   </span>
                 </div>
