@@ -21,25 +21,44 @@ import {
 } from "./ui/card";
 
 interface Province {
+  _id: string;
   code: string;
   name: string;
+  name_with_type: string;
+  slug: string;
+  type: string;
+  isDeleted: boolean;
 }
 
 interface District {
+  _id: string;
   code: string;
   name: string;
-  province_code: string;
+  name_with_type: string;
+  slug: string;
+  type: string;
+  path: string;
+  path_with_type: string;
+  parent_code: string;
+  isDeleted: boolean;
 }
 
 interface Ward {
+  _id: string;
   code: string;
   name: string;
-  district_code: string;
+  name_with_type: string;
+  slug: string;
+  type: string;
+  path: string;
+  path_with_type: string;
+  parent_code: string;
+  isDeleted: boolean;
 }
 
 const TOTAL_STEPS = 3;
 
-export const BecomePartnerForm: React.FC = () => {
+export const RegisterPartnerForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -105,7 +124,9 @@ export const BecomePartnerForm: React.FC = () => {
       }
 
       const result = await response.json();
+      console.log("Provinces API response:", result); // Debug log
 
+      // Check if response has the expected structure
       if (
         result &&
         result.exitcode === 1 &&
@@ -114,12 +135,13 @@ export const BecomePartnerForm: React.FC = () => {
       ) {
         setProvinces(result.data.data);
       } else {
+        console.warn("Unexpected provinces data structure:", result);
         setProvinces([]);
         toast.error("Dữ liệu tỉnh/thành phố không hợp lệ");
       }
     } catch (error) {
       console.error("Error loading provinces:", error);
-      toast.error("Không thể tải danh sách tỉnh/thành phố");
+      toast.error("Không thể tải danh sách tỉnh/thành phố. Vui lòng thử lại!");
       setProvinces([]);
     } finally {
       setLoadingAddress(false);
@@ -138,7 +160,9 @@ export const BecomePartnerForm: React.FC = () => {
       }
 
       const result = await response.json();
+      console.log("Districts API response:", result); // Debug log
 
+      // Check if response has the expected structure
       if (
         result &&
         result.exitcode === 1 &&
@@ -147,6 +171,7 @@ export const BecomePartnerForm: React.FC = () => {
       ) {
         setDistricts(result.data.data);
       } else {
+        console.warn("Unexpected districts data structure:", result);
         setDistricts([]);
         toast.error("Không tìm thấy dữ liệu quận/huyện");
       }
@@ -154,7 +179,7 @@ export const BecomePartnerForm: React.FC = () => {
       setFormData((prev) => ({ ...prev, district: "", ward: "" }));
     } catch (error) {
       console.error("Error loading districts:", error);
-      toast.error("Không thể tải danh sách quận/huyện");
+      toast.error("Không thể tải danh sách quận/huyện. Vui lòng thử lại!");
       setDistricts([]);
     } finally {
       setLoadingAddress(false);
@@ -173,7 +198,9 @@ export const BecomePartnerForm: React.FC = () => {
       }
 
       const result = await response.json();
+      console.log("Wards API response:", result); // Debug log
 
+      // Check if response has the expected structure
       if (
         result &&
         result.exitcode === 1 &&
@@ -182,6 +209,7 @@ export const BecomePartnerForm: React.FC = () => {
       ) {
         setWards(result.data.data);
       } else {
+        console.warn("Unexpected wards data structure:", result);
         setWards([]);
         toast.error("Không tìm thấy dữ liệu phường/xã");
       }
@@ -189,7 +217,7 @@ export const BecomePartnerForm: React.FC = () => {
       setFormData((prev) => ({ ...prev, ward: "" }));
     } catch (error) {
       console.error("Error loading wards:", error);
-      toast.error("Không thể tải danh sách phường/xã");
+      toast.error("Không thể tải danh sách phường/xã. Vui lòng thử lại!");
       setWards([]);
     } finally {
       setLoadingAddress(false);
@@ -288,17 +316,17 @@ export const BecomePartnerForm: React.FC = () => {
 
   const getProvinceName = (code: string) => {
     const province = provinces.find((p) => p.code === code);
-    return province?.name || "";
+    return province?.name_with_type || province?.name || "";
   };
 
   const getDistrictName = (code: string) => {
     const district = districts.find((d) => d.code === code);
-    return district?.name || "";
+    return district?.name_with_type || district?.name || "";
   };
 
   const getWardName = (code: string) => {
     const ward = wards.find((w) => w.code === code);
-    return ward?.name || "";
+    return ward?.name_with_type || ward?.name || "";
   };
 
   if (showSuccess) {
@@ -510,7 +538,7 @@ export const BecomePartnerForm: React.FC = () => {
                       <SelectContent>
                         {provinces.map((province) => (
                           <SelectItem key={province.code} value={province.code}>
-                            {province.name}
+                            {province.name_with_type || province.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -539,7 +567,7 @@ export const BecomePartnerForm: React.FC = () => {
                       <SelectContent>
                         {districts.map((district) => (
                           <SelectItem key={district.code} value={district.code}>
-                            {district.name}
+                            {district.name_with_type || district.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -568,7 +596,7 @@ export const BecomePartnerForm: React.FC = () => {
                       <SelectContent>
                         {wards.map((ward) => (
                           <SelectItem key={ward.code} value={ward.code}>
-                            {ward.name}
+                            {ward.name_with_type || ward.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

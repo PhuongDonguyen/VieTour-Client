@@ -103,11 +103,29 @@ const TourEditor: React.FC = () => {
   const loadProvinces = async () => {
     try {
       setLoadingAddress(true);
-      const response = await fetch("https://provinces.open-api.vn/api/p/");
-      const data = await response.json();
-      setProvinces(data);
+      const response = await fetch(
+        "https://vn-public-apis.fpo.vn/provinces/getAll?limit=-1"
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (
+        result &&
+        result.exitcode === 1 &&
+        result.data &&
+        Array.isArray(result.data.data)
+      ) {
+        setProvinces(result.data.data);
+      } else {
+        setProvinces([]);
+      }
     } catch (error) {
       console.error("Error loading provinces:", error);
+      setProvinces([]);
     } finally {
       setLoadingAddress(false);
     }

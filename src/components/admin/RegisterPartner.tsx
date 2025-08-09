@@ -16,6 +16,7 @@ import {
 } from "@/apis/registerPartner.api";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const RegisterPartner: React.FC = () => {
   const [partners, setPartners] = useState<RegisterPartnerListResponse[]>([]);
@@ -57,38 +58,6 @@ const RegisterPartner: React.FC = () => {
     }
   };
 
-  const handleApprove = async (id: number) => {
-    try {
-      const response = await registerPartnerService.approveRegisterPartner(id);
-      if (response.success) {
-        toast.success("Phê duyệt đối tác thành công!");
-        fetchPartners();
-      }
-    } catch (error) {
-      console.error("Error approving partner:", error);
-      toast.error("Có lỗi xảy ra khi phê duyệt đối tác");
-    }
-  };
-
-  const handleReject = async (id: number) => {
-    const reason = prompt("Lý do từ chối:");
-    if (!reason) return;
-
-    try {
-      const response = await registerPartnerService.rejectRegisterPartner(
-        id,
-        reason
-      );
-      if (response.success) {
-        toast.success("Từ chối đối tác thành công!");
-        fetchPartners();
-      }
-    } catch (error) {
-      console.error("Error rejecting partner:", error);
-      toast.error("Có lỗi xảy ra khi từ chối đối tác");
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -100,30 +69,6 @@ const RegisterPartner: React.FC = () => {
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
-  };
-
-  const getStatusActionButtons = (partner: RegisterPartnerListResponse) => {
-    if (partner.status === "pending") {
-      return (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={() => handleApprove(partner.id)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            Phê duyệt
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => handleReject(partner.id)}
-          >
-            Từ chối
-          </Button>
-        </div>
-      );
-    }
-    return null;
   };
 
   if (loading) {
@@ -202,21 +147,18 @@ const RegisterPartner: React.FC = () => {
                   <TableCell>{partner.phone}</TableCell>
                   <TableCell>{getStatusBadge(partner.status)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          window.open(
-                            `/admin/register-partners/${partner.id}`,
-                            "_blank"
-                          )
-                        }
-                      >
-                        Chi tiết
-                      </Button>
-                      {getStatusActionButtons(partner)}
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        window.open(
+                          `/admin/register-partners/${partner.id}`,
+                          "_blank"
+                        )
+                      }
+                    >
+                      Chi tiết
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

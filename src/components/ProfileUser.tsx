@@ -53,11 +53,15 @@ export const ProfilePage: React.FC = () => {
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
-  const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
+  const [selectedProvince, setSelectedProvince] = useState<Province | null>(
+    null
+  );
+  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(
+    null
+  );
   const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
 
-  const API_HOST = "https://provinces.open-api.vn/api";
+  const API_HOST = "https://vn-public-apis.fpo.vn";
 
   // React Hook Form
   const {
@@ -86,9 +90,16 @@ export const ProfilePage: React.FC = () => {
 
   // Load provinces on mount
   useEffect(() => {
-    axios.get(`${API_HOST}/?depth=1`).then((res) => {
-      setProvinces(res.data);
-    });
+    axios
+      .get(`${API_HOST}/provinces/getAll?limit=-1`)
+      .then((res) => {
+        if (res.data && res.data.exitcode === 1 && res.data.data) {
+          setProvinces(res.data.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading provinces:", error);
+      });
   }, []);
 
   // Load user data
@@ -120,21 +131,43 @@ export const ProfilePage: React.FC = () => {
         if (userData.province) {
           const loadLocationData = async () => {
             try {
-              const province = provinces.find((p) => p.name === userData.province);
+              const province = provinces.find(
+                (p) => p.name === userData.province
+              );
               if (province) {
                 setSelectedProvince(province);
-                const districtRes = await axios.get(`${API_HOST}/p/${province.code}?depth=2`);
-                setDistricts(districtRes.data.districts);
+                const districtRes = await axios.get(
+                  `${API_HOST}/districts/getByProvince?provinceCode=${province.code}&limit=-1`
+                );
+                if (
+                  districtRes.data &&
+                  districtRes.data.exitcode === 1 &&
+                  districtRes.data.data
+                ) {
+                  setDistricts(districtRes.data.data);
+                }
 
                 if (userData.district) {
-                  const district = districtRes.data.districts.find((d: any) => d.name === userData.district);
+                  const district = districtRes.data.districts.find(
+                    (d: any) => d.name === userData.district
+                  );
                   if (district) {
                     setSelectedDistrict(district);
-                    const wardRes = await axios.get(`${API_HOST}/d/${district.code}?depth=2`);
-                    setWards(wardRes.data.wards);
+                    const wardRes = await axios.get(
+                      `${API_HOST}/wards/getByDistrict?districtCode=${district.code}&limit=-1`
+                    );
+                    if (
+                      wardRes.data &&
+                      wardRes.data.exitcode === 1 &&
+                      wardRes.data.data
+                    ) {
+                      setWards(wardRes.data.data);
+                    }
 
                     if (userData.ward) {
-                      const ward = wardRes.data.wards.find((w: any) => w.name === userData.ward);
+                      const ward = wardRes.data.wards.find(
+                        (w: any) => w.name === userData.ward
+                      );
                       if (ward) {
                         setSelectedWard(ward);
                       }
@@ -162,14 +195,16 @@ export const ProfilePage: React.FC = () => {
   }, [provinces, reset]);
 
   // Handle province change
-  const handleProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleProvinceChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const code = Number(e.target.value);
     const province = provinces.find((p) => p.code === code) || null;
-    
+
     setValue("province", province?.name ?? "");
     setValue("district", "");
     setValue("ward", "");
-    
+
     setSelectedProvince(province);
     setSelectedDistrict(null);
     setSelectedWard(null);
@@ -178,8 +213,16 @@ export const ProfilePage: React.FC = () => {
 
     if (province) {
       try {
-        const districtRes = await axios.get(`${API_HOST}/p/${province.code}?depth=2`);
-        setDistricts(districtRes.data.districts);
+        const districtRes = await axios.get(
+          `${API_HOST}/districts/getByProvince?provinceCode=${province.code}&limit=-1`
+        );
+        if (
+          districtRes.data &&
+          districtRes.data.exitcode === 1 &&
+          districtRes.data.data
+        ) {
+          setDistricts(districtRes.data.data);
+        }
       } catch (error) {
         console.error("Error fetching districts:", error);
       }
@@ -187,21 +230,27 @@ export const ProfilePage: React.FC = () => {
   };
 
   // Handle district change
-  const handleDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleDistrictChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const code = Number(e.target.value);
     const district = districts.find((d) => d.code === code) || null;
-    
+
     setValue("district", district?.name ?? "");
     setValue("ward", "");
-    
+
     setSelectedDistrict(district);
     setSelectedWard(null);
     setWards([]);
 
     if (district) {
       try {
-        const wardRes = await axios.get(`${API_HOST}/d/${district.code}?depth=2`);
-        setWards(wardRes.data.wards);
+        const wardRes = await axios.get(
+          `${API_HOST}/wards/getByDistrict?districtCode=${district.code}&limit=-1`
+        );
+        if (wardRes.data && wardRes.data.exitcode === 1 && wardRes.data.data) {
+          setWards(wardRes.data.data);
+        }
       } catch (error) {
         console.error("Error fetching wards:", error);
       }
@@ -212,7 +261,7 @@ export const ProfilePage: React.FC = () => {
   const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = Number(e.target.value);
     const ward = wards.find((w) => w.code === code) || null;
-    
+
     setValue("ward", ward?.name ?? "");
     setSelectedWard(ward);
   };
@@ -249,10 +298,10 @@ export const ProfilePage: React.FC = () => {
       };
 
       await updateUserProfile(userId, updateData);
-      
+
       // Reset form to mark as clean
       reset(data);
-      
+
       toast.success("Cập nhật thông tin thành công!");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -270,8 +319,12 @@ export const ProfilePage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-1">Thông tin cá nhân</h2>
-        <p className="text-gray-600 text-sm">Cập nhật thông tin hồ sơ của bạn</p>
+        <h2 className="text-2xl font-bold text-gray-800 mb-1">
+          Thông tin cá nhân
+        </h2>
+        <p className="text-gray-600 text-sm">
+          Cập nhật thông tin hồ sơ của bạn
+        </p>
       </div>
 
       {/* Avatar Section */}
@@ -310,10 +363,16 @@ export const ProfilePage: React.FC = () => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg border border-gray-200 p-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="bg-white rounded-lg border border-gray-200 p-6"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="firstName"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Tên
             </label>
             <input
@@ -325,7 +384,10 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="lastName"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Họ
             </label>
             <input
@@ -337,7 +399,10 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Số điện thoại
             </label>
             <input
@@ -349,7 +414,10 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="province" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="province"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Tỉnh, thành phố
             </label>
             <select
@@ -368,7 +436,10 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="district"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Quận, huyện
             </label>
             <select
@@ -388,7 +459,10 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="ward" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="ward"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Phường, xã
             </label>
             <select
@@ -408,7 +482,10 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div className="md:col-span-2">
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="address"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Địa chỉ chi tiết
             </label>
             <input

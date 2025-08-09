@@ -45,10 +45,7 @@ export const registerPartnerService = {
   },
 
   // Cập nhật yêu cầu đăng ký đối tác
-  updateRegisterPartner: async (
-    id: number,
-    data: RegisterPartnerUpdateRequest
-  ) => {
+  updateRegisterPartner: async (id: number, data: RegisterPartnerUpdateRequest) => {
     try {
       const response = await updateRegisterPartner(id, data);
       return response;

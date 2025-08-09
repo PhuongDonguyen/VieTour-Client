@@ -47,16 +47,37 @@ export const SearchSection = () => {
   const loadProvinces = async () => {
     try {
       setLoadingProvinces(true);
-      const response = await fetch("https://provinces.open-api.vn/api/p/");
-      const data = await response.json();
-      setProvinces(data);
+      const response = await fetch(
+        "https://vn-public-apis.fpo.vn/provinces/getAll?limit=-1"
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (
+        result &&
+        result.exitcode === 1 &&
+        result.data &&
+        Array.isArray(result.data.data)
+      ) {
+        setProvinces(result.data.data);
+      } else {
+        throw new Error("Invalid data structure");
+      }
     } catch (error) {
       console.error("Error loading provinces:", error);
       // Fallback to static list if API fails
       const fallbackLocations = [
-        { code: "hanoi", name: "Hà Nội" },
-        { code: "hochiminh", name: "TP. Hồ Chí Minh" },
-        { code: "danang", name: "Đà Nẵng" },
+        { code: "1", name: "Hà Nội", name_with_type: "Thành phố Hà Nội" },
+        {
+          code: "79",
+          name: "TP. Hồ Chí Minh",
+          name_with_type: "Thành phố Hồ Chí Minh",
+        },
+        { code: "48", name: "Đà Nẵng", name_with_type: "Thành phố Đà Nẵng" },
         { code: "hue", name: "Huế" },
         { code: "halong", name: "Hạ Long" },
         { code: "sapa", name: "Sapa" },
@@ -115,7 +136,10 @@ export const SearchSection = () => {
       params.set("tour_category_id", tourType);
     }
 
-    console.log("🏠 Home SearchSection - Navigating to search with params:", params.toString());
+    console.log(
+      "🏠 Home SearchSection - Navigating to search with params:",
+      params.toString()
+    );
     const queryString = params.toString();
     window.location.href = `/search${queryString ? `?${queryString}` : ""}`;
   };
