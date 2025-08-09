@@ -3,6 +3,7 @@ import { fetchAllTourSchedules } from "@/services/tourSchedule.service";
 import { fetchUserProfile } from "@/services/userProfile.service";
 import { bookingService } from "@/services/booking.service";
 import { paymentService } from "@/services/payment.service";
+import { resourcesService } from "@/services/resources.service";
 import {
   processPayment,
   getPaymentMethodDisplayName,
@@ -108,6 +109,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     null
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showBookingPolicyModal, setShowBookingPolicyModal] = useState(false);
+  const [bookingPolicy, setBookingPolicy] = useState("");
+  const [isLoadingPolicy, setIsLoadingPolicy] = useState(false);
 
   // Key cho localStorage
   const getStorageKey = () => `booking_form_${tourId}`;
@@ -574,9 +578,18 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   };
 
   const handleSubmit = async () => {
+    // First, fetch and show booking policy
+    const policy = await fetchBookingPolicy();
+
+    // Show booking policy modal even if policy is empty (user can still proceed)
+    setShowBookingPolicyModal(true);
+  };
+
+  const handleConfirmBooking = async () => {
     setIsRedirectingToPayment(true);
     setIsSubmitting(true);
     setShowPaymentLoading(true);
+    setShowBookingPolicyModal(false);
 
     try {
       // Sử dụng selectedScheduleId đã chọn
@@ -783,11 +796,31 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   const getTotalPeople = () => {
     let totalAdults = 0;
     let totalChildren = 0;
+
     Object.values(formData.selectedPrices).forEach((quantities) => {
-      totalAdults += quantities.adults;
-      totalChildren += quantities.children;
+      totalAdults += quantities.adults || 0;
+      totalChildren += quantities.children || 0;
     });
+
     return { totalAdults, totalChildren };
+  };
+
+  // Fetch booking policy
+  const fetchBookingPolicy = async () => {
+    setIsLoadingPolicy(true);
+    try {
+      const policy = await resourcesService.getResourceContent(
+        "booking_policy"
+      );
+      setBookingPolicy(policy);
+      return policy;
+    } catch (error) {
+      console.error("Error fetching booking policy:", error);
+      toast.error("Không thể tải chính sách đặt tour!");
+      return "";
+    } finally {
+      setIsLoadingPolicy(false);
+    }
   };
 
   const renderStep = () => {
@@ -1164,14 +1197,6 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
               </div>
-
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  <strong>Lưu ý:</strong> Thông tin họ tên và số điện thoại sẽ
-                  được tự động điền từ profile của bạn. Bạn có thể chỉnh sửa nếu
-                  cần thiết.
-                </p>
-              </div>
             </div>
           </div>
         );
@@ -1498,7 +1523,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                     : "bg-green-600 text-white hover:bg-green-700"
                 }`}
               >
-                {isSubmitting ? "Đang xử lý..." : "Đặt tour ngay"}
+                {isSubmitting ? "Đang xử lý..." : "Xem chính sách & Đặt tour"}
               </button>
             )}
           </div>
@@ -1569,6 +1594,68 @@ export const TabBooking: React.FC<TabBookingProps> = ({
           </div>
         </div>
       </Modal>
+
+      {/* Modal Booking Policy */}
+      {showBookingPolicyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowBookingPolicyModal(false)}
+          />
+
+          {/* Modal content */}
+          <div className="relative z-10 w-full max-w-4xl bg-white rounded-lg shadow-xl p-6 max-h-[80vh] overflow-y-auto">
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Chính sách đặt tour
+              </h3>
+              <p className="text-gray-600">
+                Vui lòng đọc kỹ chính sách đặt tour trước khi xác nhận
+              </p>
+            </div>
+
+            {isLoadingPolicy ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <span className="ml-2 text-gray-600">
+                  Đang tải chính sách...
+                </span>
+              </div>
+            ) : (
+              <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-6">
+                {bookingPolicy ? (
+                  <div dangerouslySetInnerHTML={{ __html: bookingPolicy }} />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    Không có thông tin chính sách đặt tour.
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowBookingPolicyModal(false)}
+                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-400 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmBooking}
+                disabled={isSubmitting}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  isSubmitting
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700"
+                }`}
+              >
+                {isSubmitting ? "Đang xử lý..." : "Xác nhận đặt tour"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overlay loading khi chờ giao dịch */}
       {showPaymentLoading && (

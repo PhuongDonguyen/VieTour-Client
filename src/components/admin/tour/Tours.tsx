@@ -628,6 +628,7 @@ const ProviderTours: React.FC = () => {
                 <TableRow>
                   <TableHead>Hình Ảnh</TableHead>
                   <TableHead>Tên Tour</TableHead>
+                  <TableHead className="text-center">Địa Điểm</TableHead>
                   <TableHead className="text-center">Danh Mục</TableHead>
                   <TableHead>Trạng Thái</TableHead>
                   <TableHead>Số Lượng</TableHead>
@@ -665,6 +666,17 @@ const ProviderTours: React.FC = () => {
                           <p className="text-sm text-muted-foreground">
                             {tour.duration} ngày
                           </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <MapPin className="w-4 h-4 text-muted-foreground" />
+                          <span
+                            className="truncate max-w-[120px]"
+                            title={tour.location || "Chưa cập nhật"}
+                          >
+                            {tour.location || "Chưa cập nhật"}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -792,7 +804,7 @@ const ProviderTours: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8">
+                    <TableCell colSpan={11} className="text-center py-8">
                       {loading
                         ? "Đang tải..."
                         : "Không có tours nào được tìm thấy."}

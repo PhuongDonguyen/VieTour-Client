@@ -6,6 +6,9 @@ type TourNamePriceProps = {
   price: string;
   tourSlug: string;
   loading?: boolean;
+  location?: string;
+  duration?: string;
+  companyName?: string;
 };
 
 // Hàm format giá theo định dạng xxx.xxx.000 VND
@@ -30,8 +33,19 @@ const TourNamePrice: React.FC<TourNamePriceProps> = ({
   price,
   tourSlug,
   loading = false,
+  location,
+  duration,
+  companyName,
 }) => {
   const navigate = useNavigate();
+
+  // Debug logging
+  console.log("TourNamePrice props:", {
+    title,
+    location,
+    duration,
+    companyName,
+  });
 
   const handleBookNow = () => {
     navigate(`/booking/${tourSlug}`);
@@ -61,7 +75,7 @@ const TourNamePrice: React.FC<TourNamePriceProps> = ({
           <div className="flex-1">
             <div className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-medium mb-6">
               <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-              Tour du lịch chất lượng cao
+              {companyName || "Tour du lịch chất lượng cao"}
             </div>
 
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-6 leading-tight">
@@ -86,7 +100,7 @@ const TourNamePrice: React.FC<TourNamePriceProps> = ({
                   </svg>
                 </div>
                 <span className="text-gray-600 font-medium">
-                  Thời gian: 3 ngày 2 đêm
+                  Thời gian: {duration || "3 ngày 2 đêm"}
                 </span>
               </div>
 
@@ -105,7 +119,7 @@ const TourNamePrice: React.FC<TourNamePriceProps> = ({
                   </svg>
                 </div>
                 <span className="text-gray-600 font-medium">
-                  Điểm đến hấp dẫn
+                  {location || "Điểm đến hấp dẫn"}
                 </span>
               </div>
             </div>

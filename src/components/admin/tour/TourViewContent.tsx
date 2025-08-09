@@ -278,6 +278,15 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 </div>
                 <div>
                   <p className="font-medium text-sm text-muted-foreground">
+                    Địa điểm
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    {tour.location || "Chưa cập nhật"}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-muted-foreground">
                     Phương tiện
                   </p>
                   <p className="flex items-center gap-2">
@@ -422,6 +431,13 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Danh mục:</span>
                 <Badge variant="secondary">{categoryName}</Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Địa điểm:</span>
+                <span className="font-medium flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {tour.location || "Chưa cập nhật"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Mã Tour:</span>

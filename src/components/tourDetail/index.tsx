@@ -11,6 +11,7 @@ import TabGallery from "./TabGallery";
 import { fetchTourBySlug } from "../../services/tour.service";
 import { fetchTourDetailsByTourId } from "../../services/tourDetail.service";
 import { fetchTourImagesByTourId } from "../../services/tourImage.service";
+import { getProviderProfileById } from "../../apis/providerProfile.api";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
 import { useAutoTrackTourView } from "../../hooks/useRecentlyViewedTours";
 import { TabReview } from "../tourDetail/TabReview";
@@ -37,6 +38,7 @@ const TourDetail: React.FC = () => {
   const [tour, setTour] = useState<any>(null);
   const [days, setDays] = useState<any[]>([]);
   const [images, setImages] = useState<any[]>([]);
+  const [providerProfile, setProviderProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("program");
@@ -84,13 +86,21 @@ const TourDetail: React.FC = () => {
       try {
         const tourData = await fetchTourBySlug(slug);
         if (tourData) {
+          console.log("Tour data:", tourData);
           setTour(tourData);
-          const [detail, imgs] = await Promise.all([
+          const [detail, imgs, provider] = await Promise.all([
             fetchTourDetailsByTourId(tourData.id),
             fetchTourImagesByTourId(tourData.id),
+            getProviderProfileById(tourData.provider_id),
           ]);
           setDays(detail.data || []);
           setImages(imgs.data || []);
+
+          // Handle provider profile response - check if it's wrapped or direct
+          console.log("Provider API response:", provider);
+          const providerData = provider.data || provider;
+          console.log("Provider data:", providerData);
+          setProviderProfile(providerData);
           setLoading(false);
 
           // Delay hiển thị comment section để mượt mà hơn
@@ -250,6 +260,9 @@ const TourDetail: React.FC = () => {
               price={displayPrice}
               tourSlug={tour.slug}
               loading={loading}
+              location={tour.location}
+              duration={tour.duration}
+              companyName={providerProfile?.company_name}
             />
           </div>
 
