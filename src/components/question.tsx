@@ -293,7 +293,7 @@ const CommentItem: React.FC<{
   collapsedReplyIds,
   setCollapsedReplyIds
 }) => {
-  const canDelete = currentUser && (currentUser.id === comment.user_id || currentUser.role === "admin");
+  const canDelete = currentUser && (currentUser.id === comment.user_id);
   const isDeleted = deletedQuestionIds.has(comment.id);
   const avatarStyling = getAvatarStyling(comment.user);
   const hasReplies = comment.questions && comment.questions.filter(q => !deletedQuestionIds.has(q.id)).length > 0;
@@ -334,7 +334,7 @@ const CommentItem: React.FC<{
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            {currentUser && (
+            {currentUser && currentUser.role !== 'admin' && (
               <button
                 onClick={() => onReply(activeReplyId === comment.id ? 0 : comment.id)}
                 className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors"
@@ -486,7 +486,7 @@ const RepliesSection: React.FC<{
                 
                 {/* Reply Actions */}
                 <div className="flex items-center gap-3">
-                  {user && (
+                  {user && user.role === 'user' && (
                     <button
                       onClick={() => setActiveReplyId(activeReplyId === reply.id ? 0 : reply.id)}
                       className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors"
@@ -495,7 +495,7 @@ const RepliesSection: React.FC<{
                       Trả lời
                     </button>
                   )}
-                  {user && (user.id === reply.user_id || user.role === "admin") && (
+                  {user && user.id === reply.user_id && (
                     <button
                       onClick={() => handleDeleteQuestion(reply.id)}
                       className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
@@ -893,7 +893,7 @@ export const CommentSection: React.FC = () => {
       </div>
 
       {/* Comment Form */}
-      {user ? (
+      {user && user.role == 'user' ? (
         <CommentForm 
           onSubmit={handleSubmitComment}
           submitting={submittingComment}

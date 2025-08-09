@@ -17,6 +17,8 @@ import AccountPage from "@/pages/AccountPage";
 import BlogCategory from "../pages/BlogCategory";
 import TourImageGallery from "@/pages/TourImageGallery";
 import VerifyEmail from "../pages/VerifyEmail";
+import BecomePartner from "../pages/BecomePartner";
+import SearchTours from "../pages/SearchTours";
 
 export const clientRoutes = [
   {
@@ -32,11 +34,13 @@ export const clientRoutes = [
       { path: "pricing", element: <Pricing /> },
       { path: "tour-category/:slug", element: <TourCategory /> },
       { path: "about", element: <About /> },
+      { path: "become-partner", element: <BecomePartner /> },
       { path: "blog/:slug", element: <BlogDetail /> },
       { path: "blog-category/:slug", element: <BlogCategory /> },
       { path: "payment/success", element: <PaymentSuccess /> },
       { path: "payment/failed", element: <PaymentFailed /> },
       { path: "gallery", element: <TourImageGallery /> },
+      { path: "search", element: <SearchTours /> },
       {
         path: "cancel-booking/:bookingId",
         element: (

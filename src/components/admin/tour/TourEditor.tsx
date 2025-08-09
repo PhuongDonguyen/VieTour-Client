@@ -17,6 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TinyMCEEditor from "@/components/TinyMCEEditor";
 import { AuthContext } from "@/context/authContext";
 import {
@@ -26,6 +33,11 @@ import {
 } from "@/services/tour.service";
 import { fetchActiveTourCategories } from "@/services/tourCategory.service";
 import type { Tour } from "@/apis/tour.api";
+
+interface Province {
+  code: string;
+  name: string;
+}
 
 interface TourFormData {
   title: string;
@@ -37,6 +49,7 @@ interface TourFormData {
   duration: string;
   tour_category_id: string;
   live_commentary: string;
+  location: string;
   is_active: boolean;
   image: File | null;
 }
@@ -66,6 +79,7 @@ const TourEditor: React.FC = () => {
     duration: "",
     tour_category_id: "",
     live_commentary: "",
+    location: "",
     is_active: true,
     image: null,
   });
@@ -75,6 +89,34 @@ const TourEditor: React.FC = () => {
   const [isLoadingTour, setIsLoadingTour] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentTour, setCurrentTour] = useState<Tour | null>(null);
+
+  // Location data
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [loadingAddress, setLoadingAddress] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState<string>("");
+
+  // Load provinces on component mount
+  useEffect(() => {
+    loadProvinces();
+  }, []);
+
+  const loadProvinces = async () => {
+    try {
+      setLoadingAddress(true);
+      const response = await fetch("https://provinces.open-api.vn/api/p/");
+      const data = await response.json();
+      setProvinces(data);
+    } catch (error) {
+      console.error("Error loading provinces:", error);
+    } finally {
+      setLoadingAddress(false);
+    }
+  };
+
+  const getProvinceName = (code: string) => {
+    const province = provinces.find((p) => p.code === code);
+    return province?.name || "";
+  };
 
   // Load tour categories
   useEffect(() => {
@@ -135,9 +177,19 @@ const TourEditor: React.FC = () => {
             duration: tour.duration?.toString() || "",
             tour_category_id: tour.tour_category_id?.toString() || "",
             live_commentary: tour.live_commentary || "",
+            location: tour.location || "",
             is_active: tour.is_active ?? true,
             image: null,
           });
+
+          // Parse location if it exists
+          if (tour.location) {
+            // Try to find matching province from existing location
+            const province = provinces.find((p) => p.name === tour.location);
+            if (province) {
+              setSelectedProvince(province.code);
+            }
+          }
 
           if (tour.poster_url) {
             setImagePreview(tour.poster_url);
@@ -216,6 +268,17 @@ const TourEditor: React.FC = () => {
       formDataToSend.append("duration", formData.duration);
       formDataToSend.append("tour_category_id", formData.tour_category_id);
       formDataToSend.append("live_commentary", formData.live_commentary);
+
+      // Create location string from selected province
+      let locationString = "";
+      if (selectedProvince) {
+        locationString = getProvinceName(selectedProvince);
+      } else if (formData.location) {
+        // Fallback to existing location if dropdown not selected
+        locationString = formData.location;
+      }
+      formDataToSend.append("location", locationString);
+
       formDataToSend.append("is_active", formData.is_active.toString());
 
       // Add provider_id from current user
@@ -414,6 +477,36 @@ const TourEditor: React.FC = () => {
                     }
                     className="pl-10"
                   />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="location">Địa điểm</Label>
+                <div className="space-y-2">
+                  <Select
+                    value={selectedProvince}
+                    onValueChange={(value) => setSelectedProvince(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn tỉnh/thành phố" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {provinces.map((province) => (
+                        <SelectItem key={province.code} value={province.code}>
+                          {province.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {selectedProvince && (
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Địa điểm đã chọn:</strong>{" "}
+                        {getProvinceName(selectedProvince)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

@@ -36,6 +36,8 @@ import { ProviderRevenueStatsWrapper } from "@/components/ProviderRevenueStatsWr
 import GeneralQuestionsListPage from "@/pages/admin/GeneralQuestionsListPage";
 import GeneralQuestionView from "@/pages/admin/GeneralQuestionView";
 import GeneralQuestionEditor from "@/components/admin/general-question/GeneralQuestionEditor";
+import AdminBecomePartner from "@/pages/admin/AdminBecomePartner";
+import BecomePartnerView from "@/pages/admin/BecomePartnerView";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -461,6 +463,26 @@ export const adminRoutes = [
           </div>
         </AdminLayout>
       </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/become-partners",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Quản lý yêu cầu đối tác">
+          <AdminBecomePartner />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/become-partners/:id",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Chi tiết yêu cầu đối tác">
+          <BecomePartnerView />
+        </AdminLayout>
+      </RequireAdminAccess>
     ),
   },
 ];

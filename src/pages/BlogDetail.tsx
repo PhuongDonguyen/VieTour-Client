@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchBlogs } from "../services/blog.service";
+import { getBlogCategoryById, BlogCategory } from "../apis/blogCategory.api";
+import RecentlyViewedTours from "../components/RecentlyViewedTours";
 
 import { 
   Calendar, 
@@ -20,6 +22,7 @@ import Skeleton from 'react-loading-skeleton';
 const BlogDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<any>(null);
+  const [category, setCategory] = useState<BlogCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -44,9 +47,21 @@ const BlogDetail: React.FC = () => {
         // Since we're fetching by slug, we expect only one blog
         const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
+        
+        // Fetch category information if blog has category_id
+        if (blogData && blogData.category_id) {
+          try {
+            const categoryResponse = await getBlogCategoryById(blogData.category_id);
+            setCategory(categoryResponse.data);
+          } catch (categoryError) {
+            console.error('Error fetching blog category:', categoryError);
+            setCategory(null);
+          }
+        }
       } catch (error) {
         console.error('Error fetching blog:', error);
         setBlog(null);
+        setCategory(null);
       } finally {
         setLoading(false);
       }
@@ -75,11 +90,67 @@ const BlogDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="mt-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Skeleton height={40} width={300} style={{ marginBottom: 24 }} />
-          <Skeleton height={384} className="mb-6" />
-          <Skeleton count={8} height={20} style={{ marginBottom: 8 }} />
+      <div className="min-h-screen bg-gray-50 monserrat">
+        <div className="mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Breadcrumb skeleton */}
+          <Skeleton height={20} width={200} style={{ marginBottom: 24 }} />
+          
+          {/* Main content layout */}
+          <div className="flex flex-col lg:flex-row gap-8 mt-10">
+            {/* Main article skeleton */}
+            <div className="lg:w-[70%]">
+              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                {/* Hero image skeleton */}
+                <Skeleton height={384} className="mb-0" />
+                
+                {/* Article content skeleton */}
+                <div className="p-6">
+                  {/* Title skeleton */}
+                  <Skeleton height={32} className="mb-4" />
+                  <Skeleton height={24} width="80%" className="mb-6" />
+                  
+                  {/* Meta info skeleton */}
+                  <div className="flex space-x-4 mb-6">
+                    <Skeleton height={20} width={100} />
+                    <Skeleton height={20} width={80} />
+                    <Skeleton height={20} width={60} />
+                  </div>
+                  
+                  {/* Content skeleton */}
+                  <Skeleton count={8} height={20} style={{ marginBottom: 8 }} />
+                </div>
+              </div>
+            </div>
+            
+            {/* Sidebar skeleton */}
+            <div className="lg:w-[30%]">
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                {/* Header skeleton */}
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 px-4 py-3 border-b border-gray-100">
+                  <Skeleton height={20} width={120} />
+                </div>
+                
+                {/* Tours list skeleton */}
+                <div className="divide-y divide-gray-50">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="p-4">
+                      <div className="flex items-start space-x-3">
+                        <Skeleton height={56} width={56} className="rounded-lg" />
+                        <div className="flex-1">
+                          <Skeleton height={16} className="mb-2" />
+                          <Skeleton height={14} width="60%" className="mb-1" />
+                          <div className="flex justify-between">
+                            <Skeleton height={12} width={80} />
+                            <Skeleton height={12} width={60} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -89,32 +160,32 @@ const BlogDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 monserrat">
-      <div className="mt-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-          <Link to="/" className="hover:text-blue-600">
-            Home
+          <Link to="/" className="hover:text-orange-600">
+            Trang chủ
           </Link>
           <span>/</span>
-          <Link to="/blog" className="hover:text-blue-600">
-            Blog
-          </Link>
+          {category ? (
+            <Link to={`/blog-category/${category.slug}`} className="hover:text-orange-600">
+              {category.title}
+            </Link>
+          ) : (
+            <Link to="/blog" className="hover:text-orange-600">
+              Blog
+            </Link>
+          )}
           <span>/</span>
           <span className="text-gray-900">{blog.title}</span>
         </nav>
 
-        {/* Back to Blog */}
-        <div className="mb-6">
-          <Link to="/blog">
-            <button className="flex items-center text-gray-600 hover:text-blue-600 p-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Blog
-            </button>
-          </Link>
-        </div>
-
-        {/* Article Header */}
-        <article className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {/* Main Content Layout */}
+        <div className="flex flex-col lg:flex-row gap-8 mt-10">
+          {/* Main Article Content */}
+          <div className="lg:w-[70%]">
+            {/* Article Header */}
+            <article className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Hero Image */}
           {blog.thumbnail && (
             <div className="relative h-96">
@@ -220,7 +291,19 @@ const BlogDetail: React.FC = () => {
               <div dangerouslySetInnerHTML={{ __html: blog.content }} />
             </div>
           </div>
-        </article>
+            </article>
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:w-[30%]">
+            <div className="sticky top-24 space-y-6">
+              <RecentlyViewedTours 
+                maxItems={5}
+                title="Tour gần đây"
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Comments Section */}
         {/* {<div className="mt-8 bg-white rounded-lg shadow-sm p-6">
