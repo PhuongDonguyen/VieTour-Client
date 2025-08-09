@@ -138,7 +138,7 @@ export const RegisterPartnerForm: React.FC = () => {
         console.warn("Unexpected provinces data structure:", result);
         setProvinces([]);
         toast.error("Dữ liệu tỉnh/thành phố không hợp lệ");
-      }
+    đa
     } catch (error) {
       console.error("Error loading provinces:", error);
       toast.error("Không thể tải danh sách tỉnh/thành phố. Vui lòng thử lại!");
