@@ -91,7 +91,7 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
         </div>
 
         {/* Horizontal Tours Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {recentTours.map((tour, index) => (
             <Link
               key={tour.id}
@@ -102,36 +102,36 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
                 <img
                   src={tour.poster_url}
                   alt={tour.title}
-                  className="w-full h-32 object-cover"
+                  className="w-full h-40 object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = "/avatar-default.jpg";
                   }}
                 />
-                <div className="absolute top-2 left-2 w-6 h-6 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-lg">
+                <div className="absolute top-3 left-3 w-7 h-7 bg-orange-500 text-white text-sm rounded-full flex items-center justify-center font-bold shadow-lg">
                   {index + 1}
                 </div>
               </div>
               
-              <div className="p-4">
-                <h4 className="font-medium text-gray-900 text-sm leading-tight mb-2 group-hover:text-orange-600 transition-colors line-clamp-2 h-10">
+              <div className="p-5">
+                <h4 className="font-medium text-gray-900 text-base leading-tight mb-3 group-hover:text-orange-600 transition-colors line-clamp-2 h-12">
                   {tour.title}
                 </h4>
                 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
                     {formatPrice(tour.price, tour.discountedPrice)}
                   </div>
                   
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {tour.duration} ngày
+                      <Clock className="w-4 h-4 mr-1" />
+                      {tour.duration}
                     </div>
                     
                     {tour.tour_category && (
                       <div className="flex items-center">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        <span className="max-w-16 truncate">{tour.tour_category.name}</span>
+                        <MapPin className="w-4 h-4 mr-1" />
+                        <span className="max-w-20 truncate">{tour.tour_category.name}</span>
                       </div>
                     )}
                   </div>
@@ -190,7 +190,7 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
                   <div className="flex items-center space-x-3 text-xs text-gray-500">
                     <div className="flex items-center">
                       <Clock className="w-3 h-3 mr-1" />
-                      {tour.duration} ngày
+                      {tour.duration}
                     </div>
                     
                     {tour.tour_category && (
