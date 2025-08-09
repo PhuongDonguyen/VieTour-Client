@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchBlogs } from "../services/blog.service";
+import { getBlogCategoryById, BlogCategory } from "../apis/blogCategory.api";
 import RecentlyViewedTours from "../components/RecentlyViewedTours";
 
 import { 
@@ -21,6 +22,7 @@ import Skeleton from 'react-loading-skeleton';
 const BlogDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<any>(null);
+  const [category, setCategory] = useState<BlogCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -45,9 +47,21 @@ const BlogDetail: React.FC = () => {
         // Since we're fetching by slug, we expect only one blog
         const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
+        
+        // Fetch category information if blog has category_id
+        if (blogData && blogData.category_id) {
+          try {
+            const categoryResponse = await getBlogCategoryById(blogData.category_id);
+            setCategory(categoryResponse.data);
+          } catch (categoryError) {
+            console.error('Error fetching blog category:', categoryError);
+            setCategory(null);
+          }
+        }
       } catch (error) {
         console.error('Error fetching blog:', error);
         setBlog(null);
+        setCategory(null);
       } finally {
         setLoading(false);
       }
@@ -81,11 +95,8 @@ const BlogDetail: React.FC = () => {
           {/* Breadcrumb skeleton */}
           <Skeleton height={20} width={200} style={{ marginBottom: 24 }} />
           
-          {/* Back button skeleton */}
-          <Skeleton height={20} width={120} style={{ marginBottom: 24 }} />
-          
           {/* Main content layout */}
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-8 mt-10">
             {/* Main article skeleton */}
             <div className="lg:w-[70%]">
               <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -152,29 +163,25 @@ const BlogDetail: React.FC = () => {
       <div className="mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-          <Link to="/" className="hover:text-blue-600">
-            Home
+          <Link to="/" className="hover:text-orange-600">
+            Trang chủ
           </Link>
           <span>/</span>
-          <Link to="/blog" className="hover:text-blue-600">
-            Blog
-          </Link>
+          {category ? (
+            <Link to={`/blog-category/${category.slug}`} className="hover:text-orange-600">
+              {category.title}
+            </Link>
+          ) : (
+            <Link to="/blog" className="hover:text-orange-600">
+              Blog
+            </Link>
+          )}
           <span>/</span>
           <span className="text-gray-900">{blog.title}</span>
         </nav>
 
-        {/* Back to Blog */}
-        <div className="mb-6">
-          <Link to="/blog">
-            <button className="flex items-center text-gray-600 hover:text-blue-600 p-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Blog
-            </button>
-          </Link>
-        </div>
-
         {/* Main Content Layout */}
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 mt-10">
           {/* Main Article Content */}
           <div className="lg:w-[70%]">
             {/* Article Header */}
