@@ -13,11 +13,13 @@ import { fetchTourDetailsByTourId } from "../../services/tourDetail.service";
 import { fetchTourImagesByTourId } from "../../services/tourImage.service";
 import { getProviderProfileById } from "../../apis/providerProfile.api";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
+import { useAutoTrackTourView } from "../../hooks/useRecentlyViewedTours";
 import { TabReview } from "../tourDetail/TabReview";
 import { TabFAQ } from "../tourDetail/TabFAQ";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { CommentSection } from "../question";
+import RecentlyViewedTours from "../RecentlyViewedTours";
 
 const TABS = [
   { key: "program", label: "Chương trình tour", icon: "🗺️" },
@@ -46,6 +48,9 @@ const TourDetail: React.FC = () => {
 
   // Track tour view count with session strategy
   useTourViewTracking(tour?.id, loading, !!error);
+
+  // Track recently viewed tours
+  useAutoTrackTourView(tour, loading, !!error);
 
   // Scroll to top when component mounts or slug changes
   useEffect(() => {
@@ -247,9 +252,8 @@ const TourDetail: React.FC = () => {
         <div className="pt-24 px-4">
           {/* Hero Section */}
           <div
-            className={`transition-opacity duration-500 ${
-              isVisible ? "opacity-100" : "opacity-0"
-            }`}
+            className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
+              }`}
           >
             <TourNamePrice
               title={tour.title}
@@ -264,20 +268,18 @@ const TourDetail: React.FC = () => {
 
           {/* Navigation Tabs */}
           <div
-            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${
-              isVisible ? "opacity-100" : "opacity-0"
-            }`}
+            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${isVisible ? "opacity-100" : "opacity-0"
+              }`}
           >
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
               <div className="flex flex-wrap gap-2">
                 {TABS.map((tab) => (
                   <button
                     key={tab.key}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                      activeTab === tab.key
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${activeTab === tab.key
                         ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
                         : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                    }`}
+                      }`}
                     onClick={() => setActiveTab(tab.key)}
                   >
                     <span className="text-lg">{tab.icon}</span>
@@ -290,9 +292,8 @@ const TourDetail: React.FC = () => {
 
           {/* Content Section */}
           <div
-            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${
-              isVisible ? "opacity-100" : "opacity-0"
-            }`}
+            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
+              }`}
           >
             {activeTab === "program" && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -303,12 +304,12 @@ const TourDetail: React.FC = () => {
                         images.length > 0
                           ? images.filter((img) => img.is_featured)
                           : [
-                              {
-                                id: 0,
-                                image_url: tour.poster_url,
-                                alt_text: tour.title,
-                              },
-                            ]
+                            {
+                              id: 0,
+                              image_url: tour.poster_url,
+                              alt_text: tour.title,
+                            },
+                          ]
                       }
                       altDefault={tour.title}
                     />
@@ -425,6 +426,16 @@ const TourDetail: React.FC = () => {
           <CommentSection />
         </div>
       )}
+
+      {/* Recently Viewed Tours - Horizontal Section */}
+      <div className="w-full mb-5 mt-10 max-w-7xl mx-auto">
+        <RecentlyViewedTours
+          maxItems={6}
+          title="Tour đã xem gần đây"
+          className="mb-8"
+          horizontal={true}
+        />
+      </div>
     </>
   );
 };
