@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { ChevronRight, Home } from "lucide-react";
 import TourNamePrice from "./TourNamePrice";
 import TourImage from "./TourImage";
 import TourDetailContent from "./TourDetailContent";
@@ -12,6 +13,7 @@ import { fetchTourBySlug } from "../../services/tour.service";
 import { fetchTourDetailsByTourId } from "../../services/tourDetail.service";
 import { fetchTourImagesByTourId } from "../../services/tourImage.service";
 import { getProviderProfileById } from "../../apis/providerProfile.api";
+import { getTourCategoryById } from "../../apis/tourCategory.api";
 import { useTourViewTracking } from "../../hooks/useTourViewTracking";
 import { useAutoTrackTourView } from "../../hooks/useRecentlyViewedTours";
 import { TabReview } from "../tourDetail/TabReview";
@@ -39,6 +41,7 @@ const TourDetail: React.FC = () => {
   const [days, setDays] = useState<any[]>([]);
   const [images, setImages] = useState<any[]>([]);
   const [providerProfile, setProviderProfile] = useState<any>(null);
+  const [tourCategory, setTourCategory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("program");
@@ -82,17 +85,20 @@ const TourDetail: React.FC = () => {
       setLoading(true);
       setError(null);
       setIsVisible(false);
+      setTourCategory(null);
 
       try {
         const tourData = await fetchTourBySlug(slug);
         if (tourData) {
           console.log("Tour data:", tourData);
           setTour(tourData);
+          
           const [detail, imgs, provider] = await Promise.all([
             fetchTourDetailsByTourId(tourData.id),
             fetchTourImagesByTourId(tourData.id),
             getProviderProfileById(tourData.provider_id),
           ]);
+          
           setDays(detail.data || []);
           setImages(imgs.data || []);
 
@@ -101,6 +107,20 @@ const TourDetail: React.FC = () => {
           const providerData = provider.data || provider;
           console.log("Provider data:", providerData);
           setProviderProfile(providerData);
+          
+          // Fetch category separately if tour has category_id
+          if (tourData.tour_category_id) {
+            try {
+              const categoryResponse = await getTourCategoryById(tourData.tour_category_id);
+              console.log("Category API response:", categoryResponse);
+              const categoryData = categoryResponse.data;
+              console.log("Category data:", categoryData);
+              setTourCategory(categoryData.data);
+            } catch (categoryError) {
+              console.error("Error fetching tour category:", categoryError);
+              setTourCategory(null);
+            }
+          }
           setLoading(false);
 
           // Delay hiển thị comment section để mượt mà hơn
@@ -128,6 +148,9 @@ const TourDetail: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         <div className="pt-24 px-4">
           <div className="max-w-7xl mx-auto">
+            {/* Breadcrumb skeleton */}
+            <div className="h-4 bg-gray-200 rounded animate-pulse mb-6 w-64"></div>
+            
             <div className="h-96 bg-gray-200 rounded-2xl animate-pulse mb-8"></div>
             <div className="h-12 bg-gray-200 rounded-xl animate-pulse mb-6 w-3/4"></div>
             <div className="h-8 bg-gray-200 rounded-xl animate-pulse mb-8 w-1/2"></div>
@@ -250,6 +273,34 @@ const TourDetail: React.FC = () => {
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         <div className="pt-24 px-4">
+          {/* Breadcrumb */}
+          <div className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}>
+            <nav className="flex items-center space-x-2 text-sm text-gray-600">
+              <Link 
+                to="/" 
+                className="flex items-center hover:text-orange-600 transition-colors duration-200"
+              >
+                <Home className="w-4 h-4 mr-1" />
+                <span>Trang chủ</span>
+              </Link>
+              {tourCategory && (
+                <>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <Link 
+                    to={`/tour-category/${tourCategory.slug}`} 
+                    className="hover:text-orange-600 transition-colors duration-200"
+                  >
+                    {tourCategory.name}
+                  </Link>
+                </>
+              )}
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-900 font-medium truncate max-w-xs">
+                {tour?.title}
+              </span>
+            </nav>
+          </div>
+
           {/* Hero Section */}
           <div
             className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
@@ -430,7 +481,7 @@ const TourDetail: React.FC = () => {
       {/* Recently Viewed Tours - Horizontal Section */}
       <div className="w-full mb-5 mt-10 max-w-7xl mx-auto">
         <RecentlyViewedTours
-          maxItems={6}
+          maxItems={5}
           title="Tour đã xem gần đây"
           className="mb-8"
           horizontal={true}

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { getTourCategoriesBySlug } from "../services/tourCategory.service";
 import { fetchTours } from "../services/tour.service";
 import { TourCard } from "../components/TourCard";
+import { Home, ChevronRight } from "lucide-react";
 
 interface TourCardData {
   id: string;
@@ -102,6 +103,21 @@ export const TourByCategory = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 mt-20">
+      {/* Breadcrumb */}
+      <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+        <Link 
+          to="/" 
+          className="flex items-center hover:text-orange-600 transition-colors duration-200"
+        >
+          <Home className="w-4 h-4 mr-1" />
+          <span>Trang chủ</span>
+        </Link>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+        <span className="text-gray-900 font-medium">
+          {categoryName}
+        </span>
+      </nav>
+
       <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
         {categoryName}
       </h1>

@@ -17,7 +17,7 @@ import { Tour } from '../apis/tour.api';
 // ============================================================================
 
 const RECENTLY_VIEWED_KEY = "recently_viewed_tours";
-const MAX_RECENTLY_VIEWED = 10; // Maximum number of tours to keep
+const MAX_RECENTLY_VIEWED = 5; // Maximum number of tours to keep
 
 export interface RecentlyViewedTour {
   id: number;

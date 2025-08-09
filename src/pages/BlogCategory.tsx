@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { getAllCategories } from "../services/blogCategory.service";
 import { fetchBlogs } from "../services/blog.service";
 import { Loading } from "../components/Loading";
 import { BlogCard } from "../components/BlogCard";
+import { Home, ChevronRight } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -34,7 +35,7 @@ const BlogCategory: React.FC = () => {
                 throw new Error('Không tìm thấy danh mục');
             }
             setCategory(cat);
-            const res = await fetchBlogs({ category_id: cat.id, status: 'published', limit: 1, page });
+            const res = await fetchBlogs({ category_id: cat.id, status: 'published', limit: 9, page });
             console.log(res);
             setBlogs(res.data || []);
             setPagination(res.pagination);
@@ -99,6 +100,21 @@ const BlogCategory: React.FC = () => {
 
     return (
         <div className="max-w-6xl container mx-auto px-4 py-8 mt-20">
+            {/* Breadcrumb */}
+            <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+                <Link 
+                    to="/" 
+                    className="flex items-center hover:text-orange-600 transition-colors duration-200"
+                >
+                    <Home className="w-4 h-4 mr-1" />
+                    <span>Trang chủ</span>
+                </Link>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-900 font-medium">
+                    {category?.title}
+                </span>
+            </nav>
+
             <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
                 {category?.title}
             </h1>

@@ -30,7 +30,7 @@ const BlogSection: React.FC = () => {
         {blogCategories.map((cat) => (
           <a
             key={cat.id}
-            href={`/blog-category/${cat.id}`}
+            href={`/blog-category/${cat.slug}`}
             className="block group"
             tabIndex={0}
             aria-label={cat.title}

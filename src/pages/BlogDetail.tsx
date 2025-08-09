@@ -15,7 +15,9 @@ import {
   Facebook, 
   Twitter, 
   Link as LinkIcon, 
-  ChevronUp 
+  ChevronUp,
+  Home,
+  ChevronRight
 } from "lucide-react";
 import Skeleton from 'react-loading-skeleton';
 
@@ -163,21 +165,28 @@ const BlogDetail: React.FC = () => {
       <div className="mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-          <Link to="/" className="hover:text-orange-600">
-            Trang chủ
+          <Link 
+            to="/" 
+            className="flex items-center hover:text-orange-600 transition-colors duration-200"
+          >
+            <Home className="w-4 h-4 mr-1" />
+            <span>Trang chủ</span>
           </Link>
-          <span>/</span>
-          {category ? (
-            <Link to={`/blog-category/${category.slug}`} className="hover:text-orange-600">
-              {category.title}
-            </Link>
-          ) : (
-            <Link to="/blog" className="hover:text-orange-600">
-              Blog
-            </Link>
+          {category && (
+            <>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <Link 
+                to={`/blog-category/${category.slug}`} 
+                className="hover:text-orange-600 transition-colors duration-200"
+              >
+                {category.title}
+              </Link>
+            </>
           )}
-          <span>/</span>
-          <span className="text-gray-900">{blog.title}</span>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <span className="text-gray-900 font-medium truncate max-w-xs">
+            {blog.title}
+          </span>
         </nav>
 
         {/* Main Content Layout */}
