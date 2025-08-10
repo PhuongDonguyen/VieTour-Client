@@ -71,6 +71,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
   const [comment, setComment] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -88,10 +89,28 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    const validFiles = files.filter(file => {
-      const isValidType = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type);
+    const validFiles = files.filter((file) => {
+      const isValidType = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+      ].includes(file.type);
       const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
-      return isValidType && isValidSize;
+
+      if (!isValidType) {
+        alert(
+          `File ${file.name} không phải là hình ảnh hợp lệ. Chỉ chấp nhận: JPG, PNG, WEBP, GIF`
+        );
+        return false;
+      }
+
+      if (!isValidSize) {
+        alert(`File ${file.name} quá lớn. Kích thước tối đa là 5MB`);
+        return false;
+      }
+
+      return true;
     });
 
     if (images.length + validFiles.length > 10) {
@@ -103,14 +122,14 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
     setImages(newImages);
 
     // Tạo URL để preview
-    validFiles.forEach(file => {
+    validFiles.forEach((file) => {
       const url = URL.createObjectURL(file);
-      setImageUrls(prev => [...prev, url]);
+      setImageUrls((prev) => [...prev, url]);
     });
 
     // Reset input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -121,13 +140,25 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
     setImageUrls(newImageUrls);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (rating === 0) {
       alert("Vui lòng chọn số sao!");
       return;
     }
-    onSubmit(rating, comment, images);
-    onClose();
+
+    if (comment.trim().length < 10) {
+      alert("Vui lòng viết đánh giá ít nhất 10 ký tự!");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(rating, comment, images);
+    } catch (error) {
+      console.error("Lỗi khi gửi đánh giá:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -166,7 +197,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Thêm hình ảnh (tối đa 10 ảnh, mỗi ảnh tối đa 5MB)
           </label>
-          
+
           {/* Upload Button */}
           <div className="flex items-center space-x-2 mb-3">
             <input
@@ -179,8 +210,21 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
               Chọn ảnh
             </button>
             <span className="text-sm text-gray-500">
@@ -188,24 +232,112 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
             </span>
           </div>
 
+          {/* Drag and Drop Zone */}
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.add("border-blue-400", "bg-blue-50");
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove("border-blue-400", "bg-blue-50");
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove("border-blue-400", "bg-blue-50");
+              const files = Array.from(e.dataTransfer.files);
+              const validFiles = files.filter((file) => {
+                const isValidType = [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp",
+                  "image/gif",
+                ].includes(file.type);
+                const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+
+                if (!isValidType) {
+                  alert(
+                    `File ${file.name} không phải là hình ảnh hợp lệ. Chỉ chấp nhận: JPG, PNG, WEBP, GIF`
+                  );
+                  return false;
+                }
+
+                if (!isValidSize) {
+                  alert(`File ${file.name} quá lớn. Kích thước tối đa là 5MB`);
+                  return false;
+                }
+
+                return true;
+              });
+
+              if (images.length + validFiles.length > 10) {
+                alert("Bạn chỉ có thể tải lên tối đa 10 hình ảnh!");
+                return;
+              }
+
+              const newImages = [...images, ...validFiles];
+              setImages(newImages);
+
+              // Tạo URL để preview
+              validFiles.forEach((file) => {
+                const url = URL.createObjectURL(file);
+                setImageUrls((prev) => [...prev, url]);
+              });
+            }}
+          >
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              stroke="currentColor"
+              fill="none"
+              viewBox="0 0 48 48"
+            >
+              <path
+                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <p className="mt-2 text-sm text-gray-600">
+              <span className="font-medium text-blue-600 hover:text-blue-500">
+                Click để chọn ảnh
+              </span>{" "}
+              hoặc kéo thả ảnh vào đây
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              PNG, JPG, WEBP, GIF tối đa 5MB
+            </p>
+          </div>
+
           {/* Image Preview Grid */}
           {imageUrls.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {imageUrls.map((url, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={url}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-lg border"
-                  />
-                  <button
-                    onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">
+                Ảnh đã chọn:
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {imageUrls.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border shadow-sm"
+                    />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      title="Xóa ảnh"
+                    >
+                      ×
+                    </button>
+                    <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                      {index + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -214,15 +346,43 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
         <div className="flex justify-end space-x-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-gray-600 border border-gray-300 hover:bg-gray-100"
+            disabled={isSubmitting}
+            className="px-4 py-2 rounded-lg text-gray-600 border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Hủy
           </button>
           <button
             onClick={handleSubmit}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200"
+            disabled={isSubmitting}
+            className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-200 flex items-center gap-2 disabled:cursor-not-allowed"
           >
-            Gửi đánh giá
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Đang gửi...
+              </>
+            ) : (
+              "Gửi đánh giá"
+            )}
           </button>
         </div>
       </div>

@@ -2,8 +2,28 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchMyBookings } from "@/services/booking.service";
 import { ReviewForm } from "./ReviewForm";
-import { submitReview } from "@/services/review.service";
-import { Calendar, User, Phone, DollarSign, Users, Star, MessageSquare, XCircle, ChevronDown, ChevronUp, MapPin, Clock, CheckCircle, AlertCircle, XCircle as XCircleIcon, Loader2 } from "lucide-react";
+import {
+  submitReview,
+  submitReviewWithImages,
+} from "@/services/review.service";
+import {
+  Calendar,
+  User,
+  Phone,
+  DollarSign,
+  Users,
+  Star,
+  MessageSquare,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  XCircle as XCircleIcon,
+  Loader2,
+} from "lucide-react";
 import { AccountListSkeleton } from "./AccountSkeleton";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -125,14 +145,14 @@ export default function MyBooking() {
 
   const loadMoreBookings = async () => {
     if (!pagination?.hasNextPage || loadingMore) return;
-    
+
     try {
       setLoadingMore(true);
       const nextPage = pagination.currentPage + 1;
       const result = await fetchMyBookings(nextPage, 5, statusFilter);
-      
-      setBookings(prev => [...prev, ...result.bookings]);
-      setFilteredBookings(prev => [...prev, ...result.bookings]);
+
+      setBookings((prev) => [...prev, ...result.bookings]);
+      setFilteredBookings((prev) => [...prev, ...result.bookings]);
       setPagination(result.pagination);
     } catch (error) {
       console.error("Lỗi khi tải thêm booking:", error);
@@ -147,25 +167,45 @@ export default function MyBooking() {
     console.log("Selected booking:", booking);
   };
 
-  const handleReviewSubmit = async (rating: number, comment: string) => {
+  const handleReviewSubmit = async (
+    rating: number,
+    comment: string,
+    images: File[]
+  ) => {
     if (selectedBooking) {
       console.log("Gửi đánh giá cho booking:", selectedBooking.id, {
         rating,
         comment,
+        imagesCount: images.length,
       });
 
       try {
-        await submitReview(
-          selectedBooking.user_id,
-          selectedBooking.schedule.tour.id,
-          rating,
-          comment
-        );
+        if (images.length > 0) {
+          // Nếu có ảnh, sử dụng API với ảnh
+          await submitReviewWithImages(
+            selectedBooking.user_id,
+            selectedBooking.schedule.tour.id,
+            rating,
+            comment,
+            images
+          );
+        } else {
+          // Nếu không có ảnh, sử dụng API cũ
+          await submitReview(
+            selectedBooking.user_id,
+            selectedBooking.schedule.tour.id,
+            rating,
+            comment
+          );
+        }
         alert("Đánh giá đã được gửi thành công!");
+        setSelectedBooking(null);
+        // Reload data to update the review status
+        loadData();
       } catch (error) {
         console.error("Lỗi khi gửi đánh giá:", error);
+        alert("Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại!");
       }
-      setSelectedBooking(null);
     }
   };
 
@@ -220,28 +260,31 @@ export default function MyBooking() {
   };
 
   const renderTimelineView = () => {
-    const sortedBookings = [...filteredBookings].sort((a, b) => 
-      new Date(b.create_at).getTime() - new Date(a.create_at).getTime()
+    const sortedBookings = [...filteredBookings].sort(
+      (a, b) =>
+        new Date(b.create_at).getTime() - new Date(a.create_at).getTime()
     );
 
     return (
       <div className="relative">
         {/* Timeline line */}
         <div className="absolute left-28 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-        
+
         <div className="space-y-8">
           {sortedBookings.map((booking, index) => (
             <div key={booking.id} className="relative">
               {/* Date on timeline */}
               <div className="absolute left-0 top-0 text-sm text-gray-500 font-medium w-24">
-                {format(new Date(booking.create_at), "dd/MM/yyyy", { locale: vi })}
+                {format(new Date(booking.create_at), "dd/MM/yyyy", {
+                  locale: vi,
+                })}
               </div>
-              
+
               {/* Timeline dot with icon */}
               <div className="absolute left-28 transform -translate-x-1/2 w-8 h-8 bg-white border-2 border-gray-300 rounded-full z-10 flex items-center justify-center">
                 {getTimelineIcon(booking.status)}
               </div>
-              
+
               {/* Content */}
               <div className="ml-40 bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
@@ -287,8 +330,16 @@ export default function MyBooking() {
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-gray-400" />
                     <div>
-                      <div className="text-xs text-gray-500">Ngày khởi hành</div>
-                      <span>{format(new Date(booking.schedule.start_date), "dd/MM/yyyy", { locale: vi })}</span>
+                      <div className="text-xs text-gray-500">
+                        Ngày khởi hành
+                      </div>
+                      <span>
+                        {format(
+                          new Date(booking.schedule.start_date),
+                          "dd/MM/yyyy",
+                          { locale: vi }
+                        )}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -297,70 +348,88 @@ export default function MyBooking() {
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-gray-400" />
-                    <span className="font-medium">{booking.total.toLocaleString()} đ</span>
+                    <span className="font-medium">
+                      {booking.total.toLocaleString()} đ
+                    </span>
                   </div>
                 </div>
 
                 {/* Expanded Details */}
-                {expandedBookingId === booking.id && booking.booking_details && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Chi tiết đặt tour</h4>
-                    {booking.booking_details.map((detail, idx) => (
-                      <div
-                        key={detail.id}
-                        className={`p-3 bg-white rounded border ${
-                          idx < booking.booking_details!.length - 1 ? "mb-3" : ""
-                        }`}
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium">
-                              {detail.adult_quanti > 0 && `${detail.adult_quanti} Người lớn`}
-                              {detail.adult_quanti > 0 && detail.kid_quanti > 0 && ", "}
-                              {detail.kid_quanti > 0 && `${detail.kid_quanti} Trẻ em`}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4 text-gray-400" />
-                            <span>{detail.adult_price.toLocaleString()}đ/Người lớn</span>
-                          </div>
-                          {detail.kid_price > 0 && (
+                {expandedBookingId === booking.id &&
+                  booking.booking_details && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">
+                        Chi tiết đặt tour
+                      </h4>
+                      {booking.booking_details.map((detail, idx) => (
+                        <div
+                          key={detail.id}
+                          className={`p-3 bg-white rounded border ${
+                            idx < booking.booking_details!.length - 1
+                              ? "mb-3"
+                              : ""
+                          }`}
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                             <div className="flex items-center gap-2">
                               <Users className="w-4 h-4 text-gray-400" />
-                              <span>{detail.kid_price.toLocaleString()}đ/Trẻ em</span>
+                              <span className="font-medium">
+                                {detail.adult_quanti > 0 &&
+                                  `${detail.adult_quanti} Người lớn`}
+                                {detail.adult_quanti > 0 &&
+                                  detail.kid_quanti > 0 &&
+                                  ", "}
+                                {detail.kid_quanti > 0 &&
+                                  `${detail.kid_quanti} Trẻ em`}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-gray-400" />
+                              <span>
+                                {detail.adult_price.toLocaleString()}đ/Người lớn
+                              </span>
+                            </div>
+                            {detail.kid_price > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-gray-400" />
+                                <span>
+                                  {detail.kid_price.toLocaleString()}đ/Trẻ em
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-blue-600 font-semibold">
+                              <DollarSign className="w-4 h-4" />
+                              <span>
+                                {(
+                                  detail.adult_quanti * detail.adult_price +
+                                  detail.kid_quanti * detail.kid_price
+                                ).toLocaleString()}{" "}
+                                đ
+                              </span>
+                            </div>
+                          </div>
+
+                          {detail.note && (
+                            <div className="mt-3 p-2 bg-amber-50 rounded border-l-4 border-amber-300">
+                              <div className="flex items-start gap-2 text-sm text-gray-700">
+                                <MessageSquare className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                                <span>{detail.note}</span>
+                              </div>
                             </div>
                           )}
-                          <div className="flex items-center gap-2 text-blue-600 font-semibold">
-                            <DollarSign className="w-4 h-4" />
-                            <span>
-                              {(
-                                detail.adult_quanti * detail.adult_price +
-                                detail.kid_quanti * detail.kid_price
-                              ).toLocaleString()} đ
-                            </span>
-                          </div>
                         </div>
-
-                        {detail.note && (
-                          <div className="mt-3 p-2 bg-amber-50 rounded border-l-4 border-amber-300">
-                            <div className="flex items-start gap-2 text-sm text-gray-700">
-                              <MessageSquare className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                              <span>{detail.note}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
 
                 {/* Note */}
                 {booking.note && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-start gap-2 text-sm text-blue-700">
                       <MessageSquare className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Ghi chú:</strong> {booking.note}</span>
+                      <span>
+                        <strong>Ghi chú:</strong> {booking.note}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -451,14 +520,24 @@ export default function MyBooking() {
                   <Calendar className="w-4 h-4 text-gray-400" />
                   <div>
                     <div className="text-xs text-gray-500">Ngày đặt</div>
-                    <span>{format(new Date(booking.create_at), "dd/MM/yyyy", { locale: vi })}</span>
+                    <span>
+                      {format(new Date(booking.create_at), "dd/MM/yyyy", {
+                        locale: vi,
+                      })}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-gray-400" />
                   <div>
                     <div className="text-xs text-gray-500">Ngày khởi hành</div>
-                    <span>{format(new Date(booking.schedule.start_date), "dd/MM/yyyy", { locale: vi })}</span>
+                    <span>
+                      {format(
+                        new Date(booking.schedule.start_date),
+                        "dd/MM/yyyy",
+                        { locale: vi }
+                      )}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -471,14 +550,18 @@ export default function MyBooking() {
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-gray-400" />
-                  <span className="font-medium">{booking.total.toLocaleString()} đ</span>
+                  <span className="font-medium">
+                    {booking.total.toLocaleString()} đ
+                  </span>
                 </div>
               </div>
 
               {/* Expanded Details */}
               {expandedBookingId === booking.id && booking.booking_details && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Chi tiết đặt tour</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Chi tiết đặt tour
+                  </h4>
                   {booking.booking_details.map((detail, idx) => (
                     <div
                       key={detail.id}
@@ -490,19 +573,27 @@ export default function MyBooking() {
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-gray-400" />
                           <span className="font-medium">
-                            {detail.adult_quanti > 0 && `${detail.adult_quanti} Người lớn`}
-                            {detail.adult_quanti > 0 && detail.kid_quanti > 0 && ", "}
-                            {detail.kid_quanti > 0 && `${detail.kid_quanti} Trẻ em`}
+                            {detail.adult_quanti > 0 &&
+                              `${detail.adult_quanti} Người lớn`}
+                            {detail.adult_quanti > 0 &&
+                              detail.kid_quanti > 0 &&
+                              ", "}
+                            {detail.kid_quanti > 0 &&
+                              `${detail.kid_quanti} Trẻ em`}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <DollarSign className="w-4 h-4 text-gray-400" />
-                          <span>{detail.adult_price.toLocaleString()}đ/Người lớn</span>
+                          <span>
+                            {detail.adult_price.toLocaleString()}đ/Người lớn
+                          </span>
                         </div>
                         {detail.kid_price > 0 && (
                           <div className="flex items-center gap-2">
                             <Users className="w-4 h-4 text-gray-400" />
-                            <span>{detail.kid_price.toLocaleString()}đ/Trẻ em</span>
+                            <span>
+                              {detail.kid_price.toLocaleString()}đ/Trẻ em
+                            </span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-blue-600 font-semibold">
@@ -511,7 +602,8 @@ export default function MyBooking() {
                             {(
                               detail.adult_quanti * detail.adult_price +
                               detail.kid_quanti * detail.kid_price
-                            ).toLocaleString()} đ
+                            ).toLocaleString()}{" "}
+                            đ
                           </span>
                         </div>
                       </div>
@@ -534,7 +626,9 @@ export default function MyBooking() {
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-start gap-2 text-sm text-blue-700">
                     <MessageSquare className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <span><strong>Ghi chú:</strong> {booking.note}</span>
+                    <span>
+                      <strong>Ghi chú:</strong> {booking.note}
+                    </span>
                   </div>
                 </div>
               )}
@@ -579,17 +673,22 @@ export default function MyBooking() {
           onClose={() => setSelectedBooking(null)}
         />
       )}
-      
+
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-1">Đặt tour của tôi</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-1">
+          Đặt tour của tôi
+        </h2>
         <p className="text-gray-600 text-sm">Xem lịch sử và quản lý đặt tour</p>
       </div>
 
       {/* Status Filter */}
       <div className="mb-6">
         <div className="flex items-center gap-4">
-          <label htmlFor="statusFilter" className="text-sm font-medium text-gray-700">
+          <label
+            htmlFor="statusFilter"
+            className="text-sm font-medium text-gray-700"
+          >
             Lọc theo trạng thái:
           </label>
           <select
@@ -622,19 +721,22 @@ export default function MyBooking() {
             <Calendar className="w-10 h-10 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {statusFilter === "all" ? "Chưa có đặt tour" : "Không tìm thấy đặt tour"}
+            {statusFilter === "all"
+              ? "Chưa có đặt tour"
+              : "Không tìm thấy đặt tour"}
           </h3>
           <p className="text-gray-600">
-            {statusFilter === "all" 
-              ? "Bạn chưa có lịch sử đặt tour nào" 
-              : `Không có đặt tour nào với trạng thái "${getStatusBadge(statusFilter).text}"`
-            }
+            {statusFilter === "all"
+              ? "Bạn chưa có lịch sử đặt tour nào"
+              : `Không có đặt tour nào với trạng thái "${
+                  getStatusBadge(statusFilter).text
+                }"`}
           </p>
         </div>
       ) : (
         <>
           {renderTimelineView()}
-          
+
           {/* Modern Pagination - Load More */}
           {pagination && pagination.hasNextPage && (
             <div className="mt-12 text-center">
@@ -659,23 +761,35 @@ export default function MyBooking() {
                   </>
                 )}
               </button>
-              
+
               <div className="mt-4 text-sm text-gray-500">
-                Hiển thị <span className="font-medium text-gray-700">{filteredBookings.length}</span> trong tổng số <span className="font-medium text-gray-700">{pagination.totalItems}</span> đặt tour
+                Hiển thị{" "}
+                <span className="font-medium text-gray-700">
+                  {filteredBookings.length}
+                </span>{" "}
+                trong tổng số{" "}
+                <span className="font-medium text-gray-700">
+                  {pagination.totalItems}
+                </span>{" "}
+                đặt tour
               </div>
             </div>
           )}
-          
+
           {/* End of results */}
-          {pagination && !pagination.hasNextPage && filteredBookings.length > 0 && (
-            <div className="mt-8 text-center">
-              <div className="inline-flex items-center gap-2 text-gray-500">
-                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                <span className="text-sm">Đã hiển thị tất cả {pagination.totalItems} đặt tour</span>
-                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+          {pagination &&
+            !pagination.hasNextPage &&
+            filteredBookings.length > 0 && (
+              <div className="mt-8 text-center">
+                <div className="inline-flex items-center gap-2 text-gray-500">
+                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                  <span className="text-sm">
+                    Đã hiển thị tất cả {pagination.totalItems} đặt tour
+                  </span>
+                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </>
       )}
     </div>

@@ -45,7 +45,10 @@ export const registerPartnerService = {
   },
 
   // Cập nhật yêu cầu đăng ký đối tác
-  updateRegisterPartner: async (id: number, data: RegisterPartnerUpdateRequest) => {
+  updateRegisterPartner: async (
+    id: number,
+    data: RegisterPartnerUpdateRequest
+  ) => {
     try {
       const response = await updateRegisterPartner(id, data);
       return response;
@@ -65,7 +68,7 @@ export const registerPartnerService = {
   },
 
   // Từ chối yêu cầu đăng ký đối tác
-  rejectRegisterPartner: async (id: number, reason: string) => {
+  rejectRegisterPartner: async (id: number, reason?: string) => {
     try {
       const response = await rejectRegisterPartner(id, reason);
       return response;

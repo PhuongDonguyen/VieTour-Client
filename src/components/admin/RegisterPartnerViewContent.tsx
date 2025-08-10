@@ -76,14 +76,10 @@ const RegisterPartnerViewContent: React.FC<RegisterPartnerViewContentProps> = ({
   const handleReject = async () => {
     if (!partner) return;
 
-    const reason = prompt("Lý do từ chối:");
-    if (!reason) return;
-
     setLoadingAction(true);
     try {
       const response = await registerPartnerService.rejectRegisterPartner(
-        partner.id,
-        reason
+        partner.id
       );
       if (response.success) {
         toast.success("Từ chối đối tác thành công!");

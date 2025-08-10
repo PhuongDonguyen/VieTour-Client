@@ -130,13 +130,11 @@ export const approveRegisterPartner = async (
 // Từ chối đăng ký (Admin only)
 export const rejectRegisterPartner = async (
   id: number,
-  reason: string
+  reason?: string
 ): Promise<RegisterPartnerApiResponse> => {
   const response = await axiosInstance.put(
     `/api/register-partner/${id}/reject`,
-    {
-      reason,
-    }
+    reason ? { reason } : {}
   );
   return response.data;
 };
