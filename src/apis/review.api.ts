@@ -7,8 +7,9 @@ export const createReview = (
   userId: number,
   tourId: number,
   tourStar: number,
-  text: string
-) => axiosInstance.post(`/api/reviews`, { userId, tourId, tourStar, text });
+  text: string,
+  bookingId: number
+) => axiosInstance.post(`/api/reviews`, { userId, tourId, tourStar, text, bookingId });
 
 export const createReviewWithImages = (formData: FormData) =>
   axiosInstance.post(`/api/reviews/with-images`, formData, {

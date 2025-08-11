@@ -14,9 +14,10 @@ export const submitReview = async (
   userId: number,
   tourId: number,
   tourStar: number,
-  text: string
+  text: string,
+  bookingId: number
 ) => {
-  const res = await createReview(userId, tourId, tourStar, text);
+  const res = await createReview(userId, tourId, tourStar, text, bookingId);
   if (res.data && res.data.success) return res.data;
   throw new Error("Không gửi được đánh giá");
 };
@@ -26,13 +27,15 @@ export const submitReviewWithImages = async (
   tourId: number,
   tourStar: number,
   text: string,
-  images: File[]
+  images: File[],
+  bookingId: number
 ) => {
   const formData = new FormData();
   formData.append("userId", userId.toString());
   formData.append("tourId", tourId.toString());
   formData.append("tourStar", tourStar.toString());
   formData.append("text", text);
+  formData.append("bookingId", bookingId.toString());
 
   images.forEach((image, index) => {
     formData.append("images", image);

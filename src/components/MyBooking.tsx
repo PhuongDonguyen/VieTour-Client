@@ -109,38 +109,29 @@ export default function MyBooking() {
     window.scrollTo(0, 0);
   }, []);
 
+  // Function để load data - có thể gọi từ bất kỳ đâu trong component
+  const loadData = async (page: number = 1, status: string = "all") => {
+    try {
+      setLoading(true);
+      const result = await fetchMyBookings(page, 5, status);
+      setBookings(result.bookings);
+      setFilteredBookings(result.bookings);
+      setPagination(result.pagination);
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu booking:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data lần đầu
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const result = await fetchMyBookings(1, 5);
-        setBookings(result.bookings);
-        setPagination(result.pagination);
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu booking:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+    loadData(1, "all");
   }, []);
 
   // Load data when status filter changes
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const result = await fetchMyBookings(1, 5, statusFilter);
-        setBookings(result.bookings);
-        setFilteredBookings(result.bookings);
-        setPagination(result.pagination);
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu booking:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+    loadData(1, statusFilter);
   }, [statusFilter]);
 
   const loadMoreBookings = async () => {
@@ -180,31 +171,82 @@ export default function MyBooking() {
       });
 
       try {
+        console.log("Bắt đầu gửi đánh giá với thông tin:", {
+          userId: selectedBooking.user_id,
+          tourId: selectedBooking.schedule.tour.id,
+          rating,
+          comment,
+          imagesCount: images.length,
+          bookingId: selectedBooking.id,
+        });
+
         if (images.length > 0) {
           // Nếu có ảnh, sử dụng API với ảnh
-          await submitReviewWithImages(
+          console.log("Gọi API submitReviewWithImages...");
+          const result = await submitReviewWithImages(
             selectedBooking.user_id,
             selectedBooking.schedule.tour.id,
             rating,
             comment,
-            images
+            images,
+            selectedBooking.id // Thêm bookingId
           );
+          console.log("Kết quả API submitReviewWithImages:", result);
         } else {
           // Nếu không có ảnh, sử dụng API cũ
-          await submitReview(
+          console.log("Gọi API submitReview...");
+          const result = await submitReview(
             selectedBooking.user_id,
             selectedBooking.schedule.tour.id,
             rating,
-            comment
+            comment,
+            selectedBooking.id // Thêm bookingId
           );
+          console.log("Kết quả API submitReview:", result);
         }
         alert("Đánh giá đã được gửi thành công!");
         setSelectedBooking(null);
         // Reload data to update the review status
-        loadData();
+        loadData(1, statusFilter);
       } catch (error) {
         console.error("Lỗi khi gửi đánh giá:", error);
-        alert("Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại!");
+
+        // Hiển thị thông tin lỗi chi tiết hơn
+        let errorMessage = "Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại!";
+
+        if (error.response) {
+          // Lỗi từ server
+          const status = error.response.status;
+          const data = error.response.data;
+
+          if (status === 400) {
+            errorMessage = `Lỗi dữ liệu: ${
+              data.message || "Dữ liệu không hợp lệ"
+            }`;
+          } else if (status === 401) {
+            errorMessage =
+              "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!";
+          } else if (status === 403) {
+            errorMessage = "Bạn không có quyền thực hiện hành động này!";
+          } else if (status === 404) {
+            errorMessage = "Không tìm thấy tour hoặc booking!";
+          } else if (status === 500) {
+            errorMessage = "Lỗi server. Vui lòng thử lại sau!";
+          } else {
+            errorMessage = `Lỗi server (${status}): ${
+              data.message || "Vui lòng thử lại"
+            }`;
+          }
+        } else if (error.request) {
+          // Lỗi network
+          errorMessage =
+            "Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet!";
+        } else {
+          // Lỗi khác
+          errorMessage = `Lỗi: ${error.message || "Vui lòng thử lại"}`;
+        }
+
+        alert(errorMessage);
       }
     }
   };

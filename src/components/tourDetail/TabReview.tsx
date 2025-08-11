@@ -1,5 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Star, Heart, MessageCircle, Clock } from "lucide-react";
+import {
+  Star,
+  Heart,
+  MessageCircle,
+  Clock,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { fetchReviewByTourId } from "../../services/review.service";
 import { Loading } from "../Loading";
 import {
@@ -23,6 +31,8 @@ interface Review {
   created_at: string;
   user: User;
   user_like_id: number | null;
+  review_images?: { id: number; image_url: string }[];
+  images?: string[];
 }
 
 interface User {
@@ -64,19 +74,23 @@ const getUserDisplayName = (user: User | null): string => {
 const getUserInitials = (user: User | null): string => {
   if (!user) return "K";
   const name = getUserDisplayName(user);
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
 };
 
 const getAvatarStyling = (user: User | null) => {
   if (!user) {
     return {
       bgColor: "bg-orange-500",
-      textColor: "text-white"
+      textColor: "text-white",
     };
   }
   return {
     bgColor: "bg-orange-100",
-    textColor: "text-orange-600"
+    textColor: "text-orange-600",
   };
 };
 
@@ -86,7 +100,7 @@ const ReviewSkeleton: React.FC = () => (
     <div className="flex items-start gap-4">
       {/* Avatar Skeleton */}
       <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse flex-shrink-0"></div>
-      
+
       {/* Content Skeleton */}
       <div className="flex-1">
         <div className="flex items-center gap-3 mb-2">
@@ -134,7 +148,16 @@ export const TabReview: React.FC<ReviewListProps> = ({
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const {user} = useAuth();
+  const [imageModal, setImageModal] = useState<{
+    isOpen: boolean;
+    images: string[];
+    currentIndex: number;
+  }>({
+    isOpen: false,
+    images: [],
+    currentIndex: 0,
+  });
+  const { user } = useAuth();
   const userCurrent = useRef<User | null>(null);
 
   useEffect(() => {
@@ -258,7 +281,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
                   avatar: "/public/avatar-default.jpg",
                 },
                 like_count: review.like_count ?? 0,
-                user_like_id: likeResData[0].id
+                user_like_id: likeResData[0].id,
               };
             } catch (error) {
               return {
@@ -270,7 +293,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
                   avatar: "/public/avatar-default.jpg",
                 },
                 like_count: review.like_count ?? 0,
-                user_like_id: null
+                user_like_id: null,
               };
             }
           })
@@ -298,6 +321,62 @@ export const TabReview: React.FC<ReviewListProps> = ({
     }
     return Math.floor(a / b);
   }
+
+  const openImageModal = (images: string[], startIndex: number = 0) => {
+    setImageModal({
+      isOpen: true,
+      images,
+      currentIndex: startIndex,
+    });
+  };
+
+  const closeImageModal = () => {
+    setImageModal({
+      isOpen: false,
+      images: [],
+      currentIndex: 0,
+    });
+  };
+
+  const nextImage = () => {
+    setImageModal((prev) => ({
+      ...prev,
+      currentIndex: (prev.currentIndex + 1) % prev.images.length,
+    }));
+  };
+
+  const prevImage = () => {
+    setImageModal((prev) => ({
+      ...prev,
+      currentIndex:
+        prev.currentIndex === 0
+          ? prev.images.length - 1
+          : prev.currentIndex - 1,
+    }));
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!imageModal.isOpen) return;
+
+    switch (e.key) {
+      case "Escape":
+        closeImageModal();
+        break;
+      case "ArrowRight":
+        nextImage();
+        break;
+      case "ArrowLeft":
+        prevImage();
+        break;
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [imageModal.isOpen]);
 
   return (
     <div className="w-full mb-5 max-w-7xl mx-auto bg-white rounded-3xl">
@@ -365,7 +444,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
             <div className="space-y-4">
               {reviews.map((review, index) => {
                 const avatarStyling = getAvatarStyling(review.user);
-                
+
                 return (
                   <div
                     key={review.id}
@@ -373,7 +452,9 @@ export const TabReview: React.FC<ReviewListProps> = ({
                   >
                     <div className="flex items-start gap-4">
                       {/* Avatar */}
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${avatarStyling.bgColor}`}>
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${avatarStyling.bgColor}`}
+                      >
                         {review.user?.avatar ? (
                           <img
                             src={review.user.avatar}
@@ -381,7 +462,9 @@ export const TabReview: React.FC<ReviewListProps> = ({
                             className="w-full h-full object-cover rounded-full"
                           />
                         ) : (
-                          <span className={`text-sm font-bold ${avatarStyling.textColor}`}>
+                          <span
+                            className={`text-sm font-bold ${avatarStyling.textColor}`}
+                          >
                             {getUserInitials(review.user)}
                           </span>
                         )}
@@ -403,7 +486,39 @@ export const TabReview: React.FC<ReviewListProps> = ({
                           {renderStars(review.tour_star)}
                         </div>
 
-                        <p className="text-gray-700 leading-relaxed mb-3">{review.text}</p>
+                        <p className="text-gray-700 leading-relaxed mb-3">
+                          {review.text}
+                        </p>
+
+                        {/* Review Images */}
+                        {(review.review_images?.length > 0 ||
+                          review.images?.length > 0) && (
+                          <div className="mb-3 flex flex-wrap gap-2">
+                            {(review.review_images?.length > 0
+                              ? review.review_images.map(
+                                  (img: any) => img.image_url
+                                )
+                              : review.images || []
+                            ).map((url: string, idx: number) => (
+                              <img
+                                key={idx}
+                                src={url}
+                                alt={`Ảnh review ${idx + 1}`}
+                                className="w-20 h-20 object-cover rounded-lg border border-gray-200 hover:scale-105 transition-transform cursor-pointer"
+                                onClick={() =>
+                                  openImageModal(
+                                    review.review_images?.length > 0
+                                      ? review.review_images.map(
+                                          (img: any) => img.image_url
+                                        )
+                                      : review.images || [],
+                                    idx
+                                  )
+                                }
+                              />
+                            ))}
+                          </div>
+                        )}
 
                         {/* Actions */}
                         <div className="flex items-center gap-4">
@@ -441,6 +556,62 @@ export const TabReview: React.FC<ReviewListProps> = ({
           )}
         </div>
       </div>
+
+      {/* Image Modal */}
+      {imageModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={closeImageModal}
+          />
+
+          {/* Modal Content */}
+          <div className="relative z-10 max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center p-4">
+            {/* Close Button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 z-20 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Navigation Buttons */}
+            {imageModal.images.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Image */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              <img
+                src={imageModal.images[imageModal.currentIndex]}
+                alt={`Ảnh review ${imageModal.currentIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+
+            {/* Image Counter */}
+            {imageModal.images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 bg-black/50 text-white rounded-full text-sm font-medium">
+                {imageModal.currentIndex + 1} / {imageModal.images.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -405,6 +405,7 @@ const TourScheduleEditor: React.FC = () => {
                         <SelectItem value="available">Còn chỗ</SelectItem>
                         <SelectItem value="full">Hết chỗ</SelectItem>
                         <SelectItem value="cancelled">Đã hủy</SelectItem>
+                        <SelectItem value="completed">Hoàn thành</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

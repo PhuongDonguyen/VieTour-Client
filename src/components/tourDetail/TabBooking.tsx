@@ -711,9 +711,20 @@ export const TabBooking: React.FC<TabBookingProps> = ({
         bookingId: response.data?.id,
       });
 
+      console.log("Payment result:", paymentResult); // Debug log
+
       if (paymentResult.success && paymentResult.payUrl) {
+        console.log("Redirecting to payment URL:", paymentResult.payUrl); // Debug log
         toast.success("Đang chuyển hướng đến cổng thanh toán...");
-        window.location.href = paymentResult.payUrl;
+
+        // Try multiple redirect methods
+        try {
+          window.location.href = paymentResult.payUrl;
+        } catch (error) {
+          console.error("Redirect error:", error);
+          // Fallback: open in new tab
+          window.open(paymentResult.payUrl, "_blank");
+        }
         // Không tắt loading ở đây, chỉ tắt nếu có lỗi
       } else {
         setShowPaymentLoading(false);
@@ -1523,7 +1534,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                     : "bg-green-600 text-white hover:bg-green-700"
                 }`}
               >
-                {isSubmitting ? "Đang xử lý..." : "Xem chính sách & Đặt tour"}
+                {isSubmitting ? "Đang xử lý..." : " Đặt tour"}
               </button>
             )}
           </div>
