@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchMyBookings } from "@/services/booking.service";
 import { ReviewForm } from "./ReviewForm";
-import {
-  submitReview,
-  submitReviewWithImages,
-} from "@/services/review.service";
+import { submitReview } from "@/services/review.service";
 import {
   Calendar,
   User,
@@ -180,30 +177,23 @@ export default function MyBooking() {
           bookingId: selectedBooking.id,
         });
 
+        // Tạo FormData cho tất cả trường hợp
+        const formData = new FormData();
+        formData.append("tourId", selectedBooking.schedule.tour.id.toString());
+        formData.append("tourStar", rating.toString());
+        formData.append("text", comment);
+        formData.append("bookingId", selectedBooking.id.toString());
+
+        // Thêm images nếu có
         if (images.length > 0) {
-          // Nếu có ảnh, sử dụng API với ảnh
-          console.log("Gọi API submitReviewWithImages...");
-          const result = await submitReviewWithImages(
-            selectedBooking.user_id,
-            selectedBooking.schedule.tour.id,
-            rating,
-            comment,
-            images,
-            selectedBooking.id // Thêm bookingId
-          );
-          console.log("Kết quả API submitReviewWithImages:", result);
-        } else {
-          // Nếu không có ảnh, sử dụng API cũ
-          console.log("Gọi API submitReview...");
-          const result = await submitReview(
-            selectedBooking.user_id,
-            selectedBooking.schedule.tour.id,
-            rating,
-            comment,
-            selectedBooking.id // Thêm bookingId
-          );
-          console.log("Kết quả API submitReview:", result);
+          images.forEach((image) => {
+            formData.append("images", image);
+          });
         }
+
+        console.log("Gọi API submitReview...");
+        const result = await submitReview(formData);
+        console.log("Kết quả API submitReview:", result);
         alert("Đánh giá đã được gửi thành công!");
         setSelectedBooking(null);
         // Reload data to update the review status

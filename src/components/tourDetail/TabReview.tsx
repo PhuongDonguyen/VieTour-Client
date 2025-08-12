@@ -8,7 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { fetchReviewByTourId } from "../../services/review.service";
+import { fetchAllReviews } from "../../services/review.service";
 import { Loading } from "../Loading";
 import {
   fetchUserById,
@@ -217,7 +217,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
       if (review?.user_like_id !== null) {
         await deleteLike(review!.user_like_id);
       } else {
-        await userLikeReview(userCurrent.current?.id, reviewId);
+        await userLikeReview(reviewId);
       }
     } catch (error) {
       // Rollback nếu lỗi
@@ -258,7 +258,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
       try {
         setLoading(true);
         console.log("Tour id: ", tourId);
-        const res = await fetchReviewByTourId(tourId);
+        const res = await fetchAllReviews(tourId);
         const data = res.data;
 
         console.log("User profile: ", userCurrent.current);
@@ -266,10 +266,7 @@ export const TabReview: React.FC<ReviewListProps> = ({
         const mapped = await Promise.all(
           data.map(async (review: any): Promise<Review> => {
             try {
-              const likeRes = await getLikesByUserIdAndReviewId(
-                userCurrent.current!.id,
-                review.id
-              );
+              const likeRes = await getLikesByUserIdAndReviewId(review.id);
               const likeResData = likeRes.data;
               console.log("Like res data: ", likeResData);
               return {
