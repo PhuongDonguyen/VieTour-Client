@@ -564,6 +564,8 @@ const SearchTours: React.FC = () => {
                         }
                         reviewCount={tour.review_count}
                         slug={tour.slug}
+                        viewCount={tour.view_count}
+                        bookedCount={tour.booked_count}
                       />
                     ) : (
                       // List view card
