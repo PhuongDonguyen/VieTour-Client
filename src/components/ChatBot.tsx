@@ -70,7 +70,7 @@ const ChatBot: React.FC = () => {
   // Parse tour results from Rasa response
   const parseTourResults = (text: string): TourResult[] | null => {
     // Check if the response contains tour information
-    if (!text.includes("Link:") || !text.includes("VND")) {
+    if (!text.includes("Link:")) {
       return null;
     }
 
@@ -80,7 +80,7 @@ const ChatBot: React.FC = () => {
     let currentTour: Partial<TourResult> = {};
 
     for (const line of lines) {
-      // Check if line contains tour info with price
+      // Check if line contains tour info with price (format 1: tour nổi bật)
       if (line.includes("|") && line.includes("VND") && line.startsWith("-")) {
         // Extract tour info from line like: "- Tour Tây Bắc 3 ngày 2 đêm | 3 ngày 2 đêm | 900.000VND"
         const parts = line.split("|").map((part) => part.trim());
@@ -88,6 +88,20 @@ const ChatBot: React.FC = () => {
           currentTour.title = parts[0].replace(/^-/, "").trim();
           currentTour.duration = parts[1];
           currentTour.price = parts[2];
+        }
+      }
+      // Check if line contains tour info with price (format 2: tour cụ thể)
+      else if (line.includes("|") && !line.startsWith("-")) {
+        // Extract tour info from line like: "TOUR ĐÀ NẴNG - BÀ NÀ - HỘI AN - BÁN ĐẢO SƠN TRÀ | 3 ngày 2 đêm | 3000000"
+        const parts = line.split("|").map((part) => part.trim());
+        if (parts.length >= 3) {
+          // Check if the last part looks like a price (contains numbers)
+          const lastPart = parts[2];
+          if (/\d/.test(lastPart)) {
+            currentTour.title = parts[0].trim();
+            currentTour.duration = parts[1];
+            currentTour.price = lastPart;
+          }
         }
       } else if (line.includes("Link:")) {
         currentTour.link = line.replace("Link:", "").trim();
@@ -111,10 +125,104 @@ const ChatBot: React.FC = () => {
       tours.push(currentTour as TourResult);
     }
 
-    console.log("Found tours:", tours);
+    // Also check for tours that might not have been processed due to missing image
+    // This handles cases where the response format might be different
+    if (tours.length === 0 && text.includes("|")) {
+      const linesWithPipe = lines.filter(
+        (line) => line.includes("|") && !line.startsWith("-")
+      );
+      for (const line of linesWithPipe) {
+        const parts = line.split("|").map((part) => part.trim());
+        if (parts.length >= 3 && /\d/.test(parts[2])) {
+          const tour: TourResult = {
+            title: parts[0],
+            duration: parts[1],
+            price: parts[2],
+            link: "", // Will be filled by Link: line if exists
+            image: "/VieTour-Logo.png",
+          };
+
+          // Try to find corresponding link
+          const linkLine = lines.find((l) => l.includes("Link:"));
+          if (linkLine) {
+            tour.link = linkLine.replace("Link:", "").trim();
+            tours.push(tour);
+          }
+        }
+      }
+    }
+
+    // Additional fallback: if we still have no tours but see tour-like content
+    if (tours.length === 0) {
+      const tourLines = lines.filter(
+        (line) =>
+          line.includes("|") &&
+          (line.includes("ngày") || line.includes("đêm")) &&
+          /\d/.test(line)
+      );
+
+      for (const line of tourLines) {
+        const parts = line.split("|").map((part) => part.trim());
+        if (parts.length >= 2) {
+          const tour: TourResult = {
+            title: parts[0],
+            duration: parts[1] || "Không xác định",
+            price: parts[2] || "Liên hệ",
+            link: "",
+            image: "/VieTour-Logo.png",
+          };
+
+          // Find any link in the response
+          const linkLine = lines.find((l) => l.includes("Link:"));
+          if (linkLine) {
+            tour.link = linkLine.replace("Link:", "").trim();
+            tours.push(tour);
+          }
+        }
+      }
+    }
+
+    // Final fallback: look for any content that looks like a tour
+    if (tours.length === 0) {
+      const potentialTourLines = lines.filter(
+        (line) =>
+          line.includes("|") &&
+          line.length > 20 && // Reasonable length for tour info
+          !line.includes("Link:") &&
+          !line.includes("Ảnh:")
+      );
+
+      for (const line of potentialTourLines) {
+        const parts = line.split("|").map((part) => part.trim());
+        if (parts.length >= 2) {
+          const tour: TourResult = {
+            title: parts[0],
+            duration: parts[1] || "Không xác định",
+            price: parts[2] || "Liên hệ",
+            link: "",
+            image: "/VieTour-Logo.png",
+          };
+
+          // Find any link in the response
+          const linkLine = lines.find((l) => l.includes("Link:"));
+          if (linkLine) {
+            tour.link = linkLine.replace("Link:", "").trim();
+            tours.push(tour);
+          }
+        }
+      }
+    }
+
+    // Remove duplicates based on title
+    const uniqueTours = tours.filter(
+      (tour, index, self) =>
+        index === self.findIndex((t) => t.title === tour.title)
+    );
+
+    console.log("Found tours:", uniqueTours);
     console.log("Original text:", text);
     console.log("Lines:", lines);
-    return tours.length > 0 ? tours : null;
+    return uniqueTours.length > 0 ? uniqueTours : null;
   };
 
   const sendMessage = async () => {
