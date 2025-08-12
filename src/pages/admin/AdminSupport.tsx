@@ -519,47 +519,61 @@ const AdminSupport: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý câu hỏi</h1>
-          <p className="text-gray-600 mt-2">
-            Trả lời câu hỏi từ khách hàng về các tour
-          </p>
-          <p className="text-sm text-green-600 mt-1">
-            ✓ Đã load {filteredQuestions.length} câu hỏi
-            {selectedTour !== "all" && ` cho tour được chọn`}
-          </p>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+        <div className="flex items-center justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Quản lý câu hỏi
+                </h1>
+                <p className="text-gray-600 mt-1 text-lg">
+                  Trả lời câu hỏi từ khách hàng về các tour
+                </p>
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl px-4 py-3 inline-block shadow-sm">
+              <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                ✓ Đã load <span className="font-bold text-emerald-800">{filteredQuestions.length}</span> câu hỏi
+                {selectedTour !== "all" && <span className="text-emerald-600"> cho tour được chọn</span>}
+              </p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Làm mới
+          </Button>
         </div>
-        <Button variant="outline">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Làm mới
-        </Button>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
+      <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+        <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors duration-200" />
                 <Input
                   placeholder="Tìm kiếm câu hỏi, tên khách hàng hoặc tour..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-gray-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white/60 hover:bg-white/80 focus:bg-white"
                 />
               </div>
             </div>
             <div className="sm:w-48">
-              {/* <label htmlFor='filter-select' className="block text-sm font-medium text-gray-700 mb-2">
-
-              </label> */}
               <select
                 id="filter-select"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition-all duration-200 bg-white/60 hover:bg-white/80 focus:bg-white"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
               >
@@ -574,13 +588,18 @@ const AdminSupport: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-200px)]">
-        <Card className="w-full max-w-xs">
-          <CardContent className="p-4">
-            <h2 className="text-base font-semibold mb-3">Danh sách tour</h2>
+        <Card className="w-full max-w-xs bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Eye className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-800">Danh sách tour</h2>
+            </div>
 
             {/* Khung cuộn */}
-            <div className="max-h-110 overflow-y-auto pr-1">
-              <div className="flex flex-col divide-y divide-gray-200">
+            <div className="max-h-110 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="flex flex-col space-y-2">
                 {tours.map((tour) => (
                   <div
                     key={tour.id}
@@ -589,22 +608,30 @@ const AdminSupport: React.FC = () => {
                       setSelectedTour(value);
                       handleTourChange(value);
                     }}
-                    className={`flex items-center gap-3 py-2 cursor-pointer hover:bg-gray-100 rounded-lg px-2 ${
-                      selectedTour === tour.id ? "bg-blue-50" : ""
+                    className={`flex items-center gap-3 py-3 px-3 cursor-pointer rounded-xl transition-all duration-200 hover:shadow-md hover:scale-[1.02] ${
+                      selectedTour === tour.id 
+                        ? "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-md" 
+                        : "hover:bg-white/60 border border-transparent hover:border-gray-200"
                     }`}
                   >
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-xs">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-sm transition-all duration-200 ${
+                      selectedTour === tour.id
+                        ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg"
+                        : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600"
+                    }`}>
                       {tour.title[0]}
                     </div>
                     <div className="flex-1 overflow-hidden">
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {tour.title}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 mt-1">
                         Mã tour: {tour.id}
                       </p>
                     </div>
-                    <div className="text-xs text-gray-400">➔</div>
+                    <div className={`text-xs transition-colors duration-200 ${
+                      selectedTour === tour.id ? "text-blue-500" : "text-gray-400"
+                    }`}>➔</div>
                   </div>
                 ))}
               </div>
@@ -641,79 +668,66 @@ const AdminSupport: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+              <div className="w-[400px] flex-1 overflow-y-auto space-y-1 pr-2">
                 {filteredQuestions.map((q) => (
                   <div key={q.id}>
                     {/* Câu hỏi chính */}
                     <Card
-                      className={`cursor-pointer ${
-                        selected?.id === q.id ? "border-primary" : ""
+                      className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.005] ${
+                        selected?.id === q.id 
+                          ? "border-blue-300 shadow-md bg-gradient-to-r from-blue-50/50 to-indigo-50/50" 
+                          : "hover:border-gray-200"
                       }`}
                       onClick={() => handleSelectQuestion(q)}
                     >
-                      <CardContent className="flex gap-3 items-center p-2">
-                        {q.user!.avatar ? (
-                          <img
-                            src={q.user!.avatar || "/public/avatar-default.jpg"}
-                            alt="avatar"
-                            className="w-6 h-6 rounded-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-6 h-6 text-primary" />
-                        )}
-                        <div className="flex-1">
-                          <div className="font-semibold">
-                            {q.user.first_name} {q.user.last_name}
-                          </div>
-                          <div className="text-sm text-muted-foreground truncate">
-                            {q.text}
-                          </div>
-                          {/* <div className="text-xs text-muted-foreground">
-                            {mockTours.find((t) => t.id === q.tour_id)?.title ||
-                              `Tour #${q.tour_id}`}
-                          </div> */}
+                    <CardContent className="h-[50px] flex gap-3 items-center p-3">
+                        <div className="relative">
+                          {q.user!.avatar ? (
+                            <img
+                              src={q.user!.avatar || "/public/avatar-default.jpg"}
+                              alt="avatar"
+                              className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-blue-100"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md ring-2 ring-blue-100">
+                              <User className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                          {/* Status indicator */}
+                          <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
+                            q.reported ? "bg-emerald-500" : "bg-amber-500"
+                          }`}></div>
                         </div>
-                        {/* Badge trạng thái */}
-
-                        {q.reported ? (
-                          <Badge
-                            variant="secondary"
-                            onClick={() =>
-                              handleToggleReported(q.id, q.reported)
-                            }
-                            className="cursor-pointer"
-                          >
-                            Đã trả lời
-                          </Badge>
-                        ) : (
-                          <span
-                            onClick={() =>
-                              handleToggleReported(q.id, q.reported)
-                            }
-                            className="cursor-pointer inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold text-xs shadow-sm border border-yellow-300"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            Chưa trả lời
-                          </span>
-                        )}
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-bold text-gray-900 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                              {q.user.first_name} {q.user.last_name}
+                            </h4>
+                            {/* <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium border border-blue-200">
+                              #{q.tour_id}
+                            </span> */}
+                          </div>
+                          
+                          <p className="text-gray-800 text-base leading-relaxed line-clamp-2 font-semibold">
+                            {q.text}
+                          </p>
+                        </div>
+                        
+                        {/* Badge trạng thái nhỏ gọn */}
+                        <div className="flex-shrink-0">
+                          {q.reported ? (
+                            <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-sm border border-white animate-pulse"></div>
+                          ) : (
+                            <div className="w-3 h-3 bg-amber-500 rounded-full shadow-sm border border-white animate-pulse"></div>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
 
                     {/* Replies mở rộng bên dưới câu hỏi */}
                     {q.questions && q.questions.length > 0 && (
-                      <div className="ml-4 mt-2">
+                      <div className="ml-3 mt-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -721,23 +735,21 @@ const AdminSupport: React.FC = () => {
                             e.stopPropagation();
                             toggleReplies(q.id);
                           }}
-                          className="w-full justify-start gap-1 text-xs"
+                          className="w-full justify-start gap-1 text-xs hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 rounded-md py-1 h-7"
                         >
                           {expandedReplies.has(q.id) ? (
                             <>
-                              <ChevronUp className="w-3 h-3" />
+                              <ChevronUp className="w-3 h-3 text-blue-500" />
                               Thu gọn ({countTotalReplies(
                                 q.questions || []
-                              )}{" "}
-                              trả lời)
+                              )})
                             </>
                           ) : (
                             <>
-                              <ChevronDown className="w-3 h-3" />
+                              <ChevronDown className="w-3 h-3 text-gray-500" />
                               Mở rộng ({countTotalReplies(
                                 q.questions || []
-                              )}{" "}
-                              trả lời)
+                              )})
                             </>
                           )}
                         </Button>
@@ -761,99 +773,140 @@ const AdminSupport: React.FC = () => {
           {/* Phần chi tiết câu hỏi */}
           <div className="md:w-2/3 flex flex-col">
             {selectedReply ? (
-              <Card className="flex-1">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center gap-3">
-                    {selectedReply.user != null ? (
-                      <img
-                        src={
-                          selectedReply.user!.avatar ||
-                          "/public/avatar-default.jpg"
-                        }
-                        alt="avatar"
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-10 h-10 text-primary" />
-                    )}
-                    <div>
-                      <div className="font-bold">
-                        {selectedReply.user
-                          ? `${selectedReply.user.first_name} ${selectedReply.user.last_name}`
-                          : "Quản trị viên"}
+              <Card className="flex-1 bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200">
+                    <div className="relative">
+                      {selectedReply.user != null ? (
+                        <img
+                          src={
+                            selectedReply.user!.avatar ||
+                            "/public/avatar-default.jpg"
+                          }
+                          alt="avatar"
+                          className="w-12 h-12 rounded-full object-cover border-3 border-white shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                          <User className="w-6 h-6 text-white" />
+                        </div>
+                      )}
+                      {/* Status indicator */}
+                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                        selectedReply.reported ? "bg-emerald-500" : "bg-amber-500"
+                      }`}></div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-gray-900">
+                          {selectedReply.user
+                            ? `${selectedReply.user.first_name} ${selectedReply.user.last_name}`
+                            : "Quản trị viên"}
+                        </h3>
+                        {selectedReply.user_id === 23 && (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                            Admin
+                          </Badge>
+                        )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm text-gray-600 mb-1">
                         Reply #{selectedReply.id}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         {formatDate(selectedReply.created_at)}
                       </div>
-                      {/* {selectedReply.user_id === 23 && (
-                        <Badge variant="secondary" className="mt-1">
-                          Admin
-                        </Badge>
-                      )} */}
                     </div>
                   </div>
                   <Separator />
-                  <div className="text-lg">{selectedReply.text}</div>
+                  <div className="text-lg font-semibold te  xt-black">{selectedReply.text}</div>
                 </CardContent>
               </Card>
             ) : selected ? (
-              <Card className="flex-1">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center gap-3">
-                    {selected.user != null ? (
-                      <img
-                        src={
-                          selected.user!.avatar || "/public/avatar-default.jpg"
-                        }
-                        alt="avatar"
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-10 h-10 text-primary" />
-                    )}
-                    <div>
-                      <div className="font-bold">
-                        {selected.user.first_name} {selected.user.last_name}
+              <Card className="flex-1 bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200">
+                    <div className="relative">
+                      {selected.user != null ? (
+                        <img
+                          src={
+                            selected.user!.avatar || "/public/avatar-default.jpg"
+                          }
+                          alt="avatar"
+                          className="w-12 h-12 rounded-full object-cover border-3 border-white shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                          <User className="w-6 h-6 text-white" />
+                        </div>
+                      )}
+                      {/* Status indicator */}
+                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                        selected.reported ? "bg-emerald-500" : "bg-amber-500"
+                      }`}></div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-gray-900">
+                          {selected.user.first_name} {selected.user.last_name}
+                        </h3>
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm text-gray-600 mb-1">
                         {mockTours.find((t) => t.id === selected.tour_id)
                           ?.title || `Tour #${selected.tour_id}`}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         {formatDate(selected.created_at)}
                       </div>
                     </div>
                   </div>
-                  <Separator />
-                  <div className="text-lg">{selected.text}</div>
+                  <Separator className="bg-gray-200" />
+                  <div className="text-lg text-gray-800 leading-relaxed p-4 bg-gray-50 rounded-lg border border-gray-100">
+                    {selected.text}
+                  </div>
                 </CardContent>
               </Card>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <MessageCircle className="w-16 h-16 mb-4" />
-                <div>
-                  Chọn một câu hỏi hoặc reply để xem chi tiết và trả lời
-                </div>
-              </div>
+              <Card className="flex-1 bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+                <CardContent className="flex flex-col items-center justify-center h-full p-12">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
+                    <MessageCircle className="w-10 h-10 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                    Chưa chọn câu hỏi
+                  </h3>
+                  <p className="text-gray-500 text-center max-w-md">
+                    Chọn một câu hỏi hoặc reply từ danh sách bên trái để xem chi tiết và trả lời
+                  </p>
+                </CardContent>
+              </Card>
             )}
 
             {/* Form reply cố định */}
             {(selected || selectedReply) && (
-              <Card className="mt-4">
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Card className="mt-4 bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4 w-[300px]">
+                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                        <Send className="w-4 h-4 text-white" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-800">
                         Trả lời{" "}
                         {selectedReply
                           ? `cho reply #${selectedReply.id}`
                           : `cho câu hỏi #${selected?.id}`}
-                      </label>
+                      </h4>
+                    </div>
+                    
+                    <div>
                       <textarea
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        className="h-[60px] w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 resize-none transition-all duration-200 bg-white/60 hover:bg-white/80 focus:bg-white"
                         rows={4}
                         placeholder={
                           selectedReply
@@ -864,9 +917,10 @@ const AdminSupport: React.FC = () => {
                         onChange={(e) => setReplyText(e.target.value)}
                       />
                     </div>
+                    
                     <div className="flex justify-end">
                       <Button
-                        className="gap-2 px-6"
+                        className="gap-2 px-8 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                         onClick={
                           selectedReply
                             ? () => handleReplyToReply(selectedReply.id)
@@ -890,3 +944,31 @@ const AdminSupport: React.FC = () => {
 };
 
 export default AdminSupport;
+
+// CSS tùy chỉnh cho scrollbar
+const customScrollbarStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+`;
+
+// Thêm styles vào head
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = customScrollbarStyles;
+  document.head.appendChild(style);
+}
