@@ -3,7 +3,7 @@ import { RatingStars } from "./RatingStarsProps";
 import { fetchTours } from "../services/tour.service";
 import { useNavigate } from "react-router-dom";
 import { Clock, Users, Eye } from "lucide-react";
-import { Loading } from "./Loading";
+import { SkeletonMainTours } from "./Skeleton";
 
 // Hàm format giá theo định dạng xxx.xxx.000 VND
 const formatPrice = (price: string | number): string => {
@@ -266,6 +266,10 @@ const MainTours: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return <SkeletonMainTours />;
+  }
+
   return (
     <div className="bg-gradient-to-br bg-white py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -273,20 +277,19 @@ const MainTours: React.FC = () => {
           <h2 className="text-4xl font-bold text-[#015294] mb-4">TOUR CHÍNH</h2>
           <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
         </div>
-        {loading ? (
-          <Loading />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {tours.map((tour, index) => (
-              <TourCard key={index} {...tour} />
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {tours.map((tour, index) => (
+            <TourCard key={index} {...tour} />
+          ))}
+        </div>
 
         {existTourMore && (
           <div className="text-center mt-8">
             {loadingMore ? (
-              <Loading />
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <span className="ml-2 text-gray-600">Đang tải...</span>
+              </div>
             ) : (
               <button
                 onClick={handleMoreTours}

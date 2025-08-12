@@ -5,10 +5,17 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import { getCarouselData } from "../../apis/carousel.api";
+import { useScrollAnimation } from "../../hooks/useScrollAnimation";
 
 export const HeroSection = () => {
   const [slides, setSlides] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const { isVisible, elementRef } = useScrollAnimation({
+    threshold: 0.1,
+    rootMargin: "0px 0px -50px 0px",
+    triggerOnce: true
+  });
 
   useEffect(() => {
     setIsLoading(true);
@@ -43,7 +50,12 @@ export const HeroSection = () => {
   }, []);
 
   return (
-    <div className="relative h-screen overflow-hidden">
+    <div 
+      ref={elementRef}
+      className={`relative h-screen overflow-hidden transition-all duration-1000 ease-out ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+      }`}
+    >
       {isLoading ? (
         // Loading placeholder
         <div className="w-full h-full bg-gradient-to-r from-gray-400 via-gray-500 to-gray-400 animate-pulse relative">
@@ -83,7 +95,9 @@ export const HeroSection = () => {
                 >
                   <div className="absolute inset-0 bg-black/40"></div>
                   <div className="absolute inset-0 flex items-center">
-                    <div className="text-left text-white max-w-5xl px-40 ml-8">
+                    <div className={`text-left text-white max-w-5xl px-40 ml-8 transition-all duration-700 delay-300 ${
+                      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                    }`}>
                       <h1 className="text-3xl md:text-6xl font-semibold mb-6 leading-tight">
                         {slide.title}
                       </h1>
@@ -101,20 +115,12 @@ export const HeroSection = () => {
                           <span>Theo đoàn</span>
                         </div> */}
                       </div>
-                      <div className="text-3xl md:text-3xl font-bold text-orange-500 mb-8">
-                        Giá: {slide.price}
+                      <div className="text-2xl md:text-3xl font-bold text-orange-400 mb-8">
+                        {slide.price}
                       </div>
-                      <p className="text-lg mb-8 text-white/80 max-w-2xl mx-auto">
-                        {slide.description}
-                      </p>
-                      <div className="flex space-x-4">
-                        {/* <span className="bg-orange-500 hover:bg-orange-600 text-white px-7 py-3 rounded-lg font-semibold transition-colors duration-300 transform hover:scale-105 inline-block">
-                          ĐẶT NGAY
-                        </span> */}
-                        <span className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-7 py-3 rounded-lg font-semibold transition-all duration-300 inline-block">
-                          XEM CHI TIẾT
-                        </span>
-                      </div>
+                      <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                        Đặt Tour Ngay
+                      </button>
                     </div>
                   </div>
                 </Link>
@@ -125,7 +131,9 @@ export const HeroSection = () => {
                 >
                   <div className="absolute inset-0 bg-black/40"></div>
                   <div className="absolute inset-0 flex items-center">
-                    <div className="text-left text-white max-w-4xl px-40 ml-8">
+                    <div className={`text-left text-white max-w-4xl px-40 ml-8 transition-all duration-700 delay-300 ${
+                      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                    }`}>
                       <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
                         {slide.title}
                       </h1>
@@ -146,17 +154,12 @@ export const HeroSection = () => {
                           <span>Theo đoàn</span>
                         </div>
                       </div>
-                      <div className="text-4xl md:text-5xl font-bold text-orange-500 mb-8">
-                        Giá: {slide.price}
+                      <div className="text-2xl md:text-3xl font-bold text-orange-400 mb-8">
+                        {slide.price}
                       </div>
-                      <div className="flex space-x-4">
-                        {/* <span className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold transition-colors duration-300 transform hover:scale-105 inline-block">
-                          ĐẶT NGAY
-                        </span> */}
-                        <span className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 rounded-lg font-semibold transition-all duration-300 inline-block">
-                          XEM CHI TIẾT
-                        </span>
-                      </div>
+                      <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                        Đặt Tour Ngay
+                      </button>
                     </div>
                   </div>
                 </div>

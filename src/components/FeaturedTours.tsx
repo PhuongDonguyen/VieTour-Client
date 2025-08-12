@@ -3,6 +3,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import { fetchTopBookedTours } from "../services/tour.service";
 import { Link } from "react-router-dom";
+import { SkeletonFeaturedTours } from "./Skeleton";
 import "swiper/css";
 import "swiper/css/navigation";
 
@@ -24,11 +25,7 @@ export const FeaturedTours: React.FC = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="w-full py-16 text-center text-lg text-gray-500 flex items-center justify-center">
-        Đang tải tour nổi bật...
-      </div>
-    );
+    return <SkeletonFeaturedTours />;
   }
 
   if (error) {
