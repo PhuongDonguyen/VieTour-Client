@@ -1,30 +1,23 @@
-// VNPay payment service - placeholder for future implementation
+import { initVnPayPayment } from "../apis/vnpay.api";
+import type { InitVnPayPaymentPayload } from "../apis/vnpay.api";
 
-interface VNPayRequest {
-    amount: number;
-    orderInfo: string;
-    orderId?: string;
-}
-
-interface VNPayResponse {
-    success: boolean;
-    payUrl?: string;
-    error?: string;
-}
-
-export const createVNPayPayment = async (request: VNPayRequest): Promise<VNPayResponse> => {
-    // TODO: Implement VNPay integration
-    console.log('VNPay payment request:', request);
-
-    return {
-        success: false,
-        error: 'VNPay payment service is not implemented yet'
+export const createVNPayPayment = async (data: {
+  amount: number;
+  orderInfo: string;
+}) => {
+  try {
+    const vnpayData: InitVnPayPaymentPayload = {
+      amount: data.amount,
+      orderInfo: data.orderInfo,
     };
-};
 
-export const verifyVNPayCallback = async (params: Record<string, string>): Promise<boolean> => {
-    // TODO: Implement VNPay callback verification
-    console.log('VNPay callback params:', params);
-
-    return false;
+    const response = await initVnPayPayment(vnpayData);
+    console.log("VNPay API response:", response.data); // Debug log
+    return response.data; // This returns { success: true, data: { paymentUrl: "...", ... } }
+  } catch (error: any) {
+    console.log({ error });
+    throw new Error(
+      error.response?.data?.message || "Lỗi khởi tạo thanh toán VNPay"
+    );
+  }
 };

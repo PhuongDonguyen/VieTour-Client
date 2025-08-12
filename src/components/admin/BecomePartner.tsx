@@ -1,31 +1,43 @@
-import React, { useState, useEffect } from "react";
-import { becomePartnerService } from "@/services/becomePartner.service";
-import { toast } from "sonner";
+import { registerPartnerService } from "@/services/registerPartner.service";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
-import { Link } from "react-router-dom";
-import type {
-  BecomePartnerListResponse,
-  BecomePartnerResponse,
-} from "@/apis/becomePartner.api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  RegisterPartnerListResponse,
+  RegisterPartnerResponse,
+} from "@/apis/registerPartner.api";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
-const BecomePartner: React.FC = () => {
-  const [partners, setPartners] = useState<BecomePartnerListResponse[]>([]);
+const RegisterPartner: React.FC = () => {
+  const [partners, setPartners] = useState<RegisterPartnerListResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<
-    "pending" | "approved" | "rejected" | "all"
+    "pending" | "accept" | "decline" | "all"
   >("all");
 
   useEffect(() => {
-    loadPartners();
+    fetchPartners();
   }, [currentPage, statusFilter]);
 
-  const loadPartners = async () => {
+  const fetchPartners = async () => {
     try {
       setLoading(true);
-      const params: any = {
+      const params: {
+        status?: "pending" | "accept" | "decline";
+        page?: number;
+        limit?: number;
+      } = {
         page: currentPage,
         limit: 10,
       };
@@ -34,255 +46,210 @@ const BecomePartner: React.FC = () => {
         params.status = statusFilter;
       }
 
-      const response = await becomePartnerService.getBecomePartners(params);
-
-      if (response.success) {
-        setPartners(response.data);
-        setTotalPages(response.pagination.totalPages);
-      } else {
-        toast.error("Có lỗi xảy ra khi tải dữ liệu");
-      }
-    } catch (error: any) {
-      console.error("Error loading partners:", error);
-      toast.error("Có lỗi xảy ra khi tải dữ liệu");
+      const response = await registerPartnerService.getRegisterPartners(params);
+      setPartners(response.data);
+      setTotalPages(response.pagination.totalPages);
+    } catch (error) {
+      console.error("Error fetching partners:", error);
+      toast.error("Có lỗi xảy ra khi tải danh sách đối tác");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (
-    id: number,
-    newStatus: "approved" | "rejected"
-  ) => {
+  const handleApprove = async (id: number) => {
     try {
-      const response = await becomePartnerService.updateBecomePartnerStatus(
-        id,
-        {
-          status: newStatus,
-        }
-      );
-
+      const response = await registerPartnerService.approveRegisterPartner(id);
       if (response.success) {
-        toast.success(
-          `Đã ${
-            newStatus === "approved" ? "chấp nhận" : "từ chối"
-          } yêu cầu thành công`
-        );
-        loadPartners(); // Reload data
-      } else {
-        toast.error("Có lỗi xảy ra khi cập nhật trạng thái");
+        toast.success("Phê duyệt đối tác thành công!");
+        fetchPartners();
       }
-    } catch (error: any) {
-      console.error("Error updating status:", error);
-      toast.error("Có lỗi xảy ra khi cập nhật trạng thái");
+    } catch (error) {
+      console.error("Error approving partner:", error);
+      toast.error("Có lỗi xảy ra khi phê duyệt đối tác");
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    const reason = prompt("Lý do từ chối:");
+    if (!reason) return;
+
+    try {
+      const response = await registerPartnerService.rejectRegisterPartner(
+        id,
+        reason
+      );
+      if (response.success) {
+        toast.success("Từ chối đối tác thành công!");
+        fetchPartners();
+      }
+    } catch (error) {
+      console.error("Error rejecting partner:", error);
+      toast.error("Có lỗi xảy ra khi từ chối đối tác");
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return (
-          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-            Chờ duyệt
-          </span>
-        );
-      case "approved":
-        return (
-          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-            Đã chấp nhận
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-            Đã từ chối
-          </span>
-        );
+        return <Badge variant="secondary">Chờ duyệt</Badge>;
+      case "accept":
+        return <Badge variant="default">Đã duyệt</Badge>;
+      case "decline":
+        return <Badge variant="destructive">Đã từ chối</Badge>;
       default:
-        return (
-          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-            {status}
-          </span>
-        );
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getStatusActionButtons = (partner: BecomePartnerListResponse) => {
-    return (
-      <Link to={`/admin/become-partners/${partner.id}`}>
-        <Button variant="outline" size="sm">
-          <Eye className="w-4 h-4" />
-        </Button>
-      </Link>
-    );
+  const getStatusActionButtons = (partner: RegisterPartnerListResponse) => {
+    if (partner.status === "pending") {
+      return (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => handleApprove(partner.id)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Phê duyệt
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => handleReject(partner.id)}
+          >
+            Từ chối
+          </Button>
+        </div>
+      );
+    }
+    return null;
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Quản lý yêu cầu trở thành đối tác
-        </h1>
-        <p className="text-gray-600">
-          Quản lý các yêu cầu đăng ký trở thành đối tác từ các công ty du lịch
-        </p>
-      </div>
-
-      {/* Filter Section */}
-      <div className="mb-6">
-        <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700">
-            Lọc theo trạng thái:
-          </label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-          >
-            <option value="all">Tất cả</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="approved">Đã chấp nhận</option>
-            <option value="rejected">Đã từ chối</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="text-gray-600 mt-2">Đang tải dữ liệu...</p>
-          </div>
-        ) : (
-          <>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Công ty
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Người đăng ký
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Số điện thoại
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {partners.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-4 text-center text-gray-500"
-                    >
-                      Không có yêu cầu nào
-                    </td>
-                  </tr>
-                ) : (
-                  partners.map((partner) => (
-                    <tr key={partner.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {partner.company_name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {partner.registrant_name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {partner.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {partner.phone}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(partner.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusActionButtons(partner)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Trước
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Sau
-                  </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Trang <span className="font-medium">{currentPage}</span>{" "}
-                      trong tổng số{" "}
-                      <span className="font-medium">{totalPages}</span> trang
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                      <button
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>Quản lý yêu cầu đối tác</span>
+            <div className="flex gap-2">
+              <Button
+                variant={statusFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("all")}
+              >
+                Tất cả
+              </Button>
+              <Button
+                variant={statusFilter === "pending" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("pending")}
+              >
+                Chờ duyệt
+              </Button>
+              <Button
+                variant={statusFilter === "accept" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("accept")}
+              >
+                Đã duyệt
+              </Button>
+              <Button
+                variant={statusFilter === "decline" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("decline")}
+              >
+                Đã từ chối
+              </Button>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Tên công ty</TableHead>
+                <TableHead>Người đăng ký</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Số điện thoại</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {partners.map((partner) => (
+                <TableRow key={partner.id}>
+                  <TableCell>{partner.id}</TableCell>
+                  <TableCell>{partner.company_name}</TableCell>
+                  <TableCell>{partner.registrant_name}</TableCell>
+                  <TableCell>{partner.email}</TableCell>
+                  <TableCell>{partner.phone}</TableCell>
+                  <TableCell>{getStatusBadge(partner.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() =>
-                          setCurrentPage(Math.max(1, currentPage - 1))
+                          window.open(
+                            `/admin/register-partners/${partner.id}`,
+                            "_blank"
+                          )
                         }
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Trước
-                      </button>
-                      <button
-                        onClick={() =>
-                          setCurrentPage(Math.min(totalPages, currentPage + 1))
-                        }
-                        disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Sau
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+                        Chi tiết
+                      </Button>
+                      {getStatusActionButtons(partner)}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-4 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Trước
+              </Button>
+              <span className="flex items-center px-3">
+                Trang {currentPage} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Sau
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default BecomePartner;
+export default RegisterPartner;

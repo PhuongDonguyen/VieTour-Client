@@ -68,7 +68,7 @@ export const registerPartnerService = {
   },
 
   // Từ chối yêu cầu đăng ký đối tác
-  rejectRegisterPartner: async (id: number, reason: string) => {
+  rejectRegisterPartner: async (id: number, reason?: string) => {
     try {
       const response = await rejectRegisterPartner(id, reason);
       return response;

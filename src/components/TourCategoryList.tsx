@@ -3,6 +3,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import { Link } from 'react-router-dom';
 import { fetchActiveTourCategories } from '../services/tourCategory.service';
+import { SkeletonTourCategories } from './Skeleton';
 
 export const TourListCarousel: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -22,15 +23,16 @@ export const TourListCarousel: React.FC = () => {
   }, []);
 
   if (loading) {
-    return <div className="w-full py-8 text-center text-lg text-gray-500">Đang tải danh mục tour...</div>;
+    return <SkeletonTourCategories />;
   }
+  
   if (error) {
     return <div className="w-full py-8 text-center text-red-500">{error}</div>;
   }
 
   return (
     <div className="max-w-7xl mx-auto w-full py-8 px-4">
-      <h2 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">DANH SÁCH TOUR</h2>
+      <h2 className="text-2xl md:text-3xl font-bold text-[#015294] mb-8 text-center">DANH SÁCH TOUR</h2>
       <div className="relative">
         <Swiper
           modules={[Autoplay]}
@@ -49,9 +51,8 @@ export const TourListCarousel: React.FC = () => {
           threshold={20}
         >
           {categories.map((cat, idx) => (
-            <SwiperSlide className="px-1">
+            <SwiperSlide key={idx} className="px-1">
               <Link
-                key={idx}
                 to={`/tour-category/${cat.slug}`}
                 className="relative rounded-2xl overflow-hidden h-[270px] md:h-[300px] lg:h-[320px] flex flex-col cursor-pointer group bg-blue-100"
               >

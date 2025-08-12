@@ -115,8 +115,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["admin", "provider"],
       },
       {
-        label: "Yêu cầu đối tác",
-        href: "/admin/become-partners",
+        label: "Đăng ký đối tác",
+        href: "/admin/register-partners",
         icon: <Handshake className="w-4 h-4" />,
         allowedRoles: ["admin"],
       },

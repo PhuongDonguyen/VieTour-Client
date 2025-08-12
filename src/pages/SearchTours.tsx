@@ -114,7 +114,7 @@ const SearchTours: React.FC = () => {
       max_price: searchParams.get("max_price"),
       sortBy: searchParams.get("sortBy"),
       sortOrder: searchParams.get("sortOrder"),
-      page: searchParams.get("page")
+      page: searchParams.get("page"),
     });
   }, [searchParams]);
   const [priceRange, setPriceRange] = useState([
@@ -148,6 +148,13 @@ const SearchTours: React.FC = () => {
     loadCategories();
   }, []);
 
+  // Update priceRange when URL params change
+  useEffect(() => {
+    const minPrice = parseInt(searchParams.get("min_price") || "0");
+    const maxPrice = parseInt(searchParams.get("max_price") || "10000000");
+    setPriceRange([minPrice, maxPrice]);
+  }, [searchParams]);
+
   // Load tours when search params change
   useEffect(() => {
     searchTours();
@@ -155,11 +162,29 @@ const SearchTours: React.FC = () => {
 
   const loadProvinces = async () => {
     try {
-      const response = await fetch("https://provinces.open-api.vn/api/p/");
-      const data = await response.json();
-      setProvinces(data);
+      const response = await fetch(
+        "https://vn-public-apis.fpo.vn/provinces/getAll?limit=-1"
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (
+        result &&
+        result.exitcode === 1 &&
+        result.data &&
+        Array.isArray(result.data.data)
+      ) {
+        setProvinces(result.data.data);
+      } else {
+        setProvinces([]);
+      }
     } catch (error) {
       console.error("Error loading provinces:", error);
+      setProvinces([]);
     }
   };
 
@@ -406,7 +431,11 @@ const SearchTours: React.FC = () => {
             <h2 className="text-xl font-semibold">
               {pagination.totalItems} tours được tìm thấy
             </h2>
-            {(searchQuery || selectedLocation || selectedCategory) && (
+            {(searchQuery ||
+              selectedLocation ||
+              selectedCategory ||
+              priceRange[0] > 0 ||
+              priceRange[1] < 10000000) && (
               <div className="flex gap-2">
                 {searchQuery && (
                   <Badge variant="secondary" className="gap-1">
@@ -426,6 +455,12 @@ const SearchTours: React.FC = () => {
                         (c) => c.id.toString() === selectedCategory
                       )?.name
                     }
+                  </Badge>
+                )}
+                {(priceRange[0] > 0 || priceRange[1] < 10000000) && (
+                  <Badge variant="secondary" className="gap-1">
+                    Giá: {priceRange[0].toLocaleString()} -{" "}
+                    {priceRange[1].toLocaleString()} VND
                   </Badge>
                 )}
               </div>
@@ -529,6 +564,8 @@ const SearchTours: React.FC = () => {
                         }
                         reviewCount={tour.review_count}
                         slug={tour.slug}
+                        viewCount={tour.view_count}
+                        bookedCount={tour.booked_count}
                       />
                     ) : (
                       // List view card

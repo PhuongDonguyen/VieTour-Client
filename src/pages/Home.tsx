@@ -4,28 +4,40 @@ import MainTours from "../components/MainTours";
 import FeaturedTours from "../components/FeaturedTours";
 import TourListCarousel from "../components/TourCategoryList";
 import BlogSection from "../components/BlogSection";
+import { LazyLoad } from "../components/LazyLoad";
+import {
+  SkeletonSearchSection,
+  SkeletonFeaturedTours,
+  SkeletonMainTours,
+  SkeletonTourCategories,
+  SkeletonBlogSection
+} from "../components/Skeleton";
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen monserrat">
+      {/* Hero Section - No lazy loading, immediate load */}
       <div>
         <HeroSection />
       </div>
-      <div>
-        <SearchSection />
-      </div>
-      <div>
+      <SearchSection />
+
+      {/* Featured Tours - Lazy load with animation */}
+      <LazyLoad placeholder={<SkeletonFeaturedTours />}>
         <FeaturedTours />
-      </div>
-      <div>
+      </LazyLoad>
+
+      {/* Main Tours - Lazy load with animation */}
+      <LazyLoad placeholder={<SkeletonMainTours />}>
         <MainTours />
-      </div>
-      <div>
+      </LazyLoad>
+
+      {/* Tour Category List - Lazy load with animation */}
+      <LazyLoad placeholder={<SkeletonTourCategories />}>
         <TourListCarousel />
-      </div>
-      <div>
-        <BlogSection />
-      </div>
+      </LazyLoad>
+
+      <BlogSection />
     </div>
   );
 }

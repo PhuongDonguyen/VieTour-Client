@@ -12,6 +12,8 @@ interface SearchTourCardProps {
   rating: number;
   reviewCount: number;
   slug: string;
+  viewCount?: number;
+  bookedCount?: number;
 }
 
 export const SearchTourCard: React.FC<SearchTourCardProps> = ({
@@ -24,6 +26,8 @@ export const SearchTourCard: React.FC<SearchTourCardProps> = ({
   rating,
   reviewCount,
   slug,
+  viewCount = 0,
+  bookedCount = 0,
 }) => {
   const navigate = useNavigate();
 
@@ -34,30 +38,6 @@ export const SearchTourCard: React.FC<SearchTourCardProps> = ({
   const formatPrice = (price: number) => {
     if (typeof price !== "number" || isNaN(price)) return "0 VND";
     return price.toLocaleString("vi-VN") + " VND";
-  };
-
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(
-          <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-        );
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(
-          <Star
-            key={i}
-            className="w-4 h-4 fill-yellow-400/50 text-yellow-400"
-          />
-        );
-      } else {
-        stars.push(<Star key={i} className="w-4 h-4 text-gray-300" />);
-      }
-    }
-    return stars;
   };
 
   return (
@@ -85,29 +65,44 @@ export const SearchTourCard: React.FC<SearchTourCardProps> = ({
           {title}
         </h3>
 
-        {/* Location & Duration */}
-        <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+        {/* Location & Rating */}
+        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
           <div className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
             <span className="truncate">{location}</span>
           </div>
+          {reviewCount > 0 && (
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-xs text-gray-500">
+                {rating.toFixed(1)} ({reviewCount})
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Duration */}
+        <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+          <Calendar className="w-4 h-4" />
+          <span>{duration}</span>
+        </div>
+
+        {/* Stats - View & Booking Count */}
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
           <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" />
-            <span>{duration}</span>
+            <Eye className="w-4 h-4" />
+            <span>{viewCount} lượt xem</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Users className="w-4 h-4" />
+            <span>{bookedCount} lượt đặt</span>
           </div>
         </div>
 
-        {/* Rating */}
+        {/* Rating Details */}
         <div className="mb-3 min-h-[20px]">
           {reviewCount > 0 ? (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                {renderStars(rating)}
-              </div>
-              <span className="text-sm text-gray-600">
-                {rating.toFixed(1)} ({reviewCount} đánh giá)
-              </span>
-            </div>
+            <div className="text-sm text-gray-600">{reviewCount} đánh giá</div>
           ) : (
             <div className="text-sm text-gray-500">
               Tour này chưa có đánh giá

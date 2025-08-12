@@ -63,8 +63,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({
           </div>
         </Link>
         
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        {/* Enhanced overlay for better text readability - always visible */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent" />
+        
+        {/* Hover overlay effect */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
       </div>
 
       {/* Content */}
