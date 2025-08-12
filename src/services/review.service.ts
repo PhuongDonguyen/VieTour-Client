@@ -1,47 +1,69 @@
 import {
-  getReviewByTourId,
   createReview,
-  createReviewWithImages,
+  getAllReviews,
+  getReviewById,
+  updateReview,
+  deleteReview,
 } from "../apis/review.api";
 
-export const fetchReviewByTourId = async (tourId: number) => {
-  const res = await getReviewByTourId(tourId);
-  if (res.data && res.data.success) return res.data;
-  throw new Error("Không load được review");
+export const fetchAllReviews = async (tourId?: number) => {
+  try {
+    const response = await getAllReviews(tourId);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all reviews:", error);
+    throw error;
+  }
 };
 
-export const submitReview = async (
-  userId: number,
-  tourId: number,
-  tourStar: number,
-  text: string,
-  bookingId: number
-) => {
-  const res = await createReview(userId, tourId, tourStar, text, bookingId);
-  if (res.data && res.data.success) return res.data;
-  throw new Error("Không gửi được đánh giá");
+export const fetchReviewById = async (id: number) => {
+  try {
+    const response = await getReviewById(id);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching review by id:", error);
+    throw error;
+  }
 };
 
-export const submitReviewWithImages = async (
-  userId: number,
-  tourId: number,
-  tourStar: number,
-  text: string,
-  images: File[],
-  bookingId: number
+// Create new review
+export const submitReview = async (formData: FormData) => {
+  try {
+    formData.append("action", "create");
+    const response = await createReview(formData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating review:", error);
+    throw error;
+  }
+};
+
+// Update existing review
+export const updateReviewService = async (
+  reviewId: number,
+  formData: FormData
 ) => {
-  const formData = new FormData();
-  formData.append("userId", userId.toString());
-  formData.append("tourId", tourId.toString());
-  formData.append("tourStar", tourStar.toString());
-  formData.append("text", text);
-  formData.append("bookingId", bookingId.toString());
+  try {
+    formData.append("action", "update");
+    formData.append("reviewId", reviewId.toString());
+    const response = await createReview(formData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating review:", error);
+    throw error;
+  }
+};
 
-  images.forEach((image, index) => {
-    formData.append("images", image);
-  });
-
-  const res = await createReviewWithImages(formData);
-  if (res.data && res.data.success) return res.data;
-  throw new Error("Không gửi được đánh giá với hình ảnh");
+// Delete review
+export const deleteReviewService = async (reviewId: number) => {
+  try {
+    const formData = new FormData();
+    formData.append("action", "delete");
+    formData.append("reviewId", reviewId.toString());
+    const response = await createReview(formData);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting review:", error);
+    throw error;
+  }
 };
