@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 type GalleryImage = {
   id: number;
@@ -98,36 +99,38 @@ const TabGallery: React.FC<TabGalleryProps> = ({ images }) => {
         ))}
       </div>
       {/* Modal xem ảnh lớn với chuyển ảnh */}
-      {modalIdx !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={closeModal}>
-          <div className="relative flex items-center justify-center w-full h-full">
-            <button
-              className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white text-3xl rounded-full w-12 h-12 flex items-center justify-center z-10"
-              onClick={e => { e.stopPropagation(); showPrev(); }}
-              aria-label="Ảnh trước"
-            >&#8592;</button>
-            <img
-              src={images[modalIdx].image_url}
-              alt={images[modalIdx].alt_text || ''}
-              className={`max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl border-4 border-white transition-opacity duration-200 ${fade ? 'opacity-100' : 'opacity-0'}`}
-              onClick={e => e.stopPropagation()}
-              draggable={false}
-            />
-            <button
-              className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white text-3xl rounded-full w-12 h-12 flex items-center justify-center z-10"
-              onClick={e => { e.stopPropagation(); showNext(); }}
-              aria-label="Ảnh sau"
-            >&#8594;</button>
-            <button
-              className="absolute top-4 right-4 text-white text-3xl font-bold bg-black/50 rounded-full w-10 h-10 flex items-center justify-center"
-              onClick={closeModal}
-              aria-label="Đóng"
-            >
-              &times;
-            </button>
-          </div>
-        </div>
-      )}
+      {modalIdx !== null &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={closeModal}>
+            <div className="relative flex items-center justify-center w-full h-full">
+              <button
+                className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white text-3xl rounded-full w-12 h-12 flex items-center justify-center z-10"
+                onClick={e => { e.stopPropagation(); showPrev(); }}
+                aria-label="Ảnh trước"
+              >&#8592;</button>
+              <img
+                src={images[modalIdx].image_url}
+                alt={images[modalIdx].alt_text || ''}
+                className={`max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl transition-opacity duration-200 ${fade ? 'opacity-100' : 'opacity-0'}`}
+                onClick={e => e.stopPropagation()}
+                draggable={false}
+              />
+              <button
+                className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white text-3xl rounded-full w-12 h-12 flex items-center justify-center z-10"
+                onClick={e => { e.stopPropagation(); showNext(); }}
+                aria-label="Ảnh sau"
+              >&#8594;</button>
+              <button
+                className="absolute top-4 right-4 text-white text-3xl font-bold bg-black/50 rounded-full w-10 h-10 flex items-center justify-center"
+                onClick={closeModal}
+                aria-label="Đóng"
+              >
+                &times;
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

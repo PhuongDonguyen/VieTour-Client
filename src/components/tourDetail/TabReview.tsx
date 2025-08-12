@@ -152,28 +152,41 @@ const StarFilter: React.FC<{
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => onStarSelect(null)}
+          disabled={totalReviews === 0}
           className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-all text-sm ${
             selectedStar === null
               ? "bg-orange-500 border-orange-500 text-white"
+              : totalReviews === 0
+              ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
               : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
           }`}
         >
           <span className="font-medium">Tất cả</span>
-          <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+            selectedStar === null
+              ? "bg-white/20"
+              : totalReviews === 0
+              ? "bg-gray-300 text-gray-500"
+              : "bg-gray-200"
+          }`}>
             {totalReviews}
           </span>
         </button>
         
         {[5, 4, 3, 2, 1].map((star) => {
           const count = starDistribution[5 - star];
+          const isDisabled = count === 0;
           
           return (
             <button
               key={star}
-              onClick={() => onStarSelect(star)}
+              onClick={() => !isDisabled && onStarSelect(star)}
+              disabled={isDisabled}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-all text-sm ${
                 selectedStar === star
                   ? "bg-orange-500 border-orange-500 text-white"
+                  : isDisabled
+                  ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
               }`}
             >
@@ -182,7 +195,11 @@ const StarFilter: React.FC<{
                   <Star
                     key={i}
                     className={`w-3 h-3 ${
-                      i < star ? "text-amber-400 fill-amber-400" : "text-gray-300"
+                      i < star 
+                        ? isDisabled 
+                          ? "text-gray-300 fill-gray-300" 
+                          : "text-amber-400 fill-amber-400" 
+                        : "text-gray-300"
                     }`}
                   />
                 ))}
@@ -191,6 +208,8 @@ const StarFilter: React.FC<{
               <span className={`text-xs px-1.5 py-0.5 rounded-full min-w-[1.5rem] text-center ${
                 selectedStar === star
                   ? "bg-white/20"
+                  : isDisabled
+                  ? "bg-gray-300 text-gray-500"
                   : "bg-gray-200"
               }`}>
                 {count}
