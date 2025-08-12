@@ -32,7 +32,7 @@ export const TourListCarousel: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto w-full py-8 px-4">
-      <h2 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">DANH SÁCH TOUR</h2>
+      <h2 className="text-2xl md:text-3xl font-bold text-[#015294] mb-8 text-center">DANH SÁCH TOUR</h2>
       <div className="relative">
         <Swiper
           modules={[Autoplay]}

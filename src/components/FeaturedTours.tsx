@@ -41,7 +41,7 @@ export const FeaturedTours: React.FC = () => {
       className="w-full py-16 flex flex-col justify-center"
       data-section="featured-tours"
     >
-      <h2 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
+      <h2 className="text-2xl md:text-3xl font-bold text-[#015294] mb-8 text-center">
         TOUR NỔI BẬT TRONG THÁNG
       </h2>
       <div className="relative">
