@@ -2,28 +2,27 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getTourCategoriesBySlug } from "../services/tourCategory.service";
 import { fetchTours } from "../services/tour.service";
-import { TourCard } from "../components/TourCard";
+import SearchTourCard from "../components/SearchTourCard";
 import { Home, ChevronRight } from "lucide-react";
 
 interface TourCardData {
-  id: string;
+  id: number;
   title: string;
-  image: string;
-  originalPrice: number;
-  discountedPrice: number;
-  discount: number;
-  views: string;
-  comments: string;
-  participants: string;
-  totalStar: number;
+  location: string;
+  duration: string;
+  price: number;
+  imageUrl: string;
+  rating: number;
   reviewCount: number;
   slug: string;
+  viewCount: number;
+  bookedCount: number;
 }
 
 const TourCardSkeleton = () => (
   <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
     <div className="h-48 bg-gray-200" />
-    <div className="p-6 space-y-4">
+    <div className="p-4 space-y-4">
       <div className="h-4 bg-gray-200 rounded w-3/4" />
       <div className="h-3 bg-gray-200 rounded w-1/2" />
       <div className="h-3 bg-gray-200 rounded w-2/3" />
@@ -55,23 +54,28 @@ export const TourByCategory = () => {
       if (!category?.id) throw new Error("Category not found");
       setCategoryName(category.name);
 
-      const toursRes = await fetchTours({ tour_category_id: category.id, page: pageNum, limit: 3 });
+      const toursRes = await fetchTours({
+        tour_category_id: category.id,
+        page: pageNum,
+        limit: 3,
+      });
       const newTours = toursRes.data.map((tour: any) => ({
-        id: tour.id.toString(),
+        id: tour.id,
         title: tour.title,
-        image: tour.poster_url || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80",
-        originalPrice: tour.price || 0,
-        discountedPrice: tour.price ? Math.floor(tour.price * 0.85) : 0, // 15% discount
-        discount: 15, // Fixed 15% discount for now
-        views: tour.view_count?.toString() || "0",
-        comments: tour.review_count?.toString() || "0",
-        participants: tour.booked_count?.toString() || "0",
-        totalStar: tour.total_star || 0,
+        location: tour.location || "Chưa cập nhật",
+        duration: tour.duration ? `${tour.duration}` : "Chưa cập nhật",
+        price: tour.price || 0,
+        imageUrl:
+          tour.poster_url ||
+          "https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80",
+        rating: tour.total_star / Math.max(tour.review_count, 1) || 0,
         reviewCount: tour.review_count || 0,
         slug: tour.slug,
+        viewCount: tour.view_count || 0,
+        bookedCount: tour.booked_count || 0,
       }));
 
-      setTours(prev => (append ? [...prev, ...newTours] : newTours));
+      setTours((prev) => (append ? [...prev, ...newTours] : newTours));
       setHasNextPage(toursRes.pagination?.hasNextPage || false);
     } catch (err) {
       console.error("Error fetching tours:", err);
@@ -99,23 +103,22 @@ export const TourByCategory = () => {
     }
   };
 
-  if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
+  if (error)
+    return <div className="text-center py-20 text-red-500">{error}</div>;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 mt-20">
+    <div className="max-w-7xl mx-auto px-4 py-8 mt-20">
       {/* Breadcrumb */}
       <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="flex items-center hover:text-orange-600 transition-colors duration-200"
         >
           <Home className="w-4 h-4 mr-1" />
           <span>Trang chủ</span>
         </Link>
         <ChevronRight className="w-4 h-4 text-gray-400" />
-        <span className="text-gray-900 font-medium">
-          {categoryName}
-        </span>
+        <span className="text-gray-900 font-medium">{categoryName}</span>
       </nav>
 
       <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
@@ -123,30 +126,34 @@ export const TourByCategory = () => {
       </h1>
 
       {isLoading && !tours.length ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
             <TourCardSkeleton key={i} />
           ))}
         </div>
       ) : tours.length ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tours.map(tour => (
-              <TourCard
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {tours.map((tour) => (
+              <SearchTourCard
                 key={tour.id}
                 id={tour.id}
                 title={tour.title}
-                image={tour.image}
-                originalPrice={tour.originalPrice}
-                discountedPrice={tour.discountedPrice}
-                discount={tour.discount}
-                views={tour.views}
-                comments={tour.comments}
-                participants={tour.participants}
+                location={tour.location}
+                duration={tour.duration}
+                price={tour.price}
+                imageUrl={tour.imageUrl}
+                rating={tour.rating}
+                reviewCount={tour.reviewCount}
                 slug={tour.slug}
+                viewCount={tour.viewCount}
+                bookedCount={tour.bookedCount}
               />
             ))}
-            {isLoading && [...Array(3)].map((_, i) => <TourCardSkeleton key={`skeleton-${i}`} />)}
+            {isLoading &&
+              [...Array(3)].map((_, i) => (
+                <TourCardSkeleton key={`skeleton-${i}`} />
+              ))}
           </div>
 
           {hasNextPage && !isLoading && (
