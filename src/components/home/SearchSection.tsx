@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Slider } from "../ui/slider";
-import { Label } from "../ui/label";
 import { useScrollAnimation } from "../../hooks/useScrollAnimation";
 import { fetchProvinces, Province } from "../../services/province.service";
 import { fetchActiveTourCategories } from "../../services/tourCategory.service";
@@ -151,8 +150,9 @@ export const SearchSection = () => {
         params.set("max_price", priceRange[1].toString());
     }
 
-    console.log("Searching with params:", params.toString());
-    // window.location.href = `/search${params.toString() ? `?${params.toString()}` : ""}`;
+    window.location.href = `/search${
+      params.toString() ? `?${params.toString()}` : ""
+    }`;
   };
 
   const quickFilters = getQuickFilters();
@@ -363,9 +363,6 @@ export const SearchSection = () => {
                           params.set("max_price", priceRange[1].toString());
                       }
 
-                      console.log(
-                        `Quick search with params: ${params.toString()}`
-                      );
                       // Chuyển hướng đến trang search với params
                       window.location.href = `/search${
                         params.toString() ? `?${params.toString()}` : ""
