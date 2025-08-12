@@ -556,7 +556,7 @@ const AdminSupport: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+      {/* <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
@@ -584,7 +584,7 @@ const AdminSupport: React.FC = () => {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Main Content */}
       <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-200px)]">
