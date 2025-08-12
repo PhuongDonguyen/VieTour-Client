@@ -28,17 +28,17 @@ interface Passwords {
 }
 
 interface Province {
-  code: number;
+  code: string; // Changed from number to string
   name: string;
 }
 
 interface District {
-  code: number;
+  code: string; // Changed from number to string
   name: string;
 }
 
 interface Ward {
-  code: number;
+  code: string; // Changed from number to string
   name: string;
 }
 
@@ -53,6 +53,9 @@ export const ProfilePage: React.FC = () => {
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
+  const [provincesLoading, setProvincesLoading] = useState(true);
+  const [districtsLoading, setDistrictsLoading] = useState(false);
+  const [wardsLoading, setWardsLoading] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(
     null
   );
@@ -90,15 +93,31 @@ export const ProfilePage: React.FC = () => {
 
   // Load provinces on mount
   useEffect(() => {
+    setProvincesLoading(true);
     axios
       .get(`${API_HOST}/provinces/getAll?limit=-1`)
       .then((res) => {
-        if (res.data && res.data.exitcode === 1 && res.data.data) {
-          setProvinces(res.data.data);
+        console.log("Provinces API response:", res.data); // Debug log
+        if (
+          res.data &&
+          res.data.exitcode === 1 &&
+          res.data.data &&
+          res.data.data.data &&
+          Array.isArray(res.data.data.data)
+        ) {
+          setProvinces(res.data.data.data);
+          console.log("Provinces loaded:", res.data.data.data.length); // Debug log
+        } else {
+          console.error("Invalid provinces data format:", res.data);
+          setProvinces([]);
         }
       })
       .catch((error) => {
         console.error("Error loading provinces:", error);
+        setProvinces([]);
+      })
+      .finally(() => {
+        setProvincesLoading(false);
       });
   }, []);
 
@@ -127,47 +146,73 @@ export const ProfilePage: React.FC = () => {
         // Reset form with user data
         reset(formValues);
 
-        // Load location data if province is set
-        if (userData.province) {
+        console.log("User data loaded:", userData); // Debug log
+        console.log("Provinces available:", provinces.length); // Debug log
+
+        // Load location data if province is set and provinces are loaded
+        if (userData.province && provinces.length > 0) {
+          console.log("Loading location data for province:", userData.province); // Debug log
           const loadLocationData = async () => {
             try {
               const province = provinces.find(
                 (p) => p.name === userData.province
               );
+              console.log("Found province:", province); // Debug log
+
               if (province) {
                 setSelectedProvince(province);
                 const districtRes = await axios.get(
                   `${API_HOST}/districts/getByProvince?provinceCode=${province.code}&limit=-1`
                 );
+                console.log("Districts API response:", districtRes.data); // Debug log
+
                 if (
                   districtRes.data &&
                   districtRes.data.exitcode === 1 &&
-                  districtRes.data.data
+                  districtRes.data.data &&
+                  districtRes.data.data.data &&
+                  Array.isArray(districtRes.data.data.data)
                 ) {
-                  setDistricts(districtRes.data.data);
+                  setDistricts(districtRes.data.data.data);
+                  console.log(
+                    "Districts loaded:",
+                    districtRes.data.data.data.length
+                  ); // Debug log
                 }
 
                 if (userData.district) {
-                  const district = districtRes.data.districts.find(
+                  const district = districtRes.data.data?.data?.find(
                     (d: any) => d.name === userData.district
                   );
+                  console.log("Found district:", district); // Debug log
+
                   if (district) {
                     setSelectedDistrict(district);
                     const wardRes = await axios.get(
                       `${API_HOST}/wards/getByDistrict?districtCode=${district.code}&limit=-1`
                     );
+                    console.log("Wards API response:", wardRes.data); // Debug log
+
                     if (
                       wardRes.data &&
                       wardRes.data.exitcode === 1 &&
-                      wardRes.data.data
+                      wardRes.data.data &&
+                      wardRes.data.data.data &&
+                      Array.isArray(wardRes.data.data.data)
                     ) {
-                      setWards(wardRes.data.data);
+                      setWards(wardRes.data.data.data);
+                      console.log(
+                        "Wards loaded:",
+                        wardRes.data.data.data.length
+                      ); // Debug log
                     }
 
                     if (userData.ward) {
-                      const ward = wardRes.data.wards.find(
+                      const ward = wardRes.data.data?.data?.find(
                         (w: any) => w.name === userData.ward
                       );
+                      console.log("Found ward:", ward); // Debug log
+
                       if (ward) {
                         setSelectedWard(ward);
                       }
@@ -180,9 +225,7 @@ export const ProfilePage: React.FC = () => {
             }
           };
 
-          if (provinces.length > 0) {
-            loadLocationData();
-          }
+          loadLocationData();
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -192,13 +235,13 @@ export const ProfilePage: React.FC = () => {
     };
 
     fetchData();
-  }, [provinces, reset]);
+  }, [provinces.length, reset]); // Only depend on provinces.length, not the entire provinces array
 
   // Handle province change
   const handleProvinceChange = async (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
-    const code = Number(e.target.value);
+    const code = e.target.value; // Changed from Number() to direct value
     const province = provinces.find((p) => p.code === code) || null;
 
     setValue("province", province?.name ?? "");
@@ -213,18 +256,24 @@ export const ProfilePage: React.FC = () => {
 
     if (province) {
       try {
+        setDistrictsLoading(true);
         const districtRes = await axios.get(
           `${API_HOST}/districts/getByProvince?provinceCode=${province.code}&limit=-1`
         );
         if (
           districtRes.data &&
           districtRes.data.exitcode === 1 &&
-          districtRes.data.data
+          districtRes.data.data &&
+          districtRes.data.data.data && // Fixed: districts are in data.data.data
+          Array.isArray(districtRes.data.data.data)
         ) {
-          setDistricts(districtRes.data.data);
+          setDistricts(districtRes.data.data.data);
         }
       } catch (error) {
         console.error("Error fetching districts:", error);
+        setDistricts([]);
+      } finally {
+        setDistrictsLoading(false);
       }
     }
   };
@@ -233,7 +282,7 @@ export const ProfilePage: React.FC = () => {
   const handleDistrictChange = async (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
-    const code = Number(e.target.value);
+    const code = e.target.value; // Changed from Number() to direct value
     const district = districts.find((d) => d.code === code) || null;
 
     setValue("district", district?.name ?? "");
@@ -245,21 +294,31 @@ export const ProfilePage: React.FC = () => {
 
     if (district) {
       try {
+        setWardsLoading(true);
         const wardRes = await axios.get(
           `${API_HOST}/wards/getByDistrict?districtCode=${district.code}&limit=-1`
         );
-        if (wardRes.data && wardRes.data.exitcode === 1 && wardRes.data.data) {
-          setWards(wardRes.data.data);
+        if (
+          wardRes.data &&
+          wardRes.data.exitcode === 1 &&
+          wardRes.data.data &&
+          wardRes.data.data.data &&
+          Array.isArray(wardRes.data.data.data)
+        ) {
+          setWards(wardRes.data.data.data);
         }
       } catch (error) {
         console.error("Error fetching wards:", error);
+        setWards([]);
+      } finally {
+        setWardsLoading(false);
       }
     }
   };
 
   // Handle ward change
   const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const code = Number(e.target.value);
+    const code = e.target.value; // Changed from Number() to direct value
     const ward = wards.find((w) => w.code === code) || null;
 
     setValue("ward", ward?.name ?? "");
@@ -425,13 +484,22 @@ export const ProfilePage: React.FC = () => {
               value={selectedProvince?.code || ""}
               onChange={handleProvinceChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={provincesLoading}
             >
-              <option value="">Chọn tỉnh/thành phố</option>
-              {provinces.map((province) => (
-                <option key={province.code} value={province.code}>
-                  {province.name}
+              <option value="">
+                {provincesLoading ? "Đang tải..." : "Chọn tỉnh/thành phố"}
+              </option>
+              {Array.isArray(provinces) && provinces.length > 0 ? (
+                provinces.map((province) => (
+                  <option key={province.code} value={province.code}>
+                    {province.name}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>
+                  {provincesLoading ? "Đang tải..." : "Không có dữ liệu"}
                 </option>
-              ))}
+              )}
             </select>
           </div>
 
@@ -447,14 +515,22 @@ export const ProfilePage: React.FC = () => {
               value={selectedDistrict?.code || ""}
               onChange={handleDistrictChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={!selectedProvince}
+              disabled={!selectedProvince || districtsLoading}
             >
-              <option value="">Chọn quận/huyện</option>
-              {districts.map((district) => (
-                <option key={district.code} value={district.code}>
-                  {district.name}
+              <option value="">
+                {districtsLoading ? "Đang tải..." : "Chọn quận/huyện"}
+              </option>
+              {Array.isArray(districts) && districts.length > 0 ? (
+                districts.map((district) => (
+                  <option key={district.code} value={district.code}>
+                    {district.name}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>
+                  {districtsLoading ? "Đang tải..." : "Không có dữ liệu"}
                 </option>
-              ))}
+              )}
             </select>
           </div>
 
@@ -470,14 +546,22 @@ export const ProfilePage: React.FC = () => {
               value={selectedWard?.code || ""}
               onChange={handleWardChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={!selectedDistrict}
+              disabled={!selectedDistrict || wardsLoading}
             >
-              <option value="">Chọn phường/xã</option>
-              {wards.map((ward) => (
-                <option key={ward.code} value={ward.code}>
-                  {ward.name}
+              <option value="">
+                {wardsLoading ? "Đang tải..." : "Chọn phường/xã"}
+              </option>
+              {Array.isArray(wards) && wards.length > 0 ? (
+                wards.map((ward) => (
+                  <option key={ward.code} value={ward.code}>
+                    {ward.name}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>
+                  {wardsLoading ? "Đang tải..." : "Không có dữ liệu"}
                 </option>
-              ))}
+              )}
             </select>
           </div>
 
