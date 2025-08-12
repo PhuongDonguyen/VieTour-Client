@@ -4,11 +4,36 @@ import {
   getReviewById,
   updateReview,
   deleteReview,
+  type ReviewQueryParams,
 } from "../apis/review.api";
 
-export const fetchAllReviews = async (tourId?: number) => {
+export interface ReviewResponse {
+  success: boolean;
+  data: any[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalPages: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+  summary: {
+    averageRating: number;
+    totalReviews: number;
+    ratingCounts: {
+      "1": number;
+      "2": number;
+      "3": number;
+      "4": number;
+      "5": number;
+    };
+  };
+}
+
+export const fetchAllReviews = async (params?: ReviewQueryParams): Promise<ReviewResponse> => {
   try {
-    const response = await getAllReviews(tourId);
+    const response = await getAllReviews(params);
     return response.data;
   } catch (error) {
     console.error("Error fetching all reviews:", error);

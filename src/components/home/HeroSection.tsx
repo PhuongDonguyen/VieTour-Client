@@ -98,7 +98,7 @@ export const HeroSection = () => {
                     <div className={`text-left text-white max-w-5xl px-40 ml-8 transition-all duration-700 delay-300 ${
                       isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                     }`}>
-                      <h1 className="text-3xl md:text-6xl font-semibold mb-6 leading-tight">
+                      <h1 className="text-2xl md:text-4xl font-semibold mb-6 leading-tight">
                         {slide.title}
                       </h1>
                       <div className="flex items-center space-x-4 mb-8">
@@ -115,7 +115,7 @@ export const HeroSection = () => {
                           <span>Theo đoàn</span>
                         </div> */}
                       </div>
-                      <div className="text-2xl md:text-3xl font-bold text-orange-400 mb-8">
+                      <div className="text-2xl md:text-2xl font-bold text-orange-400 mb-8">
                         {slide.price}
                       </div>
                       <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">

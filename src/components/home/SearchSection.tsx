@@ -218,10 +218,10 @@ export const SearchSection = () => {
               <br />
               <span className="inline-block bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
                 Chuyến Du Lịch
-              </span>
+            </span>
               <br />
               <span className="text-gray-900">Hoàn Hảo</span>
-            </h1>
+          </h1>
 
             <p
               className={`text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed transition-all duration-700 delay-400 ${
@@ -230,10 +230,10 @@ export const SearchSection = () => {
                   : "opacity-0 translate-y-4"
               }`}
             >
-              Khám phá vẻ đẹp Việt Nam với những tour được chọn lọc từ các nhà
+            Khám phá vẻ đẹp Việt Nam với những tour được chọn lọc từ các nhà
               cung cấp du lịch uy tín
-            </p>
-          </div>
+          </p>
+        </div>
 
           {/* Search card */}
           <div
@@ -247,49 +247,49 @@ export const SearchSection = () => {
           >
             {/* Search inputs */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
-              {/* Location */}
+            {/* Location */}
               <div className="lg:col-span-1">
                 <div className="relative group">
-                  <Select value={location} onValueChange={setLocation}>
+              <Select value={location} onValueChange={setLocation}>
                     <SelectTrigger
                       className="w-full h-16 pl-12 pr-4 text-gray-900 bg-gray-50/50 border-2 border-gray-200/50 rounded-2xl focus:border-blue-500 focus:bg-white transition-all duration-300 outline-none group-hover:border-gray-300"
                       onFocus={() => setIsSearchFocused(true)}
                       onBlur={() => setIsSearchFocused(false)}
                     >
                       <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors pointer-events-none" />
-                      <SelectValue placeholder="Bạn muốn đi đâu?" />
-                    </SelectTrigger>
+                  <SelectValue placeholder="Bạn muốn đi đâu?" />
+                </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {loadingProvinces ? (
-                        <SelectItem value="loading" disabled>
-                          Đang tải...
-                        </SelectItem>
-                      ) : (
-                        provinces.map((province) => (
-                          <SelectItem key={province.code} value={province.code}>
-                            {province.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                  {loadingProvinces ? (
+                    <SelectItem value="loading" disabled>
+                      Đang tải...
+                    </SelectItem>
+                  ) : (
+                    provinces.map((province) => (
+                      <SelectItem key={province.code} value={province.code}>
+                        {province.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
                 </div>
-              </div>
+            </div>
 
-              {/* Date */}
+            {/* Date */}
               <div className="lg:col-span-1">
                 <div className="relative group">
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
                     className="w-full h-16 pl-12 pr-4 text-gray-900 bg-gray-50/50 border-2 border-gray-200/50 rounded-2xl focus:border-blue-500 focus:bg-white transition-all duration-300 outline-none group-hover:border-gray-300"
-                  />
+                />
                   <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                </div>
               </div>
+            </div>
 
               {/* Price Range */}
               <div className="lg:col-span-1">
@@ -309,21 +309,21 @@ export const SearchSection = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Search Button */}
-              <div className="lg:col-span-1">
-                <button
-                  onClick={handleSearch}
-                  className="w-full h-16 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
-                >
-                  <Search className="w-5 h-5" />
-                  Tìm Tour
-                </button>
-              </div>
             </div>
 
-            {/* Quick filters */}
+            {/* Search Button */}
+              <div className="lg:col-span-1">
+                <button
+              onClick={handleSearch}
+                  className="w-full h-16 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+            >
+                  <Search className="w-5 h-5" />
+              Tìm Tour
+                </button>
+              </div>
+          </div>
+
+          {/* Quick filters */}
             <div className="space-y-4">
               <h3
                 className={`text-sm font-medium text-gray-500 uppercase tracking-wide transition-all duration-700 delay-600 ${
@@ -334,13 +334,13 @@ export const SearchSection = () => {
               >
                 Tìm kiếm nhanh
               </h3>
-              <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
                 {quickFilters.map((filter, index) => (
-                  <button
-                    key={filter.label}
-                    onClick={() => {
-                      const params = new URLSearchParams();
-                      params.set("tour_category_id", filter.categoryId);
+              <button
+                key={filter.label}
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set("tour_category_id", filter.categoryId);
 
                       // Thêm thông tin về tỉnh thành nếu đã chọn
                       if (location && location !== "all") {
@@ -378,10 +378,10 @@ export const SearchSection = () => {
                     style={{ transitionDelay: `${700 + index * 100}ms` }}
                   >
                     <span className="text-sm font-semibold">
-                      {filter.label}
+                {filter.label}
                     </span>
-                  </button>
-                ))}
+              </button>
+            ))}
               </div>
             </div>
           </div>

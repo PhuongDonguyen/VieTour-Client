@@ -15,7 +15,7 @@ import {
 
 export default function Home() {
   return (
-    <div className="min-h-screen montserrat">
+    <div className="min-h-screen monserrat">
       {/* Hero Section - No lazy loading, immediate load */}
       <div>
         <HeroSection />
