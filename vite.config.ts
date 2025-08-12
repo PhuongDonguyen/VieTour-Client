@@ -11,4 +11,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      '/api/rasa': {
+        target: 'http://localhost:5005',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/rasa/, ''),
+      },
+    },
+  },
 })
