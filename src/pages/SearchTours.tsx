@@ -148,6 +148,13 @@ const SearchTours: React.FC = () => {
     loadCategories();
   }, []);
 
+  // Update priceRange when URL params change
+  useEffect(() => {
+    const minPrice = parseInt(searchParams.get("min_price") || "0");
+    const maxPrice = parseInt(searchParams.get("max_price") || "10000000");
+    setPriceRange([minPrice, maxPrice]);
+  }, [searchParams]);
+
   // Load tours when search params change
   useEffect(() => {
     searchTours();
@@ -424,7 +431,11 @@ const SearchTours: React.FC = () => {
             <h2 className="text-xl font-semibold">
               {pagination.totalItems} tours được tìm thấy
             </h2>
-            {(searchQuery || selectedLocation || selectedCategory) && (
+            {(searchQuery ||
+              selectedLocation ||
+              selectedCategory ||
+              priceRange[0] > 0 ||
+              priceRange[1] < 10000000) && (
               <div className="flex gap-2">
                 {searchQuery && (
                   <Badge variant="secondary" className="gap-1">
@@ -444,6 +455,12 @@ const SearchTours: React.FC = () => {
                         (c) => c.id.toString() === selectedCategory
                       )?.name
                     }
+                  </Badge>
+                )}
+                {(priceRange[0] > 0 || priceRange[1] < 10000000) && (
+                  <Badge variant="secondary" className="gap-1">
+                    Giá: {priceRange[0].toLocaleString()} -{" "}
+                    {priceRange[1].toLocaleString()} VND
                   </Badge>
                 )}
               </div>
