@@ -92,13 +92,13 @@ const TourDetail: React.FC = () => {
         if (tourData) {
           console.log("Tour data:", tourData);
           setTour(tourData);
-          
+
           const [detail, imgs, provider] = await Promise.all([
             fetchTourDetailsByTourId(tourData.id),
             fetchTourImagesByTourId(tourData.id),
             getProviderProfileById(tourData.provider_id),
           ]);
-          
+
           setDays(detail.data || []);
           setImages(imgs.data || []);
 
@@ -107,11 +107,13 @@ const TourDetail: React.FC = () => {
           const providerData = provider.data || provider;
           console.log("Provider data:", providerData);
           setProviderProfile(providerData);
-          
+
           // Fetch category separately if tour has category_id
           if (tourData.tour_category_id) {
             try {
-              const categoryResponse = await getTourCategoryById(tourData.tour_category_id);
+              const categoryResponse = await getTourCategoryById(
+                tourData.tour_category_id
+              );
               console.log("Category API response:", categoryResponse);
               const categoryData = categoryResponse.data;
               console.log("Category data:", categoryData);
@@ -150,7 +152,7 @@ const TourDetail: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             {/* Breadcrumb skeleton */}
             <div className="h-4 bg-gray-200 rounded animate-pulse mb-6 w-64"></div>
-            
+
             <div className="h-96 bg-gray-200 rounded-2xl animate-pulse mb-8"></div>
             <div className="h-12 bg-gray-200 rounded-xl animate-pulse mb-6 w-3/4"></div>
             <div className="h-8 bg-gray-200 rounded-xl animate-pulse mb-8 w-1/2"></div>
@@ -274,10 +276,14 @@ const TourDetail: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         <div className="pt-24 px-4">
           {/* Breadcrumb */}
-          <div className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}>
+          <div
+            className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
+          >
             <nav className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="flex items-center hover:text-orange-600 transition-colors duration-200"
               >
                 <Home className="w-4 h-4 mr-1" />
@@ -286,8 +292,8 @@ const TourDetail: React.FC = () => {
               {tourCategory && (
                 <>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
-                  <Link 
-                    to={`/tour-category/${tourCategory.slug}`} 
+                  <Link
+                    to={`/tour-category/${tourCategory.slug}`}
                     className="hover:text-orange-600 transition-colors duration-200"
                   >
                     {tourCategory.name}
@@ -303,8 +309,9 @@ const TourDetail: React.FC = () => {
 
           {/* Hero Section */}
           <div
-            className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
+            className={`transition-opacity duration-500 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
           >
             <TourNamePrice
               title={tour.title}
@@ -319,18 +326,20 @@ const TourDetail: React.FC = () => {
 
           {/* Navigation Tabs */}
           <div
-            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
+            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
           >
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
               <div className="flex flex-wrap gap-2">
                 {TABS.map((tab) => (
                   <button
                     key={tab.key}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${activeTab === tab.key
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                      activeTab === tab.key
                         ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
                         : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                      }`}
+                    }`}
                     onClick={() => setActiveTab(tab.key)}
                   >
                     <span className="text-lg">{tab.icon}</span>
@@ -343,8 +352,9 @@ const TourDetail: React.FC = () => {
 
           {/* Content Section */}
           <div
-            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
+            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
           >
             {activeTab === "program" && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -355,12 +365,12 @@ const TourDetail: React.FC = () => {
                         images.length > 0
                           ? images.filter((img) => img.is_featured)
                           : [
-                            {
-                              id: 0,
-                              image_url: tour.poster_url,
-                              alt_text: tour.title,
-                            },
-                          ]
+                              {
+                                id: 0,
+                                image_url: tour.poster_url,
+                                alt_text: tour.title,
+                              },
+                            ]
                       }
                       altDefault={tour.title}
                     />
@@ -449,7 +459,7 @@ const TourDetail: React.FC = () => {
 
       {/* Floating Action Button */}
       {showFloatingButton && (
-        <div className="fixed bottom-6 right-6 z-50 slide-in-up">
+        <div className="fixed bottom-6 right-24 z-50 slide-in-up">
           <button
             onClick={handleBookNow}
             className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform flex items-center gap-2"

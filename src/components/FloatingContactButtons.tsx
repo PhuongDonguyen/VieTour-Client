@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { FaFacebookMessenger, FaPhone, FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
+import {
+  FaFacebookMessenger,
+  FaPhone,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+} from "react-icons/fa";
 import { SiZalo } from "react-icons/si";
 
 const contacts = [
@@ -37,8 +42,8 @@ const FloatingContactButtons: React.FC = () => {
     const handler = (e: any) => {
       if (e?.detail?.open !== undefined) setIsGalleryModalOpen(e.detail.open);
     };
-    window.addEventListener('gallery-modal-toggle', handler);
-    return () => window.removeEventListener('gallery-modal-toggle', handler);
+    window.addEventListener("gallery-modal-toggle", handler);
+    return () => window.removeEventListener("gallery-modal-toggle", handler);
   }, []);
 
   if (isGalleryModalOpen) return null;
@@ -78,7 +83,7 @@ const FloatingContactButtons: React.FC = () => {
           animation: pulse-button 2.5s infinite;
         }
       `}</style>
-      
+
       <div className="fixed top-1/3 right-4 z-50 flex flex-col space-y-6">
         {contacts.map((contact, idx) => (
           <a
@@ -92,18 +97,27 @@ const FloatingContactButtons: React.FC = () => {
             <span className="absolute right-14 opacity-0 group-hover:opacity-100 group-hover:right-16 transition-all bg-white text-gray-700 px-3 py-1 rounded shadow pointer-events-none whitespace-nowrap">
               {contact.label}
             </span>
-            
+
             {/* Button Container with Pulse Effect */}
             <div className="relative">
               {/* Pulse Ring 1 */}
-              <div className="absolute inset-0 w-12 h-12 bg-white rounded-full pulse-ring" style={{animationDelay: '0s'}}></div>
-              
+              <div
+                className="absolute inset-0 w-12 h-12 bg-white rounded-full pulse-ring"
+                style={{ animationDelay: "0s" }}
+              ></div>
+
               {/* Pulse Ring 2 */}
-              <div className="absolute inset-0 w-12 h-12 bg-white rounded-full pulse-ring" style={{animationDelay: '0.7s'}}></div>
-              
+              <div
+                className="absolute inset-0 w-12 h-12 bg-white rounded-full pulse-ring"
+                style={{ animationDelay: "0.7s" }}
+              ></div>
+
               {/* Pulse Ring 3 */}
-              <div className="absolute inset-0 w-12 h-12 bg-white rounded-full pulse-ring" style={{animationDelay: '1.4s'}}></div>
-              
+              <div
+                className="absolute inset-0 w-12 h-12 bg-white rounded-full pulse-ring"
+                style={{ animationDelay: "1.4s" }}
+              ></div>
+
               {/* Main Button */}
               <span className="relative w-12 h-12 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-110 transition-transform duration-200 pulse-button">
                 {contact.icon}
