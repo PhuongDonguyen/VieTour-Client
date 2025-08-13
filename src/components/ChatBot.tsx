@@ -417,10 +417,10 @@ const ChatBot: React.FC = () => {
       `}</style>
 
       {/* Chat Widget */}
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed bottom-6 right-6 z-50">
         {/* Chat Window */}
         {isOpen && (
-          <div className="chat-widget mb-4 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col">
+          <div className="absolute bottom-16 right-0 w-96 h-[520px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
               <div className="flex items-center space-x-2">
