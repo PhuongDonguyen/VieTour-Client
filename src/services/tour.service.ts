@@ -72,8 +72,8 @@ export const fetchTourById = async (tour_id: number) => {
   throw new Error("Không tìm thấy tour");
 };
 
-export const fetchAllToursByProviderId = async (providerId: number | null) => {
-  const res = await getAllToursByProviderId(providerId);
+export const fetchAllToursByProviderId = async (providerId: number | null, page?: number, limit?: number) => {
+  const res = await getAllToursByProviderId(providerId, page, limit);
   if (res.data && res.data.success) return res.data;
   throw new Error("Không lấy được tất cả tour");
 };

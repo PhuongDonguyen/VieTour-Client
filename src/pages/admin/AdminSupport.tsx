@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState, useContext } from "react";
+import React, { use, useEffect, useState, useContext, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,24 +49,48 @@ interface Tour {
   id: number;
   title: string;
   poster_url: string;
+  description?: string;
+  slug?: string;
+  tour_category_id?: number;
+  price?: number;
+  discountedPrice?: number;
+  duration?: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  view_count?: number;
+  total_star?: number;
+  review_count?: number;
+  capacity?: number;
+  transportation?: string;
+  accommodation?: string;
+  destination_intro?: string;
+  tour_info?: string;
+  live_commentary?: string;
+  location?: string;
+  booked_count?: number;
+  tour_category?: {
+    id: number;
+    name: string;
+  };
 }
 
-// Mock tours data
+// Mock tours data - 仅用于测试，实际使用 API 数据
 const mockTours: Tour[] = [
   {
     id: 1,
     title: "Tour Hà Nội - Sapa 3 ngày 2 đêm",
-    poster_url: "https://example.com/tour1.jpg",
+    poster_url: "/public/VieTour-Logo.png",
   },
   {
     id: 2,
     title: "Tour Đà Nẵng - Hội An - Huế 4 ngày 3 đêm",
-    poster_url: "https://example.com/tour2.jpg",
+    poster_url: "/public/VieTour-Logo.png",
   },
   {
     id: 3,
     title: "Tour Phú Quốc 3 ngày 2 đêm",
-    poster_url: "https://example.com/tour3.jpg",
+    poster_url: "/public/VieTour-Logo.png",
   },
 ];
 
@@ -117,6 +141,13 @@ const AdminSupport: React.FC = () => {
 
   // State cho tours
   const [selectedTour, setSelectedTour] = useState<number | "all">("all");
+  
+  // State cho pagination và infinite scroll
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const toursContainerRef = useRef<HTMLDivElement>(null);
 
   // State cho UI
   const [selected, setSelected] = useState<Question | null>(null);
@@ -144,7 +175,6 @@ const AdminSupport: React.FC = () => {
     });
   };
 
-  const [tours, setTours] = useState<Tour[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [replyLoading, setReplyLoading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -152,18 +182,70 @@ const AdminSupport: React.FC = () => {
   // Lấy provider_id từ user context
   const providerId = user?.id || null;
 
-  useEffect(() => {
-    const fetchTours = async () => {
-      try {
-        const res = await fetchAllToursByProviderId(providerId);
-        console.log("Fetched tours:", res);
-        setTours(res.data || []);
-      } catch (error) {
-        console.error("Error fetching tours:", error);
+  // Hàm fetch tours với pagination
+  const fetchTours = useCallback(async (page: number = 1, append: boolean = false) => {
+    try {
+      setLoadingMore(true);
+      console.log("provider id: ", providerId);
+      const res = await fetchAllToursByProviderId(providerId, page, 10);
+      console.log("Fetched tours:", res);
+      
+      const newTours = res.data || [];
+      
+      if (append) {
+        setTours(prev => [...prev, ...newTours]);
+      } else {
+        setTours(newTours);
       }
-    };
-    fetchTours();
-  }, []);
+      
+      // Kiểm tra xem còn dữ liệu không dựa trên pagination info
+      if (res.pagination) {
+        setHasMore(res.pagination.hasNextPage);
+      } else {
+        // Fallback nếu không có pagination info
+        setHasMore(newTours.length === 10);
+      }
+      setCurrentPage(page);
+    } catch (error) {
+      console.error("Error fetching tours:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [providerId]);
+
+  // Hàm load more tours
+  const loadMoreTours = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchTours(currentPage + 1, true);
+    }
+  }, [loadingMore, hasMore, currentPage, fetchTours]);
+
+  // Scroll handler với debounce
+  const handleScroll = useCallback(() => {
+    if (!toursContainerRef.current || loadingMore) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = toursContainerRef.current;
+    
+    // Khi scroll đến 80% cuối cùng thì load more
+    if (scrollTop + clientHeight >= scrollHeight * 0.8) {
+      loadMoreTours();
+    }
+  }, [loadMoreTours, loadingMore]);
+
+  useEffect(() => {
+    fetchTours(1, false);
+  }, [fetchTours]);
+
+  // Thêm scroll listener
+  useEffect(() => {
+    const container = toursContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => {
+        container.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [handleScroll]);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -231,6 +313,13 @@ const AdminSupport: React.FC = () => {
     setSelected(null);
     setSelectedReply(null);
     setReplyText("");
+    
+    // Reset pagination when changing tour selection
+    if (tourId === "all") {
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchTours(1, false);
+    }
   };
 
   function addReplyImmutable(
@@ -548,9 +637,15 @@ const AdminSupport: React.FC = () => {
           <Button 
             variant="outline" 
             className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md transition-all duration-200"
+            onClick={() => {
+              setCurrentPage(1);
+              setHasMore(true);
+              fetchTours(1, false);
+            }}
+            disabled={loadingMore}
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Làm mới
+            <RefreshCw className={`w-4 h-4 mr-2 ${loadingMore ? 'animate-spin' : ''}`} />
+            {loadingMore ? 'Đang tải...' : 'Làm mới'}
           </Button>
         </div>
       </div>
@@ -598,7 +693,7 @@ const AdminSupport: React.FC = () => {
             </div>
 
             {/* Khung cuộn */}
-            <div className="max-h-110 overflow-y-auto pr-1 custom-scrollbar">
+            <div className="max-h-110 overflow-y-auto pr-1 custom-scrollbar" ref={toursContainerRef}>
               <div className="flex flex-col space-y-2">
                 {tours.map((tour) => (
                   <div
@@ -614,12 +709,26 @@ const AdminSupport: React.FC = () => {
                         : "hover:bg-white/60 border border-transparent hover:border-gray-200"
                     }`}
                   >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-sm transition-all duration-200 ${
-                      selectedTour === tour.id
-                        ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg"
-                        : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600"
-                    }`}>
-                      {tour.title[0]}
+                    <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
+                      {tour.poster_url ? (
+                        <img
+                          src={tour.poster_url}
+                          alt={tour.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/public/VieTour-Logo.png";
+                          }}
+                        />
+                      ) : (
+                        <div className={`w-full h-full rounded-xl flex items-center justify-center font-semibold text-sm transition-all duration-200 ${
+                          selectedTour === tour.id
+                            ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg"
+                            : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600"
+                        }`}>
+                          {tour.title[0]}
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 overflow-hidden">
                       <p className="text-sm font-medium text-gray-900 truncate">
@@ -634,6 +743,24 @@ const AdminSupport: React.FC = () => {
                     }`}>➔</div>
                   </div>
                 ))}
+                
+                {/* Loading indicator */}
+                {loadingMore && (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
+                      <span className="text-sm font-medium">Đang tải thêm tour...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* End of list indicator */}
+                {!hasMore && tours.length > 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    <div className="w-full h-px bg-gray-200 mb-3"></div>
+                    <span>Đã hiển thị tất cả tour</span>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -656,7 +783,7 @@ const AdminSupport: React.FC = () => {
                       ? "Khách hàng sẽ gửi câu hỏi về tour này tại đây"
                       : "Khách hàng sẽ gửi câu hỏi về tour của bạn tại đây"}
                   </p>
-                  {selectedTour !== "all" && (
+                  {/* {selectedTour !== "all" && (
                     <Button
                       onClick={() => handleTourChange("all")}
                       variant="outline"
@@ -664,7 +791,7 @@ const AdminSupport: React.FC = () => {
                     >
                       Xem tất cả tour
                     </Button>
-                  )}
+                  )} */}
                 </CardContent>
               </Card>
             ) : (
@@ -704,9 +831,20 @@ const AdminSupport: React.FC = () => {
                             <h4 className="font-bold text-gray-900 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                               {q.user.first_name} {q.user.last_name}
                             </h4>
-                            {/* <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium border border-blue-200">
-                              #{q.tour_id}
-                            </span> */}
+                            {(() => {
+                              const tour = tours.find((t) => t.id === q.tour_id);
+                              return tour?.poster_url ? (
+                                <img
+                                  src={tour.poster_url}
+                                  alt={tour.title}
+                                  className="w-4 h-4 rounded object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = "/public/VieTour-Logo.png";
+                                  }}
+                                />
+                              ) : null;
+                            })()}
                           </div>
                           
                           <p className="text-gray-800 text-base leading-relaxed line-clamp-2 font-semibold">
@@ -803,11 +941,11 @@ const AdminSupport: React.FC = () => {
                             ? `${selectedReply.user.first_name} ${selectedReply.user.last_name}`
                             : "Quản trị viên"}
                         </h3>
-                        {selectedReply.user_id === 23 && (
+                        {/* {selectedReply.user_id === 23 && (
                           <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
                             Admin
                           </Badge>
-                        )}
+                        )} */}
                       </div>
                       <div className="text-sm text-gray-600 mb-1">
                         Reply #{selectedReply.id}
@@ -853,9 +991,28 @@ const AdminSupport: React.FC = () => {
                           {selected.user.first_name} {selected.user.last_name}
                         </h3>
                       </div>
-                      <div className="text-sm text-gray-600 mb-1">
-                        {mockTours.find((t) => t.id === selected.tour_id)
-                          ?.title || `Tour #${selected.tour_id}`}
+                      <div className="flex items-center gap-2 mb-1">
+                        {(() => {
+                          const tour = tours.find((t) => t.id === selected.tour_id);
+                          return (
+                            <>
+                              {tour?.poster_url && (
+                                <img
+                                  src={tour.poster_url}
+                                  alt={tour.title}
+                                  className="w-6 h-6 rounded object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = "/public/VieTour-Logo.png";
+                                  }}
+                                />
+                              )}
+                              <span className="text-sm text-gray-600">
+                                {tour?.title || `Tour #${selected.tour_id}`}
+                              </span>
+                            </>
+                          );
+                        })()}
                       </div>
                       <div className="text-sm text-gray-500 flex items-center gap-2">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

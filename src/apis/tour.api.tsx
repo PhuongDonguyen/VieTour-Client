@@ -215,5 +215,11 @@ export const getToursByCatId = (catId: number) =>
 export const getToursByIsActive = (active: boolean) =>
   axiosInstance.get(`/api/tours?is_active=${active}`);
 
-export const getAllToursByProviderId = (providerId: number | null) =>
-  axiosInstance.get(`/api/tours?provider_id=${providerId}`);
+export const getAllToursByProviderId = (providerId: number | null, page?: number, limit?: number) => {
+  const params = new URLSearchParams();
+  params.append('provider_id', providerId?.toString() || '');
+  if (page) params.append('page', page.toString());
+  if (limit) params.append('limit', limit.toString());
+  
+  return axiosInstance.get(`/api/tours?${params.toString()}`);
+};
