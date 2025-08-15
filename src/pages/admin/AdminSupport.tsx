@@ -520,14 +520,14 @@ const AdminSupport: React.FC = () => {
               className={`ml-${Math.min(
                 level * 4,
                 12
-              )} p-2 rounded text-xs cursor-pointer transition-colors ${
+              )} p-3 rounded-xl bg-white/80 backdrop-blur-sm border border-white/20 shadow-sm text-xs cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.01] ${
                 selectedReply?.id === reply.id
-                  ? "bg-primary/20 border border-primary"
-                  : "bg-muted/50 hover:bg-muted/70"
+                  ? "bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border-blue-200 shadow-md"
+                  : "hover:bg-white/90 hover:border-gray-200"
               }`}
               onClick={() => handleSelectReply(reply)}
             >
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 ">
                 {reply.user != null ? (
                   <img
                     src={reply.user!.avatar || "/public/avatar-default.jpg"}
@@ -537,7 +537,7 @@ const AdminSupport: React.FC = () => {
                 ) : (
                   <User className="w-4 h-4 text-primary" />
                 )}
-                <div className="font-medium flex-1">
+                <div className="font-semibold flex-1 text-gray-900">
                   {reply.user
                     ? `${reply.user.first_name} ${reply.user.last_name}`
                     : "Quản trị viên"}
@@ -547,7 +547,7 @@ const AdminSupport: React.FC = () => {
                   )} */}
                 </div>
                 {/* Badge trạng thái cho reply */}
-                {reply.reported ? (
+                {/* {reply.reported ? (
                   <Badge
                     variant="secondary"
                     onClick={() => handleToggleReported(reply.id, reply.reported)}
@@ -575,7 +575,7 @@ const AdminSupport: React.FC = () => {
                     </svg>
                     Chưa trả lời
                   </span>
-                )}
+                )} */}
 
                 {!reply.user_id && (
                   <button
@@ -587,8 +587,8 @@ const AdminSupport: React.FC = () => {
                   </button>
                 )}
               </div>
-              <div className="text-muted-foreground ml-6">{reply.text}</div>
-              <div className="text-muted-foreground text-xs ml-6">
+              <div className="text-gray-800 font-medium ml-6 leading-relaxed">{reply.text}</div>
+              <div className="text-gray-500 text-xs ml-6 mt-1 font-medium">
                 {formatDate(reply.created_at)}
               </div>
             </div>
@@ -913,7 +913,7 @@ const AdminSupport: React.FC = () => {
             {selectedReply ? (
               <Card className="flex-1 bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardContent className="p-6 space-y-6">
-                  <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200">
+                  <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200 ">
                     <div className="relative">
                       {selectedReply.user != null ? (
                         <img
