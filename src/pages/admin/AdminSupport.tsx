@@ -626,15 +626,15 @@ const AdminSupport: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl px-4 py-3 inline-block shadow-sm">
+            {/* <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl px-4 py-3 inline-block shadow-sm">
               <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                 ✓ Đã load <span className="font-bold text-emerald-800">{filteredQuestions.length}</span> câu hỏi
                 {selectedTour !== "all" && <span className="text-emerald-600"> cho tour được chọn</span>}
               </p>
-            </div>
+            </div> */}
           </div>
-          <Button 
+          {/* <Button 
             variant="outline" 
             className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md transition-all duration-200"
             onClick={() => {
@@ -646,7 +646,7 @@ const AdminSupport: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loadingMore ? 'animate-spin' : ''}`} />
             {loadingMore ? 'Đang tải...' : 'Làm mới'}
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -683,8 +683,8 @@ const AdminSupport: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-200px)]">
-        <Card className="w-full max-w-xs bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-          <CardContent className="p-5">
+        <Card className="w-full max-w-xs bg-white/80 backdrop-blur-sm border-white/20 shadow-lg ">
+          <CardContent className="p-4 -translate-y-6">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
                 <Eye className="w-4 h-4 text-white" />
@@ -964,7 +964,7 @@ const AdminSupport: React.FC = () => {
               </Card>
             ) : selected ? (
               <Card className="flex-1 bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-2 space-y-6">
                   <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200">
                     <div className="relative">
                       {selected.user != null ? (
@@ -1047,8 +1047,8 @@ const AdminSupport: React.FC = () => {
             {/* Form reply cố định */}
             {(selected || selectedReply) && (
               <Card className="mt-4 bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
+                <CardContent className="">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-3 mb-4 w-[300px]">
                       <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
                         <Send className="w-4 h-4 text-white" />
@@ -1056,14 +1056,14 @@ const AdminSupport: React.FC = () => {
                       <h4 className="text-lg font-semibold text-gray-800">
                         Trả lời{" "}
                         {selectedReply
-                          ? `cho reply #${selectedReply.id}`
-                          : `cho câu hỏi #${selected?.id}`}
+                          ? `cho reply `
+                          : `cho câu hỏi `}
                       </h4>
                     </div>
                     
                     <div>
                       <textarea
-                        className="h-[60px] w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 resize-none transition-all duration-200 bg-white/60 hover:bg-white/80 focus:bg-white"
+                        className="h-[60px] w-full px-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 resize-none transition-all duration-200 bg-white/60 hover:bg-white/80 focus:bg-white"
                         rows={4}
                         placeholder={
                           selectedReply
