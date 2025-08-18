@@ -600,9 +600,9 @@ const AdminSupport: React.FC = () => {
                 level={level + 1}
               />
             )}
+        {replyLoading && selectedReply?.id ==reply.id ? <LoadingChat /> : null}
           </div>
         ))}
-        {replyLoading ? <LoadingChat /> : null}
       </div>
     );
   };
@@ -831,7 +831,7 @@ const AdminSupport: React.FC = () => {
                             <h4 className="font-bold text-gray-900 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                               {q.user.first_name} {q.user.last_name}
                             </h4>
-                            {(() => {
+                            {/* {(() => {
                               const tour = tours.find((t) => t.id === q.tour_id);
                               return tour?.poster_url ? (
                                 <img
@@ -844,7 +844,7 @@ const AdminSupport: React.FC = () => {
                                   }}
                                 />
                               ) : null;
-                            })()}
+                            })()} */}
                           </div>
                           
                           <p className="text-gray-800 text-base leading-relaxed line-clamp-2 font-semibold">
