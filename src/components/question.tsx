@@ -10,6 +10,7 @@ import Modal from "./Modal";
 import LoginForm from "./authentication/LoginForm";
 import SignupForm from "./authentication/SignupForm";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Types
 interface User {
   id: number;
@@ -640,13 +641,14 @@ export const CommentSection: React.FC = () => {
   const initializeSocket = useCallback(() => {
     if (isInitializedRef.current) return;
     
-    const socket = io("http://localhost:8000", { withCredentials: false });
+    const socket = io(API_BASE_URL, { withCredentials: false,transports: ["websocket"], });
     socketRef.current = socket;
     isInitializedRef.current = true;
 
     socket.on("connect", () => {
       if (tourId) {
         socket.emit("joinRoom", tourId);
+        console.log("join room: ", tourId);
       }
     });
 
