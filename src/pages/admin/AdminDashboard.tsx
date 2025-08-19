@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { ProviderRevenueStatsWrapper } from "../../components/ProviderRevenueStatsWrapper";
 import RevenueChart from "../../components/admin/RevenueChart";
 import {
@@ -25,8 +25,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { AuthContext } from "@/context/authContext";
 
 const AdminDashboard: React.FC = () => {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === "admin";
+  const isProvider = user?.role === "provider";
   const [topTours, setTopTours] = useState<TopTourStats[]>([]);
   const [topProviders, setTopProviders] = useState<TopProviderStats[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,8 +87,10 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchStats();
-  }, [toursFilters, providersFilters]);
+    if (isAdmin) {
+      fetchStats();
+    }
+  }, [isAdmin, toursFilters, providersFilters]);
 
   const handleToursFilterChange = (key: string, value: string | number) => {
     setToursFilters((prev) => ({
@@ -150,362 +156,375 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <>
-      <ProviderRevenueStatsWrapper />
+      {isProvider && <ProviderRevenueStatsWrapper />}
 
       {/* Revenue Chart */}
-      <RevenueChart className="mb-6" />
+      {isAdmin && <RevenueChart className="mb-6" />}
 
       {/* Statistics Grid - Top Tours & Providers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Top Tours by Bookings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Tour hàng đầu theo đặt chỗ
-            </CardTitle>
-            <CardDescription>Top 5 tour có nhiều đặt chỗ nhất</CardDescription>
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowToursFilters(!showToursFilters)}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Bộ lọc
-              </Button>
-              <Button size="sm" onClick={fetchToursStats} disabled={loading}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Làm mới
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {showToursFilters && (
-              <div className="mb-4 p-4 border rounded-lg bg-muted/50">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="tours-start-date">Từ ngày</Label>
-                    <Input
-                      id="tours-start-date"
-                      type="date"
-                      value={toursFilters.start_date || ""}
-                      onChange={(e) =>
-                        handleToursFilterChange("start_date", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="tours-end-date">Đến ngày</Label>
-                    <Input
-                      id="tours-end-date"
-                      type="date"
-                      value={toursFilters.end_date || ""}
-                      onChange={(e) =>
-                        handleToursFilterChange("end_date", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="tours-limit">Số lượng hiển thị</Label>
-                    <Input
-                      id="tours-limit"
-                      type="number"
-                      value={toursFilters.limit}
-                      onChange={(e) =>
-                        handleToursFilterChange(
-                          "limit",
-                          parseInt(e.target.value) || 5
-                        )
-                      }
-                      min="1"
-                      max="20"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-end gap-2 mt-4">
-                  <Button
-                    onClick={resetToursFilters}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                  >
-                    Đặt lại
-                  </Button>
-                  <Button
-                    onClick={() => setShowToursFilters(false)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    Đóng
-                  </Button>
-                </div>
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Top Tours by Bookings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Tour hàng đầu theo đặt chỗ
+              </CardTitle>
+              <CardDescription>
+                Top 5 tour có nhiều đặt chỗ nhất
+              </CardDescription>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowToursFilters(!showToursFilters)}
+                >
+                  <Filter className="w-4 h-4 mr-2" />
+                  Bộ lọc
+                </Button>
+                <Button size="sm" onClick={fetchToursStats} disabled={loading}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Làm mới
+                </Button>
               </div>
-            )}
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-16 bg-gray-200 rounded-lg"></div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Chart */}
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={toursChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis tickFormatter={formatYAxis} />
-                      <Tooltip
-                        formatter={(value, name) => [value, "Số đặt chỗ"]}
-                        labelFormatter={(label, payload) => {
-                          if (payload && payload[0]) {
-                            return payload[0].payload.fullName;
-                          }
-                          return label;
-                        }}
+            </CardHeader>
+            <CardContent>
+              {showToursFilters && (
+                <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="tours-start-date">Từ ngày</Label>
+                      <Input
+                        id="tours-start-date"
+                        type="date"
+                        value={toursFilters.start_date || ""}
+                        onChange={(e) =>
+                          handleToursFilterChange("start_date", e.target.value)
+                        }
                       />
-                      <Bar dataKey="bookings" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Detailed List */}
-                <div className="space-y-4">
-                  {topTours.map((tour, index) => (
-                    <div
-                      key={tour.tour_id}
-                      className="flex items-center gap-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    </div>
+                    <div>
+                      <Label htmlFor="tours-end-date">Đến ngày</Label>
+                      <Input
+                        id="tours-end-date"
+                        type="date"
+                        value={toursFilters.end_date || ""}
+                        onChange={(e) =>
+                          handleToursFilterChange("end_date", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="tours-limit">Số lượng hiển thị</Label>
+                      <Input
+                        id="tours-limit"
+                        type="number"
+                        value={toursFilters.limit}
+                        onChange={(e) =>
+                          handleToursFilterChange(
+                            "limit",
+                            parseInt(e.target.value) || 5
+                          )
+                        }
+                        min="1"
+                        max="20"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-end gap-2 mt-4">
+                    <Button
+                      onClick={resetToursFilters}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
                     >
-                      <Badge
-                        variant="secondary"
-                        className="w-8 h-8 flex items-center justify-center"
+                      Đặt lại
+                    </Button>
+                    <Button
+                      onClick={() => setShowToursFilters(false)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Đóng
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded-lg"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Chart */}
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={toursChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={formatYAxis} />
+                        <Tooltip
+                          formatter={(value, name) => [value, "Số đặt chỗ"]}
+                          labelFormatter={(label, payload) => {
+                            if (payload && payload[0]) {
+                              return payload[0].payload.fullName;
+                            }
+                            return label;
+                          }}
+                        />
+                        <Bar dataKey="bookings" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Detailed List */}
+                  <div className="space-y-4">
+                    {topTours.map((tour, index) => (
+                      <div
+                        key={tour.tour_id}
+                        className="flex items-center gap-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                       >
-                        #{index + 1}
-                      </Badge>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={tour.poster_url || "/avatar-default.jpg"}
-                            alt={tour.tour_title}
-                            className="w-12 h-8 object-cover rounded"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm truncate">
-                              {tour.tour_title}
-                            </h4>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {tour.provider_name}
-                            </p>
+                        <Badge
+                          variant="secondary"
+                          className="w-8 h-8 flex items-center justify-center"
+                        >
+                          #{index + 1}
+                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={tour.poster_url || "/avatar-default.jpg"}
+                              alt={tour.tour_title}
+                              className="w-12 h-8 object-cover rounded"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm truncate">
+                                {tour.tour_title}
+                              </h4>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {tour.provider_name}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-primary">
+                            {formatNumber(tour.booking_count)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            đặt chỗ
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-primary">
-                          {formatNumber(tour.booking_count)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          đặt chỗ
-                        </div>
+                    ))}
+                    {topTours.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Không có dữ liệu
                       </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Providers by Revenue */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="w-5 h-5" />
+                Nhà cung cấp hàng đầu theo doanh thu
+              </CardTitle>
+              <CardDescription>
+                Top 5 nhà cung cấp có doanh thu cao nhất
+              </CardDescription>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowProvidersFilters(!showProvidersFilters)}
+                >
+                  <Filter className="w-4 h-4 mr-2" />
+                  Bộ lọc
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={fetchProvidersStats}
+                  disabled={loading}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Làm mới
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {showProvidersFilters && (
+                <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="providers-start-date">Từ ngày</Label>
+                      <Input
+                        id="providers-start-date"
+                        type="date"
+                        value={providersFilters.start_date || ""}
+                        onChange={(e) =>
+                          handleProvidersFilterChange(
+                            "start_date",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="providers-end-date">Đến ngày</Label>
+                      <Input
+                        id="providers-end-date"
+                        type="date"
+                        value={providersFilters.end_date || ""}
+                        onChange={(e) =>
+                          handleProvidersFilterChange(
+                            "end_date",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="providers-limit">Số lượng hiển thị</Label>
+                      <Input
+                        id="providers-limit"
+                        type="number"
+                        value={providersFilters.limit}
+                        onChange={(e) =>
+                          handleProvidersFilterChange(
+                            "limit",
+                            parseInt(e.target.value) || 5
+                          )
+                        }
+                        min="1"
+                        max="20"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-end gap-2 mt-4">
+                    <Button
+                      onClick={resetProvidersFilters}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Đặt lại
+                    </Button>
+                    <Button
+                      onClick={() => setShowProvidersFilters(false)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Đóng
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded-lg"></div>
                     </div>
                   ))}
-                  {topTours.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Không có dữ liệu
-                    </div>
-                  )}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="space-y-6">
+                  {/* Chart */}
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={providersChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis tickFormatter={formatYAxis} />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            formatCurrency(Number(value)),
+                            name === "providerRevenue"
+                              ? "Provider Revenue"
+                              : "Admin Revenue",
+                          ]}
+                          labelFormatter={(label, payload) => {
+                            if (payload && payload[0]) {
+                              return payload[0].payload.fullName;
+                            }
+                            return label;
+                          }}
+                        />
+                        <Bar
+                          dataKey="providerRevenue"
+                          fill="#10b981"
+                          stackId="a"
+                        />
+                        <Bar
+                          dataKey="adminRevenue"
+                          fill="#ef4444"
+                          stackId="a"
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
 
-        {/* Top Providers by Revenue */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="w-5 h-5" />
-              Nhà cung cấp hàng đầu theo doanh thu
-            </CardTitle>
-            <CardDescription>
-              Top 5 nhà cung cấp có doanh thu cao nhất
-            </CardDescription>
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowProvidersFilters(!showProvidersFilters)}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Bộ lọc
-              </Button>
-              <Button
-                size="sm"
-                onClick={fetchProvidersStats}
-                disabled={loading}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Làm mới
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {showProvidersFilters && (
-              <div className="mb-4 p-4 border rounded-lg bg-muted/50">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="providers-start-date">Từ ngày</Label>
-                    <Input
-                      id="providers-start-date"
-                      type="date"
-                      value={providersFilters.start_date || ""}
-                      onChange={(e) =>
-                        handleProvidersFilterChange(
-                          "start_date",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="providers-end-date">Đến ngày</Label>
-                    <Input
-                      id="providers-end-date"
-                      type="date"
-                      value={providersFilters.end_date || ""}
-                      onChange={(e) =>
-                        handleProvidersFilterChange("end_date", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="providers-limit">Số lượng hiển thị</Label>
-                    <Input
-                      id="providers-limit"
-                      type="number"
-                      value={providersFilters.limit}
-                      onChange={(e) =>
-                        handleProvidersFilterChange(
-                          "limit",
-                          parseInt(e.target.value) || 5
-                        )
-                      }
-                      min="1"
-                      max="20"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-end gap-2 mt-4">
-                  <Button
-                    onClick={resetProvidersFilters}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                  >
-                    Đặt lại
-                  </Button>
-                  <Button
-                    onClick={() => setShowProvidersFilters(false)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    Đóng
-                  </Button>
-                </div>
-              </div>
-            )}
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-16 bg-gray-200 rounded-lg"></div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Chart */}
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={providersChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis tickFormatter={formatYAxis} />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          formatCurrency(Number(value)),
-                          name === "providerRevenue"
-                            ? "Provider Revenue"
-                            : "Admin Revenue",
-                        ]}
-                        labelFormatter={(label, payload) => {
-                          if (payload && payload[0]) {
-                            return payload[0].payload.fullName;
-                          }
-                          return label;
-                        }}
-                      />
-                      <Bar
-                        dataKey="providerRevenue"
-                        fill="#10b981"
-                        stackId="a"
-                      />
-                      <Bar dataKey="adminRevenue" fill="#ef4444" stackId="a" />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Detailed List */}
-                <div className="space-y-4">
-                  {topProviders.map((provider, index) => (
-                    <div
-                      key={provider.provider_id}
-                      className="flex items-center gap-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                    >
-                      <Badge
-                        variant="secondary"
-                        className="w-8 h-8 flex items-center justify-center"
+                  {/* Detailed List */}
+                  <div className="space-y-4">
+                    {topProviders.map((provider, index) => (
+                      <div
+                        key={provider.provider_id}
+                        className="flex items-center gap-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                       >
-                        #{index + 1}
-                      </Badge>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm truncate">
-                              {provider.company_name}
-                            </h4>
-                            <p className="text-xs text-muted-foreground">
-                              {formatNumber(provider.total_bookings)} đặt chỗ
-                            </p>
+                        <Badge
+                          variant="secondary"
+                          className="w-8 h-8 flex items-center justify-center"
+                        >
+                          #{index + 1}
+                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm truncate">
+                                {provider.company_name}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {formatNumber(provider.total_bookings)} đặt chỗ
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">
+                            {formatCurrency(provider.total_revenue)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            TB:{" "}
+                            {formatCurrency(
+                              provider.average_revenue_per_booking
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-green-600">
-                          {formatCurrency(provider.total_revenue)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          TB:{" "}
-                          {formatCurrency(provider.average_revenue_per_booking)}
-                        </div>
+                    ))}
+                    {topProviders.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Không có dữ liệu
                       </div>
-                    </div>
-                  ))}
-                  {topProviders.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Không có dữ liệu
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </>
   );
 };
