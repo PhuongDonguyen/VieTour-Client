@@ -1,8 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { MessageCircle, Send, Clock, Reply, Trash2, User, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  MessageCircle,
+  Send,
+  Clock,
+  Reply,
+  Trash2,
+  User,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { fetchTourBySlug } from "../services/tour.service";
-import { fetchQuestionsByTourId, sendQuestion, delQuestion } from "../services/question.service";
+import {
+  fetchQuestionsByTourId,
+  sendQuestion,
+  delQuestion,
+} from "../services/question.service";
 import { useAuth } from "../hooks/useAuth";
 import { io, Socket } from "socket.io-client";
 import { toast } from "sonner";
@@ -33,14 +46,16 @@ interface Question {
 
 // Utility functions
 const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleString("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour12: false,
-  }).replace(",", " -");
+  return new Date(dateString)
+    .toLocaleString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    })
+    .replace(",", " -");
 };
 
 const getUserDisplayName = (user: User | null): string => {
@@ -53,25 +68,29 @@ const getUserInitials = (user: User | null): string => {
   if (!user) return "A";
   if (user.role === "admin") return "A";
   const name = getUserDisplayName(user);
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
 };
 
 const getAvatarStyling = (user: User | null) => {
   if (!user) {
     return {
       bgColor: "bg-orange-500",
-      textColor: "text-white"
+      textColor: "text-white",
     };
   }
   if (user.role === "admin") {
     return {
       bgColor: "bg-orange-500",
-      textColor: "text-white"
+      textColor: "text-white",
     };
   }
   return {
     bgColor: "bg-orange-100",
-    textColor: "text-orange-600"
+    textColor: "text-orange-600",
   };
 };
 
@@ -86,12 +105,16 @@ const countTotalQuestions = (questions: Question[]): number => {
   return count;
 };
 
-const addReplyToTree = (questions: Question[], parentId: number, reply: Question): Question[] => {
+const addReplyToTree = (
+  questions: Question[],
+  parentId: number,
+  reply: Question
+): Question[] => {
   return questions.map((question) => {
     if (question.id === parentId) {
-      const replyExists = question.questions?.some(r => r.id === reply.id);
+      const replyExists = question.questions?.some((r) => r.id === reply.id);
       if (replyExists) return question;
-      
+
       return {
         ...question,
         questions: [...(question.questions || []), reply],
@@ -109,12 +132,18 @@ const addReplyToTree = (questions: Question[], parentId: number, reply: Question
   });
 };
 
-const removeQuestionFromTree = (questions: Question[], questionIdToDelete: number): Question[] => {
+const removeQuestionFromTree = (
+  questions: Question[],
+  questionIdToDelete: number
+): Question[] => {
   return questions.filter((question) => {
     if (question.id === questionIdToDelete) return false;
 
     if (question.questions && question.questions.length > 0) {
-      const updatedReplies = removeQuestionFromTree(question.questions, questionIdToDelete);
+      const updatedReplies = removeQuestionFromTree(
+        question.questions,
+        questionIdToDelete
+      );
       if (updatedReplies.length !== question.questions.length) {
         return { ...question, questions: updatedReplies };
       }
@@ -136,7 +165,7 @@ const CommentSkeleton: React.FC = () => (
     <div className="flex items-start gap-4">
       {/* Avatar Skeleton */}
       <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse flex-shrink-0"></div>
-      
+
       {/* Content Skeleton */}
       <div className="flex-1">
         <div className="flex items-center gap-3 mb-2">
@@ -196,9 +225,7 @@ const CommentForm: React.FC<{
         />
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-sm text-gray-500">
-          {text.length}/500 ký tự
-        </span>
+        <span className="text-sm text-gray-500">{text.length}/500 ký tự</span>
         <button
           onClick={handleSubmit}
           disabled={!text.trim() || submitting}
@@ -266,7 +293,7 @@ const ReplyForm: React.FC<{
 const CommentItem: React.FC<{
   comment: Question;
   onReply: (commentId: number) => void;
-  onDelete: (commentId: number) => void;
+  onDelete: (comment: Question) => void;
   currentUser: User | null;
   activeReplyId: number | null;
   replyText: string;
@@ -278,34 +305,41 @@ const CommentItem: React.FC<{
   setIsCollapsed: (collapsed: boolean) => void;
   collapsedReplyIds: Set<number>;
   setCollapsedReplyIds: (ids: Set<number>) => void;
-}> = ({ 
-  comment, 
-  onReply, 
-  onDelete, 
-  currentUser, 
-  activeReplyId, 
-  replyText, 
-  setReplyText, 
-  handleReplySubmit, 
+}> = ({
+  comment,
+  onReply,
+  onDelete,
+  currentUser,
+  activeReplyId,
+  replyText,
+  setReplyText,
+  handleReplySubmit,
   deletedQuestionIds,
   submittingReply,
   isCollapsed,
   setIsCollapsed,
   collapsedReplyIds,
-  setCollapsedReplyIds
+  setCollapsedReplyIds,
 }) => {
-  const canDelete = currentUser && (currentUser.id === comment.user_id);
+  // console.log("cmt",comment)
+  // console.log(currentUser)
+  // if (currentUser)
+  // console.log(currentUser.id == comment.user_id)
+  const canDelete = currentUser && currentUser.id == comment.user?.id;
   const isDeleted = deletedQuestionIds.has(comment.id);
   const avatarStyling = getAvatarStyling(comment.user);
-  const hasReplies = comment.questions && comment.questions.filter(q => !deletedQuestionIds.has(q.id)).length > 0;
-
+  const hasReplies =
+    comment.questions &&
+    comment.questions.filter((q) => !deletedQuestionIds.has(q.id)).length > 0;
   if (isDeleted) return null;
 
   return (
     <div className="border-b border-gray-100 pb-4 mb-4 last:border-b-0 last:pb-0">
       <div className="flex items-start gap-4">
         {/* Avatar */}
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${avatarStyling.bgColor}`}>
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${avatarStyling.bgColor}`}
+        >
           {comment.user?.avatar ? (
             <img
               src={comment.user.avatar}
@@ -322,7 +356,13 @@ const CommentItem: React.FC<{
         {/* Content */}
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h4 className={`font-medium ${comment.user?.role === "admin" ? "text-red-600 font-semibold" : "text-gray-900"}`}>
+            <h4
+              className={`font-medium ${
+                comment.user?.role === "admin"
+                  ? "text-red-600 font-semibold"
+                  : "text-gray-900"
+              }`}
+            >
               {getUserDisplayName(comment.user)}
             </h4>
             <span className="text-sm text-gray-500 flex items-center gap-1">
@@ -335,18 +375,23 @@ const CommentItem: React.FC<{
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            {currentUser && currentUser.role !== 'admin' && (
+            {currentUser && currentUser.role !== "admin" && (
               <button
-                onClick={() => onReply(activeReplyId === comment.id ? 0 : comment.id)}
+                onClick={() =>
+                  onReply(activeReplyId === comment.id ? 0 : comment.id)
+                }
                 className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors"
               >
                 <Reply className="w-3 h-3" />
                 Trả lời
               </button>
             )}
-            {canDelete && (
+            {canDelete  && (
               <button
-                onClick={() => onDelete(comment.id)}
+                onClick={() => {
+                  onDelete(comment);
+                  console.log("commentcccc: ", comment);
+                }}
                 className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
@@ -361,7 +406,13 @@ const CommentItem: React.FC<{
                 {isCollapsed ? (
                   <>
                     <ChevronDown className="w-3 h-3" />
-                    Hiện {comment.questions?.filter(q => !deletedQuestionIds.has(q.id)).length} phản hồi
+                    Hiện{" "}
+                    {
+                      comment.questions?.filter(
+                        (q) => !deletedQuestionIds.has(q.id)
+                      ).length
+                    }{" "}
+                    phản hồi
                   </>
                 ) : (
                   <>
@@ -386,22 +437,26 @@ const CommentItem: React.FC<{
           )}
 
           {/* Replies */}
-          {!isCollapsed && comment.questions && comment.questions.length > 0 && (
-            <RepliesSection
-              questions={comment.questions.filter(q => !deletedQuestionIds.has(q.id))}
-              user={currentUser!}
-              activeReplyId={activeReplyId}
-              setActiveReplyId={onReply}
-              replyText={replyText}
-              setReplyText={setReplyText}
-              handleReplySubmit={handleReplySubmit}
-              handleDeleteQuestion={onDelete}
-              deletedQuestionIds={deletedQuestionIds}
-              submittingReply={submittingReply}
-              collapsedReplyIds={collapsedReplyIds}
-              setCollapsedReplyIds={setCollapsedReplyIds}
-            />
-          )}
+          {!isCollapsed &&
+            comment.questions &&
+            comment.questions.length > 0 && (
+              <RepliesSection
+                questions={comment.questions.filter(
+                  (q) => !deletedQuestionIds.has(q.id)
+                )}
+                user={currentUser!}
+                activeReplyId={activeReplyId}
+                setActiveReplyId={onReply}
+                replyText={replyText}
+                setReplyText={setReplyText}
+                handleReplySubmit={handleReplySubmit}
+                handleDeleteQuestion={onDelete}
+                deletedQuestionIds={deletedQuestionIds}
+                submittingReply={submittingReply}
+                collapsedReplyIds={collapsedReplyIds}
+                setCollapsedReplyIds={setCollapsedReplyIds}
+              />
+            )}
         </div>
       </div>
     </div>
@@ -416,24 +471,24 @@ const RepliesSection: React.FC<{
   replyText: string;
   setReplyText: (text: string) => void;
   handleReplySubmit: (parentId: number) => void;
-  handleDeleteQuestion: (id: number) => void;
+  handleDeleteQuestion: (comment: Question) => void;
   deletedQuestionIds: Set<number>;
   submittingReply: boolean;
   collapsedReplyIds: Set<number>;
   setCollapsedReplyIds: (ids: Set<number>) => void;
-}> = ({ 
-  questions, 
-  user, 
-  activeReplyId, 
-  setActiveReplyId, 
-  replyText, 
-  setReplyText, 
-  handleReplySubmit, 
-  handleDeleteQuestion, 
+}> = ({
+  questions,
+  user,
+  activeReplyId,
+  setActiveReplyId,
+  replyText,
+  setReplyText,
+  handleReplySubmit,
+  handleDeleteQuestion,
   deletedQuestionIds,
   submittingReply,
   collapsedReplyIds,
-  setCollapsedReplyIds
+  setCollapsedReplyIds,
 }) => {
   const toggleReplyCollapse = (replyId: number) => {
     setCollapsedReplyIds((prev: Set<number>) => {
@@ -453,14 +508,22 @@ const RepliesSection: React.FC<{
         const avatarStyling = getAvatarStyling(reply.user);
         const isAdminReply = !reply.user || reply.user.role === "admin";
         const isCollapsed = collapsedReplyIds.has(reply.id);
-        const hasNestedReplies = reply.questions && reply.questions.filter(q => !deletedQuestionIds.has(q.id)).length > 0;
-        
+        const hasNestedReplies =
+          reply.questions &&
+          reply.questions.filter((q) => !deletedQuestionIds.has(q.id)).length >
+            0;
+
         return (
-          <div key={reply.id} className={`rounded-lg p-4 ${
-            isAdminReply ? 'bg-blue-50 border-blue-200' : 'bg-transparent'
-          }`}>
+          <div
+            key={reply.id}
+            className={`rounded-lg p-4 ${
+              isAdminReply ? "bg-blue-50 border-blue-200" : "bg-transparent"
+            }`}
+          >
             <div className="flex items-start gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${avatarStyling.bgColor}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${avatarStyling.bgColor}`}
+              >
                 {reply.user?.avatar ? (
                   <img
                     src={reply.user.avatar}
@@ -468,14 +531,22 @@ const RepliesSection: React.FC<{
                     className="w-full h-full object-cover rounded-full"
                   />
                 ) : (
-                  <span className={`text-xs font-bold ${avatarStyling.textColor}`}>
+                  <span
+                    className={`text-xs font-bold ${avatarStyling.textColor}`}
+                  >
                     {getUserInitials(reply.user)}
                   </span>
                 )}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h5 className={`font-medium ${reply.user?.role === "admin" ? "text-red-600 font-semibold" : "text-gray-900"} text-sm`}>
+                  <h5
+                    className={`font-medium ${
+                      reply.user?.role === "admin"
+                        ? "text-red-600 font-semibold"
+                        : "text-gray-900"
+                    } text-sm`}
+                  >
                     {getUserDisplayName(reply.user)}
                   </h5>
                   <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -483,13 +554,19 @@ const RepliesSection: React.FC<{
                     {formatDate(reply.created_at)}
                   </span>
                 </div>
-                <p className="text-gray-700 text-sm leading-relaxed mb-3">{reply.text}</p>
-                
+                <p className="text-gray-700 text-sm leading-relaxed mb-3">
+                  {reply.text}
+                </p>
+
                 {/* Reply Actions */}
                 <div className="flex items-center gap-3">
-                  {user && user.role === 'user' && (
+                  {user && user.role === "user" && (
                     <button
-                      onClick={() => setActiveReplyId(activeReplyId === reply.id ? 0 : reply.id)}
+                      onClick={() =>
+                        setActiveReplyId(
+                          activeReplyId === reply.id ? 0 : reply.id
+                        )
+                      }
                       className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors"
                     >
                       <Reply className="w-3 h-3" />
@@ -498,7 +575,7 @@ const RepliesSection: React.FC<{
                   )}
                   {user && user.id === reply.user_id && (
                     <button
-                      onClick={() => handleDeleteQuestion(reply.id)}
+                      onClick={() => handleDeleteQuestion(reply)}
                       className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -513,7 +590,13 @@ const RepliesSection: React.FC<{
                       {isCollapsed ? (
                         <>
                           <ChevronDown className="w-3 h-3" />
-                          Hiện {reply.questions?.filter(q => !deletedQuestionIds.has(q.id)).length} phản hồi
+                          Hiện{" "}
+                          {
+                            reply.questions?.filter(
+                              (q) => !deletedQuestionIds.has(q.id)
+                            ).length
+                          }{" "}
+                          phản hồi
                         </>
                       ) : (
                         <>
@@ -538,24 +621,28 @@ const RepliesSection: React.FC<{
                 )}
 
                 {/* Nested Replies */}
-                {!isCollapsed && reply.questions && reply.questions.length > 0 && (
-                  <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200">
-                    <RepliesSection
-                      questions={reply.questions.filter(q => !deletedQuestionIds.has(q.id))}
-                      user={user}
-                      activeReplyId={activeReplyId}
-                      setActiveReplyId={setActiveReplyId}
-                      replyText={replyText}
-                      setReplyText={setReplyText}
-                      handleReplySubmit={handleReplySubmit}
-                      handleDeleteQuestion={handleDeleteQuestion}
-                      deletedQuestionIds={deletedQuestionIds}
-                      submittingReply={submittingReply}
-                      collapsedReplyIds={collapsedReplyIds}
-                      setCollapsedReplyIds={setCollapsedReplyIds}
-                    />
-                  </div>
-                )}
+                {!isCollapsed &&
+                  reply.questions &&
+                  reply.questions.length > 0 && (
+                    <div className="mt-3 ml-4 pl-4 border-l-2 border-gray-200">
+                      <RepliesSection
+                        questions={reply.questions.filter(
+                          (q) => !deletedQuestionIds.has(q.id)
+                        )}
+                        user={user}
+                        activeReplyId={activeReplyId}
+                        setActiveReplyId={setActiveReplyId}
+                        replyText={replyText}
+                        setReplyText={setReplyText}
+                        handleReplySubmit={handleReplySubmit}
+                        handleDeleteQuestion={handleDeleteQuestion}
+                        deletedQuestionIds={deletedQuestionIds}
+                        submittingReply={submittingReply}
+                        collapsedReplyIds={collapsedReplyIds}
+                        setCollapsedReplyIds={setCollapsedReplyIds}
+                      />
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -571,9 +658,7 @@ const EmptyState: React.FC = () => (
     <h3 className="text-lg font-medium text-gray-900 mb-2">
       Chưa có câu hỏi nào
     </h3>
-    <p className="text-gray-600">
-      Hãy hỏi những gì bạn thích
-    </p>
+    <p className="text-gray-600">Hãy hỏi những gì bạn thích</p>
   </div>
 );
 
@@ -585,14 +670,12 @@ const LoginPrompt: React.FC<{
       <label className="block text-sm font-medium text-gray-700 mb-2">
         Viết bình luận của bạn
       </label>
-      <div 
+      <div
         onClick={onLoginClick}
         className="w-full px-4 py-3 border border-gray-100 rounded-lg bg-gray-50 flex items-center justify-center min-h-[120px] cursor-pointer hover:bg-gray-100 transition-all duration-200"
       >
         <div className="text-center">
-          <p className="text-gray-600 mb-3">
-            Bạn cần đăng nhập để bình luận
-          </p>
+          <p className="text-gray-600 mb-3">Bạn cần đăng nhập để bình luận</p>
           <p className="text-orange-500 font-medium text-sm">
             Nhấp vào đây để đăng nhập
           </p>
@@ -616,11 +699,17 @@ export const CommentSection: React.FC = () => {
   const [submittingReply, setSubmittingReply] = useState<boolean>(false);
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
-  const [deletedQuestionIds, setDeletedQuestionIds] = useState<Set<number>>(new Set());
+  const [deletedQuestionIds, setDeletedQuestionIds] = useState<Set<number>>(
+    new Set()
+  );
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupForm, setShowSignupForm] = useState(false);
-  const [collapsedCommentIds, setCollapsedCommentIds] = useState<Set<number>>(new Set());
-  const [collapsedReplyIds, setCollapsedReplyIds] = useState<Set<number>>(new Set());
+  const [collapsedCommentIds, setCollapsedCommentIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [collapsedReplyIds, setCollapsedReplyIds] = useState<Set<number>>(
+    new Set()
+  );
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     commentId: number | null;
@@ -630,7 +719,7 @@ export const CommentSection: React.FC = () => {
     isOpen: false,
     commentId: null,
     commentText: "",
-    userName: ""
+    userName: "",
   });
 
   // Refs
@@ -640,8 +729,11 @@ export const CommentSection: React.FC = () => {
   // Socket initialization
   const initializeSocket = useCallback(() => {
     if (isInitializedRef.current) return;
-    
-    const socket = io(API_BASE_URL, { withCredentials: false,transports: ["websocket"], });
+
+    const socket = io(API_BASE_URL, {
+      withCredentials: false,
+      transports: ["websocket"],
+    });
     socketRef.current = socket;
     isInitializedRef.current = true;
 
@@ -654,9 +746,9 @@ export const CommentSection: React.FC = () => {
 
     socket.on("receiveComment", (data: Question) => {
       setQuestions((prev) => {
-        const exists = prev.some(q => q.id === data.id);
+        const exists = prev.some((q) => q.id === data.id);
         if (exists) return prev;
-        
+
         const newQuestion: Question = {
           id: data.id,
           user_id: data.user_id,
@@ -667,7 +759,7 @@ export const CommentSection: React.FC = () => {
           user: data.user,
           questions: [],
         };
-        
+        console.log("cmt: ", data);
         const updatedQuestions = [newQuestion, ...prev];
         setCountQuestion(countTotalQuestions(updatedQuestions));
         return updatedQuestions;
@@ -676,14 +768,18 @@ export const CommentSection: React.FC = () => {
 
     socket.on("receiveReply", (data: Question) => {
       setQuestions((prev) => {
-        const updatedQuestions = addReplyToTree(prev, data.parent_question_id!, data);
+        const updatedQuestions = addReplyToTree(
+          prev,
+          data.parent_question_id!,
+          data
+        );
         setCountQuestion(countTotalQuestions(updatedQuestions));
         return updatedQuestions;
       });
     });
 
     socket.on("receiveDelete", (id: number) => {
-      setDeletedQuestionIds(prev => new Set([...prev, id]));
+      setDeletedQuestionIds((prev) => new Set([...prev, id]));
       setQuestions((prevQuestions) => {
         const updatedQuestions = removeQuestionFromTree(prevQuestions, id);
         setCountQuestion(countTotalQuestions(updatedQuestions));
@@ -726,7 +822,7 @@ export const CommentSection: React.FC = () => {
   useEffect(() => {
     const loadQuestions = async () => {
       if (!tourId) return;
-      
+
       try {
         setInitialLoading(true);
         const res = await fetchQuestionsByTourId(tourId);
@@ -758,21 +854,21 @@ export const CommentSection: React.FC = () => {
     try {
       setSubmittingComment(true);
       const res = await sendQuestion(user.id, tourId, null, text, false);
-      
+
       socketRef.current?.emit("sendComment", {
         id: res.data.id,
         user: {
           id: user.id,
           first_name: user.first_name,
           last_name: user.last_name,
-          avatar: user.avatar
+          avatar: user.avatar,
         },
         tour_id: tourId,
         parent_question_id: null,
         text: text,
-        reported: false
+        reported: false,
       });
-      
+
       toast.success("Bình luận đã được gửi!");
     } catch (error) {
       console.error("Error sending comment:", error);
@@ -790,15 +886,21 @@ export const CommentSection: React.FC = () => {
 
     try {
       setSubmittingReply(true);
-      const res = await sendQuestion(user.id, tourId, parentId, replyText, false);
-      
+      const res = await sendQuestion(
+        user.id,
+        tourId,
+        parentId,
+        replyText,
+        false
+      );
+
       socketRef.current?.emit("sendReply", {
         id: res.data.id,
         user: {
           id: user.id,
           first_name: user.first_name,
           last_name: user.last_name,
-          avatar: user.avatar
+          avatar: user.avatar,
         },
         user_id: user.id,
         tour_id: tourId,
@@ -818,17 +920,23 @@ export const CommentSection: React.FC = () => {
     }
   };
 
-  const handleDeleteComment = async (commentId: number) => {
-    const comment = questions.find(q => q.id === commentId);
-    if (!comment) return;
-
-    // Open delete modal
+  const handleDeleteComment = async (comment: Question) => {
+    // const comment = questions.find(q => q.id === commentId);
+    console.log(comment);
+    // if (!comment) return;
+    console.log("delete: ", comment.id);
     setDeleteModal({
       isOpen: true,
-      commentId: commentId,
+      commentId: comment.id,
       commentText: comment.text,
-      userName: getUserDisplayName(comment.user)
+      userName: getUserDisplayName(comment.user),
     });
+    // socketRef.current?.emit("sendDelete", {
+    //   id: comment.id,
+    //   tour_id: tourId,
+    // });
+
+    // Open delete modal
   };
 
   const closeDeleteModal = () => {
@@ -836,21 +944,21 @@ export const CommentSection: React.FC = () => {
       isOpen: false,
       commentId: null,
       commentText: "",
-      userName: ""
+      userName: "",
     });
   };
 
   const confirmDeleteComment = async () => {
     const commentId = deleteModal.commentId;
     if (!commentId) return;
-    
+
     try {
-      setDeletedQuestionIds(prev => new Set([...prev, commentId]));
+      // setDeletedQuestionIds((prev) => new Set([...prev, commentId]));
       await delQuestion(commentId);
-      
+
       socketRef.current?.emit("sendDelete", {
         id: commentId,
-        tour_id: tourId
+        tour_id: tourId,
       });
 
       toast.success("Bình luận đã được xóa!");
@@ -858,7 +966,7 @@ export const CommentSection: React.FC = () => {
     } catch (error) {
       console.error("Error deleting comment:", error);
       toast.error("Không thể xóa bình luận");
-      setDeletedQuestionIds(prev => {
+      setDeletedQuestionIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(commentId);
         return newSet;
@@ -871,7 +979,7 @@ export const CommentSection: React.FC = () => {
   };
 
   const toggleCollapse = (commentId: number) => {
-    setCollapsedCommentIds(prev => {
+    setCollapsedCommentIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(commentId)) {
         newSet.delete(commentId);
@@ -895,17 +1003,19 @@ export const CommentSection: React.FC = () => {
       </div>
 
       {/* Comment Form */}
-      {user && user.role == 'user' ? (
-        <CommentForm 
+      {user && user.role == "user" ? (
+        <CommentForm
           onSubmit={handleSubmitComment}
           submitting={submittingComment}
           user={user}
         />
       ) : (
-        <LoginPrompt onLoginClick={() => {
-          console.log('Login button clicked');
-          setShowLoginModal(true);
-        }} />
+        <LoginPrompt
+          onLoginClick={() => {
+            console.log("Login button clicked");
+            setShowLoginModal(true);
+          }}
+        />
       )}
 
       {/* Comments List */}
@@ -914,9 +1024,9 @@ export const CommentSection: React.FC = () => {
           <CommentSkeletonList />
         ) : questions.length === 0 ? (
           <EmptyState />
-            ) : (
-              questions
-                .filter(q => !deletedQuestionIds.has(q.id))
+        ) : (
+          questions
+            .filter((q) => !deletedQuestionIds.has(q.id))
             .map((comment) => (
               <CommentItem
                 key={comment.id}
@@ -924,28 +1034,30 @@ export const CommentSection: React.FC = () => {
                 onReply={handleSetActiveReplyId}
                 onDelete={handleDeleteComment}
                 currentUser={user}
-                          activeReplyId={activeReplyId}
-                          replyText={replyText}
-                          setReplyText={setReplyText}
-                          handleReplySubmit={handleReplySubmit}
-                          deletedQuestionIds={deletedQuestionIds}
-                          submittingReply={submittingReply}
-                          isCollapsed={collapsedCommentIds.has(comment.id)}
-                          setIsCollapsed={(collapsed: boolean) => {
-                            if (collapsed) {
-                              setCollapsedCommentIds(prev => new Set([...prev, comment.id]));
-                            } else {
-                              setCollapsedCommentIds(prev => {
-                                const newSet = new Set(prev);
-                                newSet.delete(comment.id);
-                                return newSet;
-                              });
-                            }
-                          }}
-                          collapsedReplyIds={collapsedReplyIds}
-                          setCollapsedReplyIds={setCollapsedReplyIds}
-                        />
-              ))
+                activeReplyId={activeReplyId}
+                replyText={replyText}
+                setReplyText={setReplyText}
+                handleReplySubmit={handleReplySubmit}
+                deletedQuestionIds={deletedQuestionIds}
+                submittingReply={submittingReply}
+                isCollapsed={collapsedCommentIds.has(comment.id)}
+                setIsCollapsed={(collapsed: boolean) => {
+                  if (collapsed) {
+                    setCollapsedCommentIds(
+                      (prev) => new Set([...prev, comment.id])
+                    );
+                  } else {
+                    setCollapsedCommentIds((prev) => {
+                      const newSet = new Set(prev);
+                      newSet.delete(comment.id);
+                      return newSet;
+                    });
+                  }
+                }}
+                collapsedReplyIds={collapsedReplyIds}
+                setCollapsedReplyIds={setCollapsedReplyIds}
+              />
+            ))
         )}
       </div>
 
@@ -953,12 +1065,12 @@ export const CommentSection: React.FC = () => {
       {showLoginModal && (
         <Modal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)}>
           {!showSignupForm ? (
-            <LoginForm 
+            <LoginForm
               onClose={() => setShowLoginModal(false)}
               onSwitchForm={() => setShowSignupForm(true)}
             />
           ) : (
-            <SignupForm 
+            <SignupForm
               onClose={() => setShowLoginModal(false)}
               onSwitchForm={() => setShowSignupForm(false)}
             />
