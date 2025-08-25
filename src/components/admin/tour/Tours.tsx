@@ -704,7 +704,7 @@ const ProviderTours: React.FC = () => {
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-yellow-500" />
                           {getTourRating(tour) > 0
-                            ? `${getTourRating(tour)}/5`
+                            ? `${getTourRating(tour).toFixed(1)}/5`
                             : "N/A"}
                           <span className="text-sm text-muted-foreground">
                             ({getTourReviewCount(tour)})

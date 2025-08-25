@@ -411,9 +411,10 @@ export const TabReview: React.FC<ReviewListProps> = ({
     try {
       const review = reviews.find((r) => r.id === reviewId);
       if (review?.user_like_id !== null) {
-        await deleteLike(review!.user_like_id);
+        await deleteLike(reviewId);
       } else {
-        await userLikeReview(reviewId);
+        const res = await userLikeReview(reviewId);
+        console.log("res: ", res);
       }
     } catch (error) {
       // Rollback nếu lỗi

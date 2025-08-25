@@ -6,8 +6,8 @@ export const userLikeReview = async (reviewId: number) => {
   throw new Error("like fail");
 };
 
-export const deleteLike = async (id: number) => {
-  const res = await delLike(id);
+export const deleteLike = async (reviewId: number) => {
+  const res = await delLike(reviewId);
   if (res.data && res.data.success) return res.data;
   throw new Error("delete like fail");
 };

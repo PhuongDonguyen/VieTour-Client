@@ -4,6 +4,7 @@ import { NavBar } from "../layouts/NavBar";
 import { Footer } from "../layouts/Footer";
 import { Toaster } from "sonner";
 import FloatingContactButtons from "../components/FloatingContactButtons";
+import ChatBot from "../components/ChatBot";
 
 export default function ClientLayout() {
   const location = useLocation();
@@ -19,6 +20,7 @@ export default function ClientLayout() {
       <Footer />
       <Toaster richColors position="top-right" />
       <FloatingContactButtons />
+      <ChatBot />
     </div>
   );
-} 
+}
