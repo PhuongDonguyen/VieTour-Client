@@ -195,7 +195,7 @@ export const NavBar = ({ textDark = false }) => {
                 HÌNH ẢNH
               </Link>
               <Link
-                to="/register-partner"
+                to="/contact"
                 className={`px-2 py-2 hover:text-orange-500 transition-colors ${
                   isScrolled || textDark ? "text-gray-700" : "text-white"
                 }`}

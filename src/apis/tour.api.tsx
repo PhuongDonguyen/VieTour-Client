@@ -69,6 +69,8 @@ export interface TourQueryParams {
   search?: string;
   slug?: string;
   provider_id?: number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface TourResponse {

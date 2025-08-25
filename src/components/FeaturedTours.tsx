@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
-import { fetchTopBookedTours } from "../services/tour.service";
+import { fetchTours } from "../services/tour.service";
 import { Link } from "react-router-dom";
 import { SkeletonFeaturedTours } from "./Skeleton";
 import "swiper/css";
-import "swiper/css/navigation";
 
 export const FeaturedTours: React.FC = () => {
   const [tours, setTours] = useState<any[]>([]);
@@ -13,9 +12,24 @@ export const FeaturedTours: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTopBookedTours(10)
+    fetchTours({
+      is_active: true,
+      limit: 20,
+      sortBy: "booked_count",
+      sortOrder: "DESC"
+    })
       .then((data) => {
-        setTours(data);
+        const highRatedTours = data.data
+          .filter((tour: any) => {
+            if (!tour.total_star || !tour.review_count || tour.review_count === 0) {
+              return true;
+            }
+            const averageRating = tour.total_star / tour.review_count;
+            return averageRating >= 4.0;
+          })
+          .slice(0, 6);
+        
+        setTours(highRatedTours);
         setLoading(false);
       })
       .catch(() => {
@@ -47,15 +61,11 @@ export const FeaturedTours: React.FC = () => {
       <div className="relative">
         <Swiper
           modules={[Autoplay]}
-          spaceBetween={16}
+          spaceBetween={20}
           slidesPerView={4}
           loop={true}
-          autoplay={{ delay: 2000, disableOnInteraction: false }}
+          autoplay={{ delay: 3000, disableOnInteraction: false }}
           speed={500}
-          navigation={{
-            nextEl: ".featured-next",
-            prevEl: ".featured-prev",
-          }}
           breakpoints={{
             1536: { slidesPerView: 4 },
             1280: { slidesPerView: 3 },
@@ -63,31 +73,61 @@ export const FeaturedTours: React.FC = () => {
             768: { slidesPerView: 2 },
             0: { slidesPerView: 1 },
           }}
-          threshold={20}
         >
           {tours.map((tour, idx) => (
             <SwiperSlide key={idx} className="px-1">
               <Link
                 to={`/tour/${tour.slug}`}
-                className="relative rounded-2xl shadow-lg overflow-hidden h-full flex flex-col group cursor-pointer"
+                className="relative rounded-xl overflow-hidden h-full flex flex-col group cursor-pointer"
               >
                 <img
-                  src={tour.imageUrl}
+                  src={tour.poster_url}
                   alt={tour.title}
                   className="w-full h-[420px] md:h-[500px] lg:h-[540px] object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
                 />
+                
+                {/* Rating Badge - Top Right */}
+                {(!tour.total_star || !tour.review_count || tour.review_count === 0) ? (
+                  <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                    Mới
+                  </div>
+                ) : (
+                  <div className="absolute top-4 right-4 bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                    ⭐ {(tour.total_star / tour.review_count).toFixed(1)}
+                  </div>
+                )}
+                
+                {/* Location Badge - Top Left */}
+                {tour.location && (
+                  <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                    📍 {tour.location}
+                  </div>
+                )}
+                
                 <div className="absolute bottom-0 left-0 w-full flex flex-col items-center justify-end pb-6 pt-16 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
-                  <h3 className="text-lg font-bold text-orange-400 mb-1 uppercase text-center drop-shadow">
+                  <h3 className="text-lg font-bold text-white mb-2 uppercase text-center drop-shadow line-clamp-2">
                     {tour.title}
                   </h3>
-                  <div className="text-sm text-white mb-1 text-center drop-shadow">
-                    {tour.duration}
+                  
+                  {/* Tour Details Grid */}
+                  <div className="flex items-center justify-center mb-3 text-white text-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="text-blue-300">📅</span>
+                      <span>{tour.duration}</span>
+                    </div>
                   </div>
-                  <div className="text-base font-semibold text-white mb-2 text-center drop-shadow">
-                    Giá: {tour.price}
+                  
+                  {/* Price Section */}
+                  <div className="text-center mb-3">
+                    <div className="text-2xl font-bold text-yellow-400 drop-shadow">
+                      {tour.price ? `Từ ${tour.price.toLocaleString()}đ` : 'Liên hệ'}
+                    </div>
                   </div>
-                  <span className="border-2 border-white text-white bg-black/60 hover:bg-orange-500 px-4 py-1 rounded-full font-semibold transition-all w-fit self-center">
-                    ĐẶT NGAY
+                  
+                  {/* CTA Button */}
+                  <span className="border border-white text-white bg-black/40 hover:bg-white hover:text-black px-4 py-2 rounded-full font-medium transition-all duration-300">
+                    Xem chi tiết
                   </span>
                 </div>
               </Link>

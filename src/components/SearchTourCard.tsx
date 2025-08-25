@@ -105,15 +105,15 @@ export const SearchTourCard: React.FC<SearchTourCardProps> = ({
             <div className="text-sm text-gray-600">{reviewCount} đánh giá</div>
           ) : (
             <div className="text-sm text-gray-500">
-              Tour này chưa có đánh giá
+              Tour chưa có đánh giá
             </div>
           )}
         </div>
 
         {/* Price and Button - Push to bottom */}
         <div className="flex items-center justify-between mt-auto">
-          <div className="text-right">
-            <div className="text-xl font-bold text-blue-600">
+          <div className="text-left">
+            <div className="text-md font-bold text-blue-600">
               {formatPrice(price)}
             </div>
             <div className="text-sm text-gray-500">/ người</div>
