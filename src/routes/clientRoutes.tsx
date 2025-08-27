@@ -60,7 +60,7 @@ export const clientRoutes = [
       { path: "verify-email", element: <VerifyEmail /> },
     ],
   },
-  { path: "reset-password", element: <ForgotPassword /> },
-  { path: "verify/email", element: <EnterOtp /> },
-  { path: "login/success", element: <LoginSuccess /> },
+  { path: "/reset-password", element: <ForgotPassword /> },
+  { path: "/verify/email", element: <EnterOtp /> },
+  { path: "/login/success", element: <LoginSuccess /> },
 ];
