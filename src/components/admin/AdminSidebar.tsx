@@ -91,13 +91,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["admin"], // Only admins can manage users
       },
       {
-        label: "Tours",
+        label: "Quản lý tour",
         href: "/admin/tours",
         icon: <MapPin className="w-4 h-4" />,
         allowedRoles: ["admin", "provider"],
       },
       {
-        label: "Tour Categories",
+        label: "Danh mục tour",
         href: "/admin/tours/categories",
         icon: <Eye className="w-4 h-4" />,
         allowedRoles: ["admin"], // Only admins can manage categories
@@ -127,24 +127,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["admin"],
       },
       {
-        label: "Blog",
+        label: "Bài viết",
         icon: <FileText className="w-4 h-4" />,
         allowedRoles: ["admin", "provider"],
         subItems: [
           {
-            label: "All Posts",
+            label: "Tất cả bài viết",
             href: "/admin/blog",
             icon: <List className="w-4 h-4" />,
             allowedRoles: ["admin", "provider"],
           },
           {
-            label: "Add New Post",
+            label: "Tạo bài viết",
             href: "/admin/blog/new",
             icon: <Plus className="w-4 h-4" />,
             allowedRoles: ["admin", "provider"],
           },
           {
-            label: "Blog Categories",
+            label: "Danh mục bài viết",
             href: "/admin/blog/categories",
             icon: <Eye className="w-4 h-4" />,
             allowedRoles: ["admin"], // Only admins can manage blog categories
@@ -159,13 +159,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       },
       // Provider-only sections
       {
-        label: "My Tours",
-        href: "/admin/my-tours",
-        icon: <MapPin className="w-4 h-4" />,
-        allowedRoles: ["provider"], // Only providers can see their own tours
-      },
-      {
-        label: "Đặt tour của tôi",
+        label: "Đơn đặt",
         href: "/admin/provider-bookings",
         icon: <Calendar className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their bookings
@@ -176,14 +170,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         icon: <DollarSign className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their earnings
       },
+      // {
+      //   label: "Hồ sơ nhà cung cấp",
+      //   href: "/admin/profile",
+      //   icon: <Building className="w-4 h-4" />,
+      //   allowedRoles: ["provider"], // Only providers can manage their profile
+      // },
       {
-        label: "Company Profile",
-        href: "/admin/profile",
-        icon: <Building className="w-4 h-4" />,
-        allowedRoles: ["provider"], // Only providers can manage their profile
-      },
-      {
-        label: "Questions",
+        label: "Trả lời câu hỏi",
         href: "/admin/questions",
         icon: <FileText className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their questions

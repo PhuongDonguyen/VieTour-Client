@@ -709,7 +709,7 @@ export default function MyBooking() {
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-1">
-          Đặt tour của tôi
+          Tour đã đặt
         </h2>
         <p className="text-gray-600 text-sm">Xem lịch sử và quản lý đặt tour</p>
       </div>
@@ -738,7 +738,7 @@ export default function MyBooking() {
           </select>
           {statusFilter !== "all" && !loading && (
             <span className="text-sm text-gray-500">
-              Hiển thị {filteredBookings.length} đặt tour
+              Hiển thị {filteredBookings.length} tour
             </span>
           )}
         </div>
@@ -803,7 +803,7 @@ export default function MyBooking() {
                 <span className="font-medium text-gray-700">
                   {pagination.totalItems}
                 </span>{" "}
-                đặt tour
+                tour
               </div>
             </div>
           )}
@@ -816,7 +816,7 @@ export default function MyBooking() {
                 <div className="inline-flex items-center gap-2 text-gray-500">
                   <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                   <span className="text-sm">
-                    Đã hiển thị tất cả {pagination.totalItems} đặt tour
+                    Đã hiển thị tất cả {pagination.totalItems} tour
                   </span>
                   <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                 </div>

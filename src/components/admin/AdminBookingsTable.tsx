@@ -244,9 +244,7 @@ const AdminBookingsTable: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">
-            {user?.role === "provider"
-              ? "Đặt tour của tôi"
-              : "Quản lý đặt tour"}
+            Quản lý đặt tour
           </h1>
           <p className="text-muted-foreground">
             {user?.role === "provider"

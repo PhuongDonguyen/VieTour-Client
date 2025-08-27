@@ -143,9 +143,9 @@ const AccountPage: React.FC = () => {
     },
     {
       id: "my-bookings",
-      label: "Đặt tour của tôi",
+      label: "Tour đã đặt",
       icon: Calendar,
-      description: "Lịch sử đặt tour",
+      description: "Lịch sử tour đã đặt",
       badge: "3",
     },
     {

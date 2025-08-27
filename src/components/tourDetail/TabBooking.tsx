@@ -112,6 +112,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
   const [showBookingPolicyModal, setShowBookingPolicyModal] = useState(false);
   const [bookingPolicy, setBookingPolicy] = useState("");
   const [isLoadingPolicy, setIsLoadingPolicy] = useState(false);
+  const [policyAgreed, setPolicyAgreed] = useState(false);
 
   // Key cho localStorage
   const getStorageKey = () => `booking_form_${tourId}`;
@@ -936,7 +937,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                                       : "text-gray-800"
                                   }`}
                                 >
-                                  Lịch trình #{schedule.id}
+                                  Lịch trình VT{schedule.id}
                                 </p>
                                 <p
                                   className={`text-sm ${
@@ -1645,6 +1646,20 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               </div>
             )}
 
+            {/* Confirmation Checkbox */}
+            <div className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                id="policy-agree-checkbox"
+                checked={policyAgreed}
+                onChange={e => setPolicyAgreed(e.target.checked)}
+                className="mr-2 w-4 h-4 accent-orange-500"
+              />
+              <label htmlFor="policy-agree-checkbox" className="text-gray-800 select-none">
+                Tôi đã đọc và đồng ý với <b>chính sách đặt tour của VieTour</b>
+              </label>
+            </div>
+
             <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
               <button
                 onClick={() => setShowBookingPolicyModal(false)}
@@ -1654,9 +1669,9 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               </button>
               <button
                 onClick={handleConfirmBooking}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !policyAgreed}
                 className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                  isSubmitting
+                  isSubmitting || !policyAgreed
                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                     : "bg-green-600 text-white hover:bg-green-700"
                 }`}
