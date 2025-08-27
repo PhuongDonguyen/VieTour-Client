@@ -1635,7 +1635,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                 </span>
               </div>
             ) : (
-              <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-6">
+              <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-6 max-h-[50vh] overflow-y-auto">
                 {bookingPolicy ? (
                   <div dangerouslySetInnerHTML={{ __html: bookingPolicy }} />
                 ) : (
