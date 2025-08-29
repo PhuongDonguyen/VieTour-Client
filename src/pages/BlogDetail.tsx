@@ -296,8 +296,11 @@ const BlogDetail: React.FC = () => {
 
           {/* Article Content */}
           <div className="p-6">
-            <div className="prose prose-lg max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+            <div className="max-w-none">
+              <div
+                className="mce-content-body"
+                dangerouslySetInnerHTML={{ __html: blog.content }}
+              />
             </div>
           </div>
             </article>
