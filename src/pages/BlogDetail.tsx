@@ -192,7 +192,7 @@ const BlogDetail: React.FC = () => {
         {/* Main Content Layout */}
         <div className="flex flex-col lg:flex-row gap-8 mt-10">
           {/* Main Article Content */}
-          <div className="lg:w-[70%]">
+          <div className="lg:w-[80%]">
             {/* Article Header */}
             <article className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Hero Image */}
@@ -307,7 +307,7 @@ const BlogDetail: React.FC = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:w-[30%]">
+          <div className="lg:w-[20%]">
             <div className="sticky top-24 space-y-6">
               <RecentlyViewedTours 
                 maxItems={5}
