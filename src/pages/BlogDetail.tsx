@@ -298,7 +298,7 @@ const BlogDetail: React.FC = () => {
           <div className="p-6">
             <div className="max-w-none">
               <div
-                className="mce-content-body"
+                className="blog-content"
                 dangerouslySetInnerHTML={{ __html: blog.content }}
               />
             </div>

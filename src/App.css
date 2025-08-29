@@ -122,3 +122,92 @@
     @apply bg-background text-foreground;
     }
 }
+
+/* Blog content styles to mimic TinyMCE editor */
+.blog-content {
+  font-family: inherit;
+  color: #222;
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+.blog-content h1 {
+  font-size: 2.25rem;
+  font-weight: bold;
+  margin: 1.2em 0 0.6em 0;
+}
+.blog-content h2 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin: 1.1em 0 0.55em 0;
+}
+.blog-content h3 {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin: 1em 0 0.5em 0;
+}
+.blog-content h4 {
+  font-size: 1.15rem;
+  font-weight: bold;
+  margin: 0.9em 0 0.45em 0;
+}
+.blog-content h5 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0.8em 0 0.4em 0;
+}
+.blog-content h6 {
+  font-size: 0.95rem;
+  font-weight: bold;
+  margin: 0.7em 0 0.35em 0;
+}
+.blog-content p {
+  margin: 0.7em 0;
+}
+.blog-content b, .blog-content strong {
+  font-weight: bold;
+}
+.blog-content i, .blog-content em {
+  font-style: italic;
+}
+.blog-content u {
+  text-decoration: underline;
+}
+.blog-content ul, .blog-content ol {
+  margin: 1em 0 1em 2em;
+  padding-left: 1.5em;
+}
+.blog-content li {
+  margin: 0.3em 0;
+}
+.blog-content blockquote {
+  border-left: 4px solid #ccc;
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  color: #555;
+  background: #f9f9f9;
+  font-style: italic;
+}
+.blog-content a {
+  color: #1976d2;
+  text-decoration: underline;
+  word-break: break-all;
+}
+.blog-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+}
+.blog-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+.blog-content th, .blog-content td {
+  border: 1px solid #ddd;
+  padding: 0.5em 1em;
+}
+.blog-content th {
+  background: #f0f0f0;
+  font-weight: bold;
+}
