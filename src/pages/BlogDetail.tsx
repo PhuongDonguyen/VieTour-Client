@@ -100,7 +100,7 @@ const BlogDetail: React.FC = () => {
           {/* Main content layout */}
           <div className="flex flex-col lg:flex-row gap-8 mt-10">
             {/* Main article skeleton */}
-            <div className="lg:w-[70%]">
+            <div className="lg:w-[75%]">
               <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                 {/* Hero image skeleton */}
                 <Skeleton height={384} className="mb-0" />
@@ -125,7 +125,7 @@ const BlogDetail: React.FC = () => {
             </div>
             
             {/* Sidebar skeleton */}
-            <div className="lg:w-[30%]">
+            <div className="lg:w-[25%]">
               <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
                 {/* Header skeleton */}
                 <div className="bg-gradient-to-r from-orange-50 to-red-50 px-4 py-3 border-b border-gray-100">
@@ -192,7 +192,7 @@ const BlogDetail: React.FC = () => {
         {/* Main Content Layout */}
         <div className="flex flex-col lg:flex-row gap-8 mt-10">
           {/* Main Article Content */}
-          <div className="lg:w-[80%]">
+          <div className="lg:w-[75%]">
             {/* Article Header */}
             <article className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Hero Image */}
@@ -307,7 +307,7 @@ const BlogDetail: React.FC = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:w-[20%]">
+          <div className="lg:w-[25%] min-w-[250px]">
             <div className="sticky top-24 space-y-6">
               <RecentlyViewedTours 
                 maxItems={5}

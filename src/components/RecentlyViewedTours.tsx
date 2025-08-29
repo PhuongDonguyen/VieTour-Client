@@ -193,12 +193,7 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
                       {tour.duration}
                     </div>
                     
-                    {tour.tour_category && (
-                      <div className="flex items-center">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        <span className="max-w-20 truncate">{tour.tour_category.name}</span>
-                      </div>
-                    )}
+                    {/* Removed destination display here */}
                   </div>
                 </div>
               </div>
