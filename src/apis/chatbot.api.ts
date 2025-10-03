@@ -1,62 +1,37 @@
-import axios from "axios";
-import { chatbotConfig } from "../config/chatbot.config";
+import axiosInstance from './axiosInstance';
 
-const RASA_BASE_URL = chatbotConfig.rasa.baseUrl;
-
-export interface ChatMessage {
-  sender: string;
-  message: string;
+// Interface for tour data in chatbot response
+export interface ChatbotTour {
+  tour_id: number;
+  name: string;
+  description: string;
+  location: string;
+  duration: string;
+  price: number;
+  similarity: number;
+  poster_url: string;
+  slug: string;
 }
 
-export interface ChatResponse {
-  recipient_id: string;
-  text: string;
+// Interface for chatbot request
+export interface ChatbotRequest {
+  query: string;
 }
 
-export const chatbotApi = {
-  sendMessage: async (
-    message: string,
-    sender: string = "user"
-  ): Promise<ChatResponse[]> => {
-    try {
-      const response = await axios.post(
-        `${RASA_BASE_URL}${chatbotConfig.rasa.webhookEndpoint}`,
-        {
-          sender,
-          message,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-          timeout: chatbotConfig.rasa.timeout,
-          withCredentials: false, // Disable credentials for CORS
-        }
-      );
+// Interface for chatbot response data
+export interface ChatbotResponseData {
+  success: boolean;
+  query: string;
+  response: string;
+  tours: ChatbotTour[];
+}
 
-      console.log("Rasa response:", response.data);
-      return response.data;
-    } catch (error) {
-      console.error("Error sending message to Rasa:", error);
-      if (axios.isAxiosError(error)) {
-        console.error("Response status:", error.response?.status);
-        console.error("Response data:", error.response?.data);
-      }
-      throw error;
-    }
-  },
+// Interface for the full API response
+export interface ChatbotApiResponse {
+  success: boolean;
+  response: ChatbotResponseData;
+}
 
-  // Health check to verify Rasa server is running
-  checkHealth: async (): Promise<boolean> => {
-    try {
-      await axios.get(`${RASA_BASE_URL}${chatbotConfig.rasa.healthEndpoint}`, {
-        timeout: 5000,
-      });
-      return true;
-    } catch (error) {
-      console.error("Rasa server health check failed:", error);
-      return false;
-    }
-  },
-};
+// Chatbot API function
+export const sendChatbotMessage = (data: ChatbotRequest) =>
+  axiosInstance.post<ChatbotApiResponse>('/api/chatbot', data);
