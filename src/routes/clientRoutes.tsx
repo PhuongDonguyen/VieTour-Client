@@ -19,6 +19,7 @@ import TourImageGallery from "@/pages/TourImageGallery";
 import VerifyEmail from "../pages/VerifyEmail";
 import Contact from "../pages/Contact";
 import SearchTours from "../pages/SearchTours";
+import ChatPage from "../pages/ChatPage";
 
 export const clientRoutes = [
   {
@@ -27,6 +28,7 @@ export const clientRoutes = [
     children: [
       { path: "", element: <Home /> },
       { path: "tour/:slug", element: <TourDetail /> },
+      { path: "/chat", element: <ChatPage /> },
       {
         path: "booking/:slug",
         element: <Booking />,
@@ -58,9 +60,11 @@ export const clientRoutes = [
         ),
       },
       { path: "verify-email", element: <VerifyEmail /> },
+
     ],
   },
   { path: "/reset-password", element: <ForgotPassword /> },
   { path: "/verify/email", element: <EnterOtp /> },
   { path: "/login/success", element: <LoginSuccess /> },
+
 ];

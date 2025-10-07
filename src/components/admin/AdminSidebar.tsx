@@ -127,6 +127,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["admin"],
       },
       {
+        label: "Quản lý bài viết",
+        href: "/admin/blog",
+        icon: <FileText className="w-4 h-4" />,
+        allowedRoles: ["admin", "provider"],
+      },
+      {
         label: "Bài viết",
         icon: <FileText className="w-4 h-4" />,
         allowedRoles: ["admin", "provider"],

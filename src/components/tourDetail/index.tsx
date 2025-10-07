@@ -482,12 +482,14 @@ const TourDetail: React.FC = () => {
         </div>
       )}
 
+      
+
       {showCommentSection && (
         <div className="fade-in-up-delay-3">
           <CommentSection />
         </div>
       )}
-
+      
       {/* Recently Viewed Tours - Horizontal Section */}
       <div className="w-full mb-5 mt-10 max-w-7xl mx-auto">
         <RecentlyViewedTours

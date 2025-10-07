@@ -31,6 +31,7 @@ import TourImageViewContent from "../components/admin/tour-image/TourImageViewCo
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
 import AdminSupport from "@/pages/admin/AdminSupport";
+import ChatPage from "@/pages/ChatPage";
 import { ProviderRevenueStats } from "@/components/ProviderRevenueStats";
 import { ProviderRevenueStatsWrapper } from "@/components/ProviderRevenueStatsWrapper";
 import GeneralQuestionsListPage from "@/pages/admin/GeneralQuestionsListPage";
@@ -49,6 +50,17 @@ export const adminRoutes = [
           <GeneralQuestionsListPage />
         </AdminLayout>
       </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/chat",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Hỗ trợ khách hàng">
+          {/* provider path dùng query ?actor=provider để kích hoạt chế độ provider */}
+          <ChatPage />
+        </AdminLayout>
+      </RequireProviderOnly>
     ),
   },
   {
