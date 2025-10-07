@@ -1,6 +1,7 @@
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminLogin from "../pages/AdminLogin";
 import AdminLayout from "../components/admin/AdminLayout";
+import AdminChatSupport from "../components/admin/AdminChatSupport";
 import ProviderTours from "../components/admin/tour/Tours";
 import TourEditor from "../components/admin/tour/TourEditor";
 import TourView from "../pages/admin/TourView";
@@ -41,7 +42,7 @@ import AdminRegisterPartner from "@/pages/admin/AdminRegisterPartner";
 import RegisterPartnerView from "@/pages/admin/RegisterPartnerView";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
-export const adminRoutes = [
+export const  adminRoutes = [
   {
     path: "/admin/general-questions",
     element: (
@@ -57,8 +58,7 @@ export const adminRoutes = [
     element: (
       <RequireProviderOnly>
         <AdminLayout title="Hỗ trợ khách hàng">
-          {/* provider path dùng query ?actor=provider để kích hoạt chế độ provider */}
-          <ChatPage />
+          <AdminChatSupport />
         </AdminLayout>
       </RequireProviderOnly>
     ),

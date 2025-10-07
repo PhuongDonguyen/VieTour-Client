@@ -1,5 +1,21 @@
 import axiosInstance from './axiosInstance';
 
+export interface UserProfile {
+  first_name: string;
+  last_name: string;
+  avatar: string | null;
+}
+
+export interface ConversationUser {
+  id: number;
+  user_profile: UserProfile;
+}
+
+export interface ProviderProfile {
+  company_name: string;
+  avatar: string | null;
+}
+
 export interface Conversation {
   id: number;
   user_id: number;
@@ -8,10 +24,16 @@ export interface Conversation {
   last_message_text: string;
   unread_count_user: number;
   unread_count_provider: number;
-  provider_profile: {
-    company_name: string;
-    avatar: string;
+  // New shape: nested user info
+  user?: ConversationUser;
+  // New shape (user side): nested provider info
+  provider?: {
+    id: number;
+    provider_profile: ProviderProfile;
   };
+  // Optional legacy fields for backward compatibility
+  user_profile?: UserProfile;
+  provider_profile?: ProviderProfile;
 }
 
 export interface ConversationsResponse {

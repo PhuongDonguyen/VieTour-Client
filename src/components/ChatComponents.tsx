@@ -38,6 +38,24 @@ export default function UserVendorChat({ actor = 'user', getPeerDisplay }: ChatP
     return `${timePart} ${datePart}`;
   };
 
+  // Thời gian tương đối cho danh sách hội thoại: "Vừa xong", "X phút trước", "X giờ trước", "X ngày trước", hoặc dd/MM
+  const formatRelativeTime = (dateInput: string | number | Date) => {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 45) return 'Vừa xong';
+    if (diffMin < 60) return `${diffMin} phút trước`;
+    if (diffHour < 24) return `${diffHour} giờ trước`;
+    if (diffDay < 7) return `${diffDay} ngày trước`;
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  };
+
   const waitForImagesInContainer = async (container: HTMLDivElement | null) => {
     if (!container) return;
     const images = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
@@ -218,24 +236,36 @@ export default function UserVendorChat({ actor = 'user', getPeerDisplay }: ChatP
         console.log("res", res);
         
         if (res.success && res.data) {
-          // Map conversations từ API response
+          // Map conversations từ API response (hỗ trợ cả cấu trúc cũ và mới)
           const mappedConversations = res.data.map((conv: any) => {
+            const providerProfile = conv.provider?.provider_profile || conv.provider_profile || {};
+            const userProfile = conv.user?.user_profile || conv.user_profile || {};
+
             const peer = getPeerDisplay
               ? getPeerDisplay(conv)
               : actor === 'user'
-                ? { name: conv.provider_profile?.company_name || `Provider ${conv.provider_id}`, avatar: conv.provider_profile?.avatar || '🏢' }
-                : { name: conv.user_profile?.full_name || `User ${conv.user_id}`, avatar: conv.user_profile?.avatar || '👤' };
+                ? {
+                    name: providerProfile.company_name || `Provider ${conv.provider_id}`,
+                    avatar: providerProfile.avatar || '🏢',
+                  }
+                : {
+                    name:
+                      userProfile.full_name ||
+                      `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() ||
+                      `User ${conv.user_id}`,
+                    avatar: userProfile.avatar || '👤',
+                  };
             return {
-            id: conv.id,
+              id: conv.id,
               user_id: conv.user_id,
               provider_id: conv.provider_id,
               name: peer.name,
               avatar: peer.avatar,
-            lastMessage: conv.last_message_text,
-              time: formatDisplayTime(conv.last_message_at),
+              lastMessage: conv.last_message_text,
+              time: formatRelativeTime(conv.last_message_at),
               unread: actor === 'user' ? conv.unread_count_user : conv.unread_count_provider,
               status: 'online',
-              messages: []
+              messages: [],
             };
           });
           
