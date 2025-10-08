@@ -18,6 +18,7 @@ const AdminChatSupport: React.FC = () => {
   const [messagesByConversation, setMessagesByConversation] = useState<Record<number, Message[]>>({});
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -67,7 +68,7 @@ const AdminChatSupport: React.FC = () => {
         setMessages(cached);
         return;
       }
-      setLoading(true);
+      setMessagesLoading(true);
       const response = await getMessagesByConversation({
         conversation_id: conversationId,
         page: 1,
@@ -84,7 +85,7 @@ const AdminChatSupport: React.FC = () => {
     } catch (error) {
       console.error('Lỗi khi lấy tin nhắn:', error);
     } finally {
-      setLoading(false);
+      setMessagesLoading(false);
     }
   };
 
@@ -294,7 +295,7 @@ const AdminChatSupport: React.FC = () => {
   });
 
   return (
-    <div className="flex h-[calc(100vh-200px)] gap-4">
+    <div className="flex h-[calc(100vh-200px)] p-6 gap-4">
       {/* Danh sách cuộc trò chuyện */}
       <Card className="w-1/3 min-w-[300px]">
         <CardHeader>
@@ -430,7 +431,7 @@ const AdminChatSupport: React.FC = () => {
                   loadMoreOlderMessages(convId);
                 }
               }}>
-                {loading ? (
+                {messagesLoading ? (
                   <div className="text-center text-gray-500">
                     Đang tải tin nhắn...
                   </div>

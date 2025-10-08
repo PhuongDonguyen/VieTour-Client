@@ -405,9 +405,9 @@ export const  adminRoutes = [
     element: (
       <RequireProviderOnly>
         <AdminLayout title="Thống kê doanh thu">
-          <div className="p-6">
+          {/* <div className="p-6"> */}
             <ProviderRevenueStatsWrapper />
-          </div>
+          {/* </div> */}
         </AdminLayout>
       </RequireProviderOnly>
     ),
@@ -458,9 +458,9 @@ export const  adminRoutes = [
     element: (
       <RequireProviderOnly>
         <AdminLayout title="Đặt tour của tôi">
-          <div className="p-6">
+          {/* <div className="p-6"> */}
             <AdminBookings />
-          </div>
+          {/* </div> */}
         </AdminLayout>
       </RequireProviderOnly>
     ),
