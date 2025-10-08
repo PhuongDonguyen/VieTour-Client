@@ -3,7 +3,7 @@ import axiosInstance from './axiosInstance';
 export interface UserProfile {
   first_name: string;
   last_name: string;
-  avatar: string | null;
+  avatar: string;
 }
 
 export interface ConversationUser {
@@ -13,7 +13,12 @@ export interface ConversationUser {
 
 export interface ProviderProfile {
   company_name: string;
-  avatar: string | null;
+  avatar: string;
+}
+
+export interface ConversationProvider {
+  id: number;
+  provider_profile: ProviderProfile;
 }
 
 export interface Conversation {
@@ -24,16 +29,10 @@ export interface Conversation {
   last_message_text: string;
   unread_count_user: number;
   unread_count_provider: number;
-  // New shape: nested user info
+  // For user role: includes provider info
+  provider?: ConversationProvider;
+  // For provider role: includes user info
   user?: ConversationUser;
-  // New shape (user side): nested provider info
-  provider?: {
-    id: number;
-    provider_profile: ProviderProfile;
-  };
-  // Optional legacy fields for backward compatibility
-  user_profile?: UserProfile;
-  provider_profile?: ProviderProfile;
 }
 
 export interface ConversationsResponse {
