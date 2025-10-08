@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { getConversations, Conversation } from '../../apis/conversation.api';
-import { getMessagesByConversation, sendMessage, Message } from '../../apis/message.api';
+import { getMessages, sendMessage, Message } from '../../apis/message.api';
 import { Send, MessageCircle, Clock, User, Search, MoreVertical, Paperclip, Smile, Store } from 'lucide-react';
 
 const AdminChatSupport: React.FC = () => {
@@ -45,7 +45,7 @@ const AdminChatSupport: React.FC = () => {
     try {
       setLoading(true);
       const response = await getConversations(page, 20);
-      console.log("Conversations: ",response.data);
+      console.log("Conversations: ", response.data);
       setConversations(prev => append ? [...prev, ...response.data] : response.data);
       setConversationsPage(page);
       const hasMore = !!response.pagination?.hasNextPage;
@@ -73,7 +73,7 @@ const AdminChatSupport: React.FC = () => {
         page: 1,
         limit: 20
       });
-      console.log("Messages: ",response.data);
+      console.log("Messages: ", response.data);
       // API trả mới -> cũ, cần đảo thành cũ -> mới để tin nhắn mới nhất nằm dưới
       const ordered = (response.data || []).slice().reverse();
       setMessages(ordered);
@@ -98,11 +98,11 @@ const AdminChatSupport: React.FC = () => {
 
       setLoadingMoreByConversation(prev => ({ ...prev, [conversationId]: true }));
       const nextPage = (pageByConversation[conversationId] || 1) + 1;
-      const response = await getMessagesByConversation({
-        conversation_id: conversationId,
-        page: nextPage,
-        limit: 20,
-      });
+      const response = await getMessages(
+        conversationId,
+        nextPage,
+        20,
+      );
       const olderOrdered = (response.data || []).slice().reverse();
       setMessages(prev => {
         const updated = [...olderOrdered, ...prev];
@@ -143,7 +143,7 @@ const AdminChatSupport: React.FC = () => {
         conversation_id: selectedConversation.id,
         message_text: newMessage.trim()
       });
-      
+
       // Thêm tin nhắn mới vào danh sách và cache theo hội thoại + gắn vào conversation hiện tại
       setMessages(prev => {
         const updated = [...prev, response.data];
@@ -153,7 +153,7 @@ const AdminChatSupport: React.FC = () => {
         return updated;
       });
       setNewMessage('');
-      
+
       // Cập nhật metadata cuộc trò chuyện cục bộ, không reload toàn bộ
       setConversations(prev => prev.map(c => {
         if (c.id !== selectedConversation.id) return c;
@@ -332,9 +332,8 @@ const AdminChatSupport: React.FC = () => {
                 <div
                   key={conversation.id}
                   onClick={() => handleSelectConversation(conversation)}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedConversation?.id === conversation.id ? 'bg-gray-50 border-l-4 border-l-gray-900' : ''
-                  }`}
+                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${selectedConversation?.id === conversation.id ? 'bg-gray-50 border-l-4 border-l-gray-900' : ''
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="relative">
@@ -386,7 +385,7 @@ const AdminChatSupport: React.FC = () => {
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="relative">
+                  <div className="relative">
                     {((selectedConversation as any)?.user?.user_profile?.avatar) ? (
                       <img
                         src={(selectedConversation as any).user.user_profile.avatar}
@@ -442,11 +441,10 @@ const AdminChatSupport: React.FC = () => {
                   messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${
-                        message.sender_id === selectedConversation.provider_id
-                          ? 'justify-end'
-                          : 'justify-start'
-                      }`}
+                      className={`flex ${message.sender_id === selectedConversation.provider_id
+                        ? 'justify-end'
+                        : 'justify-start'
+                        }`}
                     >
                       <div
                         className={`max-w-[70%] rounded-2xl overflow-hidden border ${message.sender_id === selectedConversation.provider_id ? 'border-gray-900' : 'border-gray-300'}`}

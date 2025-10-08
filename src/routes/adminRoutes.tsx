@@ -42,7 +42,7 @@ import AdminRegisterPartner from "@/pages/admin/AdminRegisterPartner";
 import RegisterPartnerView from "@/pages/admin/RegisterPartnerView";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
-export const  adminRoutes = [
+export const adminRoutes = [
   {
     path: "/admin/general-questions",
     element: (
