@@ -19,7 +19,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             <AdminSidebar />
             <div className="flex-1 flex flex-col">
                 <AdminHeader title={title} />
-                <main className="flex-1 p-6 space-y-6">
+                <main className="flex-1 space-y-6">
                     {children}
                 </main>
             </div>
