@@ -1,20 +1,28 @@
 import {
-  getMessagesByConversation,
+  getMessages,
   sendMessage,
-  type GetMessagesRequest,
   type MessagesResponse,
-  type CreateMessageRequest,
-  type CreateMessageResponse,
+  type SendMessagePayload,
+  type SendMessageResponse,
 } from '../apis/message.api';
 
+export interface FetchMessagesRequest {
+  conversation_id: number;
+  page?: number;
+  limit?: number;
+}
+
 export const fetchMessagesByConversation = async (
-  request: GetMessagesRequest
+  request: FetchMessagesRequest
 ): Promise<MessagesResponse> => {
   try {
-    const response = await getMessagesByConversation(request);
+    const { conversation_id, page = 1, limit = 20 } = request;
+    const response = await getMessages(conversation_id, page, limit);
+
     if (response.success) {
       return response;
     }
+
     throw new Error('Failed to fetch messages');
   } catch (error: any) {
     console.error('Error in fetchMessagesByConversation:', error);
@@ -23,13 +31,15 @@ export const fetchMessagesByConversation = async (
 };
 
 export const createMessage = async (
-  request: CreateMessageRequest
-): Promise<CreateMessageResponse> => {
+  payload: SendMessagePayload
+): Promise<SendMessageResponse> => {
   try {
-    const response = await sendMessage(request);
+    const response = await sendMessage(payload);
+
     if (response.success) {
       return response;
     }
+
     throw new Error('Failed to send message');
   } catch (error: any) {
     console.error('Error in createMessage:', error);

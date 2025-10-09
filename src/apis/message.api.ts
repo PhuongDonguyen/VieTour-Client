@@ -4,8 +4,9 @@ export interface Message {
   id: number;
   conversation_id: number;
   sender_id: number;
-  message_text?: string;
-  image_url?: string;
+  message_text: string;
+  image_url: string | null;
+  is_read: boolean;
   created_at: string;
 }
 
@@ -22,42 +23,51 @@ export interface MessagesResponse {
   };
 }
 
-export interface CreateMessageRequest {
-  conversation_id: number;
+export const getMessages = async (
+  conversationId: number,
+  page: number = 1,
+  limit: number = 20
+): Promise<MessagesResponse> => {
+  try {
+    const response = await axiosInstance.get('/api/messages', {
+      params: {
+        conversationId,
+        page,
+        limit,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    throw error;
+  }
+};
+
+export interface SendMessagePayload {
+  conversation_id?: number;
+  receiver_id?: number;
   message_text?: string;
   image_url?: string;
 }
 
-export interface CreateMessageResponse {
+export interface SendMessageResponse {
   success: boolean;
   data: Message;
 }
 
-export interface GetMessagesRequest {
-  conversation_id: number;
-  page?: number;
-  limit?: number;
-}
-
-export const getMessagesByConversation = async (
-  request: GetMessagesRequest
-): Promise<MessagesResponse> => {
-  const response = await axiosInstance.get('/api/messages', {
-    params: {
-      conversationId: request.conversation_id,
-      page: request.page ?? 1,
-      limit: request.limit ?? 20,
-    },
-  });
-
-  return response.data;
-};
-
 export const sendMessage = async (
-  request: CreateMessageRequest
-): Promise<CreateMessageResponse> => {
-  const response = await axiosInstance.post('/api/messages', request);
-  return response.data;
+  payload: SendMessagePayload
+): Promise<SendMessageResponse> => {
+  try {
+    console.log('Sending message with payload:', payload);
+    const response = await axiosInstance.post('/api/messages', payload);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
 };
 
 
