@@ -40,6 +40,7 @@ import GeneralQuestionView from "@/pages/admin/GeneralQuestionView";
 import GeneralQuestionEditor from "@/components/admin/general-question/GeneralQuestionEditor";
 import AdminRegisterPartner from "@/pages/admin/AdminRegisterPartner";
 import RegisterPartnerView from "@/pages/admin/RegisterPartnerView";
+import AdminRepComment from "@/pages/admin/AdminRepComment";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -51,6 +52,16 @@ export const adminRoutes = [
           <GeneralQuestionsListPage />
         </AdminLayout>
       </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/comments",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Quản lý bình luận">
+          <AdminRepComment /> {/* import từ '@/pages/admin/AdminRepComment' */}
+        </AdminLayout>
+      </RequireProviderOnly>
     ),
   },
   {
