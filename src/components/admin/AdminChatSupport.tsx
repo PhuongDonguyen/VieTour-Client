@@ -5,8 +5,9 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { getConversations, Conversation } from '../../apis/conversation.api';
-import { getMessages, sendMessage, Message } from '../../apis/message.api';
+import { getMessages, sendMessage, Message, SendMessagePayload } from '../../apis/message.api';
 import { Send, MessageCircle, Clock, User, Search, MoreVertical, Paperclip, Smile, Store } from 'lucide-react';
+import { fetchMessagesByConversation } from '@/services/message.service';
 
 const AdminChatSupport: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -14,8 +15,10 @@ const AdminChatSupport: React.FC = () => {
   const [conversationsHasMore, setConversationsHasMore] = useState(true);
   const [conversationsLoadingMore, setConversationsLoadingMore] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [messagesByConversation, setMessagesByConversation] = useState<Record<number, Message[]>>({});
+  // UI message type with local status for optimistic updates
+  type UIMsg = Message & { _tempId?: string; _status?: 'sending' | 'sent' | 'failed' };
+  const [messages, setMessages] = useState<UIMsg[]>([]);
+  const [messagesByConversation, setMessagesByConversation] = useState<Record<number, UIMsg[]>>({});
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -69,14 +72,14 @@ const AdminChatSupport: React.FC = () => {
         return;
       }
       setMessagesLoading(true);
-      const response = await getMessagesByConversation({
+      const response = await fetchMessagesByConversation({
         conversation_id: conversationId,
         page: 1,
         limit: 20
       });
       console.log("Messages: ", response.data);
       // API trả mới -> cũ, cần đảo thành cũ -> mới để tin nhắn mới nhất nằm dưới
-      const ordered = (response.data || []).slice().reverse();
+      const ordered: UIMsg[] = ((response.data || []).slice().reverse()) as UIMsg[];
       setMessages(ordered);
       setMessagesByConversation(prev => ({ ...prev, [conversationId]: ordered }));
       setPageByConversation(prev => ({ ...prev, [conversationId]: 1 }));
@@ -104,7 +107,7 @@ const AdminChatSupport: React.FC = () => {
         nextPage,
         20,
       );
-      const olderOrdered = (response.data || []).slice().reverse();
+      const olderOrdered: UIMsg[] = ((response.data || []).slice().reverse()) as UIMsg[];
       setMessages(prev => {
         const updated = [...olderOrdered, ...prev];
         setMessagesByConversation(map => ({ ...map, [conversationId]: updated }));
@@ -140,20 +143,46 @@ const AdminChatSupport: React.FC = () => {
 
     try {
       setSendingMessage(true);
-      const response = await sendMessage({
-        conversation_id: selectedConversation.id,
-        message_text: newMessage.trim()
-      });
 
-      // Thêm tin nhắn mới vào danh sách và cache theo hội thoại + gắn vào conversation hiện tại
+      // 1) Tạo tin nhắn tạm (optimistic UI)
+      const tempId = `temp-${Date.now()}`;
+      const optimisticMsg: UIMsg = {
+        // id tạm thời (âm) để tránh trùng với id thật từ server
+        id: -Date.now(),
+        conversation_id: selectedConversation.id,
+        sender_id: selectedConversation.provider_id as unknown as number,
+        message_text: newMessage.trim(),
+        image_url: null,
+        is_read: false,
+        created_at: new Date().toISOString(),
+        _tempId: tempId,
+        _status: 'sending' as const,
+      } as unknown as UIMsg;
+
       setMessages(prev => {
-        const updated = [...prev, response.data];
+        const updated = [...prev, optimisticMsg];
         setMessagesByConversation(m => ({ ...m, [selectedConversation.id]: updated }));
-        // Gắn messages vào selectedConversation trong danh sách hội thoại (nếu có)
+        // gắn messages vào conversation hiện tại để đồng bộ nhanh danh sách
         setConversations(list => list.map(c => (c.id === selectedConversation.id ? ({ ...(c as any), messages: updated }) : c)));
         return updated;
       });
       setNewMessage('');
+
+      const payload: SendMessagePayload = {
+        message_text: newMessage.trim(),
+      }
+      const conversationId = selectedConversation.id;
+      console.log("Conversation ID: ", conversationId);
+      payload.conversation_id = conversationId;
+      const response = await sendMessage(payload);
+
+      // 2) Thay thế tin nhắn tạm bằng tin nhắn thật và cập nhật trạng thái 'sent'
+      setMessages(prev => {
+        const updated = prev.map(m => (m._tempId === tempId ? ({ ...(response.data as UIMsg), _status: 'sent' as const }) : m));
+        setMessagesByConversation(m => ({ ...m, [selectedConversation.id]: updated }));
+        setConversations(list => list.map(c => (c.id === selectedConversation.id ? ({ ...(c as any), messages: updated }) : c)));
+        return updated;
+      });
 
       // Cập nhật metadata cuộc trò chuyện cục bộ, không reload toàn bộ
       setConversations(prev => prev.map(c => {
@@ -166,6 +195,14 @@ const AdminChatSupport: React.FC = () => {
       }));
     } catch (error) {
       console.error('Lỗi khi gửi tin nhắn:', error);
+      // Đánh dấu tin nhắn tạm thất bại nếu có
+      setMessages(prev => {
+        const updated = prev.map(m => (m._status === 'sending' ? { ...m, _status: 'failed' as const } : m));
+        if (selectedConversation) {
+          setMessagesByConversation(m => ({ ...m, [selectedConversation.id]: updated }));
+        }
+        return updated;
+      });
     } finally {
       setSendingMessage(false);
     }
@@ -295,7 +332,7 @@ const AdminChatSupport: React.FC = () => {
   });
 
   return (
-    <div className="flex h-[calc(100vh-200px)] p-6 gap-4">
+    <div className="flex h-[calc(100vh-64px)] min-h-[600px] p-6 gap-4">
       {/* Danh sách cuộc trò chuyện */}
       <Card className="w-1/3 min-w-[300px]">
         <CardHeader>
@@ -338,9 +375,9 @@ const AdminChatSupport: React.FC = () => {
                 >
                   <div className="flex items-start gap-3">
                     <div className="relative">
-                      {((conversation as any)?.user?.user_profile?.avatar) ? (
+                      {(conversation.user?.avatar != null) ? (
                         <img
-                          src={(conversation as any).user.user_profile.avatar}
+                          src={conversation.user?.avatar}
                           alt="avatar"
                           className="w-10 h-10 rounded-full object-cover"
                         />
@@ -354,7 +391,7 @@ const AdminChatSupport: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <span className="font-medium text-gray-900 truncate">
-                          {getDisplayName(conversation)}
+                          {conversation.user?.first_name + " " + conversation.user?.last_name}
                         </span>
                         <span className="text-xs text-gray-500 ml-2">{formatShortTime(conversation.last_message_at)}</span>
                       </div>
@@ -387,9 +424,9 @@ const AdminChatSupport: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    {((selectedConversation as any)?.user?.user_profile?.avatar) ? (
+                    {((selectedConversation as any)?.user?.avatar) ? (
                       <img
-                        src={(selectedConversation as any).user.user_profile.avatar}
+                        src={(selectedConversation as any).user.avatar}
                         alt="avatar"
                         className="w-11 h-11 rounded-full object-cover"
                       />
@@ -402,7 +439,7 @@ const AdminChatSupport: React.FC = () => {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900 flex items-center gap-2">
-                      {getDisplayName(selectedConversation)}
+                      {selectedConversation.user?.first_name + " " + selectedConversation.user?.last_name}
                       <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                         <Store className="w-3 h-3" />
                         Khách hàng
@@ -422,7 +459,7 @@ const AdminChatSupport: React.FC = () => {
 
             {/* Danh sách tin nhắn */}
             <CardContent className="flex-1 p-0 overflow-hidden">
-              <div ref={messagesContainerRef} className="h-full max-h-[calc(100vh-400px)] overflow-y-auto p-4 space-y-4" onScroll={(e) => {
+              <div ref={messagesContainerRef} className="h-full max-h-[calc(100vh-55px)] overflow-y-auto p-4 space-y-4" onScroll={(e) => {
                 const el = e.currentTarget;
                 if (!selectedConversation) return;
                 const convId = selectedConversation.id;
@@ -463,7 +500,13 @@ const AdminChatSupport: React.FC = () => {
                           />
                         )}
                         <div className={`flex items-center gap-2 px-3 py-1 ${message.sender_id === selectedConversation.provider_id ? 'justify-end' : ''}`}>
-                          <span className="text-[11px] text-gray-500">{formatTime(message.created_at)}</span>
+                          {((message as any)._status === 'sending') ? (
+                            <span className="text-[11px] text-gray-400 italic">Đang gửi...</span>
+                          ) : ((message as any)._status === 'failed') ? (
+                            <span className="text-[11px] text-red-500">Gửi thất bại</span>
+                          ) : (
+                            <span className="text-[11px] text-gray-500">{formatTime(message.created_at)}</span>
+                          )}
                         </div>
                       </div>
                     </div>
