@@ -48,7 +48,7 @@ export interface SendMessagePayload {
   conversation_id?: number;
   receiver_id?: number;
   message_text?: string;
-  image_url?: string;
+  image?: File;
 }
 
 export interface SendMessageResponse {
@@ -60,8 +60,27 @@ export const sendMessage = async (
   payload: SendMessagePayload
 ): Promise<SendMessageResponse> => {
   try {
-    console.log('Sending message with payload:', payload);
-    const response = await axiosInstance.post('/api/messages', payload);
+    const formData = new FormData();
+
+    if (payload.conversation_id) {
+      formData.append('conversation_id', payload.conversation_id.toString());
+    }
+    if (payload.receiver_id) {
+      formData.append('receiver_id', payload.receiver_id.toString());
+    }
+    if (payload.message_text) {
+      formData.append('message_text', payload.message_text);
+    }
+    if (payload.image) {
+      formData.append('image', payload.image);
+    }
+
+    console.log('Sending message with FormData');
+    const response = await axiosInstance.post('/api/messages', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
     return response.data;
   } catch (error) {

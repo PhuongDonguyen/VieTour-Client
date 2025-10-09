@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check, CheckCheck, User } from 'lucide-react';
+import Modal from "../Modal";
 
 interface ChatMessageProps {
     message: {
@@ -19,6 +20,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     isSentByMe,
     peerAvatar,
 }) => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleImageClick = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+    };
+
     return (
         <div className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}>
             <div
@@ -42,7 +53,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     {(message.image_url || message.text) && (
                         <div
                             className={`rounded-2xl overflow-hidden ${isSentByMe
-                                ? 'border border-orange-300'
+                                ? 'border border-orange-200'
                                 : 'border border-slate-300'
                                 }`}
                             style={{ maxWidth: 260 }}
@@ -51,8 +62,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                                 <img
                                     src={message.image_url}
                                     alt="attachment"
-                                    className="max-w-[260px] max-h-[240px] w-full object-cover block"
+                                    className="max-w-[260px] max-h-[240px] w-full object-cover block cursor-pointer transition-transform duration-200"
                                     loading="lazy"
+                                    onClick={handleImageClick}
                                 />
                             )}
                             {message.text && (
@@ -81,12 +93,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                         {message.time && (
                             <span className="text-xs text-slate-500">{message.time}</span>
                         )}
-                        {isSentByMe && (
-                            <MessageStatus status={message.status} />
-                        )}
+                        {isSentByMe && <MessageStatus status={message.status} />}
                     </div>
                 </div>
             </div>
+
+            {/* Image Modal */}
+            <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+                <div className="flex justify-center items-center">
+                    <img
+                        src={message.image_url}
+                        alt="Preview"
+                        className="object-contain rounded-xl"
+                    />
+                </div>
+            </Modal>
+
         </div>
     );
 };
@@ -97,7 +119,7 @@ interface MessageStatusProps {
 
 const MessageStatus: React.FC<MessageStatusProps> = ({ status }) => {
     if (status === 'sending') {
-        return <span className="text-xs text-slate-400 italic">Đang gửi...</span>;
+        return <span className="text-xs text-slate-400">Đang gửi...</span>;
     }
 
     if (status === 'failed') {

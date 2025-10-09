@@ -294,98 +294,102 @@ export const useChatSupport = (
         }
     }, [conversations, messagesByConversation, loadMessages, actor]);
 
-    const handleSendMessage = useCallback(async (newProviderId?: number) => {
+    const handleSendMessage = useCallback(async (newProviderId?: number, imageFile?: File) => {
         if (!selectedConversation && !newProviderId) return;
         if (isSending) return;
 
         const text = messageInput.trim();
-        if (!text) return;
+        if (!text && !imageFile) return;
 
         const conversationId = selectedConversation?.id || 0;
         const isNewChat = conversationId === 0;
 
         try {
-            setIsSending(true);
+          setIsSending(true);
 
-            const tempId = `temp-${Date.now()}`;
-            const tempMessage: UIMessage = {
-                id: tempId,
-                text,
-                sender: actor,
-                time: '',
-                status: 'sending',
-                image_url: '',
-            };
+          const tempId = `temp-${Date.now()}`;
+          const tempMessage: UIMessage = {
+            id: tempId,
+            text,
+            sender: actor,
+            time: '',
+            status: 'sending',
+            image_url: imageFile ? URL.createObjectURL(imageFile) : '',
+          };
 
-            setMessagesByConversation(prev => ({
+          setMessagesByConversation(prev => ({
+            ...prev,
+            [conversationId]: [...(prev[conversationId] || []), tempMessage],
+          }));
+
+          const payload: SendMessagePayload = {
+            message_text: text,
+          };
+
+          if (imageFile) {
+            payload.image = imageFile;
+          }
+
+          if (isNewChat && newProviderId) {
+            payload.receiver_id = newProviderId;
+          } else {
+            payload.conversation_id = conversationId;
+          }
+
+          const res = await createMessage(payload);
+
+          const sentMessage: UIMessage = {
+            id: res.data.id,
+            text: res.data.message_text || text,
+            sender: actor,
+            time: formatDisplayTime(res.data.created_at),
+            status: 'sent',
+            image_url: res.data.image_url || '',
+          };
+
+          if (isNewChat) {
+            await loadConversationsData();
+            
+            const newConversationId = res.data.conversation_id;
+            if (newConversationId) {
+              setSelectedConversationId(newConversationId);
+              
+              setMessagesByConversation(prev => ({
                 ...prev,
-                [conversationId]: [...(prev[conversationId] || []), tempMessage],
+                [newConversationId]: [sentMessage],
+              }));
+            }
+          } else {
+            setMessagesByConversation(prev => ({
+              ...prev,
+              [conversationId]: (prev[conversationId] || []).map(m =>
+                m.id === tempId ? sentMessage : m
+              ),
             }));
 
-            const payload: SendMessagePayload = {
-                message_text: text,
-            };
+            setConversations(prev =>
+              prev.map(c =>
+                c.id === conversationId
+                  ? { ...c, lastMessage: text || '[Hình ảnh]', time: 'Vừa xong' }
+                  : c
+              )
+            );
+          }
 
-            if (isNewChat && newProviderId) {
-                payload.receiver_id = newProviderId;
-            } else {
-                payload.conversation_id = conversationId;
-            }
-
-            const res = await createMessage(payload);
-
-            const sentMessage: UIMessage = {
-                id: res.data.id,
-                text: res.data.message_text || text,
-                sender: actor,
-                time: formatDisplayTime(res.data.created_at),
-                status: 'sent',
-                image_url: res.data.image_url || '',
-            };
-
-            if (isNewChat) {
-                await loadConversationsData();
-
-                const newConversationId = res.data.conversation_id;
-                if (newConversationId) {
-                    setSelectedConversationId(newConversationId);
-
-                    setMessagesByConversation(prev => ({
-                        ...prev,
-                        [newConversationId]: [sentMessage],
-                    }));
-                }
-            } else {
-                setMessagesByConversation(prev => ({
-                    ...prev,
-                    [conversationId]: (prev[conversationId] || []).map(m =>
-                        m.id === tempId ? sentMessage : m
-                    ),
-                }));
-
-                setConversations(prev =>
-                    prev.map(c =>
-                        c.id === conversationId
-                            ? { ...c, lastMessage: text, time: 'Vừa xong' }
-                            : c
-                    )
-                );
-            }
-
-            setMessageInput('');
+          setMessageInput('');
         } catch (error) {
-            console.error('Error sending message:', error);
+          console.error('Error sending message:', error);
 
-            setMessagesByConversation(prev => ({
-                ...prev,
-                [conversationId]: (prev[conversationId] || []).map(m =>
-                    typeof m.id === 'string' && m.id.startsWith('temp-') && m.text === text
-                        ? { ...m, status: 'failed' }
-                        : m
-                ),
-            }));
+          setMessagesByConversation(prev => ({
+            ...prev,
+            [conversationId]: (prev[conversationId] || []).map(m =>
+              typeof m.id === 'string' && m.id.startsWith('temp-') && m.text === text
+                ? { ...m, status: 'failed' }
+                : m
+            ),
+          }));
         } finally {
-            setIsSending(false);
+          setIsSending(false);
         }
     }, [selectedConversation, isSending, messageInput, actor, loadConversationsData]);
 

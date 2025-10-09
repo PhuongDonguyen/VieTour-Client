@@ -16,7 +16,7 @@ export const fetchMessagesByConversation = async (
   request: FetchMessagesRequest
 ): Promise<MessagesResponse> => {
   try {
-    const { conversation_id, page = 1, limit = 20 } = request;
+    const { conversation_id, page = 1, limit = 5 } = request;
     const response = await getMessages(conversation_id, page, limit);
 
     if (response.success) {
