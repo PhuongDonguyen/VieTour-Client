@@ -69,7 +69,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onClose, onSwitchForm }) => {
   });
 
   return (
-    <div className="p-4">
+    <div className="p-10">
       {onClose && (
         <button
           onClick={onClose}
@@ -136,7 +136,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onClose, onSwitchForm }) => {
             className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:border-orange-400 focus:outline-none"
             value={formik.values.password}
             onChange={formik.handleChange}
-            onBlur={formik.handleBlur}  
+            onBlur={formik.handleBlur}
             disabled={loading}
           />
           <button
@@ -211,7 +211,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onClose, onSwitchForm }) => {
       </div>
       {onSwitchForm && (
         <div className="text-center text-sm text-gray-600">
-          <button 
+          <button
             onClick={onSwitchForm}
             className="text-orange-500 hover:underline font-medium"
             disabled={loading}
