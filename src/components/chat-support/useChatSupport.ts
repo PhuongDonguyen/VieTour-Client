@@ -82,13 +82,13 @@ const getPeerInfoFromConversation = (
     }
 
     if (actor === 'user') {
-        const providerProfile = conv.provider?.provider_profile;
+        const providerProfile = conv.provider;
         return {
             name: providerProfile?.company_name || '',
             avatar: providerProfile?.avatar || '',
         };
     } else {
-        const userProfile = conv.user?.user_profile;
+        const userProfile = conv.user;
         const fullName = userProfile
             ? `${userProfile.first_name} ${userProfile.last_name}`.trim()
             : '';
@@ -117,8 +117,6 @@ export const useChatSupport = (
     const [pageByConversation, setPageByConversation] = useState<Record<number, number>>({});
     const [hasMoreByConversation, setHasMoreByConversation] = useState<Record<number, boolean>>({});
 
-    const skipAutoScrollRef = useRef(false);
-
     const selectedConversation = selectedConversationId !== null
         ? conversations.find(c => c.id === selectedConversationId) || null
         : null;
@@ -145,7 +143,50 @@ export const useChatSupport = (
         };
     }, []);
 
-    const loadConversations = useCallback(async () => {
+    const loadMessages = useCallback(async (conversationId: number, userId: number, providerId: number, page: number = 1) => {
+        try {
+            if (page === 1) {
+                setLoadingMessages(prev => ({ ...prev, [conversationId]: true }));
+            } else {
+                setLoadingMore(prev => ({ ...prev, [conversationId]: true }));
+            }
+
+            const res = await fetchMessagesByConversation({
+                conversation_id: conversationId,
+                page,
+                limit: 20,
+            });
+
+            if (res.success) {
+                const orderedMessages = [...res.data].reverse();
+                const mappedMessages = orderedMessages.map(msg =>
+                    mapApiMessageToUI(msg, userId, providerId)
+                );
+
+                setMessagesByConversation(prev => {
+                    if (page === 1) {
+                        return { ...prev, [conversationId]: mappedMessages };
+                    } else {
+                        const existing = prev[conversationId] || [];
+                        return { ...prev, [conversationId]: [...mappedMessages, ...existing] };
+                    }
+                });
+
+                setPageByConversation(prev => ({ ...prev, [conversationId]: page }));
+                setHasMoreByConversation(prev => ({
+                    ...prev,
+                    [conversationId]: res.pagination?.hasNextPage || false,
+                }));
+            }
+        } catch (error) {
+            console.error('Error loading messages:', error);
+        } finally {
+            setLoadingMessages(prev => ({ ...prev, [conversationId]: false }));
+            setLoadingMore(prev => ({ ...prev, [conversationId]: false }));
+        }
+    }, [mapApiMessageToUI]);
+
+    const loadConversationsData = useCallback(async () => {
         try {
             setIsConversationsLoading(true);
             const res = await fetchConversations(1, 20);
@@ -169,13 +210,17 @@ export const useChatSupport = (
 
                 setConversations(mappedConversations);
 
-                // Auto-select the first (latest) conversation
-                if (mappedConversations.length > 0) {
+                // Auto-select the first (latest) conversation only if none selected
+                if (mappedConversations.length > 0 && !selectedConversationId) {
                     const latestConversation = mappedConversations[0];
                     setSelectedConversationId(latestConversation.id);
 
                     // Load messages for the latest conversation
-                    await loadMessages(latestConversation.id);
+                    await loadMessages(
+                        latestConversation.id,
+                        latestConversation.user_id,
+                        latestConversation.provider_id
+                    );
 
                     // Mark as read if there are unread messages
                     if (latestConversation.unread > 0) {
@@ -200,77 +245,37 @@ export const useChatSupport = (
         } finally {
             setIsConversationsLoading(false);
         }
-    }, [actor, getPeerDisplay]);
+    }, [actor, getPeerDisplay, loadMessages, selectedConversationId]);
 
-    const loadMessages = useCallback(async (conversationId: number, page: number = 1) => {
-        try {
-            if (page === 1 && messagesByConversation[conversationId]?.length > 0) {
-                return;
-            }
+    // Load conversations on mount
+    useEffect(() => {
+        loadConversationsData();
+    }, [actor, getPeerDisplay, loadMessages]);
 
-            if (page === 1) {
-                setLoadingMessages(prev => ({ ...prev, [conversationId]: true }));
-            } else {
-                setLoadingMore(prev => ({ ...prev, [conversationId]: true }));
-            }
-
-            const res = await fetchMessagesByConversation({
-                conversation_id: conversationId,
-                page,
-                limit: 20,
-            });
-
-            if (res.success) {
-                const conv = conversations.find(c => c.id === conversationId);
-                if (!conv) return;
-
-                const orderedMessages = [...res.data].reverse();
-                const mappedMessages = orderedMessages.map(msg =>
-                    mapApiMessageToUI(msg, conv.user_id, conv.provider_id)
-                );
-
-                setMessagesByConversation(prev => {
-                    if (page === 1) {
-                        return { ...prev, [conversationId]: mappedMessages };
-                    } else {
-                        const existing = prev[conversationId] || [];
-                        return { ...prev, [conversationId]: [...mappedMessages, ...existing] };
-                    }
-                });
-
-                setPageByConversation(prev => ({ ...prev, [conversationId]: page }));
-                setHasMoreByConversation(prev => ({
-                    ...prev,
-                    [conversationId]: res.pagination?.hasNextPage || false,
-                }));
-
-                if (page > 1) {
-                    skipAutoScrollRef.current = false;
-                }
-            }
-        } catch (error) {
-            console.error('Error loading messages:', error);
-        } finally {
-            setLoadingMessages(prev => ({ ...prev, [conversationId]: false }));
-            setLoadingMore(prev => ({ ...prev, [conversationId]: false }));
-        }
-    }, [conversations, messagesByConversation, mapApiMessageToUI]);
+    const refreshConversations = useCallback(async () => {
+        await loadConversationsData();
+    }, [loadConversationsData]);
 
     const loadMoreMessages = useCallback(async (conversationId: number) => {
+        const conv = conversations.find(c => c.id === conversationId);
+        if (!conv) return;
         if (loadingMore[conversationId]) return;
         if (!hasMoreByConversation[conversationId]) return;
 
-        skipAutoScrollRef.current = true;
         const nextPage = (pageByConversation[conversationId] || 1) + 1;
-        await loadMessages(conversationId, nextPage);
-    }, [loadingMore, hasMoreByConversation, pageByConversation, loadMessages]);
+        await loadMessages(conversationId, conv.user_id, conv.provider_id, nextPage);
+    }, [conversations, loadingMore, hasMoreByConversation, pageByConversation, loadMessages]);
 
     const handleConversationSelect = useCallback(async (conversationId: number) => {
         const conv = conversations.find(c => c.id === conversationId);
         if (!conv) return;
 
         setSelectedConversationId(conversationId);
-        await loadMessages(conversationId);
+
+        // Only load messages if not already loaded
+        if (!messagesByConversation[conversationId]) {
+            await loadMessages(conversationId, conv.user_id, conv.provider_id);
+        }
 
         if (conv.unread > 0) {
             try {
@@ -287,16 +292,17 @@ export const useChatSupport = (
                 console.error('Error marking as read:', error);
             }
         }
-    }, [conversations, loadMessages, actor]);
+    }, [conversations, messagesByConversation, loadMessages, actor]);
 
-    const handleSendMessage = useCallback(async () => {
-        if (!selectedConversation) return;
+    const handleSendMessage = useCallback(async (newProviderId?: number) => {
+        if (!selectedConversation && !newProviderId) return;
         if (isSending) return;
 
         const text = messageInput.trim();
         if (!text) return;
 
-        const conversationId = selectedConversation.id;
+        const conversationId = selectedConversation?.id || 0;
+        const isNewChat = conversationId === 0;
 
         try {
             setIsSending(true);
@@ -316,10 +322,17 @@ export const useChatSupport = (
                 [conversationId]: [...(prev[conversationId] || []), tempMessage],
             }));
 
-            const res = await createMessage({
-                conversation_id: conversationId,
+            const payload: SendMessagePayload = {
                 message_text: text,
-            });
+            };
+
+            if (isNewChat && newProviderId) {
+                payload.receiver_id = newProviderId;
+            } else {
+                payload.conversation_id = conversationId;
+            }
+
+            const res = await createMessage(payload);
 
             const sentMessage: UIMessage = {
                 id: res.data.id,
@@ -330,20 +343,34 @@ export const useChatSupport = (
                 image_url: res.data.image_url || '',
             };
 
-            setMessagesByConversation(prev => ({
-                ...prev,
-                [conversationId]: prev[conversationId].map(m =>
-                    m.id === tempId ? sentMessage : m
-                ),
-            }));
+            if (isNewChat) {
+                await loadConversationsData();
 
-            setConversations(prev =>
-                prev.map(c =>
-                    c.id === conversationId
-                        ? { ...c, lastMessage: text, time: 'Vừa xong' }
-                        : c
-                )
-            );
+                const newConversationId = res.data.conversation_id;
+                if (newConversationId) {
+                    setSelectedConversationId(newConversationId);
+
+                    setMessagesByConversation(prev => ({
+                        ...prev,
+                        [newConversationId]: [sentMessage],
+                    }));
+                }
+            } else {
+                setMessagesByConversation(prev => ({
+                    ...prev,
+                    [conversationId]: (prev[conversationId] || []).map(m =>
+                        m.id === tempId ? sentMessage : m
+                    ),
+                }));
+
+                setConversations(prev =>
+                    prev.map(c =>
+                        c.id === conversationId
+                            ? { ...c, lastMessage: text, time: 'Vừa xong' }
+                            : c
+                    )
+                );
+            }
 
             setMessageInput('');
         } catch (error) {
@@ -351,7 +378,7 @@ export const useChatSupport = (
 
             setMessagesByConversation(prev => ({
                 ...prev,
-                [conversationId]: prev[conversationId].map(m =>
+                [conversationId]: (prev[conversationId] || []).map(m =>
                     typeof m.id === 'string' && m.id.startsWith('temp-') && m.text === text
                         ? { ...m, status: 'failed' }
                         : m
@@ -360,7 +387,7 @@ export const useChatSupport = (
         } finally {
             setIsSending(false);
         }
-    }, [selectedConversation, isSending, messageInput, actor]);
+    }, [selectedConversation, isSending, messageInput, actor, loadConversationsData]);
 
     const handleMessagesScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
         if (!selectedConversation) return;
@@ -371,15 +398,13 @@ export const useChatSupport = (
         }
     }, [selectedConversation, loadMoreMessages]);
 
-    useEffect(() => {
-        loadConversations();
-    }, [loadConversations]);
+    const messages = selectedConversation ? messagesByConversation[selectedConversation.id] || [] : [];
 
     return {
         conversations,
         selectedConversation,
         selectedConversationId,
-        messages: selectedConversation ? messagesByConversation[selectedConversation.id] || [] : [],
+        messages,
         messageInput,
         searchQuery,
         isConversationsLoading,
@@ -391,6 +416,8 @@ export const useChatSupport = (
         handleConversationSelect,
         handleSendMessage,
         handleMessagesScroll,
+        refreshConversations,
+        setSelectedConversationId,
         actor,
     };
 };

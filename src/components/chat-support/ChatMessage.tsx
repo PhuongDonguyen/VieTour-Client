@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, User } from 'lucide-react';
 
 interface ChatMessageProps {
     message: {
@@ -26,16 +26,24 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     }`}
             >
                 {!isSentByMe && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center text-lg flex-shrink-0">
-                        {peerAvatar}
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {peerAvatar ? (
+                            <img
+                                src={peerAvatar}
+                                alt="Avatar"
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <User className="w-5 h-5 text-orange-600" />
+                        )}
                     </div>
                 )}
                 <div>
                     {(message.image_url || message.text) && (
                         <div
                             className={`rounded-2xl overflow-hidden ${isSentByMe
-                                    ? 'border border-orange-300'
-                                    : 'border border-slate-300'
+                                ? 'border border-orange-300'
+                                : 'border border-slate-300'
                                 }`}
                             style={{ maxWidth: 260 }}
                         >
@@ -50,8 +58,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                             {message.text && (
                                 <div
                                     className={`${isSentByMe
-                                            ? 'bg-white text-slate-800'
-                                            : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-800'
+                                        ? 'bg-white text-slate-800'
+                                        : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-800'
                                         } ${message.image_url
                                             ? isSentByMe
                                                 ? 'border-t border-orange-200'

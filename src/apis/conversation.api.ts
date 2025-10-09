@@ -1,24 +1,18 @@
 import axiosInstance from './axiosInstance';
 
+export interface ProviderProfile {
+  id: number;
+  company_name: string;
+  avatar: string;
+  account_id: number;
+}
+
 export interface UserProfile {
+  id: number;
   first_name: string;
   last_name: string;
   avatar: string;
-}
-
-export interface ConversationUser {
-  id: number;
-  user_profile: UserProfile;
-}
-
-export interface ProviderProfile {
-  company_name: string;
-  avatar: string;
-}
-
-export interface ConversationProvider {
-  id: number;
-  provider_profile: ProviderProfile;
+  account_id: number;
 }
 
 export interface Conversation {
@@ -29,10 +23,10 @@ export interface Conversation {
   last_message_text: string;
   unread_count_user: number;
   unread_count_provider: number;
-  // For user role: includes provider info
-  provider?: ConversationProvider;
-  // For provider role: includes user info
-  user?: ConversationUser;
+  // For user role: includes provider info (flattened structure)
+  provider?: ProviderProfile;
+  // For provider role: includes user info (flattened structure)
+  user?: UserProfile;
 }
 
 export interface ConversationsResponse {
@@ -85,6 +79,23 @@ export const markConversationReadByProvider = async (conversationId: number): Pr
     return response.data;
   } catch (error) {
     console.error('Error marking conversation as read by provider:', error);
+    throw error;
+  }
+};
+
+export interface CreateConversationResponse {
+  success: boolean;
+  data: Conversation;
+}
+
+export const createNewConversation = async (providerId: number): Promise<CreateConversationResponse> => {
+  try {
+    const response = await axiosInstance.post('/api/conversations', {
+      provider_id: providerId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating conversation:', error);
     throw error;
   }
 };

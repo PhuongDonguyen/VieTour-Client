@@ -30,23 +30,11 @@ export const fetchMessagesByConversation = async (
   }
 };
 
-export interface CreateMessageRequest {
-  conversation_id: number;
-  message_text?: string;
-  image_url?: string;
-}
-
 export const createMessage = async (
-  request: CreateMessageRequest
+  payload: SendMessagePayload
 ): Promise<SendMessageResponse> => {
   try {
-    const { conversation_id, message_text, image_url } = request;
-
-    const payload: SendMessagePayload = {};
-    if (message_text) payload.message_text = message_text;
-    if (image_url) payload.image_url = image_url;
-
-    const response = await sendMessage(conversation_id, payload);
+    const response = await sendMessage(payload);
 
     if (response.success) {
       return response;

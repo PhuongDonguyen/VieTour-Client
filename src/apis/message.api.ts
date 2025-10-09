@@ -45,7 +45,8 @@ export const getMessages = async (
 };
 
 export interface SendMessagePayload {
-  conversation_id: number;
+  conversation_id?: number;
+  receiver_id?: number;
   message_text?: string;
   image_url?: string;
 }
@@ -59,6 +60,7 @@ export const sendMessage = async (
   payload: SendMessagePayload
 ): Promise<SendMessageResponse> => {
   try {
+    console.log('Sending message with payload:', payload);
     const response = await axiosInstance.post('/api/messages', payload);
 
     return response.data;
