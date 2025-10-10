@@ -1,61 +1,208 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
-import { Badge } from '../ui/badge';
-import { getConversations, Conversation } from '../../apis/conversation.api';
-import { getMessages, sendMessage, Message, SendMessagePayload } from '../../apis/message.api';
-import { Send, MessageCircle, Clock, User, Search, MoreVertical, Paperclip, Smile, Store } from 'lucide-react';
-import { fetchMessagesByConversation } from '@/services/message.service';
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Badge } from "../ui/badge";
+import { getConversations, Conversation } from "../../apis/conversation.api";
+import { TypingLoader } from "../ui/typing";
+import {
+  getMessages,
+  sendMessage,
+  Message,
+  SendMessagePayload,
+} from "../../apis/message.api";
+import {
+  Send,
+  MessageCircle,
+  User,
+  Search,
+  MoreVertical,
+  Store,
+} from "lucide-react";
+import { fetchMessagesByConversation } from "@/services/message.service";
+import { useAuth } from "@/hooks/useAuth";
+// Socket realtime removed
+import { ChatSocketManager } from "@/services/chatSocket.service";
 
 const AdminChatSupport: React.FC = () => {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsPage, setConversationsPage] = useState(1);
   const [conversationsHasMore, setConversationsHasMore] = useState(true);
-  const [conversationsLoadingMore, setConversationsLoadingMore] = useState(false);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [conversationsLoadingMore, setConversationsLoadingMore] =
+    useState(false);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
   // UI message type with local status for optimistic updates
-  type UIMsg = Message & { _tempId?: string; _status?: 'sending' | 'sent' | 'failed' };
+  type UIMsg = Message & {
+    _tempId?: string;
+    _status?: "sending" | "sent" | "failed";
+  };
   const [messages, setMessages] = useState<UIMsg[]>([]);
-  const [messagesByConversation, setMessagesByConversation] = useState<Record<number, UIMsg[]>>({});
-  const [newMessage, setNewMessage] = useState('');
+  const [messagesByConversation, setMessagesByConversation] = useState<
+    Record<number, UIMsg[]>
+  >({});
+  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const typingTimeoutRef = useRef<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const conversationsContainerRef = useRef<HTMLDivElement>(null);
-  const [pageByConversation, setPageByConversation] = useState<Record<number, number>>({});
-  const [hasMoreByConversation, setHasMoreByConversation] = useState<Record<number, boolean>>({});
-  const [loadingMoreByConversation, setLoadingMoreByConversation] = useState<Record<number, boolean>>({});
+  const [pageByConversation, setPageByConversation] = useState<
+    Record<number, number>
+  >({});
+  const [hasMoreByConversation, setHasMoreByConversation] = useState<
+    Record<number, boolean>
+  >({});
+  const [loadingMoreByConversation, setLoadingMoreByConversation] = useState<
+    Record<number, boolean>
+  >({});
+  const [isTypingByConversation, setIsTypingByConversation] = useState<
+    Record<number, boolean>
+  >({});
+
+  // Khởi tạo socket manager và join phòng cá nhân khi có user
+  const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
+  useEffect(() => {
+    chatSocketManagerRef.current = new ChatSocketManager();
+    return () => {
+      try {
+        chatSocketManagerRef.current?.disconnect();
+      } finally {
+        chatSocketManagerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!chatSocketManagerRef.current) return;
+    chatSocketManagerRef.current.connect(
+      user.id as any,
+      (user as any)?.role || "provider"
+    );
+  }, [user]);
+
+  // Lắng nghe tin nhắn đến qua socket và đồng bộ UI
+  useEffect(() => {
+    if (!chatSocketManagerRef.current) return;
+
+    const handler = async (data: {
+      conversationId: string;
+      messageId: string;
+      senderId: string;
+      senderRole: "user" | "provider";
+    }) => {
+      const convId = Number(data.conversationId);
+      try {
+        const response = await getMessages(convId, 1, 20);
+        const ordered: UIMsg[] = (response.data || [])
+          .slice()
+          .reverse() as UIMsg[];
+
+        // Cập nhật cache
+        setMessagesByConversation((prev) => ({ ...prev, [convId]: ordered }));
+
+        // Nếu đang mở đúng hội thoại thì hiển thị ngay
+        setSelectedConversation((prev) => {
+          if (prev && prev.id === convId) {
+            setMessages(ordered);
+          }
+          return prev;
+        });
+
+        // Cập nhật metadata danh sách hội thoại
+        const newest =
+          response.data && response.data.length > 0 ? response.data[0] : null;
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== convId) return c;
+            return {
+              ...c,
+              last_message_text: newest?.message_text ?? c.last_message_text,
+              last_message_at: newest?.created_at ?? c.last_message_at,
+              unread_count_provider:
+                selectedConversation?.id === convId
+                  ? 0
+                  : (c.unread_count_provider || 0) + 1,
+            } as any;
+          })
+        );
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    chatSocketManagerRef.current.onReceiveMessage(handler);
+    return () => {
+      chatSocketManagerRef.current?.offReceiveMessage(handler);
+    };
+  }, [selectedConversation]);
+
+  // Lắng nghe trạng thái đang nhập (typing)
+  useEffect(() => {
+    if (!chatSocketManagerRef.current) return;
+
+    const handleTyping = (data: {
+      conversationId: string;
+      senderId: string;
+      senderRole: "user" | "provider";
+      isTyping: boolean;
+    }) => {
+      const convId = Number(data.conversationId);
+      console.log("Received typing", convId, data.isTyping);
+      // Chỉ quan tâm khi phía đối phương đang nhập
+      setIsTypingByConversation((prev) => ({
+        ...prev,
+        [convId]: data.isTyping,
+      }));
+    };
+
+    chatSocketManagerRef.current.onUserTyping(handleTyping);
+    return () => {
+      chatSocketManagerRef.current?.offUserTyping(handleTyping as any);
+    };
+  }, []);
 
   const waitForImagesInContainer = async (container: HTMLDivElement | null) => {
     if (!container) return;
-    const images = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
-    const pending = images.filter(img => !img.complete);
+    const images = Array.from(
+      container.querySelectorAll("img")
+    ) as HTMLImageElement[];
+    const pending = images.filter((img) => !img.complete);
     if (pending.length === 0) return;
     await Promise.all(
-      pending.map(img => new Promise<void>(resolve => {
-        img.addEventListener('load', () => resolve(), { once: true });
-        img.addEventListener('error', () => resolve(), { once: true });
-      }))
+      pending.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+          })
+      )
     );
   };
 
   // Lấy danh sách cuộc trò chuyện
-  const fetchConversations = async (page: number = 1, append: boolean = false) => {
+  const fetchConversations = async (
+    page: number = 1,
+    append: boolean = false
+  ) => {
     try {
       setLoading(true);
       const response = await getConversations(page, 20);
       console.log("Conversations: ", response.data);
-      setConversations(prev => append ? [...prev, ...response.data] : response.data);
+      setConversations((prev) =>
+        append ? [...prev, ...response.data] : response.data
+      );
       setConversationsPage(page);
       const hasMore = !!response.pagination?.hasNextPage;
       setConversationsHasMore(hasMore);
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách cuộc trò chuyện:', error);
+      console.error("Lỗi khi lấy danh sách cuộc trò chuyện:", error);
     } finally {
       setLoading(false);
     }
@@ -75,18 +222,28 @@ const AdminChatSupport: React.FC = () => {
       const response = await fetchMessagesByConversation({
         conversation_id: conversationId,
         page: 1,
-        limit: 20
+        limit: 20,
       });
       console.log("Messages: ", response.data);
       // API trả mới -> cũ, cần đảo thành cũ -> mới để tin nhắn mới nhất nằm dưới
-      const ordered: UIMsg[] = ((response.data || []).slice().reverse()) as UIMsg[];
+      const ordered: UIMsg[] = (response.data || [])
+        .slice()
+        .reverse() as UIMsg[];
       setMessages(ordered);
-      setMessagesByConversation(prev => ({ ...prev, [conversationId]: ordered }));
-      setPageByConversation(prev => ({ ...prev, [conversationId]: 1 }));
-      const hasMore = !!(response as any)?.pagination?.hasNextPage || (response.data?.length >= 20);
-      setHasMoreByConversation(prev => ({ ...prev, [conversationId]: hasMore }));
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [conversationId]: ordered,
+      }));
+      setPageByConversation((prev) => ({ ...prev, [conversationId]: 1 }));
+      const hasMore =
+        !!(response as any)?.pagination?.hasNextPage ||
+        response.data?.length >= 20;
+      setHasMoreByConversation((prev) => ({
+        ...prev,
+        [conversationId]: hasMore,
+      }));
     } catch (error) {
-      console.error('Lỗi khi lấy tin nhắn:', error);
+      console.error("Lỗi khi lấy tin nhắn:", error);
     } finally {
       setMessagesLoading(false);
     }
@@ -100,22 +257,34 @@ const AdminChatSupport: React.FC = () => {
       const container = messagesContainerRef.current;
       const prevScrollHeight = container?.scrollHeight || 0;
 
-      setLoadingMoreByConversation(prev => ({ ...prev, [conversationId]: true }));
+      setLoadingMoreByConversation((prev) => ({
+        ...prev,
+        [conversationId]: true,
+      }));
       const nextPage = (pageByConversation[conversationId] || 1) + 1;
-      const response = await getMessages(
-        conversationId,
-        nextPage,
-        20,
-      );
-      const olderOrdered: UIMsg[] = ((response.data || []).slice().reverse()) as UIMsg[];
-      setMessages(prev => {
+      const response = await getMessages(conversationId, nextPage, 20);
+      const olderOrdered: UIMsg[] = (response.data || [])
+        .slice()
+        .reverse() as UIMsg[];
+      setMessages((prev) => {
         const updated = [...olderOrdered, ...prev];
-        setMessagesByConversation(map => ({ ...map, [conversationId]: updated }));
+        setMessagesByConversation((map) => ({
+          ...map,
+          [conversationId]: updated,
+        }));
         return updated;
       });
-      setPageByConversation(prev => ({ ...prev, [conversationId]: nextPage }));
-      const hasMore = !!(response as any)?.pagination?.hasNextPage || (response.data?.length >= 20);
-      setHasMoreByConversation(prev => ({ ...prev, [conversationId]: hasMore }));
+      setPageByConversation((prev) => ({
+        ...prev,
+        [conversationId]: nextPage,
+      }));
+      const hasMore =
+        !!(response as any)?.pagination?.hasNextPage ||
+        response.data?.length >= 20;
+      setHasMoreByConversation((prev) => ({
+        ...prev,
+        [conversationId]: hasMore,
+      }));
 
       // giữ vị trí cuộn sau khi prepend: double rAF + chờ ảnh render xong
       requestAnimationFrame(() => {
@@ -131,9 +300,12 @@ const AdminChatSupport: React.FC = () => {
         });
       });
     } catch (error) {
-      console.error('Lỗi khi tải thêm tin nhắn:', error);
+      console.error("Lỗi khi tải thêm tin nhắn:", error);
     } finally {
-      setLoadingMoreByConversation(prev => ({ ...prev, [conversationId]: false }));
+      setLoadingMoreByConversation((prev) => ({
+        ...prev,
+        [conversationId]: false,
+      }));
     }
   };
 
@@ -156,50 +328,95 @@ const AdminChatSupport: React.FC = () => {
         is_read: false,
         created_at: new Date().toISOString(),
         _tempId: tempId,
-        _status: 'sending' as const,
+        _status: "sending" as const,
       } as unknown as UIMsg;
 
-      setMessages(prev => {
+      setMessages((prev) => {
         const updated = [...prev, optimisticMsg];
-        setMessagesByConversation(m => ({ ...m, [selectedConversation.id]: updated }));
+        setMessagesByConversation((m) => ({
+          ...m,
+          [selectedConversation.id]: updated,
+        }));
         // gắn messages vào conversation hiện tại để đồng bộ nhanh danh sách
-        setConversations(list => list.map(c => (c.id === selectedConversation.id ? ({ ...(c as any), messages: updated }) : c)));
+        setConversations((list) =>
+          list.map((c) =>
+            c.id === selectedConversation.id
+              ? { ...(c as any), messages: updated }
+              : c
+          )
+        );
         return updated;
       });
-      setNewMessage('');
+      setNewMessage("");
 
       const payload: SendMessagePayload = {
         message_text: newMessage.trim(),
-      }
+      };
       const conversationId = selectedConversation.id;
       console.log("Conversation ID: ", conversationId);
       payload.conversation_id = conversationId;
       const response = await sendMessage(payload);
 
       // 2) Thay thế tin nhắn tạm bằng tin nhắn thật và cập nhật trạng thái 'sent'
-      setMessages(prev => {
-        const updated = prev.map(m => (m._tempId === tempId ? ({ ...(response.data as UIMsg), _status: 'sent' as const }) : m));
-        setMessagesByConversation(m => ({ ...m, [selectedConversation.id]: updated }));
-        setConversations(list => list.map(c => (c.id === selectedConversation.id ? ({ ...(c as any), messages: updated }) : c)));
+      setMessages((prev) => {
+        const updated = prev.map((m) =>
+          m._tempId === tempId
+            ? { ...(response.data as UIMsg), _status: "sent" as const }
+            : m
+        );
+        setMessagesByConversation((m) => ({
+          ...m,
+          [selectedConversation.id]: updated,
+        }));
+        setConversations((list) =>
+          list.map((c) =>
+            c.id === selectedConversation.id
+              ? { ...(c as any), messages: updated }
+              : c
+          )
+        );
         return updated;
       });
 
+      // Emit socket event đến phòng cá nhân của user nhận
+      try {
+        const receiverId = (selectedConversation as any)?.user_id;
+        const senderId = (selectedConversation as any)?.provider_id;
+        if (chatSocketManagerRef.current && receiverId && senderId) {
+          chatSocketManagerRef.current.emitSendMessage({
+            conversationId: selectedConversation.id,
+            messageId: (response.data as any)?.id,
+            senderId,
+            senderRole: "provider",
+            receiverId,
+            receiverRole: "user",
+          });
+        }
+      } catch (_) {}
+
       // Cập nhật metadata cuộc trò chuyện cục bộ, không reload toàn bộ
-      setConversations(prev => prev.map(c => {
-        if (c.id !== selectedConversation.id) return c;
-        return {
-          ...c,
-          last_message_text: response.data.message_text ?? '',
-          last_message_at: response.data.created_at,
-        } as any;
-      }));
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== selectedConversation.id) return c;
+          return {
+            ...c,
+            last_message_text: response.data.message_text ?? "",
+            last_message_at: response.data.created_at,
+          } as any;
+        })
+      );
     } catch (error) {
-      console.error('Lỗi khi gửi tin nhắn:', error);
+      console.error("Lỗi khi gửi tin nhắn:", error);
       // Đánh dấu tin nhắn tạm thất bại nếu có
-      setMessages(prev => {
-        const updated = prev.map(m => (m._status === 'sending' ? { ...m, _status: 'failed' as const } : m));
+      setMessages((prev) => {
+        const updated = prev.map((m) =>
+          m._status === "sending" ? { ...m, _status: "failed" as const } : m
+        );
         if (selectedConversation) {
-          setMessagesByConversation(m => ({ ...m, [selectedConversation.id]: updated }));
+          setMessagesByConversation((m) => ({
+            ...m,
+            [selectedConversation.id]: updated,
+          }));
         }
         return updated;
       });
@@ -212,12 +429,20 @@ const AdminChatSupport: React.FC = () => {
   const handleSelectConversation = (conversation: Conversation) => {
     // Nếu chọn lại cùng hội thoại thì bỏ qua
     if (selectedConversation?.id === conversation.id) return;
+
+    // Socket realtime removed
+
     setSelectedConversation(conversation);
     // Nếu conversation đã có messages kèm theo, dùng trực tiếp và cache
-    const inlineMessages = (conversation as any)?.messages as Message[] | undefined;
+    const inlineMessages = (conversation as any)?.messages as
+      | Message[]
+      | undefined;
     if (inlineMessages && inlineMessages.length) {
       setMessages([...inlineMessages]);
-      setMessagesByConversation(prev => ({ ...prev, [conversation.id]: [...inlineMessages] }));
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [conversation.id]: [...inlineMessages],
+      }));
       requestAnimationFrame(() => {
         scrollToBottom();
         setTimeout(scrollToBottom, 120);
@@ -251,14 +476,18 @@ const AdminChatSupport: React.FC = () => {
     });
   }, [selectedConversation]);
 
+  // Socket realtime removed
+
+  // Socket realtime removed
+
   // Cuộn xuống cuối danh sách tin nhắn
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
   };
 
   // Xử lý phím Enter để gửi tin nhắn
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -267,18 +496,18 @@ const AdminChatSupport: React.FC = () => {
   // Format thời gian
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   // Format thời gian ngắn gọn theo kiểu tương đối: "Vừa xong", "X phút trước", "X giờ trước", "X ngày trước", hoặc dd/MM
   const formatShortTime = (dateString: string) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -287,11 +516,14 @@ const AdminChatSupport: React.FC = () => {
     const diffHour = Math.floor(diffMin / 60);
     const diffDay = Math.floor(diffHour / 24);
 
-    if (diffSec < 45) return 'Vừa xong';
+    if (diffSec < 45) return "Vừa xong";
     if (diffMin < 60) return `${diffMin} phút trước`;
     if (diffHour < 24) return `${diffHour} giờ trước`;
     if (diffDay < 7) return `${diffDay} ngày trước`;
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+    });
   };
 
   useEffect(() => {
@@ -307,7 +539,7 @@ const AdminChatSupport: React.FC = () => {
       const nextPage = conversationsPage + 1;
       await fetchConversations(nextPage, true);
     } catch (error) {
-      console.error('Lỗi khi tải thêm cuộc trò chuyện:', error);
+      console.error("Lỗi khi tải thêm cuộc trò chuyện:", error);
     } finally {
       setConversationsLoadingMore(false);
     }
@@ -318,18 +550,33 @@ const AdminChatSupport: React.FC = () => {
   }, [messages]);
 
   const getDisplayName = (c: Conversation) => {
-    const userProfile = (c as any)?.user?.user_profile || (c as any)?.user_profile;
-    const providerProfile = (c as any)?.provider?.provider_profile || (c as any)?.provider_profile;
-    const userName = userProfile ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() : '';
-    const providerName = providerProfile?.company_name || '';
+    const userProfile =
+      (c as any)?.user?.user_profile || (c as any)?.user_profile;
+    const providerProfile =
+      (c as any)?.provider?.provider_profile || (c as any)?.provider_profile;
+    const userName = userProfile
+      ? `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim()
+      : "";
+    const providerName = providerProfile?.company_name || "";
     // Ưu tiên tên user nếu có, nếu không thì tên provider
-    return userName || providerName || `User ${c.user_id || (c as any)?.user?.id || c.provider_id || (c as any)?.provider?.id}`;
+    return (
+      userName ||
+      providerName ||
+      `User ${
+        c.user_id ||
+        (c as any)?.user?.id ||
+        c.provider_id ||
+        (c as any)?.provider?.id
+      }`
+    );
   };
 
   const filteredConversations = conversations.filter((c) => {
     const name = getDisplayName(c);
     return name.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  // Socket realtime removed
 
   return (
     <div className="flex h-[calc(100vh-64px)] min-h-[600px] p-6 gap-4">
@@ -339,6 +586,7 @@ const AdminChatSupport: React.FC = () => {
           <CardTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-gray-700" />
             <span className="text-gray-900">Tin Nhắn Của Tôi</span>
+            {/* Socket realtime removed */}
           </CardTitle>
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -351,16 +599,18 @@ const AdminChatSupport: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div ref={conversationsContainerRef} className="max-h-[calc(100vh-300px)] overflow-y-auto" onScroll={(e) => {
-            const el = e.currentTarget;
-            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 8) {
-              loadMoreConversations();
-            }
-          }}>
+          <div
+            ref={conversationsContainerRef}
+            className="max-h-[calc(100vh-300px)] overflow-y-auto"
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              if (el.scrollTop + el.clientHeight >= el.scrollHeight - 8) {
+                loadMoreConversations();
+              }
+            }}
+          >
             {loading ? (
-              <div className="p-4 text-center text-gray-500">
-                Đang tải...
-              </div>
+              <div className="p-4 text-center text-gray-500">Đang tải...</div>
             ) : filteredConversations.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 Chưa có cuộc trò chuyện nào
@@ -370,14 +620,18 @@ const AdminChatSupport: React.FC = () => {
                 <div
                   key={conversation.id}
                   onClick={() => handleSelectConversation(conversation)}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${selectedConversation?.id === conversation.id ? 'bg-gray-50 border-l-4 border-l-gray-900' : ''
-                    }`}
+                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                    selectedConversation?.id === conversation.id
+                      ? "bg-gray-50 border-l-4 border-l-gray-900"
+                      : ""
+                  }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="relative">
-                      {(conversation.user?.avatar != null) ? (
+                      {conversation.user?.avatar != null ? (
                         <img
                           src={conversation.user?.avatar}
+                          // src={conversation.user?.avatar}
                           alt="avatar"
                           className="w-10 h-10 rounded-full object-cover"
                         />
@@ -391,12 +645,18 @@ const AdminChatSupport: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <span className="font-medium text-gray-900 truncate">
-                          {conversation.user?.first_name + " " + conversation.user?.last_name}
+                          {conversation.user?.first_name +
+                            " " +
+                            conversation.user?.last_name}
                         </span>
-                        <span className="text-xs text-gray-500 ml-2">{formatShortTime(conversation.last_message_at)}</span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          {formatShortTime(conversation.last_message_at)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-600 truncate">{conversation.last_message_text}</p>
+                        <p className="text-xs text-gray-600 truncate">
+                          {conversation.last_message_text}
+                        </p>
                         {conversation.unread_count_provider > 0 && (
                           <span className="ml-2 px-2 py-0.5 bg-gray-900 text-white text-xs rounded-full font-semibold">
                             {conversation.unread_count_provider}
@@ -409,8 +669,12 @@ const AdminChatSupport: React.FC = () => {
               ))
             )}
             {conversationsLoadingMore && (
-              <div className="p-3 text-center text-gray-500">Đang tải thêm...</div>
+              <div className="p-3 text-center text-gray-500">
+                Đang tải thêm...
+              </div>
             )}
+
+            {/* Socket realtime removed */}
           </div>
         </CardContent>
       </Card>
@@ -424,7 +688,7 @@ const AdminChatSupport: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    {((selectedConversation as any)?.user?.avatar) ? (
+                    {(selectedConversation as any)?.user?.avatar ? (
                       <img
                         src={(selectedConversation as any).user.avatar}
                         alt="avatar"
@@ -439,7 +703,9 @@ const AdminChatSupport: React.FC = () => {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900 flex items-center gap-2">
-                      {selectedConversation.user?.first_name + " " + selectedConversation.user?.last_name}
+                      {selectedConversation.user?.first_name +
+                        " " +
+                        selectedConversation.user?.last_name}
                       <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                         <Store className="w-3 h-3" />
                         Khách hàng
@@ -459,14 +725,18 @@ const AdminChatSupport: React.FC = () => {
 
             {/* Danh sách tin nhắn */}
             <CardContent className="flex-1 p-0 overflow-hidden">
-              <div ref={messagesContainerRef} className="h-full max-h-[calc(100vh-55px)] overflow-y-auto p-4 space-y-4" onScroll={(e) => {
-                const el = e.currentTarget;
-                if (!selectedConversation) return;
-                const convId = selectedConversation.id;
-                if (el.scrollTop <= 0) {
-                  loadMoreOlderMessages(convId);
-                }
-              }}>
+              <div
+                ref={messagesContainerRef}
+                className="h-full max-h-[calc(100vh-55px)] overflow-y-auto p-4 space-y-4"
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  if (!selectedConversation) return;
+                  const convId = selectedConversation.id;
+                  if (el.scrollTop <= 0) {
+                    loadMoreOlderMessages(convId);
+                  }
+                }}
+              >
                 {messagesLoading ? (
                   <div className="text-center text-gray-500">
                     Đang tải tin nhắn...
@@ -479,17 +749,24 @@ const AdminChatSupport: React.FC = () => {
                   messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${message.sender_id === selectedConversation.provider_id
-                        ? 'justify-end'
-                        : 'justify-start'
-                        }`}
+                      className={`flex ${
+                        message.sender_id === selectedConversation.provider_id
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
                     >
                       <div
-                        className={`max-w-[70%] rounded-2xl overflow-hidden border ${message.sender_id === selectedConversation.provider_id ? 'border-gray-900' : 'border-gray-300'}`}
+                        className={`max-w-[70%] rounded-2xl overflow-hidden border ${
+                          message.sender_id === selectedConversation.provider_id
+                            ? "border-gray-900"
+                            : "border-gray-300"
+                        }`}
                       >
                         {message.message_text && (
                           <div className={`bg-white text-gray-900 px-4 py-2.5`}>
-                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{message.message_text}</p>
+                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                              {message.message_text}
+                            </p>
                           </div>
                         )}
                         {message.image_url && (
@@ -499,13 +776,26 @@ const AdminChatSupport: React.FC = () => {
                             className="max-w-[260px] max-h-[240px] w-full object-cover block"
                           />
                         )}
-                        <div className={`flex items-center gap-2 px-3 py-1 ${message.sender_id === selectedConversation.provider_id ? 'justify-end' : ''}`}>
-                          {((message as any)._status === 'sending') ? (
-                            <span className="text-[11px] text-gray-400 italic">Đang gửi...</span>
-                          ) : ((message as any)._status === 'failed') ? (
-                            <span className="text-[11px] text-red-500">Gửi thất bại</span>
+                        <div
+                          className={`flex items-center gap-2 px-3 py-1 ${
+                            message.sender_id ===
+                            selectedConversation.provider_id
+                              ? "justify-end"
+                              : ""
+                          }`}
+                        >
+                          {(message as any)._status === "sending" ? (
+                            <span className="text-[11px] text-gray-400 italic">
+                              Đang gửi...
+                            </span>
+                          ) : (message as any)._status === "failed" ? (
+                            <span className="text-[11px] text-red-500">
+                              Gửi thất bại
+                            </span>
                           ) : (
-                            <span className="text-[11px] text-gray-500">{formatTime(message.created_at)}</span>
+                            <span className="text-[11px] text-gray-500">
+                              {formatTime(message.created_at)}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -515,13 +805,72 @@ const AdminChatSupport: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
             </CardContent>
+            {selectedConversation &&
+              isTypingByConversation[selectedConversation.id] && (
+                <TypingLoader isAdmin={true} />
+              )}
 
             {/* Form gửi tin nhắn */}
             <div className="p-4 border-t">
               <div className="flex gap-2">
                 <Textarea
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    // Emit typing true ngay khi người dùng gõ
+                    try {
+                      if (
+                        chatSocketManagerRef.current &&
+                        selectedConversation
+                      ) {
+                        const senderId = (selectedConversation as any)
+                          ?.provider_id;
+                        const receiverId = (selectedConversation as any)
+                          ?.user_id;
+                        if (senderId && receiverId) {
+                          console.log(
+                            "Emitting typing true",
+                            senderId,
+                            receiverId
+                          );
+                          chatSocketManagerRef.current.emitTyping({
+                            conversationId: selectedConversation.id,
+                            senderId,
+                            senderRole: "provider",
+                            receiverId,
+                            receiverRole: "user",
+                            isTyping: true,
+                          });
+                        }
+                      }
+                    } catch (_) {}
+                    // debounce gửi isTyping=false sau khi ngừng gõ 1.2s
+                    if (typingTimeoutRef.current)
+                      clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => {
+                      try {
+                        if (
+                          chatSocketManagerRef.current &&
+                          selectedConversation
+                        ) {
+                          const senderId = (selectedConversation as any)
+                            ?.provider_id;
+                          const receiverId = (selectedConversation as any)
+                            ?.user_id;
+                          if (senderId && receiverId) {
+                            chatSocketManagerRef.current.emitTyping({
+                              conversationId: selectedConversation.id,
+                              senderId,
+                              senderRole: "provider",
+                              receiverId,
+                              receiverRole: "user",
+                              isTyping: false,
+                            });
+                          }
+                        }
+                      } catch (_) {}
+                    }, 2000);
+                  }}
                   onKeyPress={handleKeyPress}
                   placeholder="Nhập tin nhắn..."
                   className="flex-1 min-h-[40px] max-h-[120px] resize-none"
@@ -551,4 +900,3 @@ const AdminChatSupport: React.FC = () => {
 };
 
 export default AdminChatSupport;
-

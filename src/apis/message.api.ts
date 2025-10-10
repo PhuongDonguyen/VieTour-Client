@@ -62,6 +62,7 @@ export const sendMessage = async (
   try {
     const formData = new FormData();
 
+    console.log('Sending message with FormData');
     if (payload.conversation_id) {
       formData.append('conversation_id', payload.conversation_id.toString());
     }
@@ -75,7 +76,6 @@ export const sendMessage = async (
       formData.append('image', payload.image);
     }
 
-    console.log('Sending message with FormData');
     const response = await axiosInstance.post('/api/messages', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
