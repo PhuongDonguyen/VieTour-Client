@@ -153,7 +153,11 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
             </p>
           </div>
         </div>
-        <button className="p-2 hover:bg-orange-100 rounded-full transition-colors">
+        <button
+          className="p-2 hover:bg-orange-100 rounded-full transition-colors"
+          title="Tùy chọn"
+          aria-label="Tùy chọn"
+        >
           <MoreVertical className="w-5 h-5 text-slate-600" />
         </button>
       </div>
@@ -162,6 +166,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
       <div
         ref={messagesContainerRef}
         onScroll={onScroll}
+        data-messages-container
         className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-slate-50 to-white"
       >
         {isLoadingMore && (
@@ -214,9 +219,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
             />
           ))
         )}
-        {isPeerTyping ? (
-          <TypingLoader isAdmin={false} />
-        ) : null}
+        {isPeerTyping ? <TypingLoader isAdmin={false} /> : null}
         <div ref={messagesEndRef} />
       </div>
 
@@ -233,6 +236,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
             <button
               onClick={handleRemoveImage}
               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              title="Xóa hình ảnh"
+              aria-label="Xóa hình ảnh"
             >
               <X className="w-4 h-4" />
             </button>
@@ -246,11 +251,15 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
             accept="image/*"
             onChange={handleImageSelect}
             className="hidden"
+            title="Chọn hình ảnh"
+            aria-label="Chọn hình ảnh"
           />
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-2 hover:bg-orange-50 rounded-full transition-colors text-slate-600"
             disabled={isSending}
+            title="Gửi hình ảnh"
+            aria-label="Gửi hình ảnh"
           >
             <Image className="w-5 h-5" />
           </button>

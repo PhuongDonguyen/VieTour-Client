@@ -33,6 +33,7 @@ interface UIConversation {
   avatar: string;
   lastMessage: string;
   time: string;
+  lastMessageAt?: string;
   unread: number;
   status: "online" | "offline";
 }
@@ -144,6 +145,8 @@ export const useChatSupport = (
   const [hasMoreByConversation, setHasMoreByConversation] = useState<
     Record<number, boolean>
   >({});
+  // Ngăn auto scroll xuống đáy khi đang khôi phục vị trí từ loadMore
+  const preventAutoScrollRef = useRef(false);
 
   const selectedConversation =
     selectedConversationId !== null
@@ -178,7 +181,6 @@ export const useChatSupport = (
   const mapApiMessageToUI = useCallback(
     (apiMessage: Message, userId: number, providerId: number): UIMessage => {
       const isUserMessage = apiMessage.sender_id === userId;
-      console.log("apiMessage: ", apiMessage);
       let status: UIMessage["status"] = "read";
       // if (isUserMessage) {
       status = apiMessage.is_read ? "read" : "sent";
@@ -285,6 +287,19 @@ export const useChatSupport = (
           setLoadingMessages((prev) => ({ ...prev, [conversationId]: true }));
         } else {
           setLoadingMore((prev) => ({ ...prev, [conversationId]: true }));
+          preventAutoScrollRef.current = true;
+
+          // Lưu vị trí cuộn trước khi load thêm tin nhắn cũ
+          const messagesContainer = document.querySelector(
+            "[data-messages-container]"
+          ) as HTMLElement;
+          if (messagesContainer) {
+            const prevScrollHeight = messagesContainer.scrollHeight || 0;
+            const prevScrollTop = messagesContainer.scrollTop || 0;
+            // Lưu vào element để sử dụng sau
+            (messagesContainer as any).prevScrollHeight = prevScrollHeight;
+            (messagesContainer as any).prevScrollTop = prevScrollTop;
+          }
         }
 
         const res = await fetchMessagesByConversation({
@@ -312,6 +327,7 @@ export const useChatSupport = (
               };
             }
           });
+          console.log("page: ", page);
 
           setPageByConversation((prev) => ({
             ...prev,
@@ -321,6 +337,33 @@ export const useChatSupport = (
             ...prev,
             [conversationId]: res.pagination?.hasNextPage || false,
           }));
+
+          // Giữ vị trí cuộn khi load thêm tin nhắn cũ (new - prev)
+          if (page > 1) {
+            // Đo sau double rAF để đảm bảo DOM đã commit đủ cho text messages
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                const messagesContainer = document.querySelector(
+                  "[data-messages-container]"
+                ) as HTMLElement;
+                if (
+                  messagesContainer &&
+                  (messagesContainer as any).prevScrollHeight != null
+                ) {
+                  const newScrollHeight = messagesContainer.scrollHeight;
+                  const prevScrollHeight = (messagesContainer as any)
+                    .prevScrollHeight as number;
+                  // Giữ viewport với tin nhắn text: new - prev
+                  messagesContainer.scrollTop =
+                    newScrollHeight - prevScrollHeight;
+                  // Cho phép auto scroll hoạt động lại sau khi khôi phục xong
+                  setTimeout(() => {
+                    preventAutoScrollRef.current = false;
+                  }, 120);
+                }
+              });
+            });
+          }
         }
       } catch (error) {
         console.error("Error loading messages:", error);
@@ -351,6 +394,9 @@ export const useChatSupport = (
             time: newestMessage
               ? "Vừa xong"
               : formatRelativeTime(conv.last_message_at),
+            lastMessageAt: newestMessage
+              ? new Date().toISOString()
+              : (conv as any).last_message_at,
             unread: selectedConversationId === conversationId ? 0 : 1,
             status: "online",
           };
@@ -382,6 +428,7 @@ export const useChatSupport = (
             avatar: peer.avatar,
             lastMessage: conv.last_message_text || "",
             time: formatRelativeTime(conv.last_message_at),
+            lastMessageAt: (conv as any).last_message_at,
             unread:
               actor === "user"
                 ? conv.unread_count_user
@@ -418,6 +465,42 @@ export const useChatSupport = (
   useEffect(() => {
     loadConversationsData();
   }, [actor, getPeerDisplay, loadMessages]);
+
+  // Tick mỗi phút để cập nhật thời gian tương đối của last message
+  useEffect(() => {
+    const id = setInterval(() => {
+      setConversations((prev) =>
+        prev.map((c) => ({
+          ...c,
+          time: c.lastMessageAt ? formatRelativeTime(c.lastMessageAt) : c.time,
+        }))
+      );
+    }, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto scroll to bottom when messages change (only for new messages, not when loading older messages)
+  useEffect(() => {
+    if (
+      selectedConversation &&
+      messagesByConversation[selectedConversation.id]
+    ) {
+      // Chỉ auto scroll khi có tin nhắn mới (socket message) hoặc khi mới chọn conversation
+      // Không scroll khi đang loading more messages
+      const messagesContainer = document.querySelector(
+        "[data-messages-container]"
+      ) as HTMLElement;
+      if (
+        messagesContainer &&
+        !loadingMore[selectedConversation.id] &&
+        !preventAutoScrollRef.current
+      ) {
+        setTimeout(() => {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 50);
+      }
+    }
+  }, [selectedConversation, messagesByConversation, loadingMore]);
 
   // Socket realtime removed
 
@@ -559,18 +642,18 @@ export const useChatSupport = (
           status: "sent",
           image_url: data.image_url || "",
         };
-
         // Chỉ thêm message vào cache nếu conversation đã có tin nhắn
-        const cachedMessages = messagesByConversation[convId];
-        if (cachedMessages && cachedMessages.length > 0) {
-          setMessagesByConversation((prev) => {
-            const existingMessages = prev[convId] || [];
+        // Dùng giá trị prev mới nhất để tránh stale-closure
+        setMessagesByConversation((prev) => {
+          const existingMessages = prev[convId];
+          if (existingMessages && existingMessages.length > 0) {
             return {
               ...prev,
               [convId]: [...existingMessages, newMessage],
             };
-          });
-        }
+          }
+          return prev;
+        });
 
         // Nếu đang mở conversation này, đánh dấu tin nhắn đã đọc ngay lập tức
         if (selectedConversationId === convId && user) {
@@ -610,6 +693,7 @@ export const useChatSupport = (
               ...existingConversation,
               lastMessage: newMessage.text || "[Hình ảnh]",
               time: "Vừa xong",
+              lastMessageAt: new Date().toISOString(),
               unread:
                 selectedConversationId === convId
                   ? 0
@@ -722,6 +806,16 @@ export const useChatSupport = (
       if (!messagesByConversation[conversationId]) {
         await loadMessages(conversationId, conv.user_id, conv.provider_id);
       }
+
+      // Auto scroll to bottom after selecting conversation
+      setTimeout(() => {
+        const messagesContainer = document.querySelector(
+          "[data-messages-container]"
+        ) as HTMLElement;
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      }, 100);
     },
     [
       conversations,
@@ -832,7 +926,12 @@ export const useChatSupport = (
           setConversations((prev) =>
             prev.map((c) =>
               c.id === conversationId
-                ? { ...c, lastMessage: text || "[Hình ảnh]", time: "Vừa xong" }
+                ? {
+                    ...c,
+                    lastMessage: text || "[Hình ảnh]",
+                    time: "Vừa xong",
+                    lastMessageAt: new Date().toISOString(),
+                  }
                 : c
             )
           );

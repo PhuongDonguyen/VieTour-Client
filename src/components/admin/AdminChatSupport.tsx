@@ -20,6 +20,8 @@ import {
   Search,
   MoreVertical,
   Store,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
 import {
   fetchMessagesByConversation,
@@ -48,6 +50,8 @@ const AdminChatSupport: React.FC = () => {
     Record<number, UIMsg[]>
   >({});
   const [newMessage, setNewMessage] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -70,6 +74,7 @@ const AdminChatSupport: React.FC = () => {
   >({});
   const [unreadMessagesByConversation, setUnreadMessagesByConversation] =
     useState<Record<number, UIMsg[]>>({});
+  const [timeUpdateTrigger, setTimeUpdateTrigger] = useState(0);
 
   // useEffect(() => {
   //   const response = fetchConversationById(29);
@@ -368,6 +373,7 @@ const AdminChatSupport: React.FC = () => {
       // Cập nhật unread_count_provider trong danh sách conversations
       setConversations((prev) =>
         prev.map((conv) => {
+          console.log("markedCount: ", markedCount);
           if (conv.id === conversationId) {
             const currentUnreadCount = conv.unread_count_provider || 0;
             const newUnreadCount = Math.max(
@@ -486,11 +492,7 @@ const AdminChatSupport: React.FC = () => {
       }));
 
       // Đánh dấu tin nhắn đã đọc sau khi load xong
-      await markMessagesAsRead(
-        ordered,
-        conversation.id,
-        conversation
-      );
+      await markMessagesAsRead(ordered, conversation.id, conversation);
     } catch (error) {
       console.error("Lỗi khi lấy tin nhắn:", error);
     } finally {
@@ -569,7 +571,12 @@ const AdminChatSupport: React.FC = () => {
 
   // Gửi tin nhắn mới
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || sendingMessage) return;
+    if (
+      (!newMessage.trim() && !selectedImage) ||
+      !selectedConversation ||
+      sendingMessage
+    )
+      return;
 
     try {
       setSendingMessage(true);
@@ -582,7 +589,7 @@ const AdminChatSupport: React.FC = () => {
         conversation_id: selectedConversation.id,
         sender_id: selectedConversation.provider_id as unknown as number,
         message_text: newMessage.trim(),
-        image_url: null,
+        image_url: imagePreviewUrl || null,
         is_read: false,
         created_at: new Date().toISOString(),
         _tempId: tempId,
@@ -607,9 +614,9 @@ const AdminChatSupport: React.FC = () => {
       });
       setNewMessage("");
 
-      const payload: SendMessagePayload = {
-        message_text: newMessage.trim(),
-      };
+      const payload: SendMessagePayload = {} as any;
+      if (newMessage.trim()) payload.message_text = newMessage.trim();
+      if (selectedImage) payload.image = selectedImage as any;
       const conversationId = selectedConversation.id;
       console.log("Conversation ID: ", conversationId);
       payload.conversation_id = conversationId;
@@ -649,7 +656,7 @@ const AdminChatSupport: React.FC = () => {
             senderRole: "provider",
             receiverId,
             receiverRole: "user",
-            text: newMessage,
+            text: response.data.message_text || newMessage || "",
             image_url: response.data.image_url || undefined,
           });
         }
@@ -684,6 +691,11 @@ const AdminChatSupport: React.FC = () => {
       });
     } finally {
       setSendingMessage(false);
+      // Clear input image sau khi gửi thành công
+      if (selectedImage) {
+        setSelectedImage(null);
+        setImagePreviewUrl("");
+      }
     }
   };
 
@@ -801,14 +813,34 @@ const AdminChatSupport: React.FC = () => {
     fetchConversations(1, false);
   }, []);
 
+  // Cập nhật thời gian mỗi phút
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeUpdateTrigger((prev) => prev + 1);
+    }, 60000); // 60000ms = 1 phút
+
+    return () => clearInterval(interval);
+  }, []);
+
   const loadMoreConversations = async () => {
     try {
       if (conversationsLoadingMore) return;
       if (!conversationsHasMore) return;
       if (searchQuery.trim()) return; // bỏ qua khi đang tìm kiếm
+
+      const container = conversationsContainerRef.current;
+      const prevScrollTop = container?.scrollTop || 0;
+
       setConversationsLoadingMore(true);
       const nextPage = conversationsPage + 1;
       await fetchConversations(nextPage, true);
+
+      // Giữ nguyên khoảng cách từ top sau khi load thêm conversations
+      requestAnimationFrame(() => {
+        if (container) {
+          container.scrollTop = prevScrollTop;
+        }
+      });
     } catch (error) {
       console.error("Lỗi khi tải thêm cuộc trò chuyện:", error);
     } finally {
@@ -819,6 +851,15 @@ const AdminChatSupport: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto scroll to bottom when component mounts or conversation changes
+  useEffect(() => {
+    if (selectedConversation) {
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    }
+  }, [selectedConversation]);
 
   const getDisplayName = (c: Conversation) => {
     const userProfile =
@@ -920,7 +961,10 @@ const AdminChatSupport: React.FC = () => {
                             " " +
                             conversation.user?.last_name}
                         </span>
-                        <span className="text-xs text-gray-500 ml-2">
+                        <span
+                          className="text-xs text-gray-500 ml-2"
+                          key={`time-${conversation.id}-${timeUpdateTrigger}`}
+                        >
                           {formatShortTime(conversation.last_message_at)}
                         </span>
                       </div>
@@ -1065,7 +1109,10 @@ const AdminChatSupport: React.FC = () => {
                           </span>
                         ) : (
                           <div className="flex items-center gap-1">
-                            <span className="text-[11px] text-gray-500">
+                            <span
+                              className="text-[11px] text-gray-500"
+                              key={`msg-time-${message.id}-${timeUpdateTrigger}`}
+                            >
                               {formatTime(message.created_at)}
                             </span>
                             {/* Chỉ hiển thị dấu tích cho tin nhắn của provider */}
@@ -1073,43 +1120,43 @@ const AdminChatSupport: React.FC = () => {
                               selectedConversation.provider_id && (
                               <div className="flex">
                                 {message.is_read ? (
-                                  // 2 dấu tích xanh khi đã đọc
+                                  // 2 dấu tích xanh kiểu stroke khi đã đọc
                                   <div className="flex">
                                     <svg
-                                      className="w-3 h-3 text-blue-500"
-                                      fill="currentColor"
-                                      viewBox="0 0 20 20"
+                                      className="w-3 h-3 text-gray-400"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
                                     >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                      />
+                                      <path d="M5 12l4 4L19 6" />
                                     </svg>
                                     <svg
-                                      className="w-3 h-3 text-blue-500 -ml-1"
-                                      fill="currentColor"
-                                      viewBox="0 0 20 20"
+                                      className="w-3 h-3 text-gray-400 ml-[-8px]"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
                                     >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                      />
+                                      <path d="M7 14l3 3L21 6" />
                                     </svg>
                                   </div>
                                 ) : (
-                                  // 1 dấu tích xám khi chưa đọc
+                                  // 1 dấu tích xám kiểu stroke khi chưa đọc
                                   <svg
                                     className="w-3 h-3 text-gray-400"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                   >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                      clipRule="evenodd"
-                                    />
+                                    <path d="M5 12l4 4L19 6" />
                                   </svg>
                                 )}
                               </div>
@@ -1130,7 +1177,30 @@ const AdminChatSupport: React.FC = () => {
 
             {/* Form gửi tin nhắn */}
             <div className="p-4 border-t">
-              <div className="flex gap-2">
+              {/* Preview hình ảnh nếu có */}
+              {imagePreviewUrl && (
+                <div className="mb-3 relative inline-block">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden ring-1 ring-gray-200 shadow-sm">
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setImagePreviewUrl("");
+                    }}
+                    className="absolute -top-2 -right-2 bg-white text-gray-700 hover:text-red-600 ring-1 ring-gray-200 rounded-full p-1 shadow"
+                    title="Xóa hình ảnh"
+                    aria-label="Xóa hình ảnh"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              <div className="flex gap-2 items-end">
                 <Textarea
                   value={newMessage}
                   onChange={(e) => {
@@ -1190,9 +1260,43 @@ const AdminChatSupport: React.FC = () => {
                   className="flex-1 min-h-[40px] max-h-[120px] resize-none"
                   disabled={sendingMessage}
                 />
+                {/* Input chọn ảnh ẩn */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  title="Chọn hình ảnh"
+                  aria-label="Chọn hình ảnh"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (file) {
+                      setSelectedImage(file);
+                      const url = URL.createObjectURL(file);
+                      setImagePreviewUrl(url);
+                    }
+                  }}
+                  className="hidden"
+                  id="admin-chat-image-input"
+                />
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const input = document.getElementById(
+                      "admin-chat-image-input"
+                    ) as HTMLInputElement | null;
+                    input?.click();
+                  }}
+                  disabled={sendingMessage}
+                  className="h-10 w-10 p-0 rounded-full hover:bg-gray-100"
+                  title="Chọn hình ảnh"
+                  aria-label="Chọn hình ảnh"
+                >
+                  <ImageIcon className="w-5 h-5 text-gray-700" />
+                </Button>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || sendingMessage}
+                  disabled={
+                    (!newMessage.trim() && !selectedImage) || sendingMessage
+                  }
                   className="px-4"
                 >
                   <Send className="h-4 w-4" />
