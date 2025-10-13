@@ -1,46 +1,47 @@
-import { 
-  getConversations, 
-  markConversationReadByUser, 
+import {
+  getConversations,
+  markConversationReadByUser,
   markConversationReadByProvider,
+  getConversationById,
   type ConversationsResponse,
-  type MarkReadResponse 
-} from '../apis/conversation.api';
+  type MarkReadResponse,
+  type GetConversationResponse,
+} from "../apis/conversation.api";
 
-export const fetchConversations = async (page: number = 1, limit: number = 5): Promise<ConversationsResponse> => {
+export const fetchConversations = async (
+  page: number = 1,
+  limit: number = 5
+): Promise<ConversationsResponse> => {
   try {
     const response = await getConversations(page, limit);
     if (response.success) {
       return response;
     }
-    throw new Error('Failed to fetch conversations');
+    throw new Error("Failed to fetch conversations");
   } catch (error: any) {
-    console.error('Error in fetchConversations:', error);
-    throw new Error(error.response?.data?.message || 'Failed to fetch conversations');
+    console.error("Error in fetchConversations:", error);
+    throw new Error(
+      error.response?.data?.message || "Failed to fetch conversations"
+    );
   }
 };
 
-export const markAsReadByUser = async (conversationId: number): Promise<MarkReadResponse> => {
-  try {
-    const response = await markConversationReadByUser(conversationId);
-    if (response.success) {
-      return response;
-    }
-    throw new Error('Failed to mark conversation as read by user');
-  } catch (error: any) {
-    console.error('Error in markAsReadByUser:', error);
-    throw new Error(error.response?.data?.message || 'Failed to mark conversation as read by user');
-  }
-};
 
-export const markAsReadByProvider = async (conversationId: number): Promise<MarkReadResponse> => {
+
+
+export const fetchConversationById = async (
+  conversationId: number
+): Promise<GetConversationResponse> => {
   try {
-    const response = await markConversationReadByProvider(conversationId);
+    const response = await getConversationById(conversationId);
     if (response.success) {
       return response;
     }
-    throw new Error('Failed to mark conversation as read by provider');
+    throw new Error("Failed to fetch conversation by ID");
   } catch (error: any) {
-    console.error('Error in markAsReadByProvider:', error);
-    throw new Error(error.response?.data?.message || 'Failed to mark conversation as read by provider');
+    console.error("Error in fetchConversationById:", error);
+    throw new Error(
+      error.response?.data?.message || "Failed to fetch conversation by ID"
+    );
   }
 };

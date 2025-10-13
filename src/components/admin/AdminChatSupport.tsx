@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { getConversations, Conversation } from "../../apis/conversation.api";
+import { fetchConversationById } from "../../services/conversation.service";
 import { TypingLoader } from "../ui/typing";
 import {
   getMessages,
@@ -20,7 +21,10 @@ import {
   MoreVertical,
   Store,
 } from "lucide-react";
-import { fetchMessagesByConversation } from "@/services/message.service";
+import {
+  fetchMessagesByConversation,
+  markMessageAsReadService,
+} from "@/services/message.service";
 import { useAuth } from "@/hooks/useAuth";
 // Socket realtime removed
 import { ChatSocketManager } from "@/services/chatSocket.service";
@@ -64,6 +68,13 @@ const AdminChatSupport: React.FC = () => {
   const [isTypingByConversation, setIsTypingByConversation] = useState<
     Record<number, boolean>
   >({});
+  const [unreadMessagesByConversation, setUnreadMessagesByConversation] =
+    useState<Record<number, UIMsg[]>>({});
+
+  // useEffect(() => {
+  //   const response = fetchConversationById(29);
+  //   console.log("Test fetchConversationById: ", response);
+  // }, []);
 
   // Khởi tạo socket manager và join phòng cá nhân khi có user
   const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
@@ -96,42 +107,92 @@ const AdminChatSupport: React.FC = () => {
       messageId: string;
       senderId: string;
       senderRole: "user" | "provider";
+      text?: string;
+      image_url?: string;
     }) => {
       const convId = Number(data.conversationId);
       try {
-        const response = await getMessages(convId, 1, 20);
-        const ordered: UIMsg[] = (response.data || [])
-          .slice()
-          .reverse() as UIMsg[];
+        // Tạo message mới từ data nhận được
+        console.log("data message socket: ", data);
+        const newMessage: UIMsg = {
+          id: Number(data.messageId),
+          conversation_id: convId,
+          sender_id: Number(data.senderId),
+          message_text: data.text || "",
+          image_url: data.image_url || null,
+          is_read: false,
+          created_at: new Date().toISOString(),
+          _status: "sent",
+        };
 
-        // Cập nhật cache
-        setMessagesByConversation((prev) => ({ ...prev, [convId]: ordered }));
+        // Chỉ thêm message vào cache nếu conversation đã có tin nhắn
+        const cachedMessages = messagesByConversation[convId];
+        if (cachedMessages && cachedMessages.length > 0) {
+          setMessagesByConversation((prev) => {
+            const existingMessages = prev[convId] || [];
+            return {
+              ...prev,
+              [convId]: [...existingMessages, newMessage],
+            };
+          });
 
-        // Nếu đang mở đúng hội thoại thì hiển thị ngay
+          // Lưu tin nhắn chưa đọc vào danh sách riêng
+          setUnreadMessagesByConversation((prev) => {
+            const existingUnread = prev[convId] || [];
+            return {
+              ...prev,
+              [convId]: [...existingUnread, newMessage],
+            };
+          });
+        }
+
+        // Nếu đang mở đúng hội thoại thì hiển thị ngay và đánh dấu đã đọc
         setSelectedConversation((prev) => {
           if (prev && prev.id === convId) {
-            setMessages(ordered);
+            setMessages((currentMessages) => [...currentMessages, newMessage]);
+            // Đánh dấu tin nhắn vừa nhận là đã đọc ngay lập tức
+            markMessagesAsRead(
+              [newMessage],
+              convId,
+              selectedConversation || undefined
+            );
           }
           return prev;
         });
 
-        // Cập nhật metadata danh sách hội thoại
-        const newest =
-          response.data && response.data.length > 0 ? response.data[0] : null;
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id !== convId) return c;
-            return {
-              ...c,
-              last_message_text: newest?.message_text ?? c.last_message_text,
-              last_message_at: newest?.created_at ?? c.last_message_at,
+        // Cập nhật metadata conversation với message mới
+        setConversations((prev) => {
+          const existingConversation = prev.find((c) => c.id === convId);
+
+          if (existingConversation) {
+            // Nếu đã có, cập nhật và đưa lên đầu
+            const updatedConversation = {
+              ...existingConversation,
+              last_message_text:
+                newMessage.message_text ||
+                existingConversation.last_message_text,
+              last_message_at: newMessage.created_at,
               unread_count_provider:
                 selectedConversation?.id === convId
                   ? 0
-                  : (c.unread_count_provider || 0) + 1,
-            } as any;
-          })
-        );
+                  : (existingConversation.unread_count_provider || 0) + 1,
+            };
+
+            // Đưa conversation lên đầu danh sách
+            return [
+              updatedConversation,
+              ...prev.filter((c) => c.id !== convId),
+            ];
+          } else {
+            // Nếu chưa có, load conversation mới (async)
+            loadConversationById(convId, newMessage).then((newConversation) => {
+              if (newConversation) {
+                setConversations((prev) => [newConversation, ...prev]);
+              }
+            });
+            return prev;
+          }
+        });
       } catch (_) {
         // ignore
       }
@@ -168,6 +229,66 @@ const AdminChatSupport: React.FC = () => {
     };
   }, []);
 
+  // Lắng nghe trạng thái tin nhắn đã đọc
+  useEffect(() => {
+    if (!chatSocketManagerRef.current) return;
+
+    const handleMessageStatus = (data: {
+      conversationId: string;
+      messageId: string;
+      readerId: string;
+      readerRole: "user" | "provider";
+    }) => {
+      const convId = Number(data.conversationId);
+      const msgId = Number(data.messageId);
+      const readerId = Number(data.readerId);
+
+      console.log("Received message read status:", data);
+
+      // Chỉ cập nhật nếu người đọc không phải là mình (provider)
+      if (user && String(readerId) !== String(user.id)) {
+        // Cập nhật trạng thái tin nhắn trong cache
+        setMessagesByConversation((prev) => {
+          const conversationMessages = prev[convId];
+          if (!conversationMessages) return prev;
+
+          const updatedMessages = conversationMessages.map((msg) => {
+            // Chỉ cập nhật tin nhắn của provider (tin nhắn mà provider gửi)
+            if (
+              msg.id === msgId &&
+              msg.sender_id === selectedConversation?.provider_id
+            ) {
+              return { ...msg, is_read: true };
+            }
+            return msg;
+          });
+
+          return {
+            ...prev,
+            [convId]: updatedMessages,
+          };
+        });
+
+        // Cập nhật trạng thái tin nhắn trong UI hiện tại
+        if (selectedConversation?.id === convId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === msgId &&
+              msg.sender_id === selectedConversation.provider_id
+                ? { ...msg, is_read: true }
+                : msg
+            )
+          );
+        }
+      }
+    };
+
+    chatSocketManagerRef.current.onMessageStatus(handleMessageStatus);
+    return () => {
+      chatSocketManagerRef.current?.offMessageStatus(handleMessageStatus);
+    };
+  }, [selectedConversation, user]);
+
   const waitForImagesInContainer = async (container: HTMLDivElement | null) => {
     if (!container) return;
     const images = Array.from(
@@ -184,6 +305,94 @@ const AdminChatSupport: React.FC = () => {
           })
       )
     );
+  };
+
+  // Hàm helper để đánh dấu tin nhắn đã đọc
+  const markMessagesAsRead = async (
+    messages: UIMsg[],
+    conversationId: number,
+    conversation?: Conversation
+  ) => {
+    try {
+      // Lọc ra các tin nhắn chưa đọc và không phải của provider hiện tại
+      const unreadMessages = messages.filter(
+        (msg) =>
+          !msg.is_read && msg.sender_id !== selectedConversation?.provider_id
+      );
+
+      if (unreadMessages.length === 0) return;
+
+      const messageIds = unreadMessages.map((msg) => msg.id);
+      const markedCount = unreadMessages.length; // Số lượng tin nhắn đã đánh dấu
+
+      // Gọi API để đánh dấu đã đọc
+      await markMessageAsReadService(messageIds);
+      console.log("unreadMessages: ", unreadMessages);
+
+      // Emit socket cho từng tin nhắn
+      if (chatSocketManagerRef.current) {
+        // Sử dụng conversation được truyền vào hoặc selectedConversation
+        const currentConversation = conversation || selectedConversation;
+        const receiverId = (currentConversation as any)?.user_id;
+        const receiverRole = "user";
+        console.log("receiverId: ", receiverId);
+
+        if (receiverId) {
+          unreadMessages.forEach((msg) => {
+            chatSocketManagerRef.current?.emitMessageRead({
+              conversation_id: conversationId,
+              message_id: msg.id,
+              readerRole: "provider",
+              receiverId,
+              receiverRole,
+            });
+          });
+        }
+      }
+
+      // Cập nhật UI để đánh dấu đã đọc
+      setMessages((prev) =>
+        prev.map((msg) =>
+          messageIds.includes(msg.id) ? { ...msg, is_read: true } : msg
+        )
+      );
+
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [conversationId]:
+          prev[conversationId]?.map((msg) =>
+            messageIds.includes(msg.id) ? { ...msg, is_read: true } : msg
+          ) || [],
+      }));
+
+      // Cập nhật unread_count_provider trong danh sách conversations
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === conversationId) {
+            const currentUnreadCount = conv.unread_count_provider || 0;
+            const newUnreadCount = Math.max(
+              0,
+              currentUnreadCount - markedCount
+            );
+            return {
+              ...conv,
+              unread_count_provider: newUnreadCount,
+            };
+          }
+          return conv;
+        })
+      );
+
+      // Xóa tin nhắn chưa đọc khỏi danh sách unreadMessagesByConversation
+      setUnreadMessagesByConversation((prev) => ({
+        ...prev,
+        [conversationId]:
+          prev[conversationId]?.filter((msg) => !messageIds.includes(msg.id)) ||
+          [],
+      }));
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu tin nhắn đã đọc:", error);
+    }
   };
 
   // Lấy danh sách cuộc trò chuyện
@@ -208,19 +417,52 @@ const AdminChatSupport: React.FC = () => {
     }
   };
 
+  // Load conversation theo ID khi chưa có trong danh sách
+  const loadConversationById = async (
+    conversationId: number,
+    newestMessage?: UIMsg
+  ) => {
+    try {
+      const response = await fetchConversationById(conversationId);
+      console.log("Loaded conversation by ID: ", response);
+      if (response.success && response.data) {
+        const conversation = response.data;
+
+        // Cập nhật metadata nếu có tin nhắn mới
+        if (newestMessage) {
+          conversation.last_message_text = newestMessage.message_text;
+          conversation.last_message_at = newestMessage.created_at;
+          conversation.unread_count_provider =
+            selectedConversation?.id === conversationId ? 0 : 1;
+        }
+
+        return conversation;
+      }
+    } catch (error) {
+      console.error("Lỗi khi load conversation theo ID:", error);
+    }
+    return null;
+  };
+
   // Lấy tin nhắn của cuộc trò chuyện được chọn
-  const fetchMessages = async (conversationId: number) => {
-    console.log("Fetching messages for conversation: ", conversationId);
+  const fetchMessages = async (conversation: Conversation) => {
+    // console.log("Fetching messages for conversation: ", conversation);
     try {
       // Nếu đã có cache, dùng cache và không gọi API
-      const cached = messagesByConversation[conversationId];
+      const cached = messagesByConversation[conversation.id];
       if (cached && cached.length) {
         setMessages(cached);
+        // Đánh dấu tin nhắn đã đọc cho cache
+        // await markMessagesAsRead(
+        //   cached,
+        //   conversationId,
+        //   selectedConversation || undefined
+        // );
         return;
       }
       setMessagesLoading(true);
       const response = await fetchMessagesByConversation({
-        conversation_id: conversationId,
+        conversation_id: conversation.id,
         page: 1,
         limit: 20,
       });
@@ -232,16 +474,23 @@ const AdminChatSupport: React.FC = () => {
       setMessages(ordered);
       setMessagesByConversation((prev) => ({
         ...prev,
-        [conversationId]: ordered,
+        [conversation.id]: ordered,
       }));
-      setPageByConversation((prev) => ({ ...prev, [conversationId]: 1 }));
+      setPageByConversation((prev) => ({ ...prev, [conversation.id]: 1 }));
       const hasMore =
         !!(response as any)?.pagination?.hasNextPage ||
         response.data?.length >= 20;
       setHasMoreByConversation((prev) => ({
         ...prev,
-        [conversationId]: hasMore,
+        [conversation.id]: hasMore,
       }));
+
+      // Đánh dấu tin nhắn đã đọc sau khi load xong
+      await markMessagesAsRead(
+        ordered,
+        conversation.id,
+        conversation
+      );
     } catch (error) {
       console.error("Lỗi khi lấy tin nhắn:", error);
     } finally {
@@ -266,6 +515,7 @@ const AdminChatSupport: React.FC = () => {
       const olderOrdered: UIMsg[] = (response.data || [])
         .slice()
         .reverse() as UIMsg[];
+
       setMessages((prev) => {
         const updated = [...olderOrdered, ...prev];
         setMessagesByConversation((map) => ({
@@ -274,6 +524,7 @@ const AdminChatSupport: React.FC = () => {
         }));
         return updated;
       });
+
       setPageByConversation((prev) => ({
         ...prev,
         [conversationId]: nextPage,
@@ -285,6 +536,13 @@ const AdminChatSupport: React.FC = () => {
         ...prev,
         [conversationId]: hasMore,
       }));
+
+      // Đánh dấu tin nhắn đã đọc cho các tin nhắn cũ vừa load
+      await markMessagesAsRead(
+        olderOrdered,
+        conversationId,
+        selectedConversation || undefined
+      );
 
       // giữ vị trí cuộn sau khi prepend: double rAF + chờ ảnh render xong
       requestAnimationFrame(() => {
@@ -378,11 +636,12 @@ const AdminChatSupport: React.FC = () => {
         return updated;
       });
 
-      // Emit socket event đến phòng cá nhân của user nhận
+      // Emit socket event đến conversation room
+      console.log("Emitting socket message", selectedConversation);
       try {
-        const receiverId = (selectedConversation as any)?.user_id;
         const senderId = (selectedConversation as any)?.provider_id;
-        if (chatSocketManagerRef.current && receiverId && senderId) {
+        const receiverId = (selectedConversation as any)?.user_id;
+        if (chatSocketManagerRef.current && senderId && receiverId) {
           chatSocketManagerRef.current.emitSendMessage({
             conversationId: selectedConversation.id,
             messageId: (response.data as any)?.id,
@@ -390,8 +649,11 @@ const AdminChatSupport: React.FC = () => {
             senderRole: "provider",
             receiverId,
             receiverRole: "user",
+            text: newMessage,
+            image_url: response.data.image_url || undefined,
           });
         }
+        console.log("Emitted socket message");
       } catch (_) {}
 
       // Cập nhật metadata cuộc trò chuyện cục bộ, không reload toàn bộ
@@ -426,13 +688,25 @@ const AdminChatSupport: React.FC = () => {
   };
 
   // Xử lý khi chọn cuộc trò chuyện
-  const handleSelectConversation = (conversation: Conversation) => {
+  const handleSelectConversation = async (conversation: Conversation) => {
     // Nếu chọn lại cùng hội thoại thì bỏ qua
     if (selectedConversation?.id === conversation.id) return;
 
     // Socket realtime removed
 
     setSelectedConversation(conversation);
+
+    // Đánh dấu tất cả tin nhắn chưa đọc của conversation này
+    const unreadMessages = unreadMessagesByConversation[conversation.id] || [];
+    if (unreadMessages.length > 0) {
+      await markMessagesAsRead(unreadMessages, conversation.id, conversation);
+      // Xóa tin nhắn chưa đọc sau khi đã đánh dấu
+      setUnreadMessagesByConversation((prev) => ({
+        ...prev,
+        [conversation.id]: [],
+      }));
+    }
+
     // Nếu conversation đã có messages kèm theo, dùng trực tiếp và cache
     const inlineMessages = (conversation as any)?.messages as
       | Message[]
@@ -463,7 +737,7 @@ const AdminChatSupport: React.FC = () => {
       });
       return;
     }
-    fetchMessages(conversation.id);
+    fetchMessages(conversation);
   };
 
   // Khi đổi hội thoại, đảm bảo auto scroll xuống đáy sau khi render
@@ -493,13 +767,10 @@ const AdminChatSupport: React.FC = () => {
     }
   };
 
-  // Format thời gian
+  // Format thời gian - chỉ hiển thị giờ
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -749,10 +1020,10 @@ const AdminChatSupport: React.FC = () => {
                   messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${
+                      className={`flex flex-col ${
                         message.sender_id === selectedConversation.provider_id
-                          ? "justify-end"
-                          : "justify-start"
+                          ? "items-end"
+                          : "items-start"
                       }`}
                     >
                       <div
@@ -776,28 +1047,75 @@ const AdminChatSupport: React.FC = () => {
                             className="max-w-[260px] max-h-[240px] w-full object-cover block"
                           />
                         )}
-                        <div
-                          className={`flex items-center gap-2 px-3 py-1 ${
-                            message.sender_id ===
-                            selectedConversation.provider_id
-                              ? "justify-end"
-                              : ""
-                          }`}
-                        >
-                          {(message as any)._status === "sending" ? (
-                            <span className="text-[11px] text-gray-400 italic">
-                              Đang gửi...
-                            </span>
-                          ) : (message as any)._status === "failed" ? (
-                            <span className="text-[11px] text-red-500">
-                              Gửi thất bại
-                            </span>
-                          ) : (
+                      </div>
+                      <div
+                        className={`flex items-center gap-2 mt-1 ${
+                          message.sender_id === selectedConversation.provider_id
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
+                        {(message as any)._status === "sending" ? (
+                          <span className="text-[11px] text-gray-400 italic">
+                            Đang gửi...
+                          </span>
+                        ) : (message as any)._status === "failed" ? (
+                          <span className="text-[11px] text-red-500">
+                            Gửi thất bại
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-1">
                             <span className="text-[11px] text-gray-500">
                               {formatTime(message.created_at)}
                             </span>
-                          )}
-                        </div>
+                            {/* Chỉ hiển thị dấu tích cho tin nhắn của provider */}
+                            {message.sender_id ===
+                              selectedConversation.provider_id && (
+                              <div className="flex">
+                                {message.is_read ? (
+                                  // 2 dấu tích xanh khi đã đọc
+                                  <div className="flex">
+                                    <svg
+                                      className="w-3 h-3 text-blue-500"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                    <svg
+                                      className="w-3 h-3 text-blue-500 -ml-1"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </div>
+                                ) : (
+                                  // 1 dấu tích xám khi chưa đọc
+                                  <svg
+                                    className="w-3 h-3 text-gray-400"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -828,11 +1146,7 @@ const AdminChatSupport: React.FC = () => {
                         const receiverId = (selectedConversation as any)
                           ?.user_id;
                         if (senderId && receiverId) {
-                          console.log(
-                            "Emitting typing true",
-                            senderId,
-                            receiverId
-                          );
+                          console.log("Emitting typing true", senderId);
                           chatSocketManagerRef.current.emitTyping({
                             conversationId: selectedConversation.id,
                             senderId,

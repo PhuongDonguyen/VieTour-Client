@@ -131,7 +131,18 @@ export class ChatSocketManager {
     };
   }
 
-  // No per-conversation room management; only personal room via chat:join
+  // Conversation room management
+  joinConversation(conversationId: string | number) {
+    const s = this.getSocket();
+    if (!s.connected) return;
+    s.emit("chat:joinConversation", String(conversationId));
+  }
+
+  leaveConversation(conversationId: string | number) {
+    const s = this.getSocket();
+    if (!s.connected) return;
+    s.emit("chat:leaveConversation", String(conversationId));
+  }
 
   // Emits
   emitSendMessage(data: {
@@ -141,6 +152,8 @@ export class ChatSocketManager {
     senderRole: "user" | "provider";
     receiverId: string | number;
     receiverRole: "user" | "provider";
+    text?: string;
+    image_url?: string;
   }) {
     const s = this.getSocket();
     if (!s.connected) return;
@@ -151,6 +164,8 @@ export class ChatSocketManager {
       senderRole: data.senderRole,
       receiverId: String(data.receiverId),
       receiverRole: data.receiverRole,
+      text: data.text,
+      image_url: data.image_url,
     });
   }
 
@@ -188,14 +203,15 @@ export class ChatSocketManager {
     const readerRole: "user" | "provider" =
       payload.readerRole ||
       (String(this.userType) === "provider" ? "provider" : "user");
+    const receiverRole: "user" | "provider" =
+      payload.receiverRole || (readerRole === "user" ? "provider" : "user");
     s.emit("chat:readMessage", {
       conversationId: String(payload.conversation_id),
       messageId: String(payload.message_id),
       readerId: String(this.userId || ""),
       readerRole,
-      receiverId: payload.receiverId ? String(payload.receiverId) : "",
-      receiverRole:
-        payload.receiverRole || (readerRole === "user" ? "provider" : "user"),
+      receiverId: String(payload.receiverId || ""),
+      receiverRole,
     });
   }
 
@@ -206,6 +222,8 @@ export class ChatSocketManager {
       messageId: string;
       senderId: string;
       senderRole: "user" | "provider";
+      text?: string;
+      image_url?: string;
     }) => void
   ) {
     const s = this.getSocket();
@@ -218,6 +236,8 @@ export class ChatSocketManager {
       messageId: string;
       senderId: string;
       senderRole: "user" | "provider";
+      text?: string;
+      image_url?: string;
     }) => void
   ) {
     const s = this.getSocket();
@@ -323,7 +343,14 @@ export const getDebugInfo = () => {
   return getGlobalChatManager().getDebugInfo();
 };
 
-// No per-conversation room APIs anymore; personal room join handled on connect
+// Conversation room management
+export const joinConversation = (conversationId: string | number) => {
+  getGlobalChatManager().joinConversation(conversationId);
+};
+
+export const leaveConversation = (conversationId: string | number) => {
+  getGlobalChatManager().leaveConversation(conversationId);
+};
 
 // Emits
 export const emitSendMessage = (data: {
@@ -333,6 +360,8 @@ export const emitSendMessage = (data: {
   senderRole: "user" | "provider";
   receiverId: string | number;
   receiverRole: "user" | "provider";
+  text?: string;
+  image_url?: string;
 }) => {
   getGlobalChatManager().emitSendMessage(data);
 };
@@ -350,6 +379,8 @@ export const onReceiveMessage = (
     messageId: string;
     senderId: string;
     senderRole: "user" | "provider";
+    text?: string;
+    image_url?: string;
   }) => void
 ) => {
   getGlobalChatManager().onReceiveMessage(handler);
@@ -361,6 +392,8 @@ export const offReceiveMessage = (
     messageId: string;
     senderId: string;
     senderRole: "user" | "provider";
+    text?: string;
+    image_url?: string;
   }) => void
 ) => {
   getGlobalChatManager().offReceiveMessage(handler);

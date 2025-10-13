@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
 
 export interface Message {
   id: number;
@@ -29,7 +29,7 @@ export const getMessages = async (
   limit: number = 20
 ): Promise<MessagesResponse> => {
   try {
-    const response = await axiosInstance.get('/api/messages', {
+    const response = await axiosInstance.get("/api/messages", {
       params: {
         conversationId,
         page,
@@ -39,7 +39,7 @@ export const getMessages = async (
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error("Error fetching messages:", error);
     throw error;
   }
 };
@@ -62,31 +62,48 @@ export const sendMessage = async (
   try {
     const formData = new FormData();
 
-    console.log('Sending message with FormData');
+    console.log("Sending message with FormData");
     if (payload.conversation_id) {
-      formData.append('conversation_id', payload.conversation_id.toString());
+      formData.append("conversation_id", payload.conversation_id.toString());
     }
     if (payload.receiver_id) {
-      formData.append('receiver_id', payload.receiver_id.toString());
+      formData.append("receiver_id", payload.receiver_id.toString());
     }
     if (payload.message_text) {
-      formData.append('message_text', payload.message_text);
+      formData.append("message_text", payload.message_text);
     }
     if (payload.image) {
-      formData.append('image', payload.image);
+      formData.append("image", payload.image);
     }
 
-    const response = await axiosInstance.post('/api/messages', formData, {
+    const response = await axiosInstance.post("/api/messages", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
 
     return response.data;
   } catch (error) {
-    console.error('Error sending message:', error);
+    console.error("Error sending message:", error);
     throw error;
   }
 };
 
+export interface MarkAsReadResponse {
+  success: boolean;
+  message: string;
+}
 
+export const markMessageAsRead = async (
+  messageIds: number[]
+): Promise<MarkAsReadResponse> => {
+  try {
+    const response = await axiosInstance.put("/api/messages/mark-as-read", {
+      messageIds,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error marking messages as read:", error);
+    throw error;
+  }
+};

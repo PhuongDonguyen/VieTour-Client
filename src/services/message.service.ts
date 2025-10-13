@@ -1,10 +1,12 @@
 import {
   getMessages,
   sendMessage,
+  markMessageAsRead,
   type MessagesResponse,
   type SendMessagePayload,
   type SendMessageResponse,
-} from '../apis/message.api';
+  type MarkAsReadResponse,
+} from "../apis/message.api";
 
 export interface FetchMessagesRequest {
   conversation_id: number;
@@ -23,10 +25,12 @@ export const fetchMessagesByConversation = async (
       return response;
     }
 
-    throw new Error('Failed to fetch messages');
+    throw new Error("Failed to fetch messages");
   } catch (error: any) {
-    console.error('Error in fetchMessagesByConversation:', error);
-    throw new Error(error?.response?.data?.message || 'Failed to fetch messages');
+    console.error("Error in fetchMessagesByConversation:", error);
+    throw new Error(
+      error?.response?.data?.message || "Failed to fetch messages"
+    );
   }
 };
 
@@ -40,11 +44,28 @@ export const createMessage = async (
       return response;
     }
 
-    throw new Error('Failed to send message');
+    throw new Error("Failed to send message");
   } catch (error: any) {
-    console.error('Error in createMessage:', error);
-    throw new Error(error?.response?.data?.message || 'Failed to send message');
+    console.error("Error in createMessage:", error);
+    throw new Error(error?.response?.data?.message || "Failed to send message");
   }
 };
 
+export const markMessageAsReadService = async (
+  messageIds: number[]
+): Promise<MarkAsReadResponse> => {
+  try {
+    const response = await markMessageAsRead(messageIds);
 
+    if (response.success) {
+      return response;
+    }
+
+    throw new Error("Failed to mark message as read");
+  } catch (error: any) {
+    console.error("Error in markMessageAsReadService:", error);
+    throw new Error(
+      error?.response?.data?.message || "Failed to mark message as read"
+    );
+  }
+};

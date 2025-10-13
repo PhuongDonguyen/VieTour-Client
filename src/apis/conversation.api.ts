@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
 
 export interface ProviderProfile {
   id: number;
@@ -42,9 +42,12 @@ export interface ConversationsResponse {
   };
 }
 
-export const getConversations = async (page: number = 1, limit: number = 5): Promise<ConversationsResponse> => {
+export const getConversations = async (
+  page: number = 1,
+  limit: number = 5
+): Promise<ConversationsResponse> => {
   try {
-    const response = await axiosInstance.get('/api/conversations', {
+    const response = await axiosInstance.get("/api/conversations", {
       params: {
         page,
         limit,
@@ -53,7 +56,7 @@ export const getConversations = async (page: number = 1, limit: number = 5): Pro
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching conversations:', error);
+    console.error("Error fetching conversations:", error);
     throw error;
   }
 };
@@ -63,22 +66,30 @@ export interface MarkReadResponse {
   message?: string;
 }
 
-export const markConversationReadByUser = async (conversationId: number): Promise<MarkReadResponse> => {
+export const markConversationReadByUser = async (
+  conversationId: number
+): Promise<MarkReadResponse> => {
   try {
-    const response = await axiosInstance.put(`/api/conversations/${conversationId}/read-user`);
+    const response = await axiosInstance.put(
+      `/api/conversations/${conversationId}/read-user`
+    );
     return response.data;
   } catch (error) {
-    console.error('Error marking conversation as read by user:', error);
+    console.error("Error marking conversation as read by user:", error);
     throw error;
   }
 };
 
-export const markConversationReadByProvider = async (conversationId: number): Promise<MarkReadResponse> => {
+export const markConversationReadByProvider = async (
+  conversationId: number
+): Promise<MarkReadResponse> => {
   try {
-    const response = await axiosInstance.put(`/api/conversations/${conversationId}/read-provider`);
+    const response = await axiosInstance.put(
+      `/api/conversations/${conversationId}/read-provider`
+    );
     return response.data;
   } catch (error) {
-    console.error('Error marking conversation as read by provider:', error);
+    console.error("Error marking conversation as read by provider:", error);
     throw error;
   }
 };
@@ -88,14 +99,35 @@ export interface CreateConversationResponse {
   data: Conversation;
 }
 
-export const createNewConversation = async (providerId: number): Promise<CreateConversationResponse> => {
+export const createNewConversation = async (
+  providerId: number
+): Promise<CreateConversationResponse> => {
   try {
-    const response = await axiosInstance.post('/api/conversations', {
+    const response = await axiosInstance.post("/api/conversations", {
       provider_id: providerId,
     });
     return response.data;
   } catch (error) {
-    console.error('Error creating conversation:', error);
+    console.error("Error creating conversation:", error);
+    throw error;
+  }
+};
+
+export interface GetConversationResponse {
+  success: boolean;
+  data: Conversation;
+}
+
+export const getConversationById = async (
+  conversationId: number
+): Promise<GetConversationResponse> => {
+  try {
+    const response = await axiosInstance.get(
+      `/api/conversations/${conversationId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching conversation by ID:", error);
     throw error;
   }
 };

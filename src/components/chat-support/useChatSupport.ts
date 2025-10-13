@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   fetchConversations,
-  markAsReadByUser,
-  markAsReadByProvider,
+  fetchConversationById,
 } from "@/services/conversation.service";
 import {
   fetchMessagesByConversation,
   createMessage,
+  markMessageAsReadService,
 } from "@/services/message.service";
 import type { Conversation } from "@/apis/conversation.api";
 import type { Message, SendMessagePayload } from "@/apis/message.api";
@@ -165,20 +165,24 @@ export const useChatSupport = (
     if (!chatSocketManagerRef.current) return;
     chatSocketManagerRef.current.connect(user.id as any, actor);
     return () => {
+      // Leave current conversation room before disconnect
+      if (selectedConversationId && chatSocketManagerRef.current) {
+        chatSocketManagerRef.current.leaveConversation(selectedConversationId);
+      }
       chatSocketManagerRef.current?.disconnect();
     };
-  }, [user, actor]);
+  }, [user, actor, selectedConversationId]);
 
   // (moved below loadMessages)
 
   const mapApiMessageToUI = useCallback(
     (apiMessage: Message, userId: number, providerId: number): UIMessage => {
       const isUserMessage = apiMessage.sender_id === userId;
-
+      console.log("apiMessage: ", apiMessage);
       let status: UIMessage["status"] = "read";
-      if (isUserMessage) {
-        status = apiMessage.is_read ? "read" : "sent";
-      }
+      // if (isUserMessage) {
+      status = apiMessage.is_read ? "read" : "sent";
+      // }
 
       return {
         id: apiMessage.id,
@@ -191,6 +195,83 @@ export const useChatSupport = (
     },
     []
   );
+
+  // Hàm helper để đánh dấu tin nhắn đã đọc
+  const markMessagesAsRead = async (
+    messages: UIMessage[],
+    conversationId: number,
+    providerId: number,
+    conversation?: UIConversation
+  ) => {
+    try {
+      // Lọc ra các tin nhắn có status = "sent" (chưa đọc)
+      console.log("messages: ", messages);
+      const unreadMessages = messages.filter((msg) => msg.status === "sent");
+      console.log("đã vào đây");
+      console.log("unreadMessages: ", unreadMessages);
+
+      if (unreadMessages.length === 0) return;
+
+      const messageIds = unreadMessages.map((msg) => Number(msg.id));
+      const markedCount = unreadMessages.length; // Số lượng tin nhắn đã đánh dấu
+
+      // Gọi API để đánh dấu đã đọc
+      await markMessageAsReadService(messageIds);
+      console.log("unreadMessages: ", unreadMessages);
+
+      // Emit socket cho từng tin nhắn
+      if (chatSocketManagerRef.current) {
+        // Sử dụng conversation được truyền vào hoặc selectedConversation
+        // const currentConversation = conversation || selectedConversation;
+        const receiverId = providerId;
+        const receiverRole = actor === "user" ? "provider" : "user";
+        console.log("receiverId: ", receiverId);
+
+        if (receiverId) {
+          unreadMessages.forEach((msg) => {
+            chatSocketManagerRef.current?.emitMessageRead({
+              conversation_id: conversationId,
+              message_id: Number(msg.id),
+              readerRole: actor,
+              receiverId,
+              receiverRole,
+            });
+          });
+        }
+      }
+
+      // Cập nhật UI để đánh dấu đã đọc
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [conversationId]:
+          prev[conversationId]?.map((msg) =>
+            messageIds.includes(Number(msg.id))
+              ? { ...msg, status: "read" as const }
+              : msg
+          ) || [],
+      }));
+
+      // Cập nhật unread count trong danh sách conversations
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === conversationId) {
+            const currentUnreadCount = conv.unread || 0;
+            const newUnreadCount = Math.max(
+              0,
+              currentUnreadCount - markedCount
+            );
+            return {
+              ...conv,
+              unread: newUnreadCount,
+            };
+          }
+          return conv;
+        })
+      );
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu tin nhắn đã đọc:", error);
+    }
+  };
 
   const loadMessages = useCallback(
     async (
@@ -214,10 +295,12 @@ export const useChatSupport = (
 
         if (res.success) {
           const orderedMessages = [...res.data].reverse();
+          console.log("orderedMessages: ", orderedMessages);
           const mappedMessages = orderedMessages.map((msg) =>
             mapApiMessageToUI(msg, userId, providerId)
           );
-
+          console.log("mappedMessages: ", mappedMessages);
+          await markMessagesAsRead(mappedMessages, conversationId, providerId);
           setMessagesByConversation((prev) => {
             if (page === 1) {
               return { ...prev, [conversationId]: mappedMessages };
@@ -247,6 +330,39 @@ export const useChatSupport = (
       }
     },
     [mapApiMessageToUI]
+  );
+
+  // Load conversation theo ID khi chưa có trong danh sách
+  const loadConversationById = useCallback(
+    async (conversationId: number, newestMessage?: UIMessage) => {
+      try {
+        const response = await fetchConversationById(conversationId);
+        if (response.success && response.data) {
+          const conv = response.data;
+          const peer = getPeerInfoFromConversation(conv, actor, getPeerDisplay);
+
+          const newUIConversation: UIConversation = {
+            id: conv.id,
+            user_id: conv.user_id,
+            provider_id: conv.provider_id,
+            name: peer.name,
+            avatar: peer.avatar,
+            lastMessage: newestMessage?.text || conv.last_message_text || "",
+            time: newestMessage
+              ? "Vừa xong"
+              : formatRelativeTime(conv.last_message_at),
+            unread: selectedConversationId === conversationId ? 0 : 1,
+            status: "online",
+          };
+
+          // Thêm conversation mới vào đầu danh sách
+          setConversations((prev) => [newUIConversation, ...prev]);
+        }
+      } catch (error) {
+        console.error("Error loading conversation by ID:", error);
+      }
+    },
+    [actor, getPeerDisplay, selectedConversationId]
   );
 
   const loadConversationsData = useCallback(async () => {
@@ -289,23 +405,6 @@ export const useChatSupport = (
           );
 
           // Mark as read if there are unread messages
-          if (latestConversation.unread > 0) {
-            try {
-              if (actor === "user") {
-                await markAsReadByUser(latestConversation.id);
-              } else {
-                await markAsReadByProvider(latestConversation.id);
-              }
-
-              setConversations((prev) =>
-                prev.map((c) =>
-                  c.id === latestConversation.id ? { ...c, unread: 0 } : c
-                )
-              );
-            } catch (error) {
-              console.error("Error marking as read:", error);
-            }
-          }
         }
       }
     } catch (error) {
@@ -444,26 +543,90 @@ export const useChatSupport = (
       messageId: string;
       senderId: string;
       senderRole: "user" | "provider";
+      text?: string;
+      image_url?: string;
     }) => {
       const convId = Number(data.conversationId);
-      const conv = conversations.find((c) => c.id === convId);
-      if (!conv) return;
+      console.log("Received socket message:", data);
 
       try {
-        // Tải lại trang mới nhất cho hội thoại đó
-        await loadMessages(convId, conv.user_id, conv.provider_id, 1);
+        // Tạo message mới từ data nhận được
+        const newMessage: UIMessage = {
+          id: Number(data.messageId),
+          text: data.text || "",
+          sender: data.senderRole,
+          time: formatDisplayTime(new Date()),
+          status: "sent",
+          image_url: data.image_url || "",
+        };
 
-        // Cập nhật danh sách hội thoại: thời gian và unread nếu hội thoại không được mở
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id !== convId) return c;
+        // Chỉ thêm message vào cache nếu conversation đã có tin nhắn
+        const cachedMessages = messagesByConversation[convId];
+        if (cachedMessages && cachedMessages.length > 0) {
+          setMessagesByConversation((prev) => {
+            const existingMessages = prev[convId] || [];
             return {
-              ...c,
-              time: "Vừa xong",
-              unread: selectedConversationId === convId ? 0 : c.unread + 1,
+              ...prev,
+              [convId]: [...existingMessages, newMessage],
             };
-          })
-        );
+          });
+        }
+
+        // Nếu đang mở conversation này, đánh dấu tin nhắn đã đọc ngay lập tức
+        if (selectedConversationId === convId && user) {
+          // Tìm conversation để lấy provider_id
+          const currentConversation = conversations.find(
+            (c) => c.id === convId
+          );
+          if (currentConversation) {
+            // Đánh dấu tin nhắn đã đọc
+            markMessagesAsRead(
+              [newMessage],
+              convId,
+              currentConversation.provider_id,
+              currentConversation
+            );
+          } else {
+            // Nếu chưa có conversation trong state, cần load conversation trước
+            // Tạm thời đánh dấu tin nhắn là đã đọc trong UI
+            setMessagesByConversation((prev) => ({
+              ...prev,
+              [convId]: (prev[convId] || []).map((msg) =>
+                msg.id === newMessage.id
+                  ? { ...msg, status: "read" as const }
+                  : msg
+              ),
+            }));
+          }
+        }
+
+        // Kiểm tra xem conversation đã có trong danh sách chưa
+        setConversations((prev) => {
+          const existingConversation = prev.find((c) => c.id === convId);
+
+          if (existingConversation) {
+            // Nếu đã có, cập nhật và đưa lên đầu
+            const updatedConversation = {
+              ...existingConversation,
+              lastMessage: newMessage.text || "[Hình ảnh]",
+              time: "Vừa xong",
+              unread:
+                selectedConversationId === convId
+                  ? 0
+                  : existingConversation.unread + 1,
+            };
+
+            // Đưa conversation lên đầu danh sách
+            return [
+              updatedConversation,
+              ...prev.filter((c) => c.id !== convId),
+            ];
+          } else {
+            // Nếu chưa có, load conversation mới
+            loadConversationById(convId, newMessage);
+            return prev;
+          }
+        });
       } catch (_) {
         /* ignore */
       }
@@ -473,7 +636,7 @@ export const useChatSupport = (
     return () => {
       chatSocketManagerRef.current?.offReceiveMessage(handler);
     };
-  }, [conversations, selectedConversationId, loadMessages]);
+  }, [conversations, selectedConversationId, loadConversationById]);
 
   // Lắng nghe trạng thái đang nhập từ đối phương
   useEffect(() => {
@@ -497,34 +660,67 @@ export const useChatSupport = (
       chatSocketManagerRef.current?.offUserTyping(handleTyping as any);
   }, []);
 
+  // Lắng nghe trạng thái tin nhắn đã đọc
+  useEffect(() => {
+    if (!chatSocketManagerRef.current) return;
+
+    const handleMessageStatus = (data: {
+      conversationId: string;
+      messageId: string;
+      readerId: string;
+      readerRole: "user" | "provider";
+    }) => {
+      const convId = Number(data.conversationId);
+      const msgId = Number(data.messageId);
+
+      console.log("Received message read status:", data);
+
+      // Cập nhật trạng thái tin nhắn trong cache
+      setMessagesByConversation((prev) => {
+        const conversationMessages = prev[convId];
+        if (!conversationMessages) return prev;
+
+        const updatedMessages = conversationMessages.map((msg) => {
+          // Chỉ cập nhật tin nhắn của mình (tin nhắn mà mình gửi)
+          if (msg.id === msgId && msg.sender === actor) {
+            return { ...msg, status: "read" as const };
+          }
+          return msg;
+        });
+
+        return {
+          ...prev,
+          [convId]: updatedMessages,
+        };
+      });
+    };
+
+    chatSocketManagerRef.current.onMessageStatus(handleMessageStatus);
+    return () => {
+      chatSocketManagerRef.current?.offMessageStatus(handleMessageStatus);
+    };
+  }, [actor]);
+
   const handleConversationSelect = useCallback(
     async (conversationId: number) => {
       const conv = conversations.find((c) => c.id === conversationId);
       if (!conv) return;
 
-      // Socket realtime removed
+      // Leave previous conversation room
+      if (selectedConversationId && chatSocketManagerRef.current) {
+        chatSocketManagerRef.current.leaveConversation(selectedConversationId);
+      }
+
+      // Join new conversation room
+      if (chatSocketManagerRef.current) {
+        chatSocketManagerRef.current.joinConversation(conversationId);
+      }
 
       setSelectedConversationId(conversationId);
 
       // Only load messages if not already loaded
       if (!messagesByConversation[conversationId]) {
         await loadMessages(conversationId, conv.user_id, conv.provider_id);
-      }
-
-      if (conv.unread > 0) {
-        try {
-          if (actor === "user") {
-            await markAsReadByUser(conversationId);
-          } else {
-            await markAsReadByProvider(conversationId);
-          }
-
-          setConversations((prev) =>
-            prev.map((c) => (c.id === conversationId ? { ...c, unread: 0 } : c))
-          );
-        } catch (error) {
-          console.error("Error marking as read:", error);
-        }
       }
     },
     [
@@ -602,27 +798,25 @@ export const useChatSupport = (
               [newConversationId]: [sentMessage],
             }));
 
-            // Emit socket event sendMessage tới phòng cá nhân của người nhận (nếu xác định được)
+            // Emit socket event sendMessage tới conversation room
             try {
               if (chatSocketManagerRef.current) {
                 const senderRole: "user" | "provider" = actor;
                 const senderId = String(user?.id || "");
-                if (senderId) {
-                  // Với trường hợp tạo mới: chỉ emit khi biết được receiverId (ví dụ actor=user và có newProviderId)
-                  const receiverRole: "user" | "provider" =
-                    senderRole === "user" ? "provider" : "user";
-                  const receiverId =
-                    senderRole === "user" ? String(newProviderId || "") : "";
-                  if (receiverId) {
-                    chatSocketManagerRef.current.emitSendMessage({
-                      conversationId: newConversationId,
-                      messageId: res.data.id,
-                      senderId,
-                      senderRole,
-                      receiverId,
-                      receiverRole,
-                    });
-                  }
+                const receiverRole: "user" | "provider" =
+                  senderRole === "user" ? "provider" : "user";
+                const receiverId = String(newProviderId || "");
+                if (senderId && receiverId) {
+                  chatSocketManagerRef.current.emitSendMessage({
+                    conversationId: newConversationId,
+                    messageId: res.data.id,
+                    senderId,
+                    senderRole,
+                    receiverId,
+                    receiverRole,
+                    text: res.data.message_text,
+                    image_url: res.data.image_url || undefined,
+                  });
                 }
               }
             } catch (_) {}
@@ -647,10 +841,7 @@ export const useChatSupport = (
           try {
             if (chatSocketManagerRef.current && selectedConversation) {
               const senderRole: "user" | "provider" = actor;
-              const senderId =
-                senderRole === "user"
-                  ? String(selectedConversation.user_id)
-                  : String(selectedConversation.provider_id);
+              const senderId = String(user?.id || "");
               const receiverRole: "user" | "provider" =
                 senderRole === "user" ? "provider" : "user";
               const receiverId =
@@ -665,6 +856,8 @@ export const useChatSupport = (
                   senderRole,
                   receiverId,
                   receiverRole,
+                  text: res.data.message_text,
+                  image_url: res.data.image_url || undefined,
                 });
               }
             }
