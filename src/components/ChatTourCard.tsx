@@ -16,15 +16,18 @@ interface ChatTourCardProps {
 
 const ChatTourCard: React.FC<ChatTourCardProps> = ({ tour, onClick }) => {
   const formatPrice = (price: string) => {
+    // Ensure price is a string
+    const priceStr = String(price || "");
+
     // Extract numeric value and format as VND
-    const numericPrice = price.replace(/[^\d]/g, "");
+    const numericPrice = priceStr.replace(/[^\d]/g, "");
     if (numericPrice) {
       return new Intl.NumberFormat("vi-VN", {
         style: "currency",
         currency: "VND",
       }).format(parseInt(numericPrice));
     }
-    return price;
+    return priceStr || "Liên hệ";
   };
 
   return (
