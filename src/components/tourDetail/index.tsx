@@ -279,8 +279,9 @@ const TourDetail: React.FC = () => {
         <div className="pt-24 px-4">
           {/* Breadcrumb */}
           <div
-            className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
+            className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
           >
             <nav className="flex items-center space-x-2 text-sm text-gray-600">
               <Link
@@ -310,8 +311,9 @@ const TourDetail: React.FC = () => {
 
           {/* Hero Section */}
           <div
-            className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
+            className={`transition-opacity duration-500 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
           >
             <TourNamePrice
               title={tour.title}
@@ -321,23 +323,27 @@ const TourDetail: React.FC = () => {
               location={tour.location}
               duration={tour.duration}
               companyName={providerProfile?.company_name}
+              totalStar={tour.total_star}
+              reviewCount={tour.review_count}
             />
           </div>
 
           {/* Navigation Tabs */}
           <div
-            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
+            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
           >
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
               <div className="flex flex-wrap gap-2">
                 {TABS.map((tab) => (
                   <button
                     key={tab.key}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${activeTab === tab.key
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                      activeTab === tab.key
                         ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
                         : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                      }`}
+                    }`}
                     onClick={() => setActiveTab(tab.key)}
                   >
                     <span className="text-lg">{tab.icon}</span>
@@ -350,8 +356,9 @@ const TourDetail: React.FC = () => {
 
           {/* Content Section */}
           <div
-            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
+            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${
+              isVisible ? "opacity-100" : "opacity-0"
+            }`}
           >
             {activeTab === "program" && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -362,12 +369,12 @@ const TourDetail: React.FC = () => {
                         images.length > 0
                           ? images.filter((img) => img.is_featured)
                           : [
-                            {
-                              id: 0,
-                              image_url: tour.poster_url,
-                              alt_text: tour.title,
-                            },
-                          ]
+                              {
+                                id: 0,
+                                image_url: tour.poster_url,
+                                alt_text: tour.title,
+                              },
+                            ]
                       }
                       altDefault={tour.title}
                     />
