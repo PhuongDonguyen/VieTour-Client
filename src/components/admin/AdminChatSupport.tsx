@@ -1200,7 +1200,23 @@ const AdminChatSupport: React.FC = () => {
                   </button>
                 </div>
               )}
+
               <div className="flex gap-2 items-end">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const input = document.getElementById(
+                      "admin-chat-image-input"
+                    ) as HTMLInputElement | null;
+                    input?.click();
+                  }}
+                  disabled={sendingMessage}
+                  className="h-10 w-10 p-0 rounded-full hover:bg-gray-100"
+                  title="Chọn hình ảnh"
+                  aria-label="Chọn hình ảnh"
+                >
+                  <ImageIcon className="w-8 h-8 text-gray-500 scale-150" />
+                </Button>
                 <Textarea
                   value={newMessage}
                   onChange={(e) => {
@@ -1277,21 +1293,7 @@ const AdminChatSupport: React.FC = () => {
                   className="hidden"
                   id="admin-chat-image-input"
                 />
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const input = document.getElementById(
-                      "admin-chat-image-input"
-                    ) as HTMLInputElement | null;
-                    input?.click();
-                  }}
-                  disabled={sendingMessage}
-                  className="h-10 w-10 p-0 rounded-full hover:bg-gray-100"
-                  title="Chọn hình ảnh"
-                  aria-label="Chọn hình ảnh"
-                >
-                  <ImageIcon className="w-5 h-5 text-gray-700" />
-                </Button>
+
                 <Button
                   onClick={handleSendMessage}
                   disabled={
