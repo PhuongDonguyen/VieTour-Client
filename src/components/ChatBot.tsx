@@ -49,6 +49,31 @@ const ChatBot: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Add function to build conversation history
+  const buildConversationHistory = () => {
+    const history: { role: 'user' | 'assistant'; content: string }[] = [];
+
+    // Convert messages to history format, excluding the initial bot greeting
+    const conversationMessages = messages.slice(1); // Skip the initial greeting
+
+    conversationMessages.forEach((message) => {
+      if (message.sender === 'user') {
+        history.push({
+          role: 'user',
+          content: message.text
+        });
+      } else if (message.sender === 'bot') {
+        // For bot messages, use just the text content, not tour data
+        history.push({
+          role: 'assistant',
+          content: message.text
+        });
+      }
+    });
+
+    return history;
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -94,9 +119,15 @@ const ChatBot: React.FC = () => {
       let currentResponse = '';
       let tourResults: TourCardData[] = []; // Store tours temporarily
 
-      // Use the API service for streaming
+      // Build conversation history
+      const history = buildConversationHistory();
+
+      // Use the API service for streaming with history
       for await (const data of sendChatbotMessageStreamWithAbort(
-        { query: queryText },
+        {
+          query: queryText,
+          history: history
+        },
         abortControllerRef.current
       )) {
         if (data.type === 'metadata') {
@@ -205,11 +236,32 @@ const ChatBot: React.FC = () => {
     }
   };
 
+  // Function to convert **text** to bold and * to bullet points
+  const formatBotText = (text: string) => {
+    // First handle **text** for bold (must be done before single *)
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Then handle single * at the start of lines for bullet points
+    formatted = formatted.replace(/^\s*\*\s+(.+)$/gm, '• $1');
+
+    // Handle * that appear after line breaks
+    formatted = formatted.replace(/\n\s*\*\s+(.+)/g, '\n• $1');
+
+    // Convert line breaks to <br> for proper HTML rendering
+    formatted = formatted.replace(/\n/g, '<br>');
+
+    return formatted;
+  };
+
+  // Update the renderMessage function
   const renderMessage = (message: Message) => {
     if (message.type === "tour_results" && message.tourResults) {
       return (
         <div className="space-y-3">
-          <p className="text-sm text-gray-700 mb-3">{message.text}</p>
+          <div
+            className="text-sm text-gray-700 mb-3"
+            dangerouslySetInnerHTML={{ __html: formatBotText(message.text) }}
+          />
           <div className="space-y-3">
             {message.tourResults.map((tour, index) => (
               <ChatTourCard key={index} tour={tour} onClick={handleTourClick} />
@@ -225,17 +277,23 @@ const ChatBot: React.FC = () => {
       );
     }
 
-    return <p className="text-sm">{message.text}</p>;
+    return (
+      <div
+        className="text-sm"
+        dangerouslySetInnerHTML={{ __html: formatBotText(message.text) }}
+      />
+    );
   };
 
+  // Update the renderStreamingMessage function
   const renderStreamingMessage = (streamMsg: StreamingMessage) => {
     const { currentResponse } = streamMsg;
 
-    // Only show text during streaming, tours will be shown after completion
     return (
-      <p className="text-sm">
-        {currentResponse}
-      </p>
+      <div
+        className="text-sm"
+        dangerouslySetInnerHTML={{ __html: formatBotText(currentResponse) }}
+      />
     );
   };
 

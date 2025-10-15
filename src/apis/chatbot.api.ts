@@ -13,9 +13,16 @@ export interface ChatbotTour {
   slug: string;
 }
 
-// Interface for chatbot request
+// Add history interface
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// Update the request interface to include history
 export interface ChatbotRequest {
   query: string;
+  history?: ChatMessage[];
 }
 
 // Interface for chatbot response data
