@@ -191,6 +191,46 @@ export class ChatSocketManager {
     });
   }
 
+  // Presence subscription management
+  subscribePresence(
+    partners: { userId: string | number; role: "user" | "provider" }[]
+  ) {
+    const s = this.getSocket();
+    if (!s.connected) return;
+    if (!Array.isArray(partners)) return;
+    console.log("subscribePresence", partners);
+    const normalized = partners
+      .filter(
+        (p) =>
+          p != null &&
+          (p as any).userId != null &&
+          (p as any).role != null &&
+          ((p as any).role === "user" || (p as any).role === "provider")
+      )
+      .map((p) => ({ userId: String(p.userId), role: p.role }));
+    if (normalized.length === 0) return;
+    s.emit("presence:subscribe", normalized);
+  }
+
+  unsubscribePresence(
+    partners: { userId: string | number; role: "user" | "provider" }[]
+  ) {
+    const s = this.getSocket();
+    if (!s.connected) return;
+    if (!Array.isArray(partners)) return;
+    const normalized = partners
+      .filter(
+        (p) =>
+          p != null &&
+          (p as any).userId != null &&
+          (p as any).role != null &&
+          ((p as any).role === "user" || (p as any).role === "provider")
+      )
+      .map((p) => ({ userId: String(p.userId), role: p.role }));
+    if (normalized.length === 0) return;
+    s.emit("presence:unsubscribe", normalized);
+  }
+
   emitMessageRead(
     payload: ChatMessageReadPayload & {
       readerRole?: "user" | "provider";
@@ -293,6 +333,32 @@ export class ChatSocketManager {
     const s = this.getSocket();
     if (handler) s.off("chat:messageRead", handler);
     else s.off("chat:messageRead");
+  }
+
+  // Presence status listeners
+  onPresenceStatusChanged(
+    handler: (data: {
+      userId: string;
+      role: "user" | "provider";
+      online: boolean;
+      lastOfflineAt?: string | null;
+    }) => void
+  ) {
+    const s = this.getSocket();
+    s.on("presence:statusChanged", handler);
+  }
+
+  offPresenceStatusChanged(
+    handler?: (data: {
+      userId: string;
+      role: "user" | "provider";
+      online: boolean;
+      lastOfflineAt?: string | null;
+    }) => void
+  ) {
+    const s = this.getSocket();
+    if (handler) s.off("presence:statusChanged", handler);
+    else s.off("presence:statusChanged");
   }
 }
 
@@ -441,6 +507,42 @@ export const offMessageStatus = (
   }) => void
 ) => {
   getGlobalChatManager().offMessageStatus(handler);
+};
+
+// Presence subscription helpers
+export const subscribePresence = (
+  partners: { userId: string | number; role: "user" | "provider" }[]
+) => {
+  getGlobalChatManager().subscribePresence(partners);
+};
+
+export const unsubscribePresence = (
+  partners: { userId: string | number; role: "user" | "provider" }[]
+) => {
+  getGlobalChatManager().unsubscribePresence(partners);
+};
+
+// Presence status wrappers
+export const onPresenceStatusChanged = (
+  handler: (data: {
+    userId: string;
+    role: "user" | "provider";
+    online: boolean;
+    lastOfflineAt?: string | null;
+  }) => void
+) => {
+  getGlobalChatManager().onPresenceStatusChanged(handler);
+};
+
+export const offPresenceStatusChanged = (
+  handler?: (data: {
+    userId: string;
+    role: "user" | "provider";
+    online: boolean;
+    lastOfflineAt?: string | null;
+  }) => void
+) => {
+  getGlobalChatManager().offPresenceStatusChanged(handler);
 };
 
 // Helper to wire basic lifecycle quickly

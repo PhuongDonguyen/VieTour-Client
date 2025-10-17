@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   fetchConversations,
   fetchConversationById,
+  filterFetchConversations,
 } from "@/services/conversation.service";
 import {
   fetchMessagesByConversation,
@@ -9,6 +10,7 @@ import {
   markMessageAsReadService,
 } from "@/services/message.service";
 import type { Conversation } from "@/apis/conversation.api";
+import { filterConversations as apiFilterConversations } from "@/apis/conversation.api";
 import type { Message, SendMessagePayload } from "@/apis/message.api";
 // Socket realtime removed
 import { useAuth } from "@/hooks/useAuth";
@@ -35,7 +37,10 @@ interface UIConversation {
   time: string;
   lastMessageAt?: string;
   unread: number;
-  status: "online" | "offline";
+  partner_presence: {
+    online: boolean;
+    lastOfflineAt?: string | null;
+  };
 }
 
 interface PeerDisplay {
@@ -127,6 +132,12 @@ export const useChatSupport = (
   >({});
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  // Search (server-side) flow
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [filteredConversations, setFilteredConversations] = useState<
+    UIConversation[]
+  >([]);
 
   const [isConversationsLoading, setIsConversationsLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState<
@@ -398,11 +409,20 @@ export const useChatSupport = (
               ? new Date().toISOString()
               : (conv as any).last_message_at,
             unread: selectedConversationId === conversationId ? 0 : 1,
-            status: "online",
+            partner_presence: conv.partner_presence || {
+              online: false,
+              lastOfflineAt: null,
+            },
           };
 
           // Thêm conversation mới vào đầu danh sách
           setConversations((prev) => [newUIConversation, ...prev]);
+          chatSocketManagerRef.current?.subscribePresence([
+            {
+              userId: conv.provider_id,
+              role: "provider",
+            },
+          ]);
         }
       } catch (error) {
         console.error("Error loading conversation by ID:", error);
@@ -414,10 +434,12 @@ export const useChatSupport = (
   const loadConversationsData = useCallback(async () => {
     try {
       setIsConversationsLoading(true);
-      const res = await fetchConversations(1, 20);
+      // Always fetch in page units of 20 to avoid overlap when loading more later
+      const PAGE_UNIT = 20;
+      const res = await fetchConversations(1, PAGE_UNIT);
 
       if (res.success && res.data) {
-        const mappedConversations: UIConversation[] = res.data.map((conv) => {
+        let mappedConversations: UIConversation[] = res.data.map((conv) => {
           const peer = getPeerInfoFromConversation(conv, actor, getPeerDisplay);
 
           return {
@@ -433,12 +455,28 @@ export const useChatSupport = (
               actor === "user"
                 ? conv.unread_count_user
                 : conv.unread_count_provider,
-            status: "online",
+            partner_presence: conv.partner_presence || {
+              online: false,
+              lastOfflineAt: null,
+            },
           };
         });
+        // Ensure the list length is a multiple of 20 (trim tail if necessary)
+        if (mappedConversations.length % PAGE_UNIT !== 0) {
+          mappedConversations = mappedConversations.slice(
+            0,
+            Math.floor(mappedConversations.length / PAGE_UNIT) * PAGE_UNIT ||
+              PAGE_UNIT
+          );
+        }
 
         setConversations(mappedConversations);
-
+        chatSocketManagerRef.current?.subscribePresence(
+          mappedConversations.map((conv) => ({
+            userId: conv.provider_id,
+            role: "provider",
+          }))
+        );
         // Auto-select the first (latest) conversation only if none selected
         if (mappedConversations.length > 0 && !selectedConversationId) {
           const latestConversation = mappedConversations[0];
@@ -465,6 +503,85 @@ export const useChatSupport = (
   useEffect(() => {
     loadConversationsData();
   }, [actor, getPeerDisplay, loadMessages]);
+
+  // Trigger server-side search; when keyword empty, exit search mode
+  const searchConversations = useCallback(
+    async (keyword: string) => {
+      const q = (keyword || "").trim();
+      if (!q) {
+        setIsSearchMode(false);
+        setFilteredConversations([]);
+        setIsFiltering(false);
+        setSearchQuery("");
+        return;
+      }
+      try {
+        setIsFiltering(true);
+        setIsSearchMode(true);
+        setSearchQuery(q);
+        const res = await filterFetchConversations(1, 20, q);
+        console.log(
+          "[useChatSupport] filterFetchConversations keyword=",
+          q,
+          "response:",
+          res
+        );
+        const mapped: UIConversation[] = (res.data || []).map((conv) => {
+          const peer = getPeerInfoFromConversation(conv, actor, getPeerDisplay);
+          return {
+            id: conv.id,
+            user_id: conv.user_id,
+            provider_id: conv.provider_id,
+            name: peer.name,
+            avatar: peer.avatar,
+            lastMessage: conv.last_message_text || "",
+            time: formatRelativeTime(conv.last_message_at),
+            lastMessageAt: (conv as any).last_message_at,
+            unread:
+              actor === "user"
+                ? conv.unread_count_user
+                : conv.unread_count_provider,
+            partner_presence: conv.partner_presence || {
+              online: false,
+              lastOfflineAt: null,
+            },
+          };
+        });
+        setFilteredConversations(mapped);
+      } catch (e) {
+        console.error("[useChatSupport] filterFetchConversations error:", e);
+      } finally {
+        setIsFiltering(false);
+      }
+    },
+    [actor, getPeerDisplay]
+  );
+
+  // Ensure presence subscriptions happen after socket connects and on conversation changes
+  useEffect(() => {
+    const mgr = chatSocketManagerRef.current;
+    if (!mgr) return;
+    const s = mgr.getSocket();
+
+    const doSubscribe = () => {
+      if (!conversations || conversations.length === 0) return;
+      mgr.subscribePresence(
+        conversations.map((conv) => ({
+          userId: conv.provider_id,
+          role: "provider",
+        }))
+      );
+    };
+
+    if (s.connected) doSubscribe();
+    s.on("connect", doSubscribe);
+
+    return () => {
+      try {
+        s.off("connect", doSubscribe as any);
+      } catch (_) {}
+    };
+  }, [conversations]);
 
   // Tick mỗi phút để cập nhật thời gian tương đối của last message
   useEffect(() => {
@@ -785,6 +902,43 @@ export const useChatSupport = (
     };
   }, [actor]);
 
+  // Lắng nghe trạng thái presence (online/offline) và cập nhật partner_presence
+  useEffect(() => {
+    if (!chatSocketManagerRef.current) return;
+
+    const handlePresence = (payload: {
+      userId: string;
+      role: "user" | "provider";
+      online: boolean;
+      lastOfflineAt?: string | null;
+    }) => {
+      console.log("Received presence status:", payload);
+      setConversations((prev) =>
+        prev.map((conv) => {
+          // Với màn hình user, partner là provider
+          if (
+            payload.role === "provider" &&
+            String(conv.provider_id) === String(payload.userId)
+          ) {
+            return {
+              ...conv,
+              partner_presence: {
+                online: payload.online,
+                lastOfflineAt: payload.lastOfflineAt,
+              },
+            };
+          }
+          return conv;
+        })
+      );
+    };
+
+    chatSocketManagerRef.current.onPresenceStatusChanged(handlePresence);
+    return () => {
+      chatSocketManagerRef.current?.offPresenceStatusChanged(handlePresence);
+    };
+  }, []);
+
   const handleConversationSelect = useCallback(
     async (conversationId: number) => {
       const conv = conversations.find((c) => c.id === conversationId);
@@ -923,8 +1077,8 @@ export const useChatSupport = (
             ),
           }));
 
-          setConversations((prev) =>
-            prev.map((c) =>
+          setConversations((prev) => {
+            const updated = prev.map((c) =>
               c.id === conversationId
                 ? {
                     ...c,
@@ -933,8 +1087,19 @@ export const useChatSupport = (
                     lastMessageAt: new Date().toISOString(),
                   }
                 : c
-            )
-          );
+            );
+            const moved = updated.find((c) => c.id === conversationId);
+            if (!moved) {
+              const newConv = {
+                ...(selectedConversation as any),
+                lastMessage: text || "[Hình ảnh]",
+                time: "Vừa xong",
+                lastMessageAt: new Date().toISOString(),
+              } as any;
+              return [newConv, ...updated];
+            }
+            return [moved, ...updated.filter((c) => c.id !== conversationId)];
+          });
 
           // Emit socket event sendMessage cho hội thoại đã tồn tại
           try {
@@ -962,6 +1127,12 @@ export const useChatSupport = (
             }
           } catch (_) {}
         }
+
+        // Exit search mode after sending
+        setIsSearchMode(false);
+        setFilteredConversations([]);
+        setIsFiltering(false);
+        setSearchQuery("");
 
         setMessageInput("");
       } catch (error) {
@@ -1015,11 +1186,14 @@ export const useChatSupport = (
 
   return {
     conversations,
+    filteredConversations,
     selectedConversation,
     selectedConversationId,
     messages,
     messageInput,
     searchQuery,
+    isSearchMode,
+    isFiltering,
     isConversationsLoading,
     isMessagesLoading: selectedConversation
       ? loadingMessages[selectedConversation.id] || false
@@ -1032,6 +1206,7 @@ export const useChatSupport = (
     peerTypingText,
     setMessageInput,
     setSearchQuery,
+    searchConversations,
     handleConversationSelect,
     handleSendMessage,
     handleMessagesScroll,

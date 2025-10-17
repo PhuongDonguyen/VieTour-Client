@@ -27,6 +27,10 @@ export interface Conversation {
   provider?: ProviderProfile;
   // For provider role: includes user info (flattened structure)
   user?: UserProfile;
+  partner_presence?: {
+    online: boolean;
+    lastOfflineAt?: string | null;
+  };
 }
 
 export interface ConversationsResponse {
@@ -128,6 +132,22 @@ export const getConversationById = async (
     return response.data;
   } catch (error) {
     console.error("Error fetching conversation by ID:", error);
+    throw error;
+  }
+};
+
+export const filterConversations = async (
+  page: number = 1,
+  limit: number = 5,
+  search: string = ""
+): Promise<ConversationsResponse> => {
+  try {
+    const response = await axiosInstance.get("/api/conversations", {
+      params: { page, limit, search },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error filtering conversations:", error);
     throw error;
   }
 };

@@ -1,7 +1,27 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Send, Loader2, MoreVertical, User, Image, X } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { TypingLoader } from "../ui/typing";
+
+const formatRelativeTime = (dateString: string) => {
+  if (!dateString) return "Không hoạt động";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return "Vừa offline";
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  if (diffHour < 24) return `${diffHour} giờ trước`;
+  if (diffDay < 7) return `${diffDay} ngày trước`;
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+};
 
 interface ChatBoxProps {
   conversation: {
@@ -13,7 +33,10 @@ interface ChatBoxProps {
     lastMessage: string;
     time: string;
     unread: number;
-    status: "online" | "offline";
+    partner_presence?: {
+      online: boolean;
+      lastOfflineAt?: string | null;
+    };
   } | null;
   messages: Array<{
     id: number | string;
@@ -56,6 +79,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [timeUpdateTrigger, setTimeUpdateTrigger] = useState(0);
+
+  // Cập nhật thời gian mỗi phút
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeUpdateTrigger((prev) => prev + 1);
+    }, 60000); // 60000ms = 1 phút
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -138,7 +171,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                 <User className="w-6 h-6 text-orange-700" />
               </div>
             )}
-            {conversation.status === "online" && (
+            {conversation.partner_presence?.online && (
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
             )}
           </div>
@@ -146,9 +179,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
             <h3 className="font-semibold text-slate-800">
               {conversation.name}
             </h3>
-            <p className="text-xs text-slate-500">
-              {conversation.status === "online"
+            <p
+              className="text-xs text-slate-500"
+              key={`presence-${timeUpdateTrigger}`}
+            >
+              {conversation.partner_presence?.online
                 ? "Đang hoạt động"
+                : conversation?.partner_presence?.lastOfflineAt
+                ? formatRelativeTime(
+                    conversation.partner_presence.lastOfflineAt
+                  )
                 : "Không hoạt động"}
             </p>
           </div>

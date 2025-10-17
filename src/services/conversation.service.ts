@@ -6,6 +6,7 @@ import {
   type ConversationsResponse,
   type MarkReadResponse,
   type GetConversationResponse,
+  filterConversations,
 } from "../apis/conversation.api";
 
 export const fetchConversations = async (
@@ -42,6 +43,25 @@ export const fetchConversationById = async (
     console.error("Error in fetchConversationById:", error);
     throw new Error(
       error.response?.data?.message || "Failed to fetch conversation by ID"
+    );
+  }
+};
+
+export const filterFetchConversations = async (
+  page: number = 1,
+  limit: number = 5,
+  search: string = ""
+): Promise<ConversationsResponse> => {
+  try {
+    const response = await filterConversations(page, limit, search);
+    if (response.success) {
+      return response;
+    }
+    throw new Error("Failed to filter conversations");
+  } catch (error: any) {
+    console.error("Error in filterConversations:", error);
+    throw new Error(
+      error.response?.data?.message || "Failed to filter conversations"
     );
   }
 };

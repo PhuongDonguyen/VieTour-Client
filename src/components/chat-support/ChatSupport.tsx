@@ -48,11 +48,14 @@ export const ChatSupport: React.FC = () => {
 
   const {
     conversations,
+    filteredConversations,
     selectedConversation,
     selectedConversationId,
     messages,
     messageInput,
     searchQuery,
+    isSearchMode,
+    isFiltering,
     isConversationsLoading,
     isMessagesLoading,
     isLoadingMore,
@@ -67,6 +70,8 @@ export const ChatSupport: React.FC = () => {
     refreshConversations,
     setSelectedConversationId,
     actor: hookActor,
+    searchConversations,
+    setSearchQuery: setHookSearchQuery,
   } = useChatSupport(actor, getPeerDisplay);
 
   // Wrapper to pass newProviderId when sending message
@@ -176,12 +181,21 @@ export const ChatSupport: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)] lg:h-[calc(100vh-8rem)] min-h-[600px] max-h-[900px] flex max-w-7xl mx-auto mb-1 bg-gradient-to-br border border-orange-200 rounded shadow-lg">
           <ChatSidebar
-            conversations={conversations}
+            conversations={isSearchMode ? filteredConversations : conversations}
             selectedConversationId={selectedConversationId}
             searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+            onSearchChange={setHookSearchQuery}
+            onSearchEnter={(q) => searchConversations(q)}
+            onExitSearch={() => {
+              setHookSearchQuery("");
+              searchConversations("");
+            }}
+            isSearchMode={isSearchMode}
             onConversationSelect={handleConversationSelectWithUrl}
-            isLoading={isConversationsLoading || isLoadingNewProvider}
+            isLoading={
+              (isSearchMode ? isFiltering : isConversationsLoading) ||
+              isLoadingNewProvider
+            }
           />
 
           <ChatBox

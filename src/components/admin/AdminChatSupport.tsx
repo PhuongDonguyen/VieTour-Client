@@ -5,7 +5,10 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Badge } from "../ui/badge";
 import { getConversations, Conversation } from "../../apis/conversation.api";
-import { fetchConversationById } from "../../services/conversation.service";
+import {
+  fetchConversationById,
+  filterFetchConversations,
+} from "../../services/conversation.service";
 import { TypingLoader } from "../ui/typing";
 import {
   getMessages,
@@ -57,6 +60,10 @@ const AdminChatSupport: React.FC = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const typingTimeoutRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  // Search flow (separate list when active)
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Conversation[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const conversationsContainerRef = useRef<HTMLDivElement>(null);
@@ -75,6 +82,7 @@ const AdminChatSupport: React.FC = () => {
   const [unreadMessagesByConversation, setUnreadMessagesByConversation] =
     useState<Record<number, UIMsg[]>>({});
   const [timeUpdateTrigger, setTimeUpdateTrigger] = useState(0);
+  const [presenceUpdateTrigger, setPresenceUpdateTrigger] = useState(0);
 
   // useEffect(() => {
   //   const response = fetchConversationById(29);
@@ -97,6 +105,7 @@ const AdminChatSupport: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     if (!chatSocketManagerRef.current) return;
+    console.log("Connect socket: ", user.id, (user as any)?.role || "provider");
     chatSocketManagerRef.current.connect(
       user.id as any,
       (user as any)?.role || "provider"
@@ -208,6 +217,55 @@ const AdminChatSupport: React.FC = () => {
       chatSocketManagerRef.current?.offReceiveMessage(handler);
     };
   }, [selectedConversation]);
+
+  // Lắng nghe trạng thái presence (online/offline) và ghi vào conversation.partner_presence
+  useEffect(() => {
+    if (!chatSocketManagerRef.current) return;
+    const handlePresence = (payload: {
+      userId: string;
+      role: "user" | "provider";
+      online: boolean;
+      lastOfflineAt?: string | null;
+    }) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (
+            payload.role === "user" &&
+            String(c.user_id) === String(payload.userId)
+          ) {
+            return {
+              ...c,
+              partner_presence: {
+                online: payload.online,
+                lastOfflineAt: payload.lastOfflineAt,
+              },
+            } as any;
+          }
+          return c;
+        })
+      );
+      setSelectedConversation((prev) => {
+        if (!prev) return prev;
+        if (
+          payload.role === "user" &&
+          String(prev.user_id) === String(payload.userId)
+        ) {
+          return {
+            ...prev,
+            partner_presence: {
+              online: payload.online,
+              lastOfflineAt: payload.lastOfflineAt,
+            },
+          } as any;
+        }
+        return prev;
+      });
+    };
+    chatSocketManagerRef.current.onPresenceStatusChanged(handlePresence);
+    return () => {
+      chatSocketManagerRef.current?.offPresenceStatusChanged(handlePresence);
+    };
+  }, []);
 
   // Lắng nghe trạng thái đang nhập (typing)
   useEffect(() => {
@@ -413,6 +471,12 @@ const AdminChatSupport: React.FC = () => {
       setConversations((prev) =>
         append ? [...prev, ...response.data] : response.data
       );
+      chatSocketManagerRef.current?.subscribePresence(
+        response.data.map((conv) => ({
+          userId: conv.user_id,
+          role: "user",
+        }))
+      );
       setConversationsPage(page);
       const hasMore = !!response.pagination?.hasNextPage;
       setConversationsHasMore(hasMore);
@@ -431,6 +495,12 @@ const AdminChatSupport: React.FC = () => {
     try {
       const response = await fetchConversationById(conversationId);
       console.log("Loaded conversation by ID: ", response);
+      chatSocketManagerRef.current?.subscribePresence([
+        {
+          userId: response.data.user_id,
+          role: "provider",
+        },
+      ]);
       if (response.success && response.data) {
         const conversation = response.data;
 
@@ -512,14 +582,25 @@ const AdminChatSupport: React.FC = () => {
         ...prev,
         [conversationId]: true,
       }));
-      const nextPage = (pageByConversation[conversationId] || 1) + 1;
-      const response = await getMessages(conversationId, nextPage, 20);
+      // Tính page dựa theo số lượng tin nhắn hiện có (bội của 20)
+      const PAGE_UNIT = 20;
+      const currentCount = (messagesByConversation[conversationId] || [])
+        .length;
+      const currentPages = Math.floor(currentCount / PAGE_UNIT);
+      const nextPage = currentPages + 1;
+
+      const response = await getMessages(conversationId, nextPage, PAGE_UNIT);
       const olderOrdered: UIMsg[] = (response.data || [])
         .slice()
         .reverse() as UIMsg[];
 
       setMessages((prev) => {
-        const updated = [...olderOrdered, ...prev];
+        // Cắt phần dư của danh sách hiện tại để là bội số của 20 trước khi prepend
+        const trimmedPrev = prev.slice(
+          0,
+          Math.floor(prev.length / PAGE_UNIT) * PAGE_UNIT
+        );
+        const updated = [...olderOrdered, ...trimmedPrev];
         setMessagesByConversation((map) => ({
           ...map,
           [conversationId]: updated,
@@ -664,16 +745,40 @@ const AdminChatSupport: React.FC = () => {
       } catch (_) {}
 
       // Cập nhật metadata cuộc trò chuyện cục bộ, không reload toàn bộ
-      setConversations((prev) =>
-        prev.map((c) => {
+      setConversations((prev) => {
+        const updatedList = prev.map((c) => {
           if (c.id !== selectedConversation.id) return c;
           return {
             ...c,
             last_message_text: response.data.message_text ?? "",
             last_message_at: response.data.created_at,
           } as any;
-        })
-      );
+        });
+        const moved = updatedList.find((c) => c.id === selectedConversation.id);
+        if (!moved) {
+          const newConv = {
+            ...(selectedConversation as any),
+            last_message_text: response.data.message_text ?? "",
+            last_message_at: response.data.created_at,
+          } as any;
+          // Add to head and drop the last to keep list size constant
+          const withoutLast = updatedList.slice(
+            0,
+            Math.max(0, updatedList.length - 1)
+          );
+          return [newConv, ...withoutLast];
+        }
+        return [
+          moved,
+          ...updatedList.filter((c) => c.id !== selectedConversation.id),
+        ];
+      });
+
+      // Exit search mode after sending
+      setIsSearching(false);
+      setSearchResults([]);
+      setSearchLoading(false);
+      setSearchQuery("");
     } catch (error) {
       console.error("Lỗi khi gửi tin nhắn:", error);
       // Đánh dấu tin nhắn tạm thất bại nếu có
@@ -809,6 +914,27 @@ const AdminChatSupport: React.FC = () => {
     });
   };
 
+  // Format thời gian tương đối cho lastOfflineAt
+  const formatRelativeTime = (dateString: string) => {
+    if (!dateString) return "Không hoạt động";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 60) return "Vừa offline";
+    if (diffMin < 60) return `${diffMin} phút trước`;
+    if (diffHour < 24) return `${diffHour} giờ trước`;
+    if (diffDay < 7) return `${diffDay} ngày trước`;
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+    });
+  };
+
   useEffect(() => {
     fetchConversations(1, false);
   }, []);
@@ -817,6 +943,15 @@ const AdminChatSupport: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setTimeUpdateTrigger((prev) => prev + 1);
+    }, 60000); // 60000ms = 1 phút
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Cập nhật trạng thái hoạt động mỗi phút
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPresenceUpdateTrigger((prev) => prev + 1);
     }, 60000); // 60000ms = 1 phút
 
     return () => clearInterval(interval);
@@ -832,8 +967,36 @@ const AdminChatSupport: React.FC = () => {
       const prevScrollTop = container?.scrollTop || 0;
 
       setConversationsLoadingMore(true);
-      const nextPage = conversationsPage + 1;
-      await fetchConversations(nextPage, true);
+      // Tính page dựa trên độ dài danh sách hiện tại (bội của 20)
+      const PAGE_UNIT = 20;
+      const currentPages = Math.floor((conversations?.length || 0) / PAGE_UNIT);
+      const nextPage = currentPages + 1;
+
+      // Gọi API lấy trang tiếp theo
+      const response = await getConversations(nextPage, PAGE_UNIT);
+
+      // Cắt phần dư ở cuối trước khi nối để tránh trùng
+      setConversations((prev) => {
+        const length = prev.length || 0;
+        const trimmed = prev.slice(
+          0,
+          Math.floor(length / PAGE_UNIT) * PAGE_UNIT
+        );
+        return [...trimmed, ...(response.data || [])];
+      });
+
+      // Cập nhật phân trang/hasMore
+      setConversationsPage(nextPage);
+      const hasMore = !!response.pagination?.hasNextPage;
+      setConversationsHasMore(hasMore);
+
+      // Đăng ký presence cho batch mới
+      chatSocketManagerRef.current?.subscribePresence(
+        (response.data || []).map((conv) => ({
+          userId: conv.user_id,
+          role: "provider",
+        }))
+      );
 
       // Giữ nguyên khoảng cách từ top sau khi load thêm conversations
       requestAnimationFrame(() => {
@@ -905,9 +1068,47 @@ const AdminChatSupport: React.FC = () => {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm nhà cung cấp..."
-              className="pl-9 text-sm"
+              onKeyDown={async (e) => {
+                if (e.key !== "Enter") return;
+                const keyword = searchQuery.trim();
+                try {
+                  if (!keyword) {
+                    setIsSearching(false);
+                    setSearchResults([]);
+                    return;
+                  }
+                  setIsSearching(true);
+                  setSearchLoading(true);
+                  const res = await filterFetchConversations(
+                    1,
+                    20,
+                    keyword as any
+                  );
+                  setSearchResults(res.data || []);
+                } catch (_) {
+                } finally {
+                  setSearchLoading(false);
+                }
+              }}
+              placeholder="Tìm kiếm khách hàng..."
+              className="pl-9 pr-16 text-sm"
             />
+            {isSearching && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSearching(false);
+                  setSearchResults([]);
+                  setSearchLoading(false);
+                  setSearchQuery("");
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-600 hover:text-gray-900 px-2 py-0.5 rounded"
+                title="Thoát tìm kiếm"
+                aria-label="Thoát tìm kiếm"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -921,67 +1122,81 @@ const AdminChatSupport: React.FC = () => {
               }
             }}
           >
-            {loading ? (
+            {(isSearching ? searchLoading : loading) ? (
               <div className="p-4 text-center text-gray-500">Đang tải...</div>
-            ) : filteredConversations.length === 0 ? (
+            ) : (isSearching ? searchResults : filteredConversations).length ===
+              0 ? (
               <div className="p-4 text-center text-gray-500">
                 Chưa có cuộc trò chuyện nào
               </div>
             ) : (
-              filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  onClick={() => handleSelectConversation(conversation)}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedConversation?.id === conversation.id
-                      ? "bg-gray-50 border-l-4 border-l-gray-900"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="relative">
-                      {conversation.user?.avatar != null ? (
-                        <img
-                          src={conversation.user?.avatar}
-                          // src={conversation.user?.avatar}
-                          alt="avatar"
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center">
-                          <User className="w-5 h-5" />
-                        </div>
-                      )}
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gray-400 ring-2 ring-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-medium text-gray-900 truncate">
-                          {conversation.user?.first_name +
-                            " " +
-                            conversation.user?.last_name}
-                        </span>
-                        <span
-                          className="text-xs text-gray-500 ml-2"
-                          key={`time-${conversation.id}-${timeUpdateTrigger}`}
-                        >
-                          {formatShortTime(conversation.last_message_at)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-600 truncate">
-                          {conversation.last_message_text}
-                        </p>
-                        {conversation.unread_count_provider > 0 && (
-                          <span className="ml-2 px-2 py-0.5 bg-gray-900 text-white text-xs rounded-full font-semibold">
-                            {conversation.unread_count_provider}
-                          </span>
+              (isSearching ? searchResults : filteredConversations).map(
+                (conversation) => (
+                  <div
+                    key={conversation.id}
+                    onClick={() => handleSelectConversation(conversation)}
+                    className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                      selectedConversation?.id === conversation.id
+                        ? "bg-gray-50 border-l-4 border-l-gray-900"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="relative">
+                        {conversation.user?.avatar != null ? (
+                          <img
+                            src={conversation.user?.avatar}
+                            // src={conversation.user?.avatar}
+                            alt="avatar"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center">
+                            <User className="w-5 h-5" />
+                          </div>
                         )}
+                        <span
+                          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
+                            conversation.partner_presence?.online
+                              ? "bg-gray-500"
+                              : "bg-gray-300"
+                          }`}
+                          title={
+                            conversation.partner_presence?.online
+                              ? "Đang hoạt động"
+                              : "Ngoại tuyến"
+                          }
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-medium text-gray-900 truncate">
+                            {conversation.user?.first_name +
+                              " " +
+                              conversation.user?.last_name}
+                          </span>
+                          <span
+                            className="text-xs text-gray-500 ml-2"
+                            key={`time-${conversation.id}-${timeUpdateTrigger}`}
+                          >
+                            {formatShortTime(conversation.last_message_at)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-600 truncate">
+                            {conversation.last_message_text}
+                          </p>
+                          {conversation.unread_count_provider > 0 && (
+                            <span className="ml-2 px-2 py-0.5 bg-gray-900 text-white text-xs rounded-full font-semibold">
+                              {conversation.unread_count_provider}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              )
             )}
             {conversationsLoadingMore && (
               <div className="p-3 text-center text-gray-500">
@@ -1014,7 +1229,18 @@ const AdminChatSupport: React.FC = () => {
                         <User className="h-5 w-5" />
                       </div>
                     )}
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gray-400 ring-2 ring-white" />
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
+                        selectedConversation?.partner_presence?.online
+                          ? "bg-gray-500"
+                          : "bg-gray-300"
+                      }`}
+                      title={
+                        selectedConversation?.partner_presence?.online
+                          ? "Đang hoạt động"
+                          : "Ngoại tuyến"
+                      }
+                    />
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900 flex items-center gap-2">
@@ -1027,7 +1253,21 @@ const AdminChatSupport: React.FC = () => {
                       </span>
                     </div>
                     <div className="text-sm flex items-center gap-2">
-                      <span className="text-gray-600">Đang hoạt động</span>
+                      <span
+                        className="text-gray-600"
+                        key={`presence-${presenceUpdateTrigger}`}
+                      >
+                        {selectedConversation?.partner_presence?.online
+                          ? "Đang hoạt động"
+                          : selectedConversation?.partner_presence
+                              ?.lastOfflineAt
+                          ? formatRelativeTime(
+                              selectedConversation.partner_presence
+                                .lastOfflineAt
+                            )
+                          : "Không hoạt động"}
+                      </span>
+
                       <span className="text-gray-400">•</span>
                     </div>
                   </div>
@@ -1077,19 +1317,19 @@ const AdminChatSupport: React.FC = () => {
                             : "border-gray-300"
                         }`}
                       >
-                        {message.message_text && (
-                          <div className={`bg-white text-gray-900 px-4 py-2.5`}>
-                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
-                              {message.message_text}
-                            </p>
-                          </div>
-                        )}
                         {message.image_url && (
                           <img
                             src={message.image_url}
                             alt="Tin nhắn hình ảnh"
                             className="max-w-[260px] max-h-[240px] w-full object-cover block"
                           />
+                        )}
+                        {message.message_text && (
+                          <div className={`bg-white text-gray-900 px-4 py-2.5`}>
+                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                              {message.message_text}
+                            </p>
+                          </div>
                         )}
                       </div>
                       <div
