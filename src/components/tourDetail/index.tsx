@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRight, Home, MessageCircle } from "lucide-react";
 import TourNamePrice from "./TourNamePrice";
 import TourImage from "./TourImage";
 import TourDetailContent from "./TourDetailContent";
@@ -141,8 +141,10 @@ const TourDetail: React.FC = () => {
     loadTourData();
   }, [slug]);
 
-  const handleBookNow = () => {
-    navigate(`/booking/${tour.slug}`);
+  const handleChatWithProvider = () => {
+    if (tour?.provider_id) {
+      navigate(`/chat?provider=${tour.provider_id}`);
+    }
   };
 
   if (loading)
@@ -321,6 +323,8 @@ const TourDetail: React.FC = () => {
               location={tour.location}
               duration={tour.duration}
               companyName={providerProfile?.company_name}
+              totalStar={tour.total_star}
+              reviewCount={tour.review_count}
             />
           </div>
 
@@ -461,23 +465,11 @@ const TourDetail: React.FC = () => {
       {showFloatingButton && (
         <div className="fixed bottom-6 right-24 z-50 slide-in-up">
           <button
-            onClick={handleBookNow}
+            onClick={handleChatWithProvider}
             className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform flex items-center gap-2"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            <span className="hidden sm:inline">Đặt ngay</span>
+            <MessageCircle className="w-5 h-5" />
+            <span className="hidden sm:inline">Nhắn tin</span>
           </button>
         </div>
       )}
