@@ -258,7 +258,7 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header with Date Range Selector */}
       <Card>
         <CardHeader>

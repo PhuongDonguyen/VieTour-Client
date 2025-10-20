@@ -65,7 +65,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, onSwitchForm, onForgotPa
   });
 
   return (
-    <div className="p-4">
+    <div className="p-10">
       {onClose && (
         <button
           onClick={onClose}

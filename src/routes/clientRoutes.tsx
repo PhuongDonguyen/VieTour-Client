@@ -19,6 +19,7 @@ import TourImageGallery from "@/pages/TourImageGallery";
 import VerifyEmail from "../pages/VerifyEmail";
 import Contact from "../pages/Contact";
 import SearchTours from "../pages/SearchTours";
+import { ChatSupport } from '@/components/chat-support/ChatSupport';
 
 export const clientRoutes = [
   {
@@ -27,6 +28,7 @@ export const clientRoutes = [
     children: [
       { path: "", element: <Home /> },
       { path: "tour/:slug", element: <TourDetail /> },
+      { path: "/chat", element: <ChatSupport /> },
       {
         path: "booking/:slug",
         element: <Booking />,

@@ -1,6 +1,7 @@
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminLogin from "../pages/AdminLogin";
 import AdminLayout from "../components/admin/AdminLayout";
+import AdminChatSupport from "../components/admin/AdminChatSupport";
 import ProviderTours from "../components/admin/tour/Tours";
 import TourEditor from "../components/admin/tour/TourEditor";
 import TourView from "../pages/admin/TourView";
@@ -31,6 +32,7 @@ import TourImageViewContent from "../components/admin/tour-image/TourImageViewCo
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
 import AdminSupport from "@/pages/admin/AdminSupport";
+import ChatPage from "@/pages/ChatPage";
 import { ProviderRevenueStats } from "@/components/ProviderRevenueStats";
 import { ProviderRevenueStatsWrapper } from "@/components/ProviderRevenueStatsWrapper";
 import GeneralQuestionsListPage from "@/pages/admin/GeneralQuestionsListPage";
@@ -38,6 +40,7 @@ import GeneralQuestionView from "@/pages/admin/GeneralQuestionView";
 import GeneralQuestionEditor from "@/components/admin/general-question/GeneralQuestionEditor";
 import AdminRegisterPartner from "@/pages/admin/AdminRegisterPartner";
 import RegisterPartnerView from "@/pages/admin/RegisterPartnerView";
+import AdminRepComment from "@/pages/admin/AdminRepComment";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
 export const adminRoutes = [
@@ -49,6 +52,26 @@ export const adminRoutes = [
           <GeneralQuestionsListPage />
         </AdminLayout>
       </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/comments",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Quản lý bình luận">
+          <AdminRepComment /> {/* import từ '@/pages/admin/AdminRepComment' */}
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/chat",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Hỗ trợ khách hàng">
+          <AdminChatSupport />
+        </AdminLayout>
+      </RequireProviderOnly>
     ),
   },
   {
@@ -393,9 +416,9 @@ export const adminRoutes = [
     element: (
       <RequireProviderOnly>
         <AdminLayout title="Thống kê doanh thu">
-          <div className="p-6">
+          {/* <div className="p-6"> */}
             <ProviderRevenueStatsWrapper />
-          </div>
+          {/* </div> */}
         </AdminLayout>
       </RequireProviderOnly>
     ),
@@ -446,9 +469,9 @@ export const adminRoutes = [
     element: (
       <RequireProviderOnly>
         <AdminLayout title="Đặt tour của tôi">
-          <div className="p-6">
+          {/* <div className="p-6"> */}
             <AdminBookings />
-          </div>
+          {/* </div> */}
         </AdminLayout>
       </RequireProviderOnly>
     ),

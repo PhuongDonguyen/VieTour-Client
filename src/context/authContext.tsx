@@ -36,6 +36,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
+  
+
   // Listen for messages from popup windows
   // useEffect(() => {
   //   const handleMessage = (event: MessageEvent) => {
