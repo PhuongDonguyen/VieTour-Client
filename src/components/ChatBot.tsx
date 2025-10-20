@@ -3,8 +3,8 @@ import { FaComments, FaTimes, FaRobot } from "react-icons/fa";
 import { IoMdSend } from "react-icons/io";
 import ChatTourCard from "./ChatTourCard";
 import ChatTextWithLinks from "./ChatTextWithLinks";
-import { sendChatbotMessageStreamWithAbort, ChatbotTour } from "../apis/chatbot.api";
-
+import { sendChatbotMessageStreamWithAbort, ChatbotTour, StreamingMessage as ApiStreamingMessage } from "../apis/chatbot.api";
+import { marked } from "marked";
 // keep this version
 
 interface Message {
@@ -25,10 +25,12 @@ interface TourCardData {
   image: string;
 }
 
-interface StreamingMessage {
+// Local streaming message interface for component state
+interface LocalStreamingMessage {
   botMessage: Message;
   currentResponse: string;
-  tourResults?: TourCardData[]; // Add this to store tours temporarily
+  tourResults?: TourCardData[];
+  currentStatus?: string;
 }
 
 const ChatBot: React.FC = () => {
@@ -44,7 +46,7 @@ const ChatBot: React.FC = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isServerOnline, setIsServerOnline] = useState(true);
-  const [streamingMessage, setStreamingMessage] = useState<StreamingMessage | null>(null);
+  const [streamingMessage, setStreamingMessage] = useState<LocalStreamingMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -117,7 +119,8 @@ const ChatBot: React.FC = () => {
     try {
       let botMessage: Message | null = null;
       let currentResponse = '';
-      let tourResults: TourCardData[] = []; // Store tours temporarily
+      let tourResults: TourCardData[] = [];
+      let currentStatus = '';
 
       // Build conversation history
       const history = buildConversationHistory();
@@ -130,23 +133,47 @@ const ChatBot: React.FC = () => {
         },
         abortControllerRef.current
       )) {
-        if (data.type === 'metadata') {
-          // Initial response with tours - store them but don't display yet
-          const toursData = data.tours || [];
-          tourResults = toursData.map(convertTourToCardData);
+        if (data.type === 'status') {
+          // Update status message
+          currentStatus = data.message;
 
-          botMessage = {
-            id: (Date.now() + 1).toString(),
-            text: '',
-            sender: "bot",
-            timestamp: new Date(),
-            isStreaming: true,
-          };
+          if (!botMessage) {
+            botMessage = {
+              id: (Date.now() + 1).toString(),
+              text: '',
+              sender: "bot",
+              timestamp: new Date(),
+              isStreaming: true,
+            };
+          }
 
           setStreamingMessage({
             botMessage,
             currentResponse: '',
-            tourResults // Store tours for later display
+            tourResults: [],
+            currentStatus
+          });
+
+        } else if (data.type === 'metadata') {
+          // Initial response with tours - store them but don't display yet
+          const toursData = data.tours || [];
+          tourResults = toursData.map(convertTourToCardData);
+
+          if (!botMessage) {
+            botMessage = {
+              id: (Date.now() + 1).toString(),
+              text: '',
+              sender: "bot",
+              timestamp: new Date(),
+              isStreaming: true,
+            };
+          }
+
+          setStreamingMessage({
+            botMessage,
+            currentResponse: '',
+            tourResults,
+            currentStatus: '' // Clear status when metadata arrives
           });
 
         } else if (data.type === 'response_chunk') {
@@ -155,7 +182,8 @@ const ChatBot: React.FC = () => {
             currentResponse += data.content;
             setStreamingMessage(prev => prev ? {
               ...prev,
-              currentResponse
+              currentResponse,
+              currentStatus: '' // Clear status during text streaming
             } : null);
           }
 
@@ -239,18 +267,20 @@ const ChatBot: React.FC = () => {
   // Function to convert **text** to bold and * to bullet points
   const formatBotText = (text: string) => {
     // First handle **text** for bold (must be done before single *)
-    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-    // Then handle single * at the start of lines for bullet points
-    formatted = formatted.replace(/^\s*\*\s+(.+)$/gm, '• $1');
+    // // Then handle single * at the start of lines for bullet points
+    // formatted = formatted.replace(/^\s*\*\s+(.+)$/gm, '• $1');
 
-    // Handle * that appear after line breaks
-    formatted = formatted.replace(/\n\s*\*\s+(.+)/g, '\n• $1');
+    // // Handle * that appear after line breaks
+    // formatted = formatted.replace(/\n\s*\*\s+(.+)/g, '\n• $1');
 
-    // Convert line breaks to <br> for proper HTML rendering
-    formatted = formatted.replace(/\n/g, '<br>');
+    // // Convert line breaks to <br> for proper HTML rendering
+    // formatted = formatted.replace(/\n/g, '<br>');
 
-    return formatted;
+    // return formatted;
+    return marked.parse(text, { breaks: true });
+
   };
 
   // Update the renderMessage function
@@ -259,7 +289,7 @@ const ChatBot: React.FC = () => {
       return (
         <div className="space-y-3">
           <div
-            className="text-sm text-gray-700 mb-3"
+            className="text-sm text-gray-700 mb-3 markdown-body"
             dangerouslySetInnerHTML={{ __html: formatBotText(message.text) }}
           />
           <div className="space-y-3">
@@ -279,21 +309,52 @@ const ChatBot: React.FC = () => {
 
     return (
       <div
-        className="text-sm"
+        className="text-sm markdown-body"
         dangerouslySetInnerHTML={{ __html: formatBotText(message.text) }}
       />
     );
   };
 
+  // Add a component for status display
+  const StatusIndicator: React.FC<{ message: string }> = ({ message }) => (
+    <div className="flex items-center space-x-2 text-gray-600 text-sm">
+      <div className="flex space-x-1">
+        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></div>
+        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+      </div>
+      <span>{message}</span>
+    </div>
+  );
+
   // Update the renderStreamingMessage function
-  const renderStreamingMessage = (streamMsg: StreamingMessage) => {
-    const { currentResponse } = streamMsg;
+  const renderStreamingMessage = (streamMsg: LocalStreamingMessage) => {
+    const { currentResponse, currentStatus, tourResults } = streamMsg;
 
     return (
-      <div
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: formatBotText(currentResponse) }}
-      />
+      <div className="space-y-3">
+        {/* Show status indicator when there's a status */}
+        {currentStatus && (
+          <StatusIndicator message={currentStatus} />
+        )}
+
+        {/* Show response text if available */}
+        {currentResponse && (
+          <div
+            className="text-sm"
+            dangerouslySetInnerHTML={{ __html: formatBotText(currentResponse) }}
+          />
+        )}
+
+        {/* Show tour results if available and no status (during text streaming) */}
+        {tourResults && tourResults.length > 0 && !currentStatus && currentResponse && (
+          <div className="space-y-3">
+            {tourResults.map((tour, index) => (
+              <ChatTourCard key={index} tour={tour} onClick={handleTourClick} />
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 

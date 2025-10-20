@@ -67,7 +67,13 @@ export interface StreamingError {
   error: string;
 }
 
-export type StreamingMessage = StreamingMetadata | StreamingChunk | StreamingComplete | StreamingError;
+export interface StreamingStatus {
+  type: 'status';
+  message: string;
+  step: string;
+}
+
+export type StreamingMessage = StreamingMetadata | StreamingChunk | StreamingComplete | StreamingError | StreamingStatus;
 
 // Non-streaming chatbot API function (backward compatibility)
 export const sendChatbotMessage = (data: ChatbotRequest) =>
