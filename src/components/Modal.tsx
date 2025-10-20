@@ -35,7 +35,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 
           {/* Modal content */}
           <motion.div
-            className="relative z-10 w-full max-w-md bg-white rounded-lg shadow-xl p-6"
+            className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-xl"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 20, opacity: 0 }}

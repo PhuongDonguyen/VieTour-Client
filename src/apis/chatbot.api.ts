@@ -13,9 +13,16 @@ export interface ChatbotTour {
   slug: string;
 }
 
-// Interface for chatbot request
+// Add history interface
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// Update the request interface to include history
 export interface ChatbotRequest {
   query: string;
+  history?: ChatMessage[];
 }
 
 // Interface for chatbot response data
@@ -60,7 +67,13 @@ export interface StreamingError {
   error: string;
 }
 
-export type StreamingMessage = StreamingMetadata | StreamingChunk | StreamingComplete | StreamingError;
+export interface StreamingStatus {
+  type: 'status';
+  message: string;
+  step: string;
+}
+
+export type StreamingMessage = StreamingMetadata | StreamingChunk | StreamingComplete | StreamingError | StreamingStatus;
 
 // Non-streaming chatbot API function (backward compatibility)
 export const sendChatbotMessage = (data: ChatbotRequest) =>

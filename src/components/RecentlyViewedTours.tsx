@@ -59,7 +59,7 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
   // Format price
   const formatPrice = (price: number, discountedPrice?: number) => {
     const formatNumber = (num: number) => new Intl.NumberFormat("vi-VN").format(num);
-    
+
     if (discountedPrice && discountedPrice < price) {
       return (
         <div className="space-y-1">
@@ -68,7 +68,7 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
         </div>
       );
     }
-    
+
     return <span className="text-red-500 font-bold text-sm">{formatNumber(price)}đ</span>;
   };
 
@@ -80,19 +80,13 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
   // Horizontal layout for tour detail page
   if (horizontal) {
     return (
-      <div className={className}>
-        {/* Header */}
+      <div className={`w-full max-w-7xl mx-auto ${className}`}>
         <div className="flex items-center space-x-2 mb-6">
           <Clock className="w-5 h-5 text-orange-600" />
           <h3 className="text-xl font-bold text-gray-800">{title}</h3>
-          <span className="text-sm text-gray-500 bg-orange-50 px-3 py-1 rounded-full">
-            {recentTours.length}
-          </span>
         </div>
-
-        {/* Horizontal Tours Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-          {recentTours.map((tour, index) => (
+          {recentTours.map((tour) => (
             <Link
               key={tour.id}
               to={`/tour/${tour.slug}`}
@@ -100,34 +94,31 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
             >
               <div className="relative">
                 <img
-                  src={tour.poster_url}
-                  alt={tour.title}
+                  src={tour.poster_url || "/VieTour-Logo.png"}
+                  alt={tour.name}
                   className="w-full h-40 object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = "/avatar-default.jpg";
                   }}
                 />
-                <div className="absolute top-3 left-3 w-7 h-7 bg-orange-500 text-white text-sm rounded-full flex items-center justify-center font-bold shadow-lg">
-                  {index + 1}
-                </div>
               </div>
-              
+
               <div className="p-5">
                 <h4 className="font-medium text-gray-900 text-base leading-tight mb-3 group-hover:text-orange-600 transition-colors line-clamp-2 h-12">
                   {tour.title}
                 </h4>
-                
+
                 <div className="space-y-3">
                   <div>
                     {formatPrice(tour.price, tour.discountedPrice)}
                   </div>
-                  
+
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center">
                       <Clock className="w-4 h-4 mr-1" />
                       {tour.duration}
                     </div>
-                    
+
                     {tour.tour_category && (
                       <div className="flex items-center">
                         <MapPin className="w-4 h-4 mr-1" />
@@ -172,27 +163,24 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
                     (e.target as HTMLImageElement).src = "/avatar-default.jpg";
                   }}
                 />
-                {/* <div className="absolute -top-2 -right-2 w-5 h-5 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                  {index + 1}
-                </div> */}
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-gray-900 text-sm leading-tight mb-1 group-hover:text-orange-600 transition-colors line-clamp-2">
                   {tour.title}
                 </h4>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     {formatPrice(tour.price, tour.discountedPrice)}
                   </div>
-                  
+
                   <div className="flex items-center space-x-3 text-xs text-gray-500">
                     <div className="flex items-center">
                       <Clock className="w-3 h-3 mr-1" />
                       {tour.duration}
                     </div>
-                    
+
                     {/* Removed destination display here */}
                   </div>
                 </div>
