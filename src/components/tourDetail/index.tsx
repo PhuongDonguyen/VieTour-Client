@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ChevronRight, Home, MessageCircle } from "lucide-react";
 import TourNamePrice from "./TourNamePrice";
@@ -22,6 +22,9 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { CommentSection } from "../question";
 import RecentlyViewedTours from "../RecentlyViewedTours";
+import { searchSimilarTours, SimilarTour } from "../../apis/tour.api"; // <-- add this import
+
+const SimilarToursSection = lazy(() => import("./SimilarToursSection"));
 
 const TABS = [
   { key: "program", label: "Chương trình tour", icon: "🗺️" },
@@ -48,6 +51,8 @@ const TourDetail: React.FC = () => {
   const [showCommentSection, setShowCommentSection] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showFloatingButton, setShowFloatingButton] = useState(false);
+  const [similarTours, setSimilarTours] = useState<SimilarTour[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
 
   // Track tour view count with session strategy
   useTourViewTracking(tour?.id, loading, !!error);
@@ -141,6 +146,26 @@ const TourDetail: React.FC = () => {
     loadTourData();
   }, [slug]);
 
+  // Fetch similar tours when tour is loaded
+  useEffect(() => {
+    if (!tour?.title) return;
+    setLoadingSimilar(true);
+    searchSimilarTours({ tourInfo: tour.title })
+      .then((res) => {
+        if (res.success && Array.isArray(res.tours)) {
+          setSimilarTours(res.tours);
+        } else {
+          setSimilarTours([]);
+        }
+      })
+      .catch(() => setSimilarTours([]))
+      .finally(() => setLoadingSimilar(false));
+  }, [tour?.title]);
+
+  const handleBookNow = () => {
+    navigate(`/booking/${tour.slug}`);
+  }
+  
   const handleChatWithProvider = () => {
     if (tour?.provider_id) {
       navigate(`/chat?provider=${tour.provider_id}`);
@@ -279,9 +304,8 @@ const TourDetail: React.FC = () => {
         <div className="pt-24 px-4">
           {/* Breadcrumb */}
           <div
-            className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${
-              isVisible ? "opacity-100" : "opacity-0"
-            }`}
+            className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
+              }`}
           >
             <nav className="flex items-center space-x-2 text-sm text-gray-600">
               <Link
@@ -311,9 +335,8 @@ const TourDetail: React.FC = () => {
 
           {/* Hero Section */}
           <div
-            className={`transition-opacity duration-500 ${
-              isVisible ? "opacity-100" : "opacity-0"
-            }`}
+            className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
+              }`}
           >
             <TourNamePrice
               title={tour.title}
@@ -330,20 +353,18 @@ const TourDetail: React.FC = () => {
 
           {/* Navigation Tabs */}
           <div
-            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${
-              isVisible ? "opacity-100" : "opacity-0"
-            }`}
+            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${isVisible ? "opacity-100" : "opacity-0"
+              }`}
           >
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
               <div className="flex flex-wrap gap-2">
                 {TABS.map((tab) => (
                   <button
                     key={tab.key}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                      activeTab === tab.key
-                        ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
-                        : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${activeTab === tab.key
+                      ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
+                      : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
+                      }`}
                     onClick={() => setActiveTab(tab.key)}
                   >
                     <span className="text-lg">{tab.icon}</span>
@@ -356,9 +377,8 @@ const TourDetail: React.FC = () => {
 
           {/* Content Section */}
           <div
-            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${
-              isVisible ? "opacity-100" : "opacity-0"
-            }`}
+            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
+              }`}
           >
             {activeTab === "program" && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -369,12 +389,12 @@ const TourDetail: React.FC = () => {
                         images.length > 0
                           ? images.filter((img) => img.is_featured)
                           : [
-                              {
-                                id: 0,
-                                image_url: tour.poster_url,
-                                alt_text: tour.title,
-                              },
-                            ]
+                            {
+                              id: 0,
+                              image_url: tour.poster_url,
+                              alt_text: tour.title,
+                            },
+                          ]
                       }
                       altDefault={tour.title}
                     />
@@ -489,6 +509,15 @@ const TourDetail: React.FC = () => {
           horizontal={true}
         />
       </div>
+
+      {/* Similar Tours Section - lazy loaded */}
+      <Suspense fallback={<div className="text-gray-500">Đang tải gợi ý tour tương tự...</div>}>
+        {tour?.title && (
+          <div className="w-full mb-5 mt-10 max-w-7xl mx-auto">
+            <SimilarToursSection tourTitle={tour.title} currentTourId={tour.id} />
+          </div>
+        )}
+      </Suspense>
     </>
   );
 };

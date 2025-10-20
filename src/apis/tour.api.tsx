@@ -113,7 +113,27 @@ export interface TourToggleResponse {
   message?: string;
 }
 
-// API Functions
+// Interface for similar tour result
+export interface SimilarTour {
+  tour_id: number;
+  name: string;
+  description: string;
+  location: string;
+  duration: string;
+  price: number;
+  poster_url: string;
+  slug: string;
+  similarity: number;
+}
+
+export interface SearchSimilarToursRequest {
+  tourInfo: string;
+}
+
+export interface SearchSimilarToursResponse {
+  success: boolean;
+  tours: SimilarTour[];
+}
 
 /**
  * Get all tours with optional filters
@@ -195,6 +215,17 @@ export const toggleTourStatus = async (
 export const incrementTourViewCount = (id: number) =>
   axiosInstance.patch(`/api/tours/${id}/increment-view`);
 
+/**
+ * Search for tours similar to the provided tour information using vector embedding and semantic similarity
+ * POST /tours/similar-tour
+ */
+export const searchSimilarTours = async (
+  data: SearchSimilarToursRequest
+): Promise<SearchSimilarToursResponse> => {
+  const response = await axiosInstance.post("/api/tours/similar-tour", data);
+  return response.data;
+};
+
 // Legacy functions for backward compatibility
 export const getTourBySlug = (slug: string) =>
   axiosInstance.get(`/api/tours?slug=${slug}`);
@@ -222,6 +253,6 @@ export const getAllToursByProviderId = (providerId: number | null, page?: number
   params.append('provider_id', providerId?.toString() || '');
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
-  
+
   return axiosInstance.get(`/api/tours?${params.toString()}`);
 };

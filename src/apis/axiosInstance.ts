@@ -12,12 +12,12 @@ const axiosInstance = axios.create({
 });
 
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: Promise<any>[] = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: any) => {
     failedQueue.forEach(prom => {
         if (error) prom.reject(error);
-        else prom.resolve(token);
+        else prom.resolve();
     });
     failedQueue = [];
 };
@@ -41,7 +41,7 @@ axiosInstance.interceptors.response.use(
                 .then(() => {
                     console.log("Token refreshed successfully");
                     processQueue(null);
-                    return axiosInstance(originalRequest);
+                    // return axiosInstance(originalRequest);
                 })
                 .catch((refreshError) => {
                     console.log("Failed to refresh token:", refreshError);
@@ -54,9 +54,9 @@ axiosInstance.interceptors.response.use(
                     // toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
                     window.confirm('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
 
-                    // Redirect to login page or home page
-                    // window.location.href = '/';
-                    window.location.reload();
+                    // Redirect to home page
+                    window.location.href = '/';
+                    // window.location.reload();
 
                     return Promise.reject(refreshError);
                 })
