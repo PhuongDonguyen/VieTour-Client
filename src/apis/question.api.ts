@@ -11,3 +11,9 @@ export const deleteQuestion = (id: number) =>
 
 export const updateReported = (reported: boolean, id: number) =>
     axiosInstance.put(`/api/questions/${id}`, {reported})
+
+export const getToursQuestionByProviderId = () =>
+    axiosInstance.get(`/api/questions/provider`)
+
+export const getQuestionsByTourIdOfProvider = (tourId: number, page: number, limit: number) =>
+    axiosInstance.get(`/api/questions/tour/${tourId}/ordered?page=${page}&limit=${limit}`)

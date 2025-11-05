@@ -22,6 +22,11 @@ import { toast } from "sonner";
 import Modal from "./Modal";
 import LoginForm from "./authentication/LoginForm";
 import SignupForm from "./authentication/SignupForm";
+import { 
+  CommentSocketManager, 
+  createCommentSocketManager,
+  type CommentReceivedPayload 
+} from "../services/commentSocket.service";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Types
@@ -110,6 +115,7 @@ const addReplyToTree = (
   parentId: number,
   reply: Question
 ): Question[] => {
+  console.log("addReplyToTree: ", parentId, reply);
   return questions.map((question) => {
     if (question.id === parentId) {
       const replyExists = question.questions?.some((r) => r.id === reply.id);
@@ -304,7 +310,7 @@ const CommentItem: React.FC<{
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   collapsedReplyIds: Set<number>;
-  setCollapsedReplyIds: (ids: Set<number>) => void;
+  setCollapsedReplyIds: React.Dispatch<React.SetStateAction<Set<number>>>;
 }> = ({
   comment,
   onReply,
@@ -475,7 +481,7 @@ const RepliesSection: React.FC<{
   deletedQuestionIds: Set<number>;
   submittingReply: boolean;
   collapsedReplyIds: Set<number>;
-  setCollapsedReplyIds: (ids: Set<number>) => void;
+  setCollapsedReplyIds: React.Dispatch<React.SetStateAction<Set<number>>>;
 }> = ({
   questions,
   user,
@@ -723,88 +729,17 @@ export const CommentSection: React.FC = () => {
   });
 
   // Refs
-  const socketRef = useRef<Socket | null>(null);
-  const isInitializedRef = useRef(false);
-
-  // Socket initialization
-  const initializeSocket = useCallback(() => {
-    if (isInitializedRef.current) return;
-
-    const socket = io(API_BASE_URL, {
-      withCredentials: false,
-      transports: ["websocket"],
-    });
-    socketRef.current = socket;
-    isInitializedRef.current = true;
-
-    socket.on("connect", () => {
-      if (tourId) {
-        socket.emit("joinRoom", tourId);
-        console.log("join room: ", tourId);
-      }
-    });
-
-    socket.on("receiveComment", (data: Question) => {
-      setQuestions((prev) => {
-        const exists = prev.some((q) => q.id === data.id);
-        if (exists) return prev;
-
-        const newQuestion: Question = {
-          id: data.id,
-          user_id: data.user_id,
-          tour_id: data.tour_id,
-          parent_question_id: null,
-          text: data.text,
-          created_at: data.created_at,
-          user: data.user,
-          questions: [],
-        };
-        console.log("cmt: ", data);
-        const updatedQuestions = [newQuestion, ...prev];
-        setCountQuestion(countTotalQuestions(updatedQuestions));
-        return updatedQuestions;
-      });
-    });
-
-    socket.on("receiveReply", (data: Question) => {
-      setQuestions((prev) => {
-        const updatedQuestions = addReplyToTree(
-          prev,
-          data.parent_question_id!,
-          data
-        );
-        setCountQuestion(countTotalQuestions(updatedQuestions));
-        return updatedQuestions;
-      });
-    });
-
-    socket.on("receiveDelete", (id: number) => {
-      setDeletedQuestionIds((prev) => new Set([...prev, id]));
-      setQuestions((prevQuestions) => {
-        const updatedQuestions = removeQuestionFromTree(prevQuestions, id);
-        setCountQuestion(countTotalQuestions(updatedQuestions));
-        return updatedQuestions;
-      });
-    });
-
+  const commentSocketManagerRef = useRef<CommentSocketManager>(createCommentSocketManager());
+  
+  // Connect socket on mount
+  useEffect(() => {
+    commentSocketManagerRef.current.connect();
     return () => {
-      socket.disconnect();
-      isInitializedRef.current = false;
+      commentSocketManagerRef.current.disconnect();
     };
-  }, [tourId]);
+  }, []);
 
-  // Effects
-  useEffect(() => {
-    const cleanup = initializeSocket();
-    return cleanup;
-  }, [initializeSocket]);
-
-  useEffect(() => {
-    if (tourId && socketRef.current?.connected) {
-      socketRef.current.emit("joinRoom", tourId);
-    }
-  }, [tourId]);
-
+  // Load tour by slug
   useEffect(() => {
     const loadTour = async () => {
       try {
@@ -818,6 +753,79 @@ export const CommentSection: React.FC = () => {
     };
     loadTour();
   }, [slug]);
+
+  // Setup socket listeners and join tour room
+  useEffect(() => {
+    if (!tourId) return;
+
+    const manager = commentSocketManagerRef.current;
+    
+    // Setup event handlers
+    const handleReceiveComment = (data: CommentReceivedPayload) => {
+      const questionData: Question = {
+        id: data.id,
+        user_id: typeof data.user.id === "number" ? data.user.id : parseInt(String(data.user.id)),
+        tour_id: data.tour_id,
+        parent_question_id: data.parent_question_id || null,
+        text: data.text,
+        created_at: data.created_at,
+        user: data.user as User | null,
+        questions: [],
+      };
+      console.log("Question data: ", data);
+      if (questionData.parent_question_id === null) {
+        setQuestions((prev) => {
+          const updatedQuestions = [questionData, ...prev];
+          setCountQuestion(countTotalQuestions(updatedQuestions));
+          return updatedQuestions;
+        });
+      } else {
+        setQuestions((prev) => {
+          const updatedQuestions = addReplyToTree(prev, questionData.parent_question_id ?? 0, questionData);
+          setCountQuestion(countTotalQuestions(updatedQuestions));
+          return updatedQuestions;
+        });
+      }
+    };
+
+    const handleReceiveDelete = (id: number) => {
+      setDeletedQuestionIds((prev) => new Set([...prev, id]));
+      setQuestions((prevQuestions) => {
+        const updatedQuestions = removeQuestionFromTree(prevQuestions, id);
+        setCountQuestion(countTotalQuestions(updatedQuestions));
+        return updatedQuestions;
+      });
+    };
+
+    // Register listeners
+    manager.onReceiveComment(handleReceiveComment);
+    manager.onReceiveDelete(handleReceiveDelete);
+
+    // Join tour room
+    let connectHandler: (() => void) | null = null;
+    if (manager.isConnected()) {
+      manager.joinTour(tourId);
+      console.log("join room: ", tourId);
+    } else {
+      // Wait for connection then join
+      const socket = manager.getSocket();
+      connectHandler = () => {
+        manager.joinTour(tourId);
+        console.log("join room: ", tourId);
+      };
+      socket.on("connect", connectHandler);
+    }
+
+    // Cleanup
+    return () => {
+      manager.offReceiveComment(handleReceiveComment);
+      manager.offReceiveDelete(handleReceiveDelete);
+      if (connectHandler) {
+        const socket = manager.getSocket();
+        socket.off("connect", connectHandler);
+      }
+    };
+  }, [tourId]);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -855,7 +863,7 @@ export const CommentSection: React.FC = () => {
       setSubmittingComment(true);
       const res = await sendQuestion(user.id, tourId, null, text, false);
 
-      socketRef.current?.emit("sendComment", {
+      commentSocketManagerRef.current.emitSendComment({
         id: res.data.id,
         user: {
           id: user.id,
@@ -894,21 +902,17 @@ export const CommentSection: React.FC = () => {
         false
       );
 
-      socketRef.current?.emit("sendReply", {
+      // Reply socket emit removed - not using commentSocket for replies
+      // socketRef.current?.emit("sendReply", {...});
+      console.log("reply: ", res.data);
+      commentSocketManagerRef.current.emitSendComment({
         id: res.data.id,
-        user: {
-          id: user.id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          avatar: user.avatar,
-        },
-        user_id: user.id,
+        user: user,
         tour_id: tourId,
         parent_question_id: parentId,
         text: replyText,
         reported: false,
       });
-
       setReplyText("");
       setActiveReplyId(null);
       toast.success("Trả lời đã được gửi!");
@@ -956,7 +960,7 @@ export const CommentSection: React.FC = () => {
       // setDeletedQuestionIds((prev) => new Set([...prev, commentId]));
       await delQuestion(commentId);
 
-      socketRef.current?.emit("sendDelete", {
+      commentSocketManagerRef.current.emitSendDelete({
         id: commentId,
         tour_id: tourId,
       });

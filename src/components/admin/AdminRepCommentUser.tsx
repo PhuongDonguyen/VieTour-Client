@@ -1,0 +1,492 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { MessageCircle, Send, ChevronRight, User, MapPin, Clock } from 'lucide-react';
+import { fetchQuestionsByTourIdOfProvider, fetchToursQuestionByProviderId } from '../../services/question.service';
+
+// Interfaces
+interface QuestionUser {
+  id: number;
+  first_name: string;
+  last_name: string;
+  avatar: string | null;
+}
+
+interface Question {
+  id: number;
+  user_id: number;
+  tour_id: number;
+  parent_question_id: number | null;
+  text: string;
+  created_at: string;
+  reported: boolean;
+  user: QuestionUser;
+  questions: Question[];
+}
+
+interface ToursData {
+  id: number;
+  title: string;
+  poster_url: string;
+  duration: string;
+  location: string;
+  price: number;
+  unread: number;
+}
+
+interface QuestionsData {
+  [tourId: number]: Question[];
+}
+
+const AdminRepCommentUser = () => {
+  const [selectedTour, setSelectedTour] = useState<number | null>(null);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState<string>('');
+  const [loadingTours, setLoadingTours] = useState<boolean>(true);
+  const loadedToursRef = useRef<Set<number>>(new Set());
+
+  // Dữ liệu tour từ API
+  const [toursData, setToursData] = useState<ToursData[]>([
+      // {
+      //   id: 2,
+      //   title: "TOUR MIỀN TÂY TẾT DƯƠNG LỊCH 3N2Đ",
+      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762020102/vietour/xwkjobvezn6arydms5lo.jpg",
+      //   duration: "3 ngày 2 đêm",
+      //   location: "Hồ Chí Minh",
+      //   price: 3200000,
+      //   unread: 2
+      // },
+      // {
+      //   id: 5,
+      //   title: "Tour Hà Giang - Sông Nho Quế hùng vĩ 3 ngày 2 đêm từ Hà Nội",
+      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762235832/vietour/cs0ptozspacxi582ss4z.webp",
+      //   duration: "3 ngày 2 đêm",
+      //   location: "Hồ Chí Minh",
+      //   price: 2800000,
+      //   unread: 1
+      // },
+      // {
+      //   id: 6,
+      //   title: "Tour du lịch Team building, hội thảo, nghỉ dưỡng tại V Resort Hòa Bình 2 ngày 1 đêm",
+      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762236595/vietour/oorpxiylfyfisgdtsbs1.webp",
+      //   duration: "2 ngày 1 đêm",
+      //   location: "Hà Nội",
+      //   price: 1980000,
+      //   unread: 0
+      // },
+      // {
+      //   id: 4,
+      //   title: "Tour Tứ Tỉnh Miền Tây 3 ngày 2 đêm từ TP.HCM",
+      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762192931/vietour/ok7l34bxr2w5a78vhduq.webp",
+      //   duration: "3 ngày 2 đêm",
+      //   location: "Hồ Chí Minh",
+      //   price: 3180000,
+      //   unread: 0
+      // },
+      // {
+      //   id: 1,
+      //   title: "MỸ THO - CẦN THƠ - CHÂU ĐỐC",
+      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1761976218/vietour/ggjvjrzvrwwy12hr1upy.webp",
+      //   duration: "3 ngày 2 đêm",
+      //   location: "Hồ Chí Minh",
+      //   price: 3000000,
+      //   unread: 1
+      // },
+      // {
+      //   id: 3,
+      //   title: "Tour Đà Nẵng | Hội An | Quảng Bình | Huế",
+      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762162437/vietour/sodpkyhlvlv2axcaicwm.png",
+      //   duration: "3 ngày 2 đêm",
+      //   location: "Hồ Chí Minh",
+      //   price: 2800000,
+      //   unread: 0
+      // },
+      // {
+      //   id: 7,
+      //   title: "Tour Tứ tỉnh miền Tây: Tiền Giang - Bến Tre - An Giang - Đồng Tháp 3 ngày 2 đêm từ TP.HCM - Tết Dương Lịch 2026",
+      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762236928/vietour/rzrj1zymdjiyfswlrfzw.webp",
+      //   duration: "3 ngày 2 đêm",
+      //   location: "Hồ Chí Minh",
+      //   price: 3680000,
+      //   unread: 0
+      // }
+  ]);
+
+  // Dữ liệu câu hỏi mẫu
+  const [questionsData, setQuestionsData] = useState<QuestionsData>({
+    // 2: [
+    //   {
+    //     id: 12,
+    //     user_id: 3,
+    //     tour_id: 2,
+    //     parent_question_id: null,
+    //     text: 'Tôi muốn biết thêm thông tin về tour',
+    //     created_at: '2025-11-04T11:22:08.887Z',
+    //     reported: false,
+    //     user: {
+    //       id: 3,
+    //       first_name: 'Dương',
+    //       last_name: 'Phi 2',
+    //       avatar: null
+    //     },
+    //     questions: [
+    //       {
+    //         id: 13,
+    //         user_id: 3,
+    //         tour_id: 2,
+    //         parent_question_id: 12,
+    //         text: 'xin chào',
+    //         created_at: '2025-11-04T11:22:25.162Z',
+    //         reported: false,
+    //         user: {
+    //           id: 3,
+    //           first_name: 'Dương',
+    //           last_name: 'Phi 2',
+    //           avatar: null
+    //         },
+    //         questions: []
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     id: 10,
+    //     user_id: 2,
+    //     tour_id: 2,
+    //     parent_question_id: null,
+    //     text: 'hello',
+    //     created_at: '2025-11-04T11:11:59.347Z',
+    //     reported: false,
+    //     user: {
+    //       id: 2,
+    //       first_name: 'Dương',
+    //       last_name: 'Phi 1',
+    //       avatar: null
+    //     },
+    //     questions: []
+    //   }
+    // ],
+    // 5: [
+    //   {
+    //     id: 14,
+    //     user_id: 4,
+    //     tour_id: 5,
+    //     parent_question_id: null,
+    //     text: 'Tour có đi vào mùa hoa tam giác mạch không?',
+    //     created_at: '2025-11-03T10:15:00.000Z',
+    //     reported: false,
+    //     user: {
+    //       id: 4,
+    //       first_name: 'Minh',
+    //       last_name: 'Nguyễn',
+    //       avatar: null
+    //     },
+    //     questions: []
+    //   }
+    // ],
+    // 1: [
+    //   {
+    //     id: 15,
+    //     user_id: 5,
+    //     tour_id: 1,
+    //     parent_question_id: null,
+    //     text: 'Khách sạn có gần chợ nổi không?',
+    //     created_at: '2025-11-02T14:30:00.000Z',
+    //     reported: false,
+    //     user: {
+    //       id: 5,
+    //       first_name: 'Hương',
+    //       last_name: 'Trần',
+    //       avatar: null
+    //     },
+    //     questions: []
+    //   }
+    // ]
+  });
+
+  useEffect(() => {
+    const loadTours = async () => {
+      try {
+        setLoadingTours(true);
+        const res = await fetchToursQuestionByProviderId();
+        console.log("res tour", res.data);
+        
+        // Map response data vào ToursData format
+        const mappedTours: ToursData[] = res.data.map((tour: any) => ({
+          id: tour.id,
+          title: tour.title,
+          poster_url: tour.poster_url,
+          duration: tour.duration,
+          location: tour.location?.trim() || '',
+          price: tour.tour_prices?.[0]?.adult_price || 0,
+          unread: 0 // Sẽ tính từ questions data sau
+        }));
+        
+        setToursData(mappedTours);
+      } catch (error) {
+        console.error("Error loading tours:", error);
+      } finally {
+        setLoadingTours(false);
+      }
+    };
+    loadTours();
+  }, []);
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      if (!selectedTour) return;
+      
+      // Nếu đã load data của tour này rồi thì không load lại
+      if (loadedToursRef.current.has(selectedTour)) {
+        return;
+      }
+      
+      try {
+        const res = await fetchQuestionsByTourIdOfProvider(selectedTour, 1, 20);
+        console.log("res questions", res.data);
+        
+        // Chỉ update questions của tour được chọn, không overwrite toàn bộ
+        setQuestionsData(prev => ({
+          ...prev,
+          [selectedTour]: res.data || []
+        }));
+        
+        // Đánh dấu tour này đã được load
+        loadedToursRef.current.add(selectedTour);
+      } catch (error) {
+        console.error("Error loading questions:", error);
+      }
+    };
+    loadQuestions();
+  }, [selectedTour]);
+
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    // Convert to UTC+7 (Vietnam timezone)
+    const vietnamTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+    const day = String(vietnamTime.getUTCDate()).padStart(2, '0');
+    const month = String(vietnamTime.getUTCMonth() + 1).padStart(2, '0');
+    const year = vietnamTime.getUTCFullYear();
+    const hours = String(vietnamTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(vietnamTime.getUTCMinutes()).padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
+
+
+  const formatPrice = (price: number): string => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
+
+  const handleReply = (questionId: number): void => {
+    if (replyText.trim()) {
+      console.log('Reply to question:', questionId, 'Text:', replyText);
+      setReplyText('');
+      setReplyTo(null);
+    }
+  };
+
+  const renderQuestion = (question: Question, level = 0) => (
+    <div key={question.id} className={`${level > 0 ? 'ml-12 mt-4' : 'mb-6'}`}>
+      <div className="flex gap-3">
+        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+          {question.user.avatar ? (
+            <img src={question.user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+          ) : (
+            <User className="w-5 h-5 text-gray-500" />
+          )}
+        </div>
+        <div className="flex flex-col items-start">
+          <div className="inline-block w-fit min-w-[250px] bg-gray-50 rounded-lg p-4 border border-gray-200 whitespace-pre-wrap break-words">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-sm">
+                {question.user.last_name} {question.user.first_name}
+              </span>
+              <span className="text-xs text-gray-500">{formatTime(question.created_at)}</span>
+            </div>
+            <p className="text-sm text-gray-700">{question.text}</p>
+          </div>
+            <button
+              onClick={() => setReplyTo(question.id)}
+              className="block text-xs text-gray-500 hover:text-gray-700 mt-2 font-medium"
+            >
+            Trả lời
+          </button>
+          
+          {replyTo === question.id && (
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Nhập câu trả lời..."
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                onKeyPress={(e) => e.key === 'Enter' && handleReply(question.id)}
+                autoFocus
+              />
+              <button
+                onClick={() => handleReply(question.id)}
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {question.questions && question.questions.length > 0 && (
+        <div className="mt-2">
+          {question.questions.map(reply => renderQuestion(reply, level + 1))}
+        </div>
+      )}
+    </div>
+  );
+
+  const selectedTourData = selectedTour ? toursData.find(t => t.id === selectedTour) : undefined;
+  const currentQuestions = selectedTour ? (questionsData[selectedTour] || []) : [];
+
+  return (
+    <div className="flex h-screen bg-white">
+      {/* Sidebar - Tour List */}
+      <div className="w-96 border-r border-gray-200 flex flex-col bg-gray-50">
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <h2 className="text-lg font-semibold">Danh sách tour</h2>
+          <p className="text-sm text-gray-500 mt-1">Chọn tour để xem câu hỏi</p>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {loadingTours ? (
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="w-full p-4 border-b border-gray-200 bg-white animate-pulse">
+                  <div className="flex gap-3">
+                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : toursData.length === 0 ? (
+            <div className="flex items-center justify-center h-full p-4">
+              <div className="text-center">
+                <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">Chưa có tour nào</p>
+              </div>
+            </div>
+          ) : (
+            toursData.map(tour => (
+              <button
+                key={tour.id}
+                onClick={() => setSelectedTour(tour.id)}
+                className={`w-full p-4 border-b border-gray-200 hover:bg-white transition-colors text-left ${
+                  selectedTour === tour.id ? 'bg-white border-l-4 border-l-black' : ''
+                }`}
+              >
+                <div className="flex gap-3">
+                  <img 
+                    src={tour.poster_url} 
+                    alt={tour.title}
+                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium line-clamp-2 mb-2">{tour.title}</h3>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{tour.duration}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        <span>{tour.location.trim()}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-900">{formatPrice(tour.price)}</span>
+                      {tour.unread > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black text-white">
+                          {tour.unread} mới
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Main Content - Questions */}
+      <div className="flex-1 flex flex-col">
+        {selectedTour && selectedTourData ? (
+          <>
+            <div className="p-6 border-b border-gray-200 bg-white">
+              <div className="flex items-start gap-4">
+                <img 
+                  src={selectedTourData.poster_url} 
+                  alt={selectedTourData.title}
+                  className="w-20 h-20 rounded-lg object-cover"
+                />
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold mb-2">{selectedTourData.title}</h2>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{selectedTourData.duration}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      <span>{selectedTourData.location.trim()}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">{formatPrice(selectedTourData.price)}</span>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {currentQuestions.length > 0 
+                      ? `${currentQuestions.length} câu hỏi • Quản lý và trả lời câu hỏi của khách hàng`
+                      : 'Chưa có câu hỏi nào'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {currentQuestions.length > 0 ? (
+                currentQuestions.map(question => renderQuestion(question))
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <MessageCircle className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900 mb-1">Chưa có câu hỏi</h3>
+                    <p className="text-sm text-gray-500">
+                      Khách hàng sẽ có thể đặt câu hỏi về tour này
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa chọn tour</h3>
+              <p className="text-sm text-gray-500">
+                Chọn một tour từ danh sách bên trái để xem và trả lời câu hỏi
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminRepCommentUser;
