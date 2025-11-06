@@ -17,3 +17,4 @@ export const getToursQuestionByProviderId = () =>
 
 export const getQuestionsByTourIdOfProvider = (tourId: number, page: number, limit: number) =>
     axiosInstance.get(`/api/questions/tour/${tourId}/ordered?page=${page}&limit=${limit}`)
+

@@ -40,7 +40,7 @@ interface User {
 
 interface Question {
   id: number;
-  user_id: number;
+  user_id: number | null;
   tour_id: number;
   parent_question_id: number | null;
   text: string;
@@ -59,6 +59,7 @@ const formatDate = (dateString: string): string => {
       month: "2-digit",
       year: "numeric",
       hour12: false,
+      timeZone: "Asia/Ho_Chi_Minh", // Force UTC+7
     })
     .replace(",", " -");
 };
@@ -764,7 +765,7 @@ export const CommentSection: React.FC = () => {
     const handleReceiveComment = (data: CommentReceivedPayload) => {
       const questionData: Question = {
         id: data.id,
-        user_id: typeof data.user.id === "number" ? data.user.id : parseInt(String(data.user.id)),
+        user_id: data.user ? (typeof data.user.id === "number" ? data.user.id : parseInt(String(data.user.id))) : null,
         tour_id: data.tour_id,
         parent_question_id: data.parent_question_id || null,
         text: data.text,
@@ -838,7 +839,7 @@ export const CommentSection: React.FC = () => {
           ...q,
           questions: q.questions || [],
         }));
-
+        console.log("transformedData: ", transformedData);
         setQuestions(transformedData);
         setCountQuestion(res.data.length);
       } catch (error) {

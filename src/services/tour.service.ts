@@ -20,6 +20,7 @@ import {
   type TourUpdateResponse,
   type TourDeleteResponse,
   type TourToggleResponse,
+  getTouridsByProviderId,
 } from "../apis/tour.api";
 
 export const fetchTours = async (
@@ -250,4 +251,10 @@ export const getTourViewStatus = (
     lastViewTime,
     minutesAgo,
   };
+};
+
+export const fetchTouridsByProviderId = async () => {
+  const res = await getTouridsByProviderId();
+  if (res.data && res.data.success) return res.data;
+  throw new Error("Không tìm thấy tour ids");
 };

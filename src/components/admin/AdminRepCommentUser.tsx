@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { MessageCircle, Send, ChevronRight, User, MapPin, Clock } from 'lucide-react';
 import { fetchQuestionsByTourIdOfProvider, fetchToursQuestionByProviderId } from '../../services/question.service';
-
+import { createCommentSocketManager, CommentSocketManager } from '../../services/commentSocket.service';
+import { sendQuestion } from '../../services/question.service';
+import { fetchTouridsByProviderId } from '../../services/tour.service';
 // Interfaces
 interface QuestionUser {
   id: number;
@@ -18,8 +20,9 @@ interface Question {
   text: string;
   created_at: string;
   reported: boolean;
-  user: QuestionUser;
+  user: QuestionUser | null;
   questions: Question[];
+  is_read: boolean;
 }
 
 interface ToursData {
@@ -41,7 +44,9 @@ const AdminRepCommentUser = () => {
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState<string>('');
   const [loadingTours, setLoadingTours] = useState<boolean>(true);
+  const [allTourIds, setAllTourIds] = useState<number[]>([]);
   const loadedToursRef = useRef<Set<number>>(new Set());
+  const commentSocketManagerRef = useRef<CommentSocketManager>(createCommentSocketManager());
 
   // Dữ liệu tour từ API
   const [toursData, setToursData] = useState<ToursData[]>([
@@ -202,6 +207,10 @@ const AdminRepCommentUser = () => {
   });
 
   useEffect(() => {
+    console.log("questionsData", questionsData);
+  }, [selectedTour]);
+
+  useEffect(() => {
     const loadTours = async () => {
       try {
         setLoadingTours(true);
@@ -228,6 +237,116 @@ const AdminRepCommentUser = () => {
     };
     loadTours();
   }, []);
+
+  // Connect socket on mount/unmount
+  useEffect(() => {
+    commentSocketManagerRef.current.connect();
+    return () => {
+      commentSocketManagerRef.current.disconnect();
+    };
+  }, []);
+
+  // Load all tour IDs and join rooms
+  useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    const loadTourIdsAndJoin = async () => {
+      try {
+        const res = await fetchTouridsByProviderId();
+        console.log("res tour ids", res.data);
+        // res.data might be { success: true, data: number[] } or just number[]
+        const tourIds = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        setAllTourIds(tourIds);
+
+        const manager = commentSocketManagerRef.current;
+        const joinAllRooms = () => {
+          tourIds.forEach((tourId) => {
+            manager.joinTour(tourId);
+          });
+        };
+
+        if (manager.isConnected()) {
+          joinAllRooms();
+        } else {
+          const socket = manager.getSocket();
+          const handleConnect = () => joinAllRooms();
+          socket.on('connect', handleConnect);
+          cleanup = () => { socket.off('connect', handleConnect); };
+        }
+      } catch (error) {
+        console.error("Error loading tour ids:", error);
+      }
+    };
+    loadTourIdsAndJoin();
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
+
+  // Helpers to mutate question list
+  const appendReplyToTree = (list: Question[], parentId: number, reply: Question): Question[] => {
+    return list.map((q) => {
+      if (q.id === parentId) {
+        return { ...q, questions: [ ...(q.questions || []), reply ] };
+      }
+      if (q.questions && q.questions.length) {
+        return { ...q, questions: appendReplyToTree(q.questions, parentId, reply) };
+      }
+      return q;
+    });
+  };
+  const removeFromTree = (list: Question[], id: number): Question[] => {
+    return list
+      .filter((q) => q.id !== id)
+      .map((q) => ({ ...q, questions: q.questions ? removeFromTree(q.questions, id) : [] }));
+  };
+
+  // Socket listeners -> update questionsData for current tour
+  useEffect(() => {
+    const manager = commentSocketManagerRef.current;
+    const handleReceiveComment = (data: { id: number; user: any; text: string; tour_id: number; created_at: string; parent_question_id: number | null; reported: boolean; }) => {
+      const tId = data.tour_id;
+      const newItem: Question = {
+        id: data.id,
+        user_id: (data.user && Number(data.user.id)) || 0,
+        tour_id: tId,
+        parent_question_id: data.parent_question_id,
+        text: data.text,
+        created_at: data.created_at,
+        reported: data.reported,
+        user: data.user || { id: 0, first_name: 'Admin', last_name: '', avatar: '/admin-avatar.png' },
+        questions: [],
+        is_read: false,
+      };
+      setQuestionsData((prev) => {
+        const current = prev[tId] || [];
+        const updated = newItem.parent_question_id == null
+          ? [newItem, ...current]
+          : appendReplyToTree(current, newItem.parent_question_id, newItem);
+        return { ...prev, [tId]: updated };
+      });
+    };
+    const handleReceiveDelete = (id: number) => {
+      setQuestionsData((prev) => {
+        const updated: QuestionsData = {};
+        // Remove question from all tours
+        Object.keys(prev).forEach((tourIdStr) => {
+          const tourId = Number(tourIdStr);
+          const current = prev[tourId] || [];
+          const updatedList = removeFromTree(current, id);
+          if (updatedList.length > 0 || prev[tourId]) {
+            updated[tourId] = updatedList;
+          }
+        });
+        return updated;
+      });
+    };
+    manager.onReceiveComment(handleReceiveComment);
+    manager.onReceiveDelete(handleReceiveDelete);
+    return () => {
+      manager.offReceiveComment(handleReceiveComment);
+      manager.offReceiveDelete(handleReceiveDelete);
+    };
+  }, [selectedTour]);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -258,16 +377,16 @@ const AdminRepCommentUser = () => {
   }, [selectedTour]);
 
   const formatTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    // Convert to UTC+7 (Vietnam timezone)
-    const vietnamTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
-    const day = String(vietnamTime.getUTCDate()).padStart(2, '0');
-    const month = String(vietnamTime.getUTCMonth() + 1).padStart(2, '0');
-    const year = vietnamTime.getUTCFullYear();
-    const hours = String(vietnamTime.getUTCHours()).padStart(2, '0');
-    const minutes = String(vietnamTime.getUTCMinutes()).padStart(2, '0');
-    
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    return new Date(dateString)
+      .toLocaleString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour12: false,
+      })
+      .replace(",", " -");
   };
 
 
@@ -279,29 +398,50 @@ const AdminRepCommentUser = () => {
     }).format(price);
   };
 
-  const handleReply = (questionId: number): void => {
+  const handleReply = async (questionId: number): Promise<void> => {
+    if (!selectedTour) return;
     if (replyText.trim()) {
       console.log('Reply to question:', questionId, 'Text:', replyText);
+      const res = await sendQuestion(null, selectedTour, questionId, replyText, false);
+      console.log("res reply", res.data);
+      
+      // Emit socket event for reply
+      commentSocketManagerRef.current.emitSendComment({
+        id: res.data.id,
+        user: null, // Admin reply, user is null
+        tour_id: selectedTour,
+        text: replyText,
+        parent_question_id: questionId,
+        reported: false,
+      });
+      
       setReplyText('');
       setReplyTo(null);
     }
   };
 
   const renderQuestion = (question: Question, level = 0) => (
-    <div key={question.id} className={`${level > 0 ? 'ml-12 mt-4' : 'mb-6'}`}>
+    <div
+      key={question.id}
+      className={`${level > 0 ? 'ml-12 mt-4' : 'mb-6'} ${!question.is_read ? 'bg-gray-100' : ''} rounded-md px-2 py-1`}
+    >
       <div className="flex gap-3">
         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-          {question.user.avatar ? (
+          {!question.user ? (
+            <img src="/admin-avatar.png" alt="Admin" className="w-full h-full rounded-full object-cover" />
+          ) : question.user.avatar ? (
             <img src={question.user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
           ) : (
             <User className="w-5 h-5 text-gray-500" />
           )}
         </div>
         <div className="flex flex-col items-start">
-          <div className="inline-block w-fit min-w-[250px] bg-gray-50 rounded-lg p-4 border border-gray-200 whitespace-pre-wrap break-words">
+          <div className={`inline-block w-fit min-w-[250px] ${question.is_read ? 'bg-gray-50' : 'bg-gray-100'} rounded-lg p-4 border border-gray-200 whitespace-pre-wrap break-words`}>
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium text-sm">
-                {question.user.last_name} {question.user.first_name}
+                {!question.user || question.user.id === 0 
+                  ? 'Admin' 
+                  : `${question.user.last_name} ${question.user.first_name}`.trim() || 'Admin'}
               </span>
               <span className="text-xs text-gray-500">{formatTime(question.created_at)}</span>
             </div>
@@ -333,6 +473,7 @@ const AdminRepCommentUser = () => {
               </button>
             </div>
           )}
+          {/* removed gray divider for unread messages */}
         </div>
       </div>
       

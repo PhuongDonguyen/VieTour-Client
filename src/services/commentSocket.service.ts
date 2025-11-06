@@ -9,7 +9,7 @@ export interface UserCMT {
 
 export interface CommentPayload {
   id: number;
-  user: UserCMT;
+  user: UserCMT | null;
   tour_id: number;
   text: string;
   parent_question_id: number|null;
