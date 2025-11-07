@@ -303,7 +303,7 @@ const AdminRepCommentUser = () => {
   // Socket listeners -> update questionsData for current tour
   useEffect(() => {
     const manager = commentSocketManagerRef.current;
-    const handleReceiveComment = (data: { id: number; user: any; text: string; tour_id: number; created_at: string; parent_question_id: number | null; reported: boolean; }) => {
+    const handleReceiveComment = (data: { id: number; user: any; text: string; tour_id: number; created_at: string; parent_question_id: number | null; reported: boolean; is_read: boolean; }) => {
       const tId = data.tour_id;
       const newItem: Question = {
         id: data.id,
@@ -315,8 +315,9 @@ const AdminRepCommentUser = () => {
         reported: data.reported,
         user: data.user || { id: 0, first_name: 'Admin', last_name: '', avatar: '/admin-avatar.png' },
         questions: [],
-        is_read: false,
+        is_read: data.is_read,
       };
+      console.log("newItem", newItem);
       setQuestionsData((prev) => {
         const current = prev[tId] || [];
         const updated = newItem.parent_question_id == null
@@ -347,6 +348,10 @@ const AdminRepCommentUser = () => {
       manager.offReceiveDelete(handleReceiveDelete);
     };
   }, [selectedTour]);
+  
+  useEffect(() => {
+    console.log("questionsData", questionsData);
+  }, [questionsData]);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -413,6 +418,7 @@ const AdminRepCommentUser = () => {
         text: replyText,
         parent_question_id: questionId,
         reported: false,
+        is_read: true,
       });
       
       setReplyText('');
