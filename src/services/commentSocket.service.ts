@@ -14,7 +14,7 @@ export interface CommentPayload {
   text: string;
   parent_question_id: number|null;
   reported: boolean;
-  is_read: boolean;
+  is_replied: boolean;
 }
 
 export interface CommentReceivedPayload {
@@ -25,7 +25,7 @@ export interface CommentReceivedPayload {
   created_at: string;
   parent_question_id: number|null;
   reported: boolean;
-  is_read: boolean
+  is_replied: boolean
 }
 
 export interface DeleteCommentPayload {
@@ -162,7 +162,7 @@ export class CommentSocketManager {
       text: data.text,
       parent_question_id: data.parent_question_id,
       reported: data.reported,
-      is_read: data.is_read,
+      is_replied: data.is_replied,
     });
   }
 

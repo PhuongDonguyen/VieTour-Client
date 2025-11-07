@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { MessageCircle, Send, ChevronRight, User, MapPin, Clock } from 'lucide-react';
 import { fetchQuestionsByTourIdOfProvider, fetchToursQuestionByProviderId } from '../../services/question.service';
 import { createCommentSocketManager, CommentSocketManager } from '../../services/commentSocket.service';
@@ -22,7 +22,7 @@ interface Question {
   reported: boolean;
   user: QuestionUser | null;
   questions: Question[];
-  is_read: boolean;
+  is_replied: boolean;
 }
 
 interface ToursData {
@@ -45,8 +45,12 @@ const AdminRepCommentUser = () => {
   const [replyText, setReplyText] = useState<string>('');
   const [loadingTours, setLoadingTours] = useState<boolean>(true);
   const [allTourIds, setAllTourIds] = useState<number[]>([]);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const loadedToursRef = useRef<Set<number>>(new Set());
   const commentSocketManagerRef = useRef<CommentSocketManager>(createCommentSocketManager());
+  const questionsScrollRef = useRef<HTMLDivElement>(null);
 
   // Dữ liệu tour từ API
   const [toursData, setToursData] = useState<ToursData[]>([
@@ -299,11 +303,57 @@ const AdminRepCommentUser = () => {
       .filter((q) => q.id !== id)
       .map((q) => ({ ...q, questions: q.questions ? removeFromTree(q.questions, id) : [] }));
   };
+  const updateParentIsReplied = (list: Question[], parentId: number): Question[] => {
+    return list.map((q) => {
+      if (q.id === parentId) {
+        return { ...q, is_replied: true };
+      }
+      if (q.questions && q.questions.length) {
+        return { ...q, questions: updateParentIsReplied(q.questions, parentId) };
+      }
+      return q;
+    });
+  };
+  const findAndMoveParentToTop = (list: Question[], parentId: number, reply: Question): Question[] => {
+    // Tìm question cha trong danh sách
+    let parentQuestion: Question | null = null;
+    const findParent = (questions: Question[]): Question | null => {
+      for (const q of questions) {
+        if (q.id === parentId) {
+          return q;
+        }
+        if (q.questions && q.questions.length) {
+          const found = findParent(q.questions);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    parentQuestion = findParent(list);
+    
+    if (!parentQuestion) {
+      // Nếu không tìm thấy parent, chỉ thêm reply vào tree
+      return appendReplyToTree(list, parentId, reply);
+    }
+    
+    // Clone parent và thêm reply vào
+    const updatedParent: Question = {
+      ...parentQuestion,
+      questions: [...(parentQuestion.questions || []), reply],
+      is_replied: reply.is_replied ? true : parentQuestion.is_replied,
+    };
+    
+    // Remove parent cũ khỏi danh sách
+    const withoutParent = list.filter((q) => q.id !== parentId);
+    
+    // Đưa parent mới (đã có reply) lên đầu
+    return [updatedParent, ...withoutParent];
+  };
 
   // Socket listeners -> update questionsData for current tour
   useEffect(() => {
     const manager = commentSocketManagerRef.current;
-    const handleReceiveComment = (data: { id: number; user: any; text: string; tour_id: number; created_at: string; parent_question_id: number | null; reported: boolean; is_read: boolean; }) => {
+    const handleReceiveComment = (data: { id: number; user: any; text: string; tour_id: number; created_at: string; parent_question_id: number | null; reported: boolean; is_replied: boolean; }) => {
       const tId = data.tour_id;
       const newItem: Question = {
         id: data.id,
@@ -315,14 +365,21 @@ const AdminRepCommentUser = () => {
         reported: data.reported,
         user: data.user || { id: 0, first_name: 'Admin', last_name: '', avatar: '/admin-avatar.png' },
         questions: [],
-        is_read: data.is_read,
+        is_replied: data.is_replied,
       };
       console.log("newItem", newItem);
       setQuestionsData((prev) => {
         const current = prev[tId] || [];
-        const updated = newItem.parent_question_id == null
-          ? [newItem, ...current]
-          : appendReplyToTree(current, newItem.parent_question_id, newItem);
+        let updated: Question[];
+        
+        if (newItem.parent_question_id == null) {
+          // Nếu là question gốc, đưa lên đầu
+          updated = [newItem, ...current];
+        } else {
+          // Nếu là reply, đưa cả question cha lên đầu
+          updated = findAndMoveParentToTop(current, newItem.parent_question_id, newItem);
+        }
+        
         return { ...prev, [tId]: updated };
       });
     };
@@ -359,11 +416,20 @@ const AdminRepCommentUser = () => {
       
       // Nếu đã load data của tour này rồi thì không load lại
       if (loadedToursRef.current.has(selectedTour)) {
+        // Kiểm tra hasMore dựa trên số lượng questions hiện có
+        const currentQuestions = questionsData[selectedTour] || [];
+        setHasMore(currentQuestions.length % 10 === 0 && currentQuestions.length > 0);
+        // Estimate current page dựa trên số lượng questions
+        setCurrentPage(Math.ceil(currentQuestions.length / 10) || 1);
         return;
       }
       
+      // Reset pagination khi load tour mới lần đầu
+      setCurrentPage(1);
+      setHasMore(true);
+      
       try {
-        const res = await fetchQuestionsByTourIdOfProvider(selectedTour, 1, 20);
+        const res = await fetchQuestionsByTourIdOfProvider(selectedTour, 1, 10);
         console.log("res questions", res.data);
         
         // Chỉ update questions của tour được chọn, không overwrite toàn bộ
@@ -371,6 +437,9 @@ const AdminRepCommentUser = () => {
           ...prev,
           [selectedTour]: res.data || []
         }));
+        
+        // Kiểm tra xem còn data để load không
+        setHasMore((res.data || []).length === 10);
         
         // Đánh dấu tour này đã được load
         loadedToursRef.current.add(selectedTour);
@@ -380,6 +449,80 @@ const AdminRepCommentUser = () => {
     };
     loadQuestions();
   }, [selectedTour]);
+
+  // Load more questions khi scroll đến bottom
+  const loadMoreQuestions = useCallback(async () => {
+    if (!selectedTour || loadingMore || !hasMore) return;
+    
+    // Lấy số lượng questions hiện tại
+    const currentQuestions = questionsData[selectedTour] || [];
+    const actualPage = Math.floor(currentQuestions.length / 10);
+    const remainder = currentQuestions.length % 10;
+    
+    // Nếu không phải bội số của 10, cắt khúc để đảm bảo số lượng là bội số của 10
+    if (remainder !== 0) {
+      const targetLength = actualPage * 10;
+      const trimmedQuestions = currentQuestions.slice(0, targetLength);
+      
+      // Update questionsData và currentPage
+      setQuestionsData(prev => ({
+        ...prev,
+        [selectedTour]: trimmedQuestions
+      }));
+      setCurrentPage(actualPage);
+      
+      // Sau khi cắt khúc, user có thể scroll lại để load more
+      return;
+    }
+    
+    // Nếu đã là bội số của 10, tiếp tục load more
+    try {
+      setLoadingMore(true);
+      const nextPage = actualPage + 1;
+      const res = await fetchQuestionsByTourIdOfProvider(selectedTour, nextPage, 10);
+      console.log("res more questions", res.data);
+      
+      const newQuestions = res.data || [];
+      
+      // Append questions mới vào danh sách hiện tại
+      setQuestionsData(prev => {
+        const current = prev[selectedTour] || [];
+        // Đảm bảo chỉ append khi số lượng hiện tại là bội số của 10
+        const trimmedCurrent = current.slice(0, actualPage * 10);
+        return {
+          ...prev,
+          [selectedTour]: [...trimmedCurrent, ...newQuestions]
+        };
+      });
+      
+      // Update page và hasMore
+      setCurrentPage(nextPage);
+      setHasMore(newQuestions.length === 10);
+    } catch (error) {
+      console.error("Error loading more questions:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [selectedTour, loadingMore, hasMore, questionsData]);
+
+  // Handle scroll event
+  useEffect(() => {
+    const scrollContainer = questionsScrollRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      // Khi scroll đến gần bottom (còn 100px)
+      if (scrollHeight - scrollTop - clientHeight < 100) {
+        loadMoreQuestions();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [loadMoreQuestions]);
 
   const formatTime = (dateString: string): string => {
     return new Date(dateString)
@@ -418,7 +561,7 @@ const AdminRepCommentUser = () => {
         text: replyText,
         parent_question_id: questionId,
         reported: false,
-        is_read: true,
+        is_replied: true,
       });
       
       setReplyText('');
@@ -429,7 +572,7 @@ const AdminRepCommentUser = () => {
   const renderQuestion = (question: Question, level = 0) => (
     <div
       key={question.id}
-      className={`${level > 0 ? 'ml-12 mt-4' : 'mb-6'} ${!question.is_read ? 'bg-gray-100' : ''} rounded-md px-2 py-1`}
+      className={`${level > 0 ? 'ml-12 mt-4' : 'mb-6'} ${!question.is_replied ? 'bg-gray-100' : ''} rounded-md px-2 py-1`}
     >
       <div className="flex gap-3">
         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
@@ -442,7 +585,7 @@ const AdminRepCommentUser = () => {
           )}
         </div>
         <div className="flex flex-col items-start">
-          <div className={`inline-block w-fit min-w-[250px] ${question.is_read ? 'bg-gray-50' : 'bg-gray-100'} rounded-lg p-4 border border-gray-200 whitespace-pre-wrap break-words`}>
+          <div className={`inline-block w-fit min-w-[250px] ${question.is_replied ? 'bg-gray-50' : 'bg-gray-100'} rounded-lg p-4 border border-gray-200 whitespace-pre-wrap break-words`}>
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium text-sm">
                 {!question.user || question.user.id === 0 
@@ -600,9 +743,24 @@ const AdminRepCommentUser = () => {
                 </div>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-6">
+            <div 
+              ref={questionsScrollRef}
+              className="flex-1 overflow-y-auto p-6"
+            >
               {currentQuestions.length > 0 ? (
-                currentQuestions.map(question => renderQuestion(question))
+                <>
+                  {currentQuestions.map(question => renderQuestion(question))}
+                  {loadingMore && (
+                    <div className="flex justify-center items-center py-4">
+                      <div className="text-sm text-gray-500">Đang tải thêm...</div>
+                    </div>
+                  )}
+                  {!hasMore && currentQuestions.length > 0 && (
+                    <div className="flex justify-center items-center py-4">
+                      <div className="text-sm text-gray-500">Đã hiển thị tất cả câu hỏi</div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
