@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { MessageCircle, Send, ChevronRight, User, MapPin, Clock } from 'lucide-react';
-import { fetchQuestionsByTourIdOfProvider, fetchToursQuestionByProviderId } from '../../services/question.service';
+import { MessageCircle, Send, ChevronRight, User, MapPin, Clock, Trash2 } from 'lucide-react';
+import { fetchQuestionsByTourIdOfProvider, fetchToursQuestionByProviderId, delQuestion, fetchQuestionsTree } from '../../services/question.service';
 import { createCommentSocketManager, CommentSocketManager } from '../../services/commentSocket.service';
 import { sendQuestion } from '../../services/question.service';
-import { fetchTouridsByProviderId } from '../../services/tour.service';
+import { fetchTouridsByProviderId, fetchTourById } from '../../services/tour.service';
 // Interfaces
 interface QuestionUser {
   id: number;
@@ -39,6 +39,8 @@ interface QuestionsData {
   [tourId: number]: Question[];
 }
 
+const PAGE_LIMIT = 10;
+
 const AdminRepCommentUser = () => {
   const [selectedTour, setSelectedTour] = useState<number | null>(null);
   const [replyTo, setReplyTo] = useState<number | null>(null);
@@ -48,167 +50,20 @@ const AdminRepCommentUser = () => {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  // Pagination cho tours
+  const [currentTourPage, setCurrentTourPage] = useState<number>(1);
+  const [hasMoreTours, setHasMoreTours] = useState<boolean>(true);
+  const [loadingMoreTours, setLoadingMoreTours] = useState<boolean>(false);
   const loadedToursRef = useRef<Set<number>>(new Set());
   const commentSocketManagerRef = useRef<CommentSocketManager>(createCommentSocketManager());
   const questionsScrollRef = useRef<HTMLDivElement>(null);
+  const toursScrollRef = useRef<HTMLDivElement>(null);
 
   // Dữ liệu tour từ API
-  const [toursData, setToursData] = useState<ToursData[]>([
-      // {
-      //   id: 2,
-      //   title: "TOUR MIỀN TÂY TẾT DƯƠNG LỊCH 3N2Đ",
-      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762020102/vietour/xwkjobvezn6arydms5lo.jpg",
-      //   duration: "3 ngày 2 đêm",
-      //   location: "Hồ Chí Minh",
-      //   price: 3200000,
-      //   unread: 2
-      // },
-      // {
-      //   id: 5,
-      //   title: "Tour Hà Giang - Sông Nho Quế hùng vĩ 3 ngày 2 đêm từ Hà Nội",
-      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762235832/vietour/cs0ptozspacxi582ss4z.webp",
-      //   duration: "3 ngày 2 đêm",
-      //   location: "Hồ Chí Minh",
-      //   price: 2800000,
-      //   unread: 1
-      // },
-      // {
-      //   id: 6,
-      //   title: "Tour du lịch Team building, hội thảo, nghỉ dưỡng tại V Resort Hòa Bình 2 ngày 1 đêm",
-      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762236595/vietour/oorpxiylfyfisgdtsbs1.webp",
-      //   duration: "2 ngày 1 đêm",
-      //   location: "Hà Nội",
-      //   price: 1980000,
-      //   unread: 0
-      // },
-      // {
-      //   id: 4,
-      //   title: "Tour Tứ Tỉnh Miền Tây 3 ngày 2 đêm từ TP.HCM",
-      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762192931/vietour/ok7l34bxr2w5a78vhduq.webp",
-      //   duration: "3 ngày 2 đêm",
-      //   location: "Hồ Chí Minh",
-      //   price: 3180000,
-      //   unread: 0
-      // },
-      // {
-      //   id: 1,
-      //   title: "MỸ THO - CẦN THƠ - CHÂU ĐỐC",
-      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1761976218/vietour/ggjvjrzvrwwy12hr1upy.webp",
-      //   duration: "3 ngày 2 đêm",
-      //   location: "Hồ Chí Minh",
-      //   price: 3000000,
-      //   unread: 1
-      // },
-      // {
-      //   id: 3,
-      //   title: "Tour Đà Nẵng | Hội An | Quảng Bình | Huế",
-      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762162437/vietour/sodpkyhlvlv2axcaicwm.png",
-      //   duration: "3 ngày 2 đêm",
-      //   location: "Hồ Chí Minh",
-      //   price: 2800000,
-      //   unread: 0
-      // },
-      // {
-      //   id: 7,
-      //   title: "Tour Tứ tỉnh miền Tây: Tiền Giang - Bến Tre - An Giang - Đồng Tháp 3 ngày 2 đêm từ TP.HCM - Tết Dương Lịch 2026",
-      //   poster_url: "https://res.cloudinary.com/dxiuxuivf/image/upload/v1762236928/vietour/rzrj1zymdjiyfswlrfzw.webp",
-      //   duration: "3 ngày 2 đêm",
-      //   location: "Hồ Chí Minh",
-      //   price: 3680000,
-      //   unread: 0
-      // }
-  ]);
+  const [toursData, setToursData] = useState<ToursData[]>([]);
 
   // Dữ liệu câu hỏi mẫu
-  const [questionsData, setQuestionsData] = useState<QuestionsData>({
-    // 2: [
-    //   {
-    //     id: 12,
-    //     user_id: 3,
-    //     tour_id: 2,
-    //     parent_question_id: null,
-    //     text: 'Tôi muốn biết thêm thông tin về tour',
-    //     created_at: '2025-11-04T11:22:08.887Z',
-    //     reported: false,
-    //     user: {
-    //       id: 3,
-    //       first_name: 'Dương',
-    //       last_name: 'Phi 2',
-    //       avatar: null
-    //     },
-    //     questions: [
-    //       {
-    //         id: 13,
-    //         user_id: 3,
-    //         tour_id: 2,
-    //         parent_question_id: 12,
-    //         text: 'xin chào',
-    //         created_at: '2025-11-04T11:22:25.162Z',
-    //         reported: false,
-    //         user: {
-    //           id: 3,
-    //           first_name: 'Dương',
-    //           last_name: 'Phi 2',
-    //           avatar: null
-    //         },
-    //         questions: []
-    //       }
-    //     ]
-    //   },
-    //   {
-    //     id: 10,
-    //     user_id: 2,
-    //     tour_id: 2,
-    //     parent_question_id: null,
-    //     text: 'hello',
-    //     created_at: '2025-11-04T11:11:59.347Z',
-    //     reported: false,
-    //     user: {
-    //       id: 2,
-    //       first_name: 'Dương',
-    //       last_name: 'Phi 1',
-    //       avatar: null
-    //     },
-    //     questions: []
-    //   }
-    // ],
-    // 5: [
-    //   {
-    //     id: 14,
-    //     user_id: 4,
-    //     tour_id: 5,
-    //     parent_question_id: null,
-    //     text: 'Tour có đi vào mùa hoa tam giác mạch không?',
-    //     created_at: '2025-11-03T10:15:00.000Z',
-    //     reported: false,
-    //     user: {
-    //       id: 4,
-    //       first_name: 'Minh',
-    //       last_name: 'Nguyễn',
-    //       avatar: null
-    //     },
-    //     questions: []
-    //   }
-    // ],
-    // 1: [
-    //   {
-    //     id: 15,
-    //     user_id: 5,
-    //     tour_id: 1,
-    //     parent_question_id: null,
-    //     text: 'Khách sạn có gần chợ nổi không?',
-    //     created_at: '2025-11-02T14:30:00.000Z',
-    //     reported: false,
-    //     user: {
-    //       id: 5,
-    //       first_name: 'Hương',
-    //       last_name: 'Trần',
-    //       avatar: null
-    //     },
-    //     questions: []
-    //   }
-    // ]
-  });
+  const [questionsData, setQuestionsData] = useState<QuestionsData>({});
 
   useEffect(() => {
     console.log("questionsData", questionsData);
@@ -218,7 +73,9 @@ const AdminRepCommentUser = () => {
     const loadTours = async () => {
       try {
         setLoadingTours(true);
-        const res = await fetchToursQuestionByProviderId();
+        setCurrentTourPage(1);
+        setHasMoreTours(true);
+        const res = await fetchToursQuestionByProviderId(1, PAGE_LIMIT);
         console.log("res tour", res.data);
         
         // Map response data vào ToursData format
@@ -233,6 +90,8 @@ const AdminRepCommentUser = () => {
         }));
         
         setToursData(mappedTours);
+        // Kiểm tra xem còn data để load không
+        setHasMoreTours(mappedTours.length === PAGE_LIMIT);
       } catch (error) {
         console.error("Error loading tours:", error);
       } finally {
@@ -241,6 +100,94 @@ const AdminRepCommentUser = () => {
     };
     loadTours();
   }, []);
+
+  // Load more tours khi scroll đến bottom
+  // Công thức tính page:
+  // - actualPage = Math.floor(currentTours.length / pageLimit)
+  // - remainder = currentTours.length % pageLimit
+  // - Nếu remainder !== 0: cắt bỏ phần dư để đảm bảo số lượng là bội số của pageLimit
+  // - Nếu remainder === 0: load page tiếp theo (actualPage + 1)
+  const loadMoreTours = useCallback(async () => {
+    if (loadingMoreTours || !hasMoreTours) return;
+    
+    // Lấy số lượng tours hiện tại
+    const currentTours = toursData;
+    
+    // Tính page và remainder dựa trên số lượng tours hiện có
+    // Công thức: actualPage = Math.floor(currentTours.length / pageLimit)
+    const actualPage = Math.floor(currentTours.length / PAGE_LIMIT);
+    const remainder = currentTours.length % PAGE_LIMIT;
+    
+    // Nếu không phải bội số của PAGE_LIMIT, cắt khúc để đảm bảo số lượng là bội số của PAGE_LIMIT
+    if (remainder !== 0) {
+      const targetLength = actualPage * PAGE_LIMIT;
+      const trimmedTours = currentTours.slice(0, targetLength);
+      
+      // Update toursData và currentTourPage
+      setToursData(trimmedTours);
+      setCurrentTourPage(actualPage);
+      // Sau khi cắt, có thể còn more nếu actualPage > 0
+      setHasMoreTours(actualPage > 0);
+      
+      // Sau khi cắt khúc, user có thể scroll lại để load more
+      return;
+    }
+    
+    // Nếu đã là bội số của PAGE_LIMIT, tiếp tục load more
+    try {
+      setLoadingMoreTours(true);
+      const nextPage = actualPage + 1;
+      const res = await fetchToursQuestionByProviderId(nextPage, PAGE_LIMIT);
+      console.log("res more tours", res.data);
+      
+      const newTours = res.data.map((tour: any) => ({
+        id: tour.id,
+        title: tour.title,
+        poster_url: tour.poster_url,
+        duration: tour.duration,
+        location: tour.location?.trim() || '',
+        price: tour.tour_prices?.[0]?.adult_price || 0,
+        unread: 0,
+      }));
+      
+      if (newTours.length > 0) {
+        // Append tours mới vào danh sách hiện tại
+        // Đảm bảo chỉ append khi số lượng hiện tại là bội số của PAGE_LIMIT
+        const trimmedCurrent = currentTours.slice(0, actualPage * PAGE_LIMIT);
+        setToursData([...trimmedCurrent, ...newTours]);
+        
+        // Update page và hasMore
+        setCurrentTourPage(nextPage);
+        setHasMoreTours(newTours.length === PAGE_LIMIT);
+      } else {
+        // Không còn data để load
+        setHasMoreTours(false);
+      }
+    } catch (error) {
+      console.error("Error loading more tours:", error);
+    } finally {
+      setLoadingMoreTours(false);
+    }
+  }, [loadingMoreTours, hasMoreTours, toursData]);
+
+  // Handle scroll event cho tour list
+  useEffect(() => {
+    const scrollContainer = toursScrollRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      // Khi scroll đến gần bottom (còn 100px)
+      if (scrollHeight - scrollTop - clientHeight < 100) {
+        loadMoreTours();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [loadMoreTours]);
 
   // Connect socket on mount/unmount
   useEffect(() => {
@@ -353,7 +300,7 @@ const AdminRepCommentUser = () => {
   // Socket listeners -> update questionsData for current tour
   useEffect(() => {
     const manager = commentSocketManagerRef.current;
-    const handleReceiveComment = (data: { id: number; user: any; text: string; tour_id: number; created_at: string; parent_question_id: number | null; reported: boolean; is_replied: boolean; }) => {
+    const handleReceiveComment = async (data: { id: number; user: any; text: string; tour_id: number; created_at: string; parent_question_id: number | null; reported: boolean; is_replied: boolean; }) => {
       const tId = data.tour_id;
       const newItem: Question = {
         id: data.id,
@@ -368,6 +315,7 @@ const AdminRepCommentUser = () => {
         is_replied: data.is_replied,
       };
       console.log("newItem", newItem);
+      
       setQuestionsData((prev) => {
         const current = prev[tId] || [];
         let updated: Question[];
@@ -376,11 +324,84 @@ const AdminRepCommentUser = () => {
           // Nếu là question gốc, đưa lên đầu
           updated = [newItem, ...current];
         } else {
-          // Nếu là reply, đưa cả question cha lên đầu
-          updated = findAndMoveParentToTop(current, newItem.parent_question_id, newItem);
+          // Nếu là reply, tìm question cha
+          const findParent = (questions: Question[]): Question | null => {
+            for (const q of questions) {
+              if (q.id === newItem.parent_question_id) {
+                return q;
+              }
+              if (q.questions && q.questions.length) {
+                const found = findParent(q.questions);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+          
+          const parentQuestion = findParent(current);
+          
+          if (!parentQuestion) {
+            // Nếu không tìm thấy parent, fetch question tree và thêm vào đầu
+            fetchQuestionsTree(newItem.parent_question_id)
+              .then((res) => {
+                const questionTree = res.data;
+                if (questionTree) {
+                  setQuestionsData((prevState) => {
+                    const currentState = prevState[tId] || [];
+                    // Kiểm tra xem question tree đã có trong danh sách chưa
+                    const exists = currentState.some((q) => q.id === questionTree.id);
+                    if (!exists) {
+                      // Thêm question tree vào đầu danh sách
+                      return { ...prevState, [tId]: [questionTree, ...currentState] };
+                    }
+                    return prevState;
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error("Error fetching question tree:", error);
+              });
+            // Trả về state hiện tại trong khi đang fetch
+            return prev;
+          } else {
+            // Nếu tìm thấy parent, đưa cả question cha lên đầu
+            updated = findAndMoveParentToTop(current, newItem.parent_question_id, newItem);
+          }
         }
         
         return { ...prev, [tId]: updated };
+      });
+
+      // Cập nhật toursData: chuyển tour lên đầu hoặc fetch nếu chưa có
+      setToursData((prevTours) => {
+        const existingTourIndex = prevTours.findIndex((tour) => tour.id === tId);
+        
+        if (existingTourIndex !== -1) {
+          // Nếu tour đã có, chuyển lên đầu
+          const updatedTours = [...prevTours];
+          const [tourToMove] = updatedTours.splice(existingTourIndex, 1);
+          return [tourToMove, ...updatedTours];
+        } else {
+          // Nếu tour chưa có, fetch và thêm vào đầu
+          fetchTourById(tId)
+            .then((tourData: any) => {
+              const newTour: ToursData = {
+                id: tourData.id,
+                title: tourData.title,
+                poster_url: tourData.poster_url,
+                duration: typeof tourData.duration === 'number' ? `${tourData.duration} ngày` : (tourData.duration || ''),
+                location: tourData.location?.trim() || '',
+                price: tourData.tour_prices?.[0]?.adult_price || tourData.price || 0,
+                unread: 0,
+              };
+              setToursData((prevState) => [newTour, ...prevState]);
+            })
+            .catch((error) => {
+              console.error("Error fetching tour:", error);
+            });
+          // Trả về state hiện tại trong khi đang fetch
+          return prevTours;
+        }
       });
     };
     const handleReceiveDelete = (id: number) => {
@@ -416,11 +437,16 @@ const AdminRepCommentUser = () => {
       
       // Nếu đã load data của tour này rồi thì không load lại
       if (loadedToursRef.current.has(selectedTour)) {
-        // Kiểm tra hasMore dựa trên số lượng questions hiện có
+        // Tính page dựa trên số lượng questions hiện có
+        // Công thức: actualPage = Math.floor(currentQuestions.length / pageLimit)
         const currentQuestions = questionsData[selectedTour] || [];
-        setHasMore(currentQuestions.length % 10 === 0 && currentQuestions.length > 0);
-        // Estimate current page dựa trên số lượng questions
-        setCurrentPage(Math.ceil(currentQuestions.length / 10) || 1);
+        const actualPage = Math.floor(currentQuestions.length / 10);
+        const remainder = currentQuestions.length % 10;
+        
+        // Kiểm tra hasMore: chỉ có more nếu số lượng là bội số của 10 và > 0
+        // Nếu có remainder, không thể có more vì đã bị lệch pagination
+        setHasMore(remainder === 0 && currentQuestions.length > 0);
+        setCurrentPage(actualPage || 1);
         return;
       }
       
@@ -451,17 +477,26 @@ const AdminRepCommentUser = () => {
   }, [selectedTour]);
 
   // Load more questions khi scroll đến bottom
+  // Công thức tính page:
+  // - actualPage = Math.floor(currentQuestions.length / pageLimit)
+  // - remainder = currentQuestions.length % pageLimit
+  // - Nếu remainder !== 0: cắt bỏ phần dư để đảm bảo số lượng là bội số của pageLimit
+  // - Nếu remainder === 0: load page tiếp theo (actualPage + 1)
   const loadMoreQuestions = useCallback(async () => {
     if (!selectedTour || loadingMore || !hasMore) return;
     
     // Lấy số lượng questions hiện tại
     const currentQuestions = questionsData[selectedTour] || [];
-    const actualPage = Math.floor(currentQuestions.length / 10);
-    const remainder = currentQuestions.length % 10;
     
-    // Nếu không phải bội số của 10, cắt khúc để đảm bảo số lượng là bội số của 10
+    // Tính page và remainder dựa trên số lượng questions hiện có
+    // Công thức: actualPage = Math.floor(currentQuestions.length / pageLimit)
+    const pageLimit = 10;
+    const actualPage = Math.floor(currentQuestions.length / pageLimit);
+    const remainder = currentQuestions.length % pageLimit;
+    
+    // Nếu không phải bội số của pageLimit, cắt khúc để đảm bảo số lượng là bội số của pageLimit
     if (remainder !== 0) {
-      const targetLength = actualPage * 10;
+      const targetLength = actualPage * pageLimit;
       const trimmedQuestions = currentQuestions.slice(0, targetLength);
       
       // Update questionsData và currentPage
@@ -470,34 +505,38 @@ const AdminRepCommentUser = () => {
         [selectedTour]: trimmedQuestions
       }));
       setCurrentPage(actualPage);
+      // Sau khi cắt, có thể còn more nếu actualPage > 0
+      setHasMore(actualPage > 0);
       
       // Sau khi cắt khúc, user có thể scroll lại để load more
       return;
     }
     
-    // Nếu đã là bội số của 10, tiếp tục load more
+    // Nếu đã là bội số của pageLimit, tiếp tục load more
     try {
       setLoadingMore(true);
       const nextPage = actualPage + 1;
-      const res = await fetchQuestionsByTourIdOfProvider(selectedTour, nextPage, 10);
+      const res = await fetchQuestionsByTourIdOfProvider(selectedTour, nextPage, pageLimit);
       console.log("res more questions", res.data);
       
       const newQuestions = res.data || [];
       
-      // Append questions mới vào danh sách hiện tại
-      setQuestionsData(prev => {
-        const current = prev[selectedTour] || [];
-        // Đảm bảo chỉ append khi số lượng hiện tại là bội số của 10
-        const trimmedCurrent = current.slice(0, actualPage * 10);
-        return {
+      if (newQuestions.length > 0) {
+        // Append questions mới vào danh sách hiện tại
+        // Đảm bảo chỉ append khi số lượng hiện tại là bội số của pageLimit
+        const trimmedCurrent = currentQuestions.slice(0, actualPage * pageLimit);
+        setQuestionsData(prev => ({
           ...prev,
           [selectedTour]: [...trimmedCurrent, ...newQuestions]
-        };
-      });
-      
-      // Update page và hasMore
-      setCurrentPage(nextPage);
-      setHasMore(newQuestions.length === 10);
+        }));
+        
+        // Update page và hasMore
+        setCurrentPage(nextPage);
+        setHasMore(newQuestions.length === pageLimit);
+      } else {
+        // Không còn data để load
+        setHasMore(false);
+      }
     } catch (error) {
       console.error("Error loading more questions:", error);
     } finally {
@@ -569,6 +608,65 @@ const AdminRepCommentUser = () => {
     }
   };
 
+  const handleDeleteQuestion = async (questionId: number, tourId: number): Promise<void> => {
+    if (!selectedTour) return;
+    
+    // Tìm question trong state để kiểm tra user
+    const findQuestion = (questions: Question[], id: number): Question | null => {
+      for (const q of questions) {
+        if (q.id === id) return q;
+        if (q.questions && q.questions.length > 0) {
+          const found = findQuestion(q.questions, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const currentQuestions = questionsData[tourId] || [];
+    const questionToDelete = findQuestion(currentQuestions, questionId);
+    
+    // Chỉ cho phép xóa nếu question là của admin/provider (user === null hoặc user.id === 0)
+    if (questionToDelete && questionToDelete.user && questionToDelete.user.id !== 0) {
+      alert('Bạn không thể xóa câu hỏi của người dùng khác.');
+      return;
+    }
+    
+    // Xác nhận trước khi xóa
+    if (!window.confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) {
+      return;
+    }
+
+    try {
+      // Gọi API xóa question
+      await delQuestion(questionId);
+      console.log("Deleted question:", questionId);
+      
+      // Emit socket event để thông báo xóa
+      commentSocketManagerRef.current.emitSendDelete({
+        id: questionId,
+        tour_id: tourId,
+      });
+      
+      // Cập nhật state để xóa question khỏi UI
+      setQuestionsData((prev) => {
+        const updated: QuestionsData = {};
+        Object.keys(prev).forEach((tourIdStr) => {
+          const tId = Number(tourIdStr);
+          const current = prev[tId] || [];
+          const updatedList = removeFromTree(current, questionId);
+          if (updatedList.length > 0 || prev[tId]) {
+            updated[tId] = updatedList;
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      alert('Không thể xóa câu hỏi. Vui lòng thử lại.');
+    }
+  };
+
   const renderQuestion = (question: Question, level = 0) => (
     <div
       key={question.id}
@@ -596,12 +694,25 @@ const AdminRepCommentUser = () => {
             </div>
             <p className="text-sm text-gray-700">{question.text}</p>
           </div>
+          <div className="flex items-center gap-3 mt-2">
             <button
               onClick={() => setReplyTo(question.id)}
-              className="block text-xs text-gray-500 hover:text-gray-700 mt-2 font-medium"
+              className="text-xs text-gray-500 hover:text-gray-700 font-medium"
             >
-            Trả lời
-          </button>
+              Trả lời
+            </button>
+            {/* Chỉ hiển thị nút xóa nếu question là của admin/provider (user === null hoặc user.id === 0) */}
+            {(!question.user || question.user.id === 0) && (
+              <button
+                onClick={() => handleDeleteQuestion(question.id, question.tour_id)}
+                className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
+                title="Xóa câu hỏi"
+              >
+                <Trash2 className="w-3 h-3" />
+                Xóa
+              </button>
+            )}
+          </div>
           
           {replyTo === question.id && (
             <div className="mt-3 flex gap-2">
@@ -645,7 +756,10 @@ const AdminRepCommentUser = () => {
           <h2 className="text-lg font-semibold">Danh sách tour</h2>
           <p className="text-sm text-gray-500 mt-1">Chọn tour để xem câu hỏi</p>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div 
+          ref={toursScrollRef}
+          className="flex-1 overflow-y-auto"
+        >
           {loadingTours ? (
             <div className="p-4 space-y-3">
               {[1, 2, 3, 4].map((i) => (
@@ -669,44 +783,56 @@ const AdminRepCommentUser = () => {
               </div>
             </div>
           ) : (
-            toursData.map(tour => (
-              <button
-                key={tour.id}
-                onClick={() => setSelectedTour(tour.id)}
-                className={`w-full p-4 border-b border-gray-200 hover:bg-white transition-colors text-left ${
-                  selectedTour === tour.id ? 'bg-white border-l-4 border-l-black' : ''
-                }`}
-              >
-                <div className="flex gap-3">
-                  <img 
-                    src={tour.poster_url} 
-                    alt={tour.title}
-                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium line-clamp-2 mb-2">{tour.title}</h3>
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{tour.duration}</span>
+            <>
+              {toursData.map(tour => (
+                <button
+                  key={tour.id}
+                  onClick={() => setSelectedTour(tour.id)}
+                  className={`w-full p-4 border-b border-gray-200 hover:bg-white transition-colors text-left ${
+                    selectedTour === tour.id ? 'bg-white border-l-4 border-l-black' : ''
+                  }`}
+                >
+                  <div className="flex gap-3">
+                    <img 
+                      src={tour.poster_url} 
+                      alt={tour.title}
+                      className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium line-clamp-2 mb-2">{tour.title}</h3>
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{tour.duration}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>{tour.location.trim()}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{tour.location.trim()}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-900">{formatPrice(tour.price)}</span>
+                        {tour.unread > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black text-white">
+                            {tour.unread} mới
+                          </span>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-900">{formatPrice(tour.price)}</span>
-                      {tour.unread > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black text-white">
-                          {tour.unread} mới
-                        </span>
-                      )}
                     </div>
                   </div>
+                </button>
+              ))}
+              {loadingMoreTours && (
+                <div className="flex justify-center items-center py-4">
+                  <div className="text-sm text-gray-500">Đang tải thêm...</div>
                 </div>
-              </button>
-            ))
+              )}
+              {!hasMoreTours && toursData.length > 0 && (
+                <div className="flex justify-center items-center py-4">
+                  <div className="text-sm text-gray-500">Đã hiển thị tất cả tour</div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

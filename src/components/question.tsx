@@ -13,6 +13,7 @@ import {
 import { fetchTourBySlug } from "../services/tour.service";
 import {
   fetchQuestionsByTourId,
+  fetchQuestionsByTourIdWithPagination,
   sendQuestion,
   delQuestion,
 } from "../services/question.service";
@@ -213,8 +214,9 @@ const CommentForm: React.FC<{
     setText("");
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && e.ctrlKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       handleSubmit();
     }
   };
@@ -226,7 +228,7 @@ const CommentForm: React.FC<{
           placeholder="Hãy để lại câu hỏi của bạn"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           rows={3}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none transition-colors"
         />
@@ -728,9 +730,16 @@ export const CommentSection: React.FC = () => {
     commentText: "",
     userName: "",
   });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const pageLimit = 10;
 
   // Refs
   const commentSocketManagerRef = useRef<CommentSocketManager>(createCommentSocketManager());
+  const questionsContainerRef = useRef<HTMLDivElement>(null);
   
   // Connect socket on mount
   useEffect(() => {
@@ -834,14 +843,18 @@ export const CommentSection: React.FC = () => {
 
       try {
         setInitialLoading(true);
-        const res = await fetchQuestionsByTourId(tourId);
+        setCurrentPage(1);
+        setHasMore(true);
+        const res = await fetchQuestionsByTourIdWithPagination(tourId, 1, pageLimit);
         const transformedData = res.data.map((q: any) => ({
           ...q,
           questions: q.questions || [],
         }));
         console.log("transformedData: ", transformedData);
         setQuestions(transformedData);
-        setCountQuestion(res.data.length);
+        setCountQuestion(countTotalQuestions(transformedData));
+        // Kiểm tra xem còn data để load không
+        setHasMore(transformedData.length === pageLimit);
       } catch (error) {
         console.error("Error loading questions:", error);
         toast.error("Không thể tải bình luận");
@@ -852,6 +865,76 @@ export const CommentSection: React.FC = () => {
 
     loadQuestions();
   }, [tourId]);
+
+  // Load more questions khi scroll đến bottom
+  const loadMoreQuestions = useCallback(async () => {
+    if (!tourId || loadingMore || !hasMore) return;
+
+    // Lấy số lượng questions hiện tại
+    const currentQuestions = questions.filter((q) => !deletedQuestionIds.has(q.id));
+    const actualPage = Math.floor(currentQuestions.length / pageLimit);
+    const remainder = currentQuestions.length % pageLimit;
+    
+    // Nếu không phải bội số của pageLimit, cắt khúc để đảm bảo số lượng là bội số của pageLimit
+    if (remainder !== 0) {
+      const targetLength = actualPage * pageLimit;
+      const trimmedQuestions = currentQuestions.slice(0, targetLength);
+      
+      // Update questions và currentPage
+      setQuestions(trimmedQuestions);
+      setCountQuestion(countTotalQuestions(trimmedQuestions));
+      setCurrentPage(actualPage);
+      
+      // Sau khi cắt khúc, user có thể scroll lại để load more
+      return;
+    }
+    
+    // Nếu đã là bội số của pageLimit, tiếp tục load more
+    try {
+      setLoadingMore(true);
+      const nextPage = actualPage + 1;
+      const res = await fetchQuestionsByTourIdWithPagination(tourId, nextPage, pageLimit);
+      const newQuestions = res.data.map((q: any) => ({
+        ...q,
+        questions: q.questions || [],
+      }));
+      
+      if (newQuestions.length > 0) {
+        // Đảm bảo chỉ append khi số lượng hiện tại là bội số của pageLimit
+        const trimmedCurrent = currentQuestions.slice(0, actualPage * pageLimit);
+        setQuestions([...trimmedCurrent, ...newQuestions]);
+        setCountQuestion(countTotalQuestions([...trimmedCurrent, ...newQuestions]));
+        setCurrentPage(nextPage);
+        setHasMore(newQuestions.length === pageLimit);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error loading more questions:", error);
+      toast.error("Không thể tải thêm bình luận");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [tourId, loadingMore, hasMore, questions, deletedQuestionIds]);
+
+  // Handle scroll event để load more
+  useEffect(() => {
+    const scrollContainer = questionsContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      // Khi scroll đến gần bottom (còn 200px)
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        loadMoreQuestions();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [loadMoreQuestions]);
 
   // Handlers
   const handleSubmitComment = async (text: string) => {
@@ -876,6 +959,7 @@ export const CommentSection: React.FC = () => {
         parent_question_id: null,
         text: text,
         reported: false,
+        is_replied: false,
       });
 
       toast.success("Bình luận đã được gửi!");
@@ -913,6 +997,7 @@ export const CommentSection: React.FC = () => {
         parent_question_id: parentId,
         text: replyText,
         reported: false,
+        is_replied: false,
       });
       setReplyText("");
       setActiveReplyId(null);
@@ -1024,45 +1109,60 @@ export const CommentSection: React.FC = () => {
       )}
 
       {/* Comments List */}
-      <div className="space-y-4">
+      <div 
+        ref={questionsContainerRef}
+        className="space-y-4 max-h-[800px] overflow-y-auto"
+      >
         {initialLoading ? (
           <CommentSkeletonList />
         ) : questions.length === 0 ? (
           <EmptyState />
         ) : (
-          questions
-            .filter((q) => !deletedQuestionIds.has(q.id))
-            .map((comment) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                onReply={handleSetActiveReplyId}
-                onDelete={handleDeleteComment}
-                currentUser={user}
-                activeReplyId={activeReplyId}
-                replyText={replyText}
-                setReplyText={setReplyText}
-                handleReplySubmit={handleReplySubmit}
-                deletedQuestionIds={deletedQuestionIds}
-                submittingReply={submittingReply}
-                isCollapsed={collapsedCommentIds.has(comment.id)}
-                setIsCollapsed={(collapsed: boolean) => {
-                  if (collapsed) {
-                    setCollapsedCommentIds(
-                      (prev) => new Set([...prev, comment.id])
-                    );
-                  } else {
-                    setCollapsedCommentIds((prev) => {
-                      const newSet = new Set(prev);
-                      newSet.delete(comment.id);
-                      return newSet;
-                    });
-                  }
-                }}
-                collapsedReplyIds={collapsedReplyIds}
-                setCollapsedReplyIds={setCollapsedReplyIds}
-              />
-            ))
+          <>
+            {questions
+              .filter((q) => !deletedQuestionIds.has(q.id))
+              .map((comment) => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  onReply={handleSetActiveReplyId}
+                  onDelete={handleDeleteComment}
+                  currentUser={user}
+                  activeReplyId={activeReplyId}
+                  replyText={replyText}
+                  setReplyText={setReplyText}
+                  handleReplySubmit={handleReplySubmit}
+                  deletedQuestionIds={deletedQuestionIds}
+                  submittingReply={submittingReply}
+                  isCollapsed={collapsedCommentIds.has(comment.id)}
+                  setIsCollapsed={(collapsed: boolean) => {
+                    if (collapsed) {
+                      setCollapsedCommentIds(
+                        (prev) => new Set([...prev, comment.id])
+                      );
+                    } else {
+                      setCollapsedCommentIds((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.delete(comment.id);
+                        return newSet;
+                      });
+                    }
+                  }}
+                  collapsedReplyIds={collapsedReplyIds}
+                  setCollapsedReplyIds={setCollapsedReplyIds}
+                />
+              ))}
+            {loadingMore && (
+              <div className="flex justify-center items-center py-4">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
+              </div>
+            )}
+            {!hasMore && questions.length > 0 && (
+              <div className="flex justify-center items-center py-4">
+                <p className="text-sm text-gray-500">Đã hiển thị tất cả câu hỏi</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
