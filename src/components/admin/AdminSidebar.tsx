@@ -87,7 +87,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       },
       {
         label: "Users",
-        href: "/admin/users",
+        href: "/admin/admin-manager",
         icon: <Users className="w-4 h-4" />,
         allowedRoles: ["admin"], // Only admins can manage users
       },
