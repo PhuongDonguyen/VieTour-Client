@@ -8,6 +8,7 @@ interface ProviderTableProps {
   loading: boolean;
   formatDate: (dateString: string) => string;
   onLockProvider: (provider: Provider) => void;
+  onViewProviderTours: (provider: Provider) => void;
 }
 
 const ProviderAvatar: React.FC<{ avatar: string; companyName: string }> = ({ avatar, companyName }) => {
@@ -32,7 +33,7 @@ const ProviderAvatar: React.FC<{ avatar: string; companyName: string }> = ({ ava
   );
 };
 
-const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, formatDate, onLockProvider }) => {
+const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, formatDate, onLockProvider, onViewProviderTours }) => {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       <table className="w-full">
@@ -124,7 +125,7 @@ const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, forma
                   {formatDate(provider.created_at)}
                 </td>
                 <td className="px-6 py-4">
-                  <ProviderActionsMenu provider={provider} onLockProvider={onLockProvider} />
+                  <ProviderActionsMenu provider={provider} onLockProvider={onLockProvider} onViewTours={onViewProviderTours} />
                 </td>
               </tr>
             ))

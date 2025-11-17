@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Lock } from 'lucide-react';
+import { MoreVertical, Lock, Eye } from 'lucide-react';
 import { type Provider } from '@/services/adminManager.service';
 
 interface ProviderActionsMenuProps {
   provider: Provider;
   onLockProvider: (provider: Provider) => void;
+  onViewTours: (provider: Provider) => void;
 }
 
-const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onLockProvider }) => {
+const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onLockProvider, onViewTours }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -69,6 +70,11 @@ const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onL
     setIsOpen(false);
   };
 
+  const handleViewToursClick = () => {
+    onViewTours(provider);
+    setIsOpen(false);
+  };
+
   return (
     <>
       <button
@@ -82,7 +88,7 @@ const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onL
       {isOpen && createPortal(
         <div
           ref={menuRef}
-          className="fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+          className="fixed z-50 w-48 rounded-lg border border-gray-200 bg-white shadow-lg"
           style={{
             top: `${menuPosition.top}px`,
             left: `${menuPosition.left}px`,
@@ -90,10 +96,17 @@ const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onL
         >
           <div className="py-1">
             <button
-              onClick={handleLockClick}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+              onClick={handleViewToursClick}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
             >
-              <Lock className="w-4 h-4" />
+              <Eye className="h-4 w-4" />
+              Xem danh sách tour
+            </button>
+            <button
+              onClick={handleLockClick}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
+            >
+              <Lock className="h-4 w-4" />
               Khóa tài khoản
             </button>
           </div>
