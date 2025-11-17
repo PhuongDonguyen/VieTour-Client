@@ -159,11 +159,15 @@ const AdminDashboard: React.FC = () => {
       {isProvider && <ProviderRevenueStatsWrapper />}
 
       {/* Revenue Chart */}
-      {isAdmin && <RevenueChart className="mb-6" />}
+      {isAdmin && (
+        <div className="pt-6 px-6">
+          <RevenueChart className="mb-6" />
+        </div>
+      )}
 
       {/* Statistics Grid - Top Tours & Providers */}
       {isAdmin && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 px-6 pb-6">
           {/* Top Tours by Bookings */}
           <Card>
             <CardHeader>

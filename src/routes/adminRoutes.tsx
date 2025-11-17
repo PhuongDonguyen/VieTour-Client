@@ -41,6 +41,7 @@ import GeneralQuestionEditor from "@/components/admin/general-question/GeneralQu
 import AdminRegisterPartner from "@/pages/admin/AdminRegisterPartner";
 import RegisterPartnerView from "@/pages/admin/RegisterPartnerView";
 import AdminRepComment from "@/pages/admin/AdminRepComment";
+import AdminManager from "@/components/admin/admin-manager/adminManager";
 import AdminRepCommentUser from "@/components/admin/AdminRepCommentUser";
 
 // Admin routes - AdminLayout wraps all authenticated admin pages
@@ -517,6 +518,16 @@ export const adminRoutes = [
       <RequireAdminAccess>
         <AdminLayout title="Chi tiết yêu cầu đối tác">
           <RegisterPartnerView />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/admin-manager",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Quản lý admin">
+          <AdminManager />
         </AdminLayout>
       </RequireAdminAccess>
     ),
