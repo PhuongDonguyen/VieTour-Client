@@ -3,6 +3,9 @@ import axiosInstance from "./axiosInstance";
 export const getQuestionByTourId = (tourId: number)  => 
     axiosInstance.get( `/api/questions?tour_id=${tourId}`)
 
+export const getQuestionsByTourIdWithPagination = (tourId: number, page: number, limit: number) =>
+    axiosInstance.get(`/api/questions?tour_id=${tourId}&page=${page}&limit=${limit}`)
+
 export const submitQuestion = (user_id: number|null, tour_id: number, parent_question_id: number| null, text: string, reported: boolean) =>
     axiosInstance.post(`/api/questions`,{user_id, tour_id, parent_question_id, text, reported})
 
@@ -11,3 +14,12 @@ export const deleteQuestion = (id: number) =>
 
 export const updateReported = (reported: boolean, id: number) =>
     axiosInstance.put(`/api/questions/${id}`, {reported})
+
+export const getToursQuestionByProviderId = (page:number, limit:number) =>
+    axiosInstance.get(`/api/questions/provider?page=${page}&limit=${limit}`)
+
+export const getQuestionsByTourIdOfProvider = (tourId: number, page: number, limit: number) =>
+    axiosInstance.get(`/api/questions/tour/${tourId}/ordered?page=${page}&limit=${limit}`)
+
+export const getQuestionsTree = (questionId: number) => 
+    axiosInstance.get(`/api/questions/tree/${questionId}`)
