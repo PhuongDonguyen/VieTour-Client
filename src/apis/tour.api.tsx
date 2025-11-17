@@ -274,3 +274,5 @@ export const unbannedTour = (tourId: number) =>
 
 export const getToursBanned = (page?: number, limit?: number) =>
   axiosInstance.get(`/api/tours/banned?limit=${limit}&page=${page}`);
+export const getTouridsByProviderId = () =>
+  axiosInstance.get(`/api/tours/tour-provider`);

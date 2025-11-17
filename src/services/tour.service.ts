@@ -25,6 +25,7 @@ import {
   bannedTour,
   unbannedTour,
   getToursBanned,
+  getTouridsByProviderId,
 } from "../apis/tour.api";
 
 export const fetchTours = async (
@@ -306,4 +307,9 @@ export const fetchToursBanned = async (page?: number, limit?: number) => {
     console.error("Error getting tours banned:", error);
     throw error;
   }
+};
+export const fetchTouridsByProviderId = async () => {
+  const res = await getTouridsByProviderId();
+  if (res.data && res.data.success) return res.data;
+  throw new Error("Không tìm thấy tour ids");
 };
