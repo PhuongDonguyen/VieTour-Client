@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ApproveTourModal from "./ApproveTourModal";
+import BanTourModal from "./BanTourModal";
 import {
   Select,
   SelectContent,
@@ -33,15 +35,25 @@ import {
   MapPin,
   Clock,
   RefreshCw,
+  AlertCircle,
+  CheckCircle,
+  Ban,
+  ShieldCheck,
 } from "lucide-react";
 import {
   fetchTours,
   deleteTourService,
   toggleTourStatusService,
+  fetchToursUnapproved,
+  approveTourService,
+  bannedTourService,
+  unbannedTourService,
+  fetchToursBanned,
 } from "@/services/tour.service";
 import { fetchActiveTourCategories } from "@/services/tourCategory.service";
 import { fetchAllProviderProfiles } from "@/services/providerProfile.service";
 import { fetchRemainingSchedulesCount } from "@/services/tourSchedule.service";
+import { toast } from "sonner";
 import type { Tour } from "@/apis/tour.api";
 import type { RemainingScheduleCount } from "@/apis/tourSchedule.api";
 
@@ -75,6 +87,13 @@ const ProviderTours: React.FC = () => {
   >([]);
   const [refreshingSchedules, setRefreshingSchedules] = useState(false);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
+  const [showUnapprovedOnly, setShowUnapprovedOnly] = useState(false);
+  const [showBannedOnly, setShowBannedOnly] = useState(false);
+  const [approveModalOpen, setApproveModalOpen] = useState(false);
+  const [tourToApprove, setTourToApprove] = useState<Tour | null>(null);
+  const [banModalOpen, setBanModalOpen] = useState(false);
+  const [tourToBan, setTourToBan] = useState<Tour | null>(null);
+  const [isBanning, setIsBanning] = useState(false);
 
   // Set category filter from URL parameter on mount
   useEffect(() => {
@@ -164,54 +183,71 @@ const ProviderTours: React.FC = () => {
     const fetchToursData = async () => {
       setLoading(true);
       try {
-        const params: any = {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
-          tour_category_id:
-            selectedCategoryId !== "all"
-              ? Number(selectedCategoryId)
-              : undefined,
-        };
-
-        // Debug: log user info
-        console.log("User info:", {
-          role: user?.role,
-          provider_id: user?.provider_id,
-          providerId: user?.providerId,
-          id: user?.id,
-          user: user,
-        });
-
-        // Thêm provider_id nếu role là provider hoặc admin chọn provider
-        let providerId = null;
-        if (user?.role === "provider") {
-          // Kiểm tra nhiều trường hợp có thể có provider_id
-          providerId = user?.provider_id || user?.providerId || user?.id;
-        } else if (user?.role === "admin" && selectedProviderId !== "all") {
-          // Admin chọn provider để filter
-          providerId = selectedProviderId;
-        }
-
-        if (providerId) {
-          params.provider_id = providerId;
-          console.log("Added provider_id to params:", providerId);
+        let res;
+        
+        // Nếu đang xem tour chưa duyệt, sử dụng function riêng
+        if (showUnapprovedOnly) {
+          res = await fetchToursUnapproved(currentPage, 10);
+          setTours(res.data);
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
+        } else if (showBannedOnly) {
+          // Nếu đang xem tour bị cấm, sử dụng function riêng
+          res = await fetchToursBanned(currentPage, 10);
+          setTours(res.data);
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
         } else {
-          console.log(
-            "Not adding provider_id - role:",
-            user?.role,
-            "providerId:",
-            providerId
-          );
+          // Fetch tours bình thường
+          const params: any = {
+            page: currentPage,
+            limit: 10,
+            search: searchTerm || undefined,
+            tour_category_id:
+              selectedCategoryId !== "all"
+                ? Number(selectedCategoryId)
+                : undefined,
+          };
+
+          // Debug: log user info
+          console.log("User info:", {
+            role: user?.role,
+            provider_id: user?.provider_id,
+            providerId: user?.providerId,
+            id: user?.id,
+            user: user,
+          });
+
+          // Thêm provider_id nếu role là provider hoặc admin chọn provider
+          let providerId: number | null = null;
+          if (user?.role === "provider") {
+            // Kiểm tra nhiều trường hợp có thể có provider_id
+            providerId = user?.provider_id || user?.providerId || user?.id;
+          } else if (user?.role === "admin" && selectedProviderId !== "all") {
+            // Admin chọn provider để filter
+            providerId = Number(selectedProviderId);
+          }
+
+          if (providerId) {
+            params.provider_id = providerId;
+            console.log("Added provider_id to params:", providerId);
+          } else {
+            console.log(
+              "Not adding provider_id - role:",
+              user?.role,
+              "providerId:",
+              providerId
+            );
+          }
+
+          console.log("Fetching tours with params:", params);
+          res = await fetchTours(params);
+
+          console.log("Tours data:", res.data); // Debug log to check structure
+          setTours(res.data);
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
         }
-
-        console.log("Fetching tours with params:", params);
-        const res = await fetchTours(params);
-
-        console.log("Tours data:", res.data); // Debug log to check structure
-        setTours(res.data);
-        setTotalPages(res.pagination.totalPages);
-        setTotalItems(res.pagination.totalItems);
       } catch (error) {
         console.error("Error fetching tours:", error);
         setTours([]);
@@ -225,6 +261,8 @@ const ProviderTours: React.FC = () => {
     searchTerm,
     selectedCategoryId,
     selectedProviderId,
+    showUnapprovedOnly,
+    showBannedOnly,
     user?.role,
     user?.provider_id,
   ]);
@@ -380,33 +418,50 @@ const ProviderTours: React.FC = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa tour này?")) {
       try {
         await deleteTourService(id);
-        // Refresh the tours list với provider_id nếu cần
-        const refreshParams: any = {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
-          tour_category_id:
-            selectedCategoryId !== "all"
-              ? Number(selectedCategoryId)
-              : undefined,
-        };
+        // Refresh the tours list
+        if (showUnapprovedOnly) {
+          // Nếu đang xem tour chưa duyệt, sử dụng function riêng
+          const res = await fetchToursUnapproved(currentPage, 10);
+          setTours(res.data);
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
+        } else if (showBannedOnly) {
+          // Nếu đang xem tour bị cấm, sử dụng function riêng
+          const res = await fetchToursBanned(currentPage, 10);
+          setTours(res.data);
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
+        } else {
+          // Refresh tours bình thường
+          const refreshParams: any = {
+            page: currentPage,
+            limit: 10,
+            search: searchTerm || undefined,
+            tour_category_id:
+              selectedCategoryId !== "all"
+                ? Number(selectedCategoryId)
+                : undefined,
+          };
 
-        // Thêm provider_id nếu role là provider hoặc admin chọn provider
-        let providerId = null;
-        if (user?.role === "provider") {
-          // Kiểm tra nhiều trường hợp có thể có provider_id
-          providerId = user?.provider_id || user?.providerId || user?.id;
-        } else if (user?.role === "admin" && selectedProviderId !== "all") {
-          // Admin chọn provider để filter
-          providerId = selectedProviderId;
+          // Thêm provider_id nếu role là provider hoặc admin chọn provider
+          let providerId: number | null = null;
+          if (user?.role === "provider") {
+            // Kiểm tra nhiều trường hợp có thể có provider_id
+            providerId = user?.provider_id || user?.providerId || user?.id;
+          } else if (user?.role === "admin" && selectedProviderId !== "all") {
+            // Admin chọn provider để filter
+            providerId = Number(selectedProviderId);
+          }
+
+          if (providerId) {
+            refreshParams.provider_id = providerId;
+          }
+
+          const res = await fetchTours(refreshParams);
+          setTours(res.data);
+          setTotalPages(res.pagination.totalPages);
+          setTotalItems(res.pagination.totalItems);
         }
-
-        if (providerId) {
-          refreshParams.provider_id = providerId;
-        }
-
-        const res = await fetchTours(refreshParams);
-        setTours(res.data);
       } catch (error) {
         console.error("Failed to delete tour:", error);
         alert("Không thể xóa tour. Vui lòng thử lại.");
@@ -460,6 +515,168 @@ const ProviderTours: React.FC = () => {
     navigate(`/admin/tours/edit/${tour.id}`);
   };
 
+  // Handle open approve modal
+  const handleOpenApproveModal = (tour: Tour) => {
+    if (!isAdmin) {
+      alert("Chỉ admin mới có quyền duyệt tour.");
+      return;
+    }
+    setTourToApprove(tour);
+    setApproveModalOpen(true);
+  };
+
+  // Handle approve tour (only for admin)
+  const handleApproveTour = async () => {
+    if (!tourToApprove) return;
+    
+    try {
+      setLoadingTourId(tourToApprove.id);
+      await approveTourService(tourToApprove.id);
+      // Refresh the tours list
+      if (showUnapprovedOnly) {
+        const res = await fetchToursUnapproved(currentPage, 10);
+        setTours(res.data);
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
+      } else if (showBannedOnly) {
+        const res = await fetchToursBanned(currentPage, 10);
+        setTours(res.data);
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
+      } else {
+        const refreshParams: any = {
+          page: currentPage,
+          limit: 10,
+          search: searchTerm || undefined,
+          tour_category_id:
+            selectedCategoryId !== "all"
+              ? Number(selectedCategoryId)
+              : undefined,
+        };
+
+        let providerId: number | null = null;
+        if (user?.role === "provider") {
+          providerId = user?.provider_id || user?.providerId || user?.id;
+        } else if (user?.role === "admin" && selectedProviderId !== "all") {
+          providerId = Number(selectedProviderId);
+        }
+
+        if (providerId) {
+          refreshParams.provider_id = providerId;
+        }
+
+        const res = await fetchTours(refreshParams);
+        setTours(res.data);
+        setTotalPages(res.pagination.totalPages);
+        setTotalItems(res.pagination.totalItems);
+      }
+      setApproveModalOpen(false);
+      setTourToApprove(null);
+      toast.success("Duyệt tour thành công!");
+    } catch (error) {
+      console.error("Failed to approve tour:", error);
+      toast.error("Không thể duyệt tour. Vui lòng thử lại.");
+    } finally {
+      setLoadingTourId(null);
+    }
+  };
+
+  // Helper function to refresh tours list
+  const refreshToursList = async () => {
+    if (showUnapprovedOnly) {
+      const res = await fetchToursUnapproved(currentPage, 10);
+      setTours(res.data);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.totalItems);
+    } else if (showBannedOnly) {
+      const res = await fetchToursBanned(currentPage, 10);
+      setTours(res.data);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.totalItems);
+    } else {
+      const refreshParams: any = {
+        page: currentPage,
+        limit: 10,
+        search: searchTerm || undefined,
+        tour_category_id:
+          selectedCategoryId !== "all"
+            ? Number(selectedCategoryId)
+            : undefined,
+      };
+
+      let providerId: number | null = null;
+      if (user?.role === "provider") {
+        providerId = user?.provider_id || user?.providerId || user?.id;
+      } else if (user?.role === "admin" && selectedProviderId !== "all") {
+        providerId = Number(selectedProviderId);
+      }
+
+      if (providerId) {
+        refreshParams.provider_id = providerId;
+      }
+
+      const res = await fetchTours(refreshParams);
+      setTours(res.data);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.totalItems);
+    }
+  };
+
+  // Handle ban tour (only for admin)
+  const handleBanTour = async () => {
+    if (!tourToBan) return;
+    if (!isAdmin) {
+      toast.error("Chỉ admin mới có quyền cấm tour.");
+      return;
+    }
+
+    try {
+      setIsBanning(true);
+      setLoadingTourId(tourToBan.id);
+      await bannedTourService(tourToBan.id);
+      setBanModalOpen(false);
+      setTourToBan(null);
+      await refreshToursList();
+      toast.success("Cấm tour thành công!");
+    } catch (error) {
+      console.error("Failed to ban tour:", error);
+      toast.error("Không thể cấm tour. Vui lòng thử lại.");
+    } finally {
+      setIsBanning(false);
+      setLoadingTourId(null);
+    }
+  };
+
+  // Handle unban tour (only for admin)
+  const handleUnbanTour = async (tourId: number) => {
+    if (!isAdmin) {
+      toast.error("Chỉ admin mới có quyền gỡ cấm tour.");
+      return;
+    }
+
+    try {
+      setLoadingTourId(tourId);
+      await unbannedTourService(tourId);
+      await refreshToursList();
+      toast.success("Gỡ cấm tour thành công!");
+    } catch (error) {
+      console.error("Failed to unban tour:", error);
+      toast.error("Không thể gỡ cấm tour. Vui lòng thử lại.");
+    } finally {
+      setLoadingTourId(null);
+    }
+  };
+
+  // Handle open ban modal
+  const handleOpenBanModal = (tour: Tour) => {
+    if (!isAdmin) {
+      toast.error("Chỉ admin mới có quyền cấm tour.");
+      return;
+    }
+    setTourToBan(tour);
+    setBanModalOpen(true);
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -467,9 +684,33 @@ const ProviderTours: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">Quản Lý Tours</h1>
           <p className="text-muted-foreground">
-            Quản lý tất cả tours của bạn ({totalItems} tours)
-            {isAdmin && (
-              <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+            {showUnapprovedOnly ? (
+              <>
+                Tour chưa được duyệt ({totalItems} tours)
+                {isAdmin && (
+                  <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+                )}
+                {user?.role === "provider" && (
+                  <span className="text-orange-600 ml-2">(Đang chờ duyệt)</span>
+                )}
+              </>
+            ) : showBannedOnly ? (
+              <>
+                Tour đã bị cấm ({totalItems} tours)
+                {isAdmin && (
+                  <span className="text-red-600 ml-2">(Chỉ xem - Admin)</span>
+                )}
+                {user?.role === "provider" && (
+                  <span className="text-red-600 ml-2">(Tour bị cấm)</span>
+                )}
+              </>
+            ) : (
+              <>
+                Quản lý tất cả tours của bạn ({totalItems} tours)
+                {isAdmin && (
+                  <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+                )}
+              </>
             )}
           </p>
           {!loadingSchedules && remainingSchedules.length > 0 && (
@@ -574,6 +815,42 @@ const ProviderTours: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            {(isAdmin || user?.role === "provider") && (
+              <>
+                <Button
+                  variant={showUnapprovedOnly ? "default" : "outline"}
+                  onClick={() => {
+                    setShowUnapprovedOnly(!showUnapprovedOnly);
+                    setShowBannedOnly(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center gap-2 ${
+                    showUnapprovedOnly
+                      ? "bg-orange-600 hover:bg-orange-700 text-white"
+                      : ""
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  {showUnapprovedOnly ? "Đang xem tour chưa duyệt" : "Xem tour chưa duyệt"}
+                </Button>
+                <Button
+                  variant={showBannedOnly ? "default" : "outline"}
+                  onClick={() => {
+                    setShowBannedOnly(!showBannedOnly);
+                    setShowUnapprovedOnly(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center gap-2 ${
+                    showBannedOnly
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : ""
+                  }`}
+                >
+                  <Ban className="w-4 h-4" />
+                  {showBannedOnly ? "Đang xem tour bị cấm" : "Xem tour bị cấm"}
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -685,14 +962,21 @@ const ProviderTours: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={tour.is_active ? "default" : "secondary"}
-                          className={
-                            tour.is_active ? "bg-green-500" : "bg-red-500"
-                          }
-                        >
-                          {tour.is_active ? "Hoạt động" : "Tạm dừng"}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          {tour.is_banned && (
+                            <Badge className="bg-red-600 text-white">
+                              Bị cấm
+                            </Badge>
+                          )}
+                          <Badge
+                            variant={tour.is_active ? "default" : "secondary"}
+                            className={
+                              tour.is_active ? "bg-green-500" : "bg-gray-500"
+                            }
+                          >
+                            {tour.is_active ? "Hoạt động" : "Tạm dừng"}
+                          </Badge>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -761,6 +1045,59 @@ const ProviderTours: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
+                          {/* Button approve tour - chỉ hiển thị cho admin khi xem tour chưa duyệt */}
+                          {isAdmin && showUnapprovedOnly && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenApproveModal(tour)}
+                              disabled={loadingTourId === tour.id}
+                              className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                              title="Duyệt tour"
+                            >
+                              {loadingTourId === tour.id ? (
+                                <span className="flex items-center">
+                                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-1"></span>
+                                </span>
+                              ) : (
+                                <CheckCircle className="w-4 h-4" />
+                              )}
+                            </Button>
+                          )}
+                          {/* Button ban/unban tour - chỉ hiển thị cho admin */}
+                          {isAdmin && !showUnapprovedOnly && (
+                            <>
+                              {tour.is_banned ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUnbanTour(tour.id)}
+                                  disabled={loadingTourId === tour.id}
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                                  title="Gỡ cấm tour"
+                                >
+                                  {loadingTourId === tour.id ? (
+                                    <span className="flex items-center">
+                                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-1"></span>
+                                    </span>
+                                  ) : (
+                                    <ShieldCheck className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleOpenBanModal(tour)}
+                                  disabled={loadingTourId === tour.id}
+                                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                  title="Cấm tour"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </>
+                          )}
                           {/* Ẩn các nút Sửa, Xóa, Đổi trạng thái nếu là admin */}
                           {!isAdmin && (
                             <>
@@ -851,6 +1188,32 @@ const ProviderTours: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Approve Tour Modal */}
+      <ApproveTourModal
+        isOpen={approveModalOpen}
+        tour={tourToApprove}
+        loading={loadingTourId === tourToApprove?.id}
+        onClose={() => {
+          setApproveModalOpen(false);
+          setTourToApprove(null);
+        }}
+        onConfirm={handleApproveTour}
+        getCategoryName={getCategoryName}
+      />
+
+      {/* Ban Tour Modal */}
+      <BanTourModal
+        isOpen={banModalOpen}
+        tour={tourToBan}
+        loading={isBanning && loadingTourId === tourToBan?.id}
+        onClose={() => {
+          setBanModalOpen(false);
+          setTourToBan(null);
+        }}
+        onConfirm={handleBanTour}
+        getCategoryName={getCategoryName}
+      />
     </div>
   );
 };

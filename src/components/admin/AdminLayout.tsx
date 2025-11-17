@@ -1,6 +1,7 @@
 import React from 'react';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
+import { Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface AdminLayoutProps {
@@ -23,6 +24,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                     {children}
                 </main>
             </div>
+            <Toaster richColors position="top-right" />
         </div>
     );
 };

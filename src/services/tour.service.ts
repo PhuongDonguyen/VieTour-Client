@@ -14,12 +14,17 @@ import {
   updateTour,
   deleteTour,
   toggleTourStatus,
+  getToursUnapproved,
+  approveTour,
   type TourResponse,
   type TourQueryParams,
   type TourCreateResponse,
   type TourUpdateResponse,
   type TourDeleteResponse,
   type TourToggleResponse,
+  bannedTour,
+  unbannedTour,
+  getToursBanned,
 } from "../apis/tour.api";
 
 export const fetchTours = async (
@@ -250,4 +255,55 @@ export const getTourViewStatus = (
     lastViewTime,
     minutesAgo,
   };
+};
+
+export const approveTourService = async (tourId: number) => {
+  try {
+    const response = await approveTour(tourId);
+    return response.data;
+  } catch (error) {
+    console.error("Error approving tour:", error);
+    throw error;
+  }
+};
+
+export const fetchToursUnapproved = async (page?: number, limit?: number) => {
+  try {
+    const response = await getToursUnapproved(page, limit);
+    if (response.data && response.data.success) return response.data;
+    throw new Error("Không lấy được tất cả tour");
+  } catch (error) {
+    console.error("Error getting tours unapproved:", error);
+    throw error;
+  }
+};
+
+export const bannedTourService = async (tourId: number) => {
+  try {
+    const response = await bannedTour(tourId);
+    return response.data;
+  } catch (error) {
+    console.error("Error banning tour:", error);
+    throw error;
+  }
+};
+
+export const unbannedTourService = async (tourId: number) => {
+  try {
+    const response = await unbannedTour(tourId);
+    return response.data;
+  } catch (error) {
+    console.error("Error unbanning tour:", error);
+    throw error;
+  }
+};
+
+export const fetchToursBanned = async (page?: number, limit?: number) => {
+  try {
+    const response = await getToursBanned(page, limit);
+    return response.data;
+  } catch (error) {
+    console.error("Error getting tours banned:", error);
+    throw error;
+  }
 };

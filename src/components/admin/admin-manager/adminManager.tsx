@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUsers, getUsersSearch, lockUserAccount, type GetUsersResponse, type GetProvidersResponse, type User, type Provider } from '@/services/adminManager.service';
+import { fetchAllToursByProviderId } from '@/services/tour.service';
+import type { TourResponse } from '@/apis/tour.api';
 import { toast } from 'sonner';
 import UserManagementHeader from './UserManagementHeader';
 import UserManagementActions from './UserManagementActions';
@@ -7,8 +9,10 @@ import UserTable from './UserTable';
 import ProviderTable from './ProviderTable';
 import UserPagination from './UserPagination';
 import LockAccountModal from './LockAccountModal';
+import ProviderToursModal from './ProviderToursModal';
 
 const PAGE_SIZE = 8;
+const PROVIDER_TOURS_PAGE_SIZE = 6;
 
 type Role = 'user' | 'provider';
 
@@ -23,6 +27,12 @@ const UserManagement = () => {
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<User | Provider | null>(null);
   const [lockLoading, setLockLoading] = useState(false);
+  const [providerToursModalOpen, setProviderToursModalOpen] = useState(false);
+  const [selectedProviderForTours, setSelectedProviderForTours] = useState<Provider | null>(null);
+  const [providerTours, setProviderTours] = useState<TourResponse['data']>([]);
+  const [providerToursPagination, setProviderToursPagination] = useState<TourResponse['pagination'] | null>(null);
+  const [providerToursLoading, setProviderToursLoading] = useState(false);
+  const [providerToursCurrentPage, setProviderToursCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -137,6 +147,53 @@ const UserManagement = () => {
     setLockModalOpen(true);
   };
 
+  const loadProviderTours = async (provider: Provider, page: number = 1) => {
+    try {
+      setProviderToursLoading(true);
+      const response = await fetchAllToursByProviderId(provider.id, page, PROVIDER_TOURS_PAGE_SIZE);
+
+      if (response?.success) {
+        setProviderTours(response.data ?? []);
+        setProviderToursPagination(response.pagination ?? null);
+        setProviderToursCurrentPage(response.pagination?.page ?? page);
+      } else {
+        setProviderTours([]);
+        setProviderToursPagination(null);
+        toast.error('Không lấy được danh sách tour của nhà cung cấp');
+      }
+    } catch (error: any) {
+      console.error('Failed to load provider tours:', error);
+      setProviderTours([]);
+      setProviderToursPagination(null);
+      toast.error(error.message || 'Không tải được danh sách tour của nhà cung cấp');
+    } finally {
+      setProviderToursLoading(false);
+    }
+  };
+
+  const handleViewProviderTours = (provider: Provider) => {
+    setSelectedProviderForTours(provider);
+    setProviderToursModalOpen(true);
+    setProviderTours([]);
+    setProviderToursPagination(null);
+    setProviderToursCurrentPage(1);
+    void loadProviderTours(provider, 1);
+  };
+
+  const handleProviderToursPageChange = (page: number) => {
+    if (!selectedProviderForTours) return;
+    setProviderToursCurrentPage(page);
+    void loadProviderTours(selectedProviderForTours, page);
+  };
+
+  const handleCloseProviderToursModal = () => {
+    setProviderToursModalOpen(false);
+    setSelectedProviderForTours(null);
+    setProviderTours([]);
+    setProviderToursPagination(null);
+    setProviderToursCurrentPage(1);
+  };
+
   const handleConfirmLock = async (accountId: number, lockedUntil: string) => {
     try {
       setLockLoading(true);
@@ -209,6 +266,7 @@ const UserManagement = () => {
             loading={loading}
             formatDate={formatDate}
             onLockProvider={handleLockProvider}
+            onViewProviderTours={handleViewProviderTours}
           />
         )}
 
@@ -231,6 +289,16 @@ const UserManagement = () => {
           }}
           onConfirm={handleConfirmLock}
           loading={lockLoading}
+        />
+        <ProviderToursModal
+          isOpen={providerToursModalOpen}
+          provider={selectedProviderForTours}
+          tours={providerTours}
+          loading={providerToursLoading}
+          pagination={providerToursPagination}
+          currentPage={providerToursCurrentPage}
+          onClose={handleCloseProviderToursModal}
+          onPageChange={handleProviderToursPageChange}
         />
       </div>
     </div>
