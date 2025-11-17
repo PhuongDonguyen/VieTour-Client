@@ -376,15 +376,18 @@ const AdminChatSupport: React.FC = () => {
     conversationId: number,
     conversation?: Conversation
   ) => {
+    console.log("conversationId read: ", conversationId);
+    console.log("conversation read: ", conversation);
+    console.log("messages read: ", messages);
     try {
       // Lọc ra các tin nhắn chưa đọc và không phải của provider hiện tại
       const unreadMessages = messages.filter(
         (msg) =>
           !msg.is_read && msg.sender_id !== selectedConversation?.provider_id
       );
-
+      
       if (unreadMessages.length === 0) return;
-
+      console.log("đã vào đây");
       const messageIds = unreadMessages.map((msg) => msg.id);
       const markedCount = unreadMessages.length; // Số lượng tin nhắn đã đánh dấu
 
