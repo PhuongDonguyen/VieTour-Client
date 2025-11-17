@@ -1158,7 +1158,7 @@ const AdminChatSupport: React.FC = () => {
                         <span
                           className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
                             conversation.partner_presence?.online
-                              ? "bg-gray-500"
+                              ? "bg-green-500"
                               : "bg-gray-300"
                           }`}
                           title={
@@ -1232,7 +1232,7 @@ const AdminChatSupport: React.FC = () => {
                     <span
                       className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
                         selectedConversation?.partner_presence?.online
-                          ? "bg-gray-500"
+                          ? "bg-green-500"
                           : "bg-gray-300"
                       }`}
                       title={
