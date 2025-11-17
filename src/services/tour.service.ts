@@ -14,6 +14,8 @@ import {
   updateTour,
   deleteTour,
   toggleTourStatus,
+  getToursUnapproved,
+  approveTour,
   tourRecommend,
   type TourResponse,
   type TourQueryParams,
@@ -21,6 +23,9 @@ import {
   type TourUpdateResponse,
   type TourDeleteResponse,
   type TourToggleResponse,
+  bannedTour,
+  unbannedTour,
+  getToursBanned,
   type TourRecommendResponse,
   getTouridsByProviderId,
 } from "../apis/tour.api";
@@ -265,6 +270,56 @@ export const getTourViewStatus = (
   };
 };
 
+export const approveTourService = async (tourId: number) => {
+  try {
+    const response = await approveTour(tourId);
+    return response.data;
+  } catch (error) {
+    console.error("Error approving tour:", error);
+    throw error;
+  }
+};
+
+export const fetchToursUnapproved = async (page?: number, limit?: number) => {
+  try {
+    const response = await getToursUnapproved(page, limit);
+    if (response.data && response.data.success) return response.data;
+    throw new Error("Không lấy được tất cả tour");
+  } catch (error) {
+    console.error("Error getting tours unapproved:", error);
+    throw error;
+  }
+};
+
+export const bannedTourService = async (tourId: number) => {
+  try {
+    const response = await bannedTour(tourId);
+    return response.data;
+  } catch (error) {
+    console.error("Error banning tour:", error);
+    throw error;
+  }
+};
+
+export const unbannedTourService = async (tourId: number) => {
+  try {
+    const response = await unbannedTour(tourId);
+    return response.data;
+  } catch (error) {
+    console.error("Error unbanning tour:", error);
+    throw error;
+  }
+};
+
+export const fetchToursBanned = async (page?: number, limit?: number) => {
+  try {
+    const response = await getToursBanned(page, limit);
+    return response.data;
+  } catch (error) {
+    console.error("Error getting tours banned:", error);
+    throw error;
+  }
+};
 export const fetchTouridsByProviderId = async () => {
   const res = await getTouridsByProviderId();
   if (res.data && res.data.success) return res.data;

@@ -41,6 +41,7 @@ export interface Tour {
   discountedPrice?: number;
   duration: number;
   is_active: boolean;
+  is_banned?: boolean;
   created_at: string;
   updated_at: string;
   view_count?: number;
@@ -64,6 +65,8 @@ export interface Tour {
 export interface TourQueryParams {
   tour_category_id?: number;
   is_active?: boolean;
+  is_approved?: boolean;
+  is_banned?: boolean;
   page?: number;
   limit?: number;
   search?: string;
@@ -278,5 +281,19 @@ export const getAllToursByProviderId = (
   return axiosInstance.get(`/api/tours?${params.toString()}`);
 };
 
+export const approveTour = (tourId: number) =>
+  axiosInstance.patch(`/api/tours/${tourId}/approve`);
+
+export const getToursUnapproved = (page?: number, limit?: number) =>
+  axiosInstance.get(`/api/tours/unapproved?limit=${limit}&page=${page}`);
+
+export const bannedTour = (tourId: number) =>
+  axiosInstance.patch(`/api/tours/${tourId}/ban`);
+
+export const unbannedTour = (tourId: number) =>
+  axiosInstance.patch(`/api/tours/${tourId}/unban`);
+
+export const getToursBanned = (page?: number, limit?: number) =>
+  axiosInstance.get(`/api/tours/banned?limit=${limit}&page=${page}`);
 export const getTouridsByProviderId = () =>
   axiosInstance.get(`/api/tours/tour-provider`);
