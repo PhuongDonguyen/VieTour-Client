@@ -183,14 +183,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       //   icon: <Building className="w-4 h-4" />,
       //   allowedRoles: ["provider"], // Only providers can manage their profile
       // },
+      // {
+      //   label: "Trả lời câu hỏi",
+      //   href: "/admin/questions",
+      //   icon: <FileText className="w-4 h-4" />,
+      //   allowedRoles: ["provider"], // Only providers can see their questions
+      // },
       {
         label: "Trả lời câu hỏi",
-        href: "/admin/questions",
-        icon: <FileText className="w-4 h-4" />,
-        allowedRoles: ["provider"], // Only providers can see their questions
-      },
-      {
-        label: "Trả lời câu hỏi 2",
         href: "/admin/questions2",
         icon: <FileText className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their questions
