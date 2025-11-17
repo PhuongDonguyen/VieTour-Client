@@ -277,3 +277,6 @@ export const getAllToursByProviderId = (
 
   return axiosInstance.get(`/api/tours?${params.toString()}`);
 };
+
+export const getTouridsByProviderId = () =>
+  axiosInstance.get(`/api/tours/tour-provider`);
