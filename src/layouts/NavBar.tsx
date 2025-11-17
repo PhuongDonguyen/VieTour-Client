@@ -274,6 +274,16 @@ export const NavBar = ({ textDark = false }) => {
                         >
                           Thay đổi mật khẩu
                         </Link>
+                        <Link
+                          to="chat"
+                          className={`block px-4 py-2 transition-colors ${
+                            isScrolled || textDark
+                              ? "text-gray-700 hover:bg-orange-50 hover:text-orange-500"
+                              : "text-white hover:bg-white/20 hover:text-orange-300"
+                          }`}
+                        >
+                          Liên hệ hỗ trợ
+                        </Link>
                         <a
                           href="#"
                           onClick={(e) => {
@@ -464,6 +474,7 @@ export const NavBar = ({ textDark = false }) => {
                         >
                           Thay đổi mật khẩu
                         </Link>
+    
                         <a
                           href="#"
                           onClick={async (e) => {

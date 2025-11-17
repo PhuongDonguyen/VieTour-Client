@@ -16,6 +16,7 @@ import {
   toggleTourStatus,
   getToursUnapproved,
   approveTour,
+  tourRecommend,
   type TourResponse,
   type TourQueryParams,
   type TourCreateResponse,
@@ -25,6 +26,7 @@ import {
   bannedTour,
   unbannedTour,
   getToursBanned,
+  type TourRecommendResponse,
   getTouridsByProviderId,
 } from "../apis/tour.api";
 
@@ -78,7 +80,11 @@ export const fetchTourById = async (tour_id: number) => {
   throw new Error("Không tìm thấy tour");
 };
 
-export const fetchAllToursByProviderId = async (providerId: number | null, page?: number, limit?: number) => {
+export const fetchAllToursByProviderId = async (
+  providerId: number | null,
+  page?: number,
+  limit?: number
+) => {
   const res = await getAllToursByProviderId(providerId, page, limit);
   if (res.data && res.data.success) return res.data;
   throw new Error("Không lấy được tất cả tour");
@@ -114,6 +120,12 @@ export const toggleTourStatusService = async (
   id: number
 ): Promise<TourToggleResponse> => {
   const res = await toggleTourStatus(id);
+  return res;
+};
+
+// Fetch recommended tours based on view history
+export const fetchTourRecommend = async (): Promise<TourRecommendResponse> => {
+  const res = await tourRecommend();
   return res;
 };
 

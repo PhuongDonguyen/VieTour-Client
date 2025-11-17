@@ -5,12 +5,14 @@ import FeaturedTours from "../components/FeaturedTours";
 import TourListCarousel from "../components/TourCategoryList";
 import BlogSection from "../components/BlogSection";
 import { LazyLoad } from "../components/LazyLoad";
+import RecommendedTours from "../components/TourRecommend";
 import {
   SkeletonSearchSection,
   SkeletonFeaturedTours,
   SkeletonMainTours,
   SkeletonTourCategories,
-  SkeletonBlogSection
+  SkeletonBlogSection,
+  SkeletonRecommendTours
 } from "../components/Skeleton";
 
 export default function Home() {
@@ -35,6 +37,10 @@ export default function Home() {
       {/* Tour Category List - Lazy load with animation */}
       <LazyLoad placeholder={<SkeletonTourCategories />}>
         <TourListCarousel />
+      </LazyLoad>
+      {/* Recommended Tours - Lazy load with animation */}
+      <LazyLoad placeholder={<SkeletonRecommendTours />}>
+        <RecommendedTours />
       </LazyLoad>
 
       <BlogSection />
