@@ -135,6 +135,14 @@ export interface SearchSimilarToursResponse {
   tours: SimilarTour[];
 }
 
+// Recommendation response based on view history
+export interface TourRecommendResponse {
+  success: boolean;
+  data: SimilarTour[];
+  count: number;
+  message: string;
+}
+
 /**
  * Get all tours with optional filters
  */
@@ -226,6 +234,15 @@ export const searchSimilarTours = async (
   return response.data;
 };
 
+/**
+ * Get recommended tours based on user's view history
+ * GET /api/tours/recommend
+ */
+export const tourRecommend = async (): Promise<TourRecommendResponse> => {
+  const response = await axiosInstance.get("/api/tours/recommended");
+  return response.data;
+};
+
 // Legacy functions for backward compatibility
 export const getTourBySlug = (slug: string) =>
   axiosInstance.get(`/api/tours?slug=${slug}`);
@@ -248,11 +265,15 @@ export const getToursByCatId = (catId: number) =>
 export const getToursByIsActive = (active: boolean) =>
   axiosInstance.get(`/api/tours?is_active=${active}`);
 
-export const getAllToursByProviderId = (providerId: number | null, page?: number, limit?: number) => {
+export const getAllToursByProviderId = (
+  providerId: number | null,
+  page?: number,
+  limit?: number
+) => {
   const params = new URLSearchParams();
-  params.append('provider_id', providerId?.toString() || '');
-  if (page) params.append('page', page.toString());
-  if (limit) params.append('limit', limit.toString());
+  params.append("provider_id", providerId?.toString() || "");
+  if (page) params.append("page", page.toString());
+  if (limit) params.append("limit", limit.toString());
 
   return axiosInstance.get(`/api/tours?${params.toString()}`);
 };
