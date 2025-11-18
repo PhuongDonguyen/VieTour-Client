@@ -9,6 +9,7 @@ interface ProviderTableProps {
   formatDate: (dateString: string) => string;
   onLockProvider: (provider: Provider) => void;
   onViewProviderTours: (provider: Provider) => void;
+  onViewDetail: (provider: Provider) => void;
 }
 
 const ProviderAvatar: React.FC<{ avatar: string; companyName: string }> = ({ avatar, companyName }) => {
@@ -33,7 +34,7 @@ const ProviderAvatar: React.FC<{ avatar: string; companyName: string }> = ({ ava
   );
 };
 
-const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, formatDate, onLockProvider, onViewProviderTours }) => {
+const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, formatDate, onLockProvider, onViewProviderTours, onViewDetail }) => {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       <table className="w-full">
@@ -83,7 +84,11 @@ const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, forma
             </tr>
           ) : (
             providers.map((provider) => (
-              <tr key={provider.id} className="hover:bg-gray-50 transition-colors">
+              <tr 
+                key={provider.id} 
+                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => onViewDetail(provider)}
+              >
                 <td className="px-6 py-4 text-sm text-gray-900">
                   #{provider.id}
                 </td>
@@ -124,7 +129,7 @@ const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, forma
                 <td className="px-6 py-4 text-sm text-gray-600">
                   {formatDate(provider.created_at)}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                   <ProviderActionsMenu provider={provider} onLockProvider={onLockProvider} onViewTours={onViewProviderTours} />
                 </td>
               </tr>

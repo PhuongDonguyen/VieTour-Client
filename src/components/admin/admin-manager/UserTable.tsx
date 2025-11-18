@@ -8,9 +8,10 @@ interface UserTableProps {
   loading: boolean;
   formatDate: (dateString: string) => string;
   onLockUser: (user: User) => void;
+  onViewDetail: (user: User) => void;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ users, loading, formatDate, onLockUser }) => {
+const UserTable: React.FC<UserTableProps> = ({ users, loading, formatDate, onLockUser, onViewDetail }) => {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       <table className="w-full">
@@ -57,7 +58,11 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, formatDate, onLoc
             </tr>
           ) : (
             users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+              <tr 
+                key={user.id} 
+                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => onViewDetail(user)}
+              >
                 <td className="px-6 py-4 text-sm text-gray-900">
                   #{user.id}
                 </td>
@@ -109,7 +114,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, formatDate, onLoc
                 <td className="px-6 py-4 text-sm text-gray-600">
                   {formatDate(user.created_at)}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                   <UserActionsMenu user={user} onLockUser={onLockUser} />
                 </td>
               </tr>

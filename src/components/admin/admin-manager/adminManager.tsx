@@ -10,6 +10,7 @@ import ProviderTable from './ProviderTable';
 import UserPagination from './UserPagination';
 import LockAccountModal from './LockAccountModal';
 import ProviderToursModal from './ProviderToursModal';
+import AccountDetailModal from './AccountDetailModal';
 
 const PAGE_SIZE = 8;
 const PROVIDER_TOURS_PAGE_SIZE = 6;
@@ -33,6 +34,8 @@ const UserManagement = () => {
   const [providerToursPagination, setProviderToursPagination] = useState<TourResponse['pagination'] | null>(null);
   const [providerToursLoading, setProviderToursLoading] = useState(false);
   const [providerToursCurrentPage, setProviderToursCurrentPage] = useState(1);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedAccountForDetail, setSelectedAccountForDetail] = useState<User | Provider | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -194,6 +197,16 @@ const UserManagement = () => {
     setProviderToursCurrentPage(1);
   };
 
+  const handleViewAccountDetail = (account: User | Provider) => {
+    setSelectedAccountForDetail(account);
+    setDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setSelectedAccountForDetail(null);
+  };
+
   const handleConfirmLock = async (accountId: number, lockedUntil: string) => {
     try {
       setLockLoading(true);
@@ -259,6 +272,7 @@ const UserManagement = () => {
             loading={loading}
             formatDate={formatDate}
             onLockUser={handleLockUser}
+            onViewDetail={handleViewAccountDetail}
           />
         ) : (
           <ProviderTable
@@ -267,6 +281,7 @@ const UserManagement = () => {
             formatDate={formatDate}
             onLockProvider={handleLockProvider}
             onViewProviderTours={handleViewProviderTours}
+            onViewDetail={handleViewAccountDetail}
           />
         )}
 
@@ -299,6 +314,13 @@ const UserManagement = () => {
           currentPage={providerToursCurrentPage}
           onClose={handleCloseProviderToursModal}
           onPageChange={handleProviderToursPageChange}
+        />
+        <AccountDetailModal
+          isOpen={detailModalOpen}
+          account={selectedAccountForDetail}
+          accountType={role}
+          onClose={handleCloseDetailModal}
+          formatDate={formatDate}
         />
       </div>
     </div>
