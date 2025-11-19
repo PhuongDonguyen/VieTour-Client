@@ -7,11 +7,11 @@ interface UserTableProps {
   users: User[];
   loading: boolean;
   formatDate: (dateString: string) => string;
-  onLockUser: (user: User) => void;
+  onToggleBan: (user: User) => void;
   onViewDetail: (user: User) => void;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ users, loading, formatDate, onLockUser, onViewDetail }) => {
+const UserTable: React.FC<UserTableProps> = ({ users, loading, formatDate, onToggleBan, onViewDetail }) => {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       <table className="w-full">
@@ -109,13 +109,13 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, formatDate, onLoc
                   )}
                 </td>
                 <td className="px-6 py-4">
-                  <UserStatus lockedUntil={user.locked_until} formatDate={formatDate} />
+                  <UserStatus isBanned={user.is_banned} />
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
                   {formatDate(user.created_at)}
                 </td>
                 <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                  <UserActionsMenu user={user} onLockUser={onLockUser} />
+                  <UserActionsMenu user={user} onToggleBan={onToggleBan} />
                 </td>
               </tr>
             ))

@@ -7,7 +7,7 @@ interface ProviderTableProps {
   providers: Provider[];
   loading: boolean;
   formatDate: (dateString: string) => string;
-  onLockProvider: (provider: Provider) => void;
+  onToggleBan: (provider: Provider) => void;
   onViewProviderTours: (provider: Provider) => void;
   onViewDetail: (provider: Provider) => void;
 }
@@ -34,7 +34,7 @@ const ProviderAvatar: React.FC<{ avatar: string; companyName: string }> = ({ ava
   );
 };
 
-const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, formatDate, onLockProvider, onViewProviderTours, onViewDetail }) => {
+const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, formatDate, onToggleBan, onViewProviderTours, onViewDetail }) => {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       <table className="w-full">
@@ -121,16 +121,13 @@ const ProviderTable: React.FC<ProviderTableProps> = ({ providers, loading, forma
                   {provider.tax_code}
                 </td>
                 <td className="px-6 py-4">
-                  <ProviderStatus 
-                    lockedUntil={provider.locked_until} 
-                    formatDate={formatDate}
-                  />
+                  <ProviderStatus isBanned={provider.is_banned} />
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
                   {formatDate(provider.created_at)}
                 </td>
                 <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                  <ProviderActionsMenu provider={provider} onLockProvider={onLockProvider} onViewTours={onViewProviderTours} />
+                  <ProviderActionsMenu provider={provider} onToggleBan={onToggleBan} onViewTours={onViewProviderTours} />
                 </td>
               </tr>
             ))

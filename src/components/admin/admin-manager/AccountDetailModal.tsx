@@ -112,20 +112,20 @@ const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                 <label className="text-xs font-medium text-gray-500 uppercase">Ngày tạo</label>
                 <p className="text-sm text-gray-900 mt-1">{formatDate(account.created_at)}</p>
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">Trạng thái</label>
-                <p className="text-sm text-gray-900 mt-1">
-                  {account.locked_until ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      Đã khóa đến {formatDate(account.locked_until)}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Hoạt động
-                    </span>
-                  )}
-                </p>
-              </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase">Trạng thái</label>
+                    <p className="text-sm text-gray-900 mt-1">
+                      {account.is_banned ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Bị cấm
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Hoạt động
+                        </span>
+                      )}
+                    </p>
+                  </div>
             </div>
           </div>
 

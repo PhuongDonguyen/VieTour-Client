@@ -1,25 +1,15 @@
 import React from 'react';
 
 interface ProviderStatusProps {
-  lockedUntil: string | null;
-  formatDate: (dateString: string) => string;
+  isBanned?: boolean;
 }
 
-const ProviderStatus: React.FC<ProviderStatusProps> = ({ lockedUntil, formatDate }) => {
-  const lockDate = lockedUntil ? new Date(lockedUntil) : null;
-  const now = new Date();
-  const isLocked = lockDate && lockDate > now;
-
-  if (isLocked) {
+const ProviderStatus: React.FC<ProviderStatusProps> = ({ isBanned }) => {
+  if (isBanned) {
     return (
-      <div className="flex flex-col items-start gap-1">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          Đã khóa
-        </span>
-        <span className="text-xs text-gray-500">
-          Đến: {formatDate(lockedUntil!)}
-        </span>
-      </div>
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        Bị cấm
+      </span>
     );
   }
 
