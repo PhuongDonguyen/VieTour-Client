@@ -98,6 +98,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         allowedRoles: ["admin", "provider"],
       },
       {
+        label: "Danh sách lịch trình",
+        href: "/admin/list-trip",
+        icon: <Calendar className="w-4 h-4" />,
+        allowedRoles: ["admin"],
+      },
+      {
         label: "Danh mục tour",
         href: "/admin/tours/categories",
         icon: <Eye className="w-4 h-4" />,
@@ -170,6 +176,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         href: "/admin/provider-bookings",
         icon: <Calendar className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their bookings
+      },
+      {
+        label: "Lịch trình của tôi",
+        href: "/admin/provider/list-trip",
+        icon: <MapPin className="w-4 h-4" />,
+        allowedRoles: ["provider"],
       },
       {
         label: "Earnings",
