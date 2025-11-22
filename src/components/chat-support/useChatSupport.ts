@@ -222,7 +222,6 @@ export const useChatSupport = (
       const unreadMessages = messages.filter((msg) => msg.status === "sent");
       console.log("đã vào đây");
       console.log("unreadMessages: ", unreadMessages);
-
       if (unreadMessages.length === 0) return;
 
       const messageIds = unreadMessages.map((msg) => Number(msg.id));

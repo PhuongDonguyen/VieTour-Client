@@ -48,16 +48,6 @@ export const SkeletonCard = ({ className = "" }: { className?: string }) => (
   </div>
 );
 
-export const SkeletonTourCard = ({ className = "" }: { className?: string }) => (
-  <div className={`bg-white rounded-2xl shadow-lg overflow-hidden ${className}`}>
-    <Skeleton height="h-72" className="rounded-t-2xl" />
-    <div className="p-6 space-y-4">
-      <Skeleton height="h-6" width="w-3/4" className="rounded" />
-      <Skeleton height="h-4" width="w-1/2" className="rounded" />
-      <Skeleton height="h-8" width="w-full" className="rounded-xl" />
-    </div>
-  </div>
-);
 
 export const SkeletonBlogCard = ({ className = "" }: { className?: string }) => (
   <div className={`bg-white rounded-lg shadow-sm overflow-hidden ${className}`}>

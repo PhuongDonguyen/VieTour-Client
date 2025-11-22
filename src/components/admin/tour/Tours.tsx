@@ -184,7 +184,7 @@ const ProviderTours: React.FC = () => {
       setLoading(true);
       try {
         let res;
-        
+
         // Nếu đang xem tour chưa duyệt, sử dụng function riêng
         if (showUnapprovedOnly) {
           res = await fetchToursUnapproved(currentPage, 10);
@@ -528,7 +528,7 @@ const ProviderTours: React.FC = () => {
   // Handle approve tour (only for admin)
   const handleApproveTour = async () => {
     if (!tourToApprove) return;
-    
+
     try {
       setLoadingTourId(tourToApprove.id);
       await approveTourService(tourToApprove.id);
@@ -599,9 +599,7 @@ const ProviderTours: React.FC = () => {
         limit: 10,
         search: searchTerm || undefined,
         tour_category_id:
-          selectedCategoryId !== "all"
-            ? Number(selectedCategoryId)
-            : undefined,
+          selectedCategoryId !== "all" ? Number(selectedCategoryId) : undefined,
       };
 
       let providerId: number | null = null;
@@ -688,7 +686,9 @@ const ProviderTours: React.FC = () => {
               <>
                 Tour chưa được duyệt ({totalItems} tours)
                 {isAdmin && (
-                  <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+                  <span className="text-orange-600 ml-2">
+                    (Chỉ xem - Admin)
+                  </span>
                 )}
                 {user?.role === "provider" && (
                   <span className="text-orange-600 ml-2">(Đang chờ duyệt)</span>
@@ -708,7 +708,9 @@ const ProviderTours: React.FC = () => {
               <>
                 Quản lý tất cả tours của bạn ({totalItems} tours)
                 {isAdmin && (
-                  <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+                  <span className="text-orange-600 ml-2">
+                    (Chỉ xem - Admin)
+                  </span>
                 )}
               </>
             )}
@@ -831,7 +833,9 @@ const ProviderTours: React.FC = () => {
                   }`}
                 >
                   <AlertCircle className="w-4 h-4" />
-                  {showUnapprovedOnly ? "Đang xem tour chưa duyệt" : "Xem tour chưa duyệt"}
+                  {showUnapprovedOnly
+                    ? "Đang xem tour chưa duyệt"
+                    : "Xem tour chưa duyệt"}
                 </Button>
                 <Button
                   variant={showBannedOnly ? "default" : "outline"}
