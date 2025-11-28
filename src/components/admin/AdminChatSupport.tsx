@@ -105,10 +105,12 @@ const AdminChatSupport: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     if (!chatSocketManagerRef.current) return;
+    console.log("user: ", user);
     console.log("Connect socket: ", user.id, (user as any)?.role || "provider");
     chatSocketManagerRef.current.connect(
       user.id as any,
-      (user as any)?.role || "provider"
+      (user as any)?.role || "provider",
+      user?.account_id
     );
   }, [user]);
 
@@ -301,26 +303,31 @@ const AdminChatSupport: React.FC = () => {
       messageId: string;
       readerId: string;
       readerRole: "user" | "provider";
+      senderId?: string | number;
     }) => {
       const convId = Number(data.conversationId);
       const msgId = Number(data.messageId);
       const readerId = Number(data.readerId);
-
+      const senderId = Number(data.senderId);
       console.log("Received message read status:", data);
 
       // Chỉ cập nhật nếu người đọc không phải là mình (provider)
-      if (user && String(readerId) !== String(user.id)) {
+      console.log("user: ", user);
+      if (data.readerRole === "user") {
         // Cập nhật trạng thái tin nhắn trong cache
+        console.log("đã vào đây");
         setMessagesByConversation((prev) => {
           const conversationMessages = prev[convId];
           if (!conversationMessages) return prev;
-
+          console.log("user?.account_id: ", user?.account_id);
           const updatedMessages = conversationMessages.map((msg) => {
             // Chỉ cập nhật tin nhắn của provider (tin nhắn mà provider gửi)
             if (
               msg.id === msgId &&
-              msg.sender_id === selectedConversation?.provider_id
+              msg.sender_id === user?.account_id
             ) {
+              console.log("đã vào đây 2", msg);
+
               return { ...msg, is_read: true };
             }
             return msg;
@@ -337,7 +344,7 @@ const AdminChatSupport: React.FC = () => {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === msgId &&
-              msg.sender_id === selectedConversation.provider_id
+              msg.sender_id === user?.account_id
                 ? { ...msg, is_read: true }
                 : msg
             )
@@ -381,9 +388,10 @@ const AdminChatSupport: React.FC = () => {
     console.log("messages read: ", messages);
     try {
       // Lọc ra các tin nhắn chưa đọc và không phải của provider hiện tại
+      console.log("user: ", user);
       const unreadMessages = messages.filter(
         (msg) =>
-          !msg.is_read && msg.sender_id !== selectedConversation?.provider_id
+          !msg.is_read && msg.sender_id !== user?.account_id
       );
       
       if (unreadMessages.length === 0) return;
@@ -1304,111 +1312,115 @@ const AdminChatSupport: React.FC = () => {
                     Chưa có tin nhắn nào
                   </div>
                 ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex flex-col ${
-                        message.sender_id === selectedConversation.provider_id
-                          ? "items-end"
-                          : "items-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-[70%] rounded-2xl overflow-hidden border ${
-                          message.sender_id === selectedConversation.provider_id
-                            ? "border-gray-900"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {message.image_url && (
-                          <img
-                            src={message.image_url}
-                            alt="Tin nhắn hình ảnh"
-                            className="max-w-[260px] max-h-[240px] w-full object-cover block"
-                          />
-                        )}
-                        {message.message_text && (
-                          <div className={`bg-white text-gray-900 px-4 py-2.5`}>
-                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
-                              {message.message_text}
-                            </p>
+                  <>
+                    {messages.map((message) => {
+                      const isUserMessage =
+                        message.sender_id ===
+                        selectedConversation.user?.account_id;
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex flex-col ${
+                            isUserMessage ? "items-start" : "items-end"
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[70%] rounded-2xl overflow-hidden border ${
+                              isUserMessage
+                                ? "border-gray-300"
+                                : "border-gray-900"
+                            }`}
+                          >
+                            {message.image_url && (
+                              <img
+                                src={message.image_url}
+                                alt="Tin nhắn hình ảnh"
+                                className="max-w-[260px] max-h-[240px] w-full object-cover block"
+                              />
+                            )}
+                            {message.message_text && (
+                              <div
+                                className={`bg-white text-gray-900 px-4 py-2.5`}
+                              >
+                                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                  {message.message_text}
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div
-                        className={`flex items-center gap-2 mt-1 ${
-                          message.sender_id === selectedConversation.provider_id
-                            ? "justify-end"
-                            : "justify-start"
-                        }`}
-                      >
-                        {(message as any)._status === "sending" ? (
-                          <span className="text-[11px] text-gray-400 italic">
-                            Đang gửi...
-                          </span>
-                        ) : (message as any)._status === "failed" ? (
-                          <span className="text-[11px] text-red-500">
-                            Gửi thất bại
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <span
-                              className="text-[11px] text-gray-500"
-                              key={`msg-time-${message.id}-${timeUpdateTrigger}`}
-                            >
-                              {formatTime(message.created_at)}
-                            </span>
-                            {/* Chỉ hiển thị dấu tích cho tin nhắn của provider */}
-                            {message.sender_id ===
-                              selectedConversation.provider_id && (
-                              <div className="flex">
-                                {message.is_read ? (
-                                  // 2 dấu tích xanh kiểu stroke khi đã đọc
+                          <div
+                            className={`flex items-center gap-2 mt-1 ${
+                              isUserMessage ? "justify-start" : "justify-end"
+                            }`}
+                          >
+                            {(message as any)._status === "sending" ? (
+                              <span className="text-[11px] text-gray-400 italic">
+                                Đang gửi...
+                              </span>
+                            ) : (message as any)._status === "failed" ? (
+                              <span className="text-[11px] text-red-500">
+                                Gửi thất bại
+                              </span>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <span
+                                  className="text-[11px] text-gray-500"
+                                  key={`msg-time-${message.id}-${timeUpdateTrigger}`}
+                                >
+                                  {formatTime(message.created_at)}
+                                </span>
+                                {/* Chỉ hiển thị dấu tích cho tin nhắn của provider */}
+                                {!isUserMessage && (
                                   <div className="flex">
-                                    <svg
-                                      className="w-3 h-3 text-gray-400"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    >
-                                      <path d="M5 12l4 4L19 6" />
-                                    </svg>
-                                    <svg
-                                      className="w-3 h-3 text-gray-400 ml-[-8px]"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    >
-                                      <path d="M7 14l3 3L21 6" />
-                                    </svg>
+                                    {message.is_read ? (
+                                      // 2 dấu tích xanh kiểu stroke khi đã đọc
+                                      <div className="flex">
+                                        <svg
+                                          className="w-3 h-3 text-gray-400"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
+                                          <path d="M5 12l4 4L19 6" />
+                                        </svg>
+                                        <svg
+                                          className="w-3 h-3 text-gray-400 ml-[-8px]"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
+                                          <path d="M7 14l3 3L21 6" />
+                                        </svg>
+                                      </div>
+                                    ) : (
+                                      // 1 dấu tích xám kiểu stroke khi chưa đọc
+                                      <svg
+                                        className="w-3 h-3 text-gray-400"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      >
+                                        <path d="M5 12l4 4L19 6" />
+                                      </svg>
+                                    )}
                                   </div>
-                                ) : (
-                                  // 1 dấu tích xám kiểu stroke khi chưa đọc
-                                  <svg
-                                    className="w-3 h-3 text-gray-400"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M5 12l4 4L19 6" />
-                                  </svg>
                                 )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                        </div>
+                      );
+                    })}
+                  </>
                 )}
                 <div ref={messagesEndRef} />
               </div>
