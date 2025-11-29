@@ -71,6 +71,53 @@ export const SkeletonCategoryCard = ({ className = "" }: { className?: string })
   </div>
 );
 
+export const SkeletonTourCard = ({ className = "" }: { className?: string }) => (
+  <div className={`bg-white rounded-lg shadow-md overflow-hidden w-full h-full ${className}`}>
+    {/* Image Section */}
+    <div className="relative overflow-hidden">
+      <Skeleton height="h-80" className="rounded-t-lg" />
+      {/* Discount Badge Skeleton */}
+      <div className="absolute top-2 right-2">
+        <Skeleton height="h-6" width="w-24" className="rounded-md" />
+      </div>
+    </div>
+
+    {/* Content Section */}
+    <div className="p-4">
+      {/* Title */}
+      <div className="mb-2 space-y-2">
+        <Skeleton height="h-5" width="w-full" className="rounded" />
+        <Skeleton height="h-5" width="w-3/4" className="rounded" />
+      </div>
+
+      {/* Pricing */}
+      <div className="flex flex-col gap-1 mb-3">
+        <div className="flex justify-between items-center">
+          <Skeleton height="h-3" width="w-16" className="rounded" />
+          <Skeleton height="h-4" width="w-24" className="rounded" />
+        </div>
+        <div className="flex justify-between items-center">
+          <Skeleton height="h-3" width="w-12" className="rounded" />
+          <Skeleton height="h-5" width="w-28" className="rounded" />
+        </div>
+      </div>
+
+      {/* Book Tour Button */}
+      <Skeleton height="h-10" width="w-full" className="rounded-md mb-3" />
+
+      {/* Stats */}
+      <div className="flex flex-col gap-1 pt-2 border-t border-gray-100">
+        <Skeleton height="h-3" width="w-32" className="rounded mb-1" />
+        <div className="flex items-center justify-between gap-2">
+          <Skeleton height="h-3" width="w-16" className="rounded" />
+          <Skeleton height="h-3" width="w-16" className="rounded" />
+          <Skeleton height="h-3" width="w-16" className="rounded" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export const SkeletonSearchSection = () => (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
     <div className="text-center max-w-2xl mx-auto px-4">
