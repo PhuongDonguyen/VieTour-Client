@@ -2,6 +2,7 @@ import React, { use, useEffect, useState } from "react";
 import { fetchTourRecommend } from "../services/tour.service";
 import RecommendTourCard from "./RecommendTourCard";
 import { SkeletonMainTours } from "./Skeleton";
+import { useAuth } from "@/hooks/useAuth";
 
 type TourCardData = {
   id: number;
@@ -16,10 +17,14 @@ type TourCardData = {
 const RecommendedTours: React.FC = () => {
   const [tours, setTours] = useState<TourCardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadTours = async () => {
       try {
+        if (!user) {
+          return;
+        }
         setLoading(true);
         const tourRes = await fetchTourRecommend();
         const toursData = tourRes.data;
@@ -47,31 +52,33 @@ const RecommendedTours: React.FC = () => {
   if (loading) {
     return <SkeletonMainTours />;
   }
+  if (user){
 
-  return (
-    <div className="bg-gradient-to-br bg-white py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-[#015294] mb-4">CÓ THỂ BẠN SẼ THÍCH</h2>
-          <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {tours.map((tour) => (
-            <RecommendTourCard
-              key={tour.id}
-              id={tour.id}
-              title={tour.title}
-              location={tour.location}
-              duration={tour.duration}
-              price={tour.price}
-              imageUrl={tour.imageUrl}
-              slug={tour.slug}
-            />
-          ))}
+    return (
+      <div className="bg-gradient-to-br bg-white py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-[#015294] mb-4">CÓ THỂ BẠN SẼ THÍCH</h2>
+            <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {tours.map((tour) => (
+              <RecommendTourCard
+                key={tour.id}
+                id={tour.id}
+                title={tour.title}
+                location={tour.location}
+                duration={tour.duration}
+                price={tour.price}
+                imageUrl={tour.imageUrl}
+                slug={tour.slug}
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 };
 
 export default RecommendedTours;
