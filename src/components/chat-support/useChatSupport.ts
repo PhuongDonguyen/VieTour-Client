@@ -31,6 +31,7 @@ interface UIConversation {
   id: number;
   user_id: number;
   provider_id: number;
+  provider_account_id?: number | null;
   name: string;
   avatar: string;
   lastMessage: string;
@@ -177,7 +178,7 @@ export const useChatSupport = (
   useEffect(() => {
     if (!user) return;
     if (!chatSocketManagerRef.current) return;
-    chatSocketManagerRef.current.connect(user.id as any, actor);
+    chatSocketManagerRef.current.connect(user.id as any, actor, user?.account_id);
     return () => {
       // Leave current conversation room before disconnect
       if (selectedConversationId && chatSocketManagerRef.current) {
@@ -190,17 +191,24 @@ export const useChatSupport = (
   // (moved below loadMessages)
 
   const mapApiMessageToUI = useCallback(
-    (apiMessage: Message, userId: number, providerId: number): UIMessage => {
-      const isUserMessage = apiMessage.sender_id === userId;
-      let status: UIMessage["status"] = "read";
-      // if (isUserMessage) {
-      status = apiMessage.is_read ? "read" : "sent";
-      // }
+    (apiMessage: Message, providerAccountId?: number | null): UIMessage => {
+      const senderAccountId = Number(apiMessage.sender_id);
+      const providerAccount =
+        providerAccountId != null ? Number(providerAccountId) : null;
+      console.log("senderAccountId: ", senderAccountId);
+      console.log("providerAccount: ", providerAccount);
+      const isProviderMessage =
+        providerAccount != null && senderAccountId === providerAccount;
+      const sender: "user" | "provider" = isProviderMessage
+        ? "provider"
+        : "user";
+      console.log("sender: ", sender);
+      const status: UIMessage["status"] = apiMessage.is_read ? "read" : "sent";
 
       return {
         id: apiMessage.id,
         text: apiMessage.message_text || "",
-        sender: isUserMessage ? "user" : "provider",
+        sender,
         time: formatDisplayTime(apiMessage.created_at),
         status,
         image_url: apiMessage.image_url || "",
@@ -228,19 +236,24 @@ export const useChatSupport = (
       const markedCount = unreadMessages.length; // Số lượng tin nhắn đã đánh dấu
 
       // Gọi API để đánh dấu đã đọc
-      await markMessageAsReadService(messageIds);
+      const response = await markMessageAsReadService(messageIds);
+      const resData = response.data;
+      console.log("response: ", response);
       console.log("unreadMessages: ", unreadMessages);
 
       // Emit socket cho từng tin nhắn
       if (chatSocketManagerRef.current) {
         // Sử dụng conversation được truyền vào hoặc selectedConversation
         // const currentConversation = conversation || selectedConversation;
-        const receiverId = providerId;
+        console.log("user: ", user);
+        const receiverId = resData.conversation.provider_id;
         const receiverRole = actor === "user" ? "provider" : "user";
         console.log("receiverId: ", receiverId);
+        console.log("receiverRole: ", receiverRole);
 
         if (receiverId) {
           unreadMessages.forEach((msg) => {
+            console.log("msg: ", msg, "conversationId: ", conversationId, "actor: ", actor, "receiverId: ", receiverId, "receiverRole: ", receiverRole);
             chatSocketManagerRef.current?.emitMessageRead({
               conversation_id: conversationId,
               message_id: Number(msg.id),
@@ -290,6 +303,7 @@ export const useChatSupport = (
       conversationId: number,
       userId: number,
       providerId: number,
+      providerAccountId?: number | null,
       page: number = 1
     ) => {
       try {
@@ -322,7 +336,7 @@ export const useChatSupport = (
           const orderedMessages = [...res.data].reverse();
           console.log("orderedMessages: ", orderedMessages);
           const mappedMessages = orderedMessages.map((msg) =>
-            mapApiMessageToUI(msg, userId, providerId)
+            mapApiMessageToUI(msg, providerAccountId)
           );
           console.log("mappedMessages: ", mappedMessages);
           await markMessagesAsRead(mappedMessages, conversationId, providerId);
@@ -398,6 +412,7 @@ export const useChatSupport = (
             id: conv.id,
             user_id: conv.user_id,
             provider_id: conv.provider_id,
+            provider_account_id: conv.provider?.account_id ?? null,
             name: peer.name,
             avatar: peer.avatar,
             lastMessage: newestMessage?.text || conv.last_message_text || "",
@@ -445,6 +460,7 @@ export const useChatSupport = (
             id: conv.id,
             user_id: conv.user_id,
             provider_id: conv.provider_id,
+            provider_account_id: conv.provider?.account_id ?? null,
             name: peer.name,
             avatar: peer.avatar,
             lastMessage: conv.last_message_text || "",
@@ -485,7 +501,8 @@ export const useChatSupport = (
           await loadMessages(
             latestConversation.id,
             latestConversation.user_id,
-            latestConversation.provider_id
+            latestConversation.provider_id,
+            latestConversation.provider_account_id
           );
 
           // Mark as read if there are unread messages
@@ -531,6 +548,7 @@ export const useChatSupport = (
             id: conv.id,
             user_id: conv.user_id,
             provider_id: conv.provider_id,
+            provider_account_id: conv.provider?.account_id ?? null,
             name: peer.name,
             avatar: peer.avatar,
             lastMessage: conv.last_message_text || "",
@@ -721,6 +739,7 @@ export const useChatSupport = (
         conversationId,
         conv.user_id,
         conv.provider_id,
+        conv.provider_account_id,
         nextPage
       );
     },
@@ -957,7 +976,12 @@ export const useChatSupport = (
 
       // Only load messages if not already loaded
       if (!messagesByConversation[conversationId]) {
-        await loadMessages(conversationId, conv.user_id, conv.provider_id);
+        await loadMessages(
+          conversationId,
+          conv.user_id,
+          conv.provider_id,
+          conv.provider_account_id
+        );
       }
 
       // Auto scroll to bottom after selecting conversation
@@ -1049,6 +1073,7 @@ export const useChatSupport = (
             try {
               if (chatSocketManagerRef.current) {
                 const senderRole: "user" | "provider" = actor;
+                console.log("senderId to provider: ");
                 const senderId = String(user?.id || "");
                 const receiverRole: "user" | "provider" =
                   senderRole === "user" ? "provider" : "user";
@@ -1104,7 +1129,7 @@ export const useChatSupport = (
           try {
             if (chatSocketManagerRef.current && selectedConversation) {
               const senderRole: "user" | "provider" = actor;
-              const senderId = String(user?.id || "");
+              const senderId = String(user?.account_id || "");
               const receiverRole: "user" | "provider" =
                 senderRole === "user" ? "provider" : "user";
               const receiverId =

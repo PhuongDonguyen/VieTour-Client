@@ -89,9 +89,17 @@ export const sendMessage = async (
   }
 };
 
+export interface MarkAsReadData {
+  conversation: {
+    provider_id: number;
+  };
+  messages: Message[];
+}
+
 export interface MarkAsReadResponse {
   success: boolean;
   message: string;
+  data: MarkAsReadData;
 }
 
 export const markMessageAsRead = async (

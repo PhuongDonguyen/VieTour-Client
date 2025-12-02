@@ -85,8 +85,8 @@ export const SkeletonTourCard = ({ className = "" }: { className?: string }) => 
     {/* Content Section */}
     <div className="p-4">
       {/* Title */}
-      <div className="mb-2 space-y-2">
-        <Skeleton height="h-5" width="w-full" className="rounded" />
+      <div className="mb-2">
+        <Skeleton height="h-5" width="w-full" className="rounded mb-2" />
         <Skeleton height="h-5" width="w-3/4" className="rounded" />
       </div>
 
@@ -107,7 +107,9 @@ export const SkeletonTourCard = ({ className = "" }: { className?: string }) => 
 
       {/* Stats */}
       <div className="flex flex-col gap-1 pt-2 border-t border-gray-100">
-        <Skeleton height="h-3" width="w-32" className="rounded mb-1" />
+        <div className="flex items-center gap-1 mb-1">
+          <Skeleton height="h-3" width="w-32" className="rounded" />
+        </div>
         <div className="flex items-center justify-between gap-2">
           <Skeleton height="h-3" width="w-16" className="rounded" />
           <Skeleton height="h-3" width="w-16" className="rounded" />
