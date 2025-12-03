@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
-import { Badge } from "../ui/badge";
-import { getConversations, Conversation } from "../../apis/conversation.api";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Textarea } from "../../ui/textarea";
+import { Badge } from "../../ui/badge";
+import { getConversations, Conversation } from "../../../apis/conversation.api";
 import {
   fetchConversationById,
   filterFetchConversations,
-} from "../../services/conversation.service";
-import { TypingLoader } from "../ui/typing";
+} from "../../../services/conversation.service";
+import { TypingLoader } from "../../ui/typing";
 import {
   getMessages,
   sendMessage,
   Message,
   SendMessagePayload,
-} from "../../apis/message.api";
+} from "../../../apis/message.api";
 import {
   Send,
   MessageCircle,
@@ -35,7 +35,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ChatSocketManager } from "@/services/chatSocket.service";
 
 const AdminChatSupport: React.FC = () => {
-  const { user } = useAuth();
+  const { user, chatSocketManagerRef } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsPage, setConversationsPage] = useState(1);
   const [conversationsHasMore, setConversationsHasMore] = useState(true);
@@ -90,7 +90,7 @@ const AdminChatSupport: React.FC = () => {
   // }, []);
 
   // Khởi tạo socket manager và join phòng cá nhân khi có user
-  const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
+  // const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
   useEffect(() => {
     chatSocketManagerRef.current = new ChatSocketManager();
     return () => {
@@ -286,13 +286,32 @@ const AdminChatSupport: React.FC = () => {
         ...prev,
         [convId]: data.isTyping,
       }));
+
+      // Nếu nhận được isTyping và đang ở conversation được chọn, kiểm tra và scroll về bottom nếu đang gần bottom
+      if (data.isTyping && selectedConversation?.id === convId) {
+        const container = messagesContainerRef.current;
+        if (container) {
+          // Kiểm tra nếu đang scroll gần bottom (trong vòng 100px từ bottom)
+          const scrollTop = container.scrollTop;
+          const scrollHeight = container.scrollHeight;
+          const clientHeight = container.clientHeight;
+          const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+          
+          // Nếu đang gần bottom (trong vòng 100px), scroll về bottom
+          if (distanceFromBottom <= 100) {
+            requestAnimationFrame(() => {
+              scrollToBottom();
+            });
+          }
+        }
+      }
     };
 
     chatSocketManagerRef.current.onUserTyping(handleTyping);
     return () => {
       chatSocketManagerRef.current?.offUserTyping(handleTyping as any);
     };
-  }, []);
+  }, [selectedConversation]);
 
   // Lắng nghe trạng thái tin nhắn đã đọc
   useEffect(() => {
@@ -395,34 +414,11 @@ const AdminChatSupport: React.FC = () => {
       );
       
       if (unreadMessages.length === 0) return;
-      console.log("đã vào đây");
       const messageIds = unreadMessages.map((msg) => msg.id);
       const markedCount = unreadMessages.length; // Số lượng tin nhắn đã đánh dấu
 
       // Gọi API để đánh dấu đã đọc
       await markMessageAsReadService(messageIds);
-      console.log("unreadMessages: ", unreadMessages);
-
-      // Emit socket cho từng tin nhắn
-      if (chatSocketManagerRef.current) {
-        // Sử dụng conversation được truyền vào hoặc selectedConversation
-        const currentConversation = conversation || selectedConversation;
-        const receiverId = (currentConversation as any)?.user_id;
-        const receiverRole = "user";
-        console.log("receiverId: ", receiverId);
-
-        if (receiverId) {
-          unreadMessages.forEach((msg) => {
-            chatSocketManagerRef.current?.emitMessageRead({
-              conversation_id: conversationId,
-              message_id: msg.id,
-              readerRole: "provider",
-              receiverId,
-              receiverRole,
-            });
-          });
-        }
-      }
 
       // Cập nhật UI để đánh dấu đã đọc
       setMessages((prev) =>
@@ -734,26 +730,6 @@ const AdminChatSupport: React.FC = () => {
         );
         return updated;
       });
-
-      // Emit socket event đến conversation room
-      console.log("Emitting socket message", selectedConversation);
-      try {
-        const senderId = (selectedConversation as any)?.provider_id;
-        const receiverId = (selectedConversation as any)?.user_id;
-        if (chatSocketManagerRef.current && senderId && receiverId) {
-          chatSocketManagerRef.current.emitSendMessage({
-            conversationId: selectedConversation.id,
-            messageId: (response.data as any)?.id,
-            senderId,
-            senderRole: "provider",
-            receiverId,
-            receiverRole: "user",
-            text: response.data.message_text || newMessage || "",
-            image_url: response.data.image_url || undefined,
-          });
-        }
-        console.log("Emitted socket message");
-      } catch (_) {}
 
       // Cập nhật metadata cuộc trò chuyện cục bộ, không reload toàn bộ
       setConversations((prev) => {
@@ -1422,13 +1398,13 @@ const AdminChatSupport: React.FC = () => {
                     })}
                   </>
                 )}
-                <div ref={messagesEndRef} />
-              </div>
-            </CardContent>
             {selectedConversation &&
               isTypingByConversation[selectedConversation.id] && (
                 <TypingLoader isAdmin={true} />
               )}
+                <div ref={messagesEndRef} />
+              </div>
+            </CardContent>
 
             {/* Form gửi tin nhắn */}
             <div className="p-4 border-t">

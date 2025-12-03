@@ -241,30 +241,6 @@ export const useChatSupport = (
       console.log("response: ", response);
       console.log("unreadMessages: ", unreadMessages);
 
-      // Emit socket cho từng tin nhắn
-      if (chatSocketManagerRef.current) {
-        // Sử dụng conversation được truyền vào hoặc selectedConversation
-        // const currentConversation = conversation || selectedConversation;
-        console.log("user: ", user);
-        const receiverId = resData.conversation.provider_id;
-        const receiverRole = actor === "user" ? "provider" : "user";
-        console.log("receiverId: ", receiverId);
-        console.log("receiverRole: ", receiverRole);
-
-        if (receiverId) {
-          unreadMessages.forEach((msg) => {
-            console.log("msg: ", msg, "conversationId: ", conversationId, "actor: ", actor, "receiverId: ", receiverId, "receiverRole: ", receiverRole);
-            chatSocketManagerRef.current?.emitMessageRead({
-              conversation_id: conversationId,
-              message_id: Number(msg.id),
-              readerRole: actor,
-              receiverId,
-              receiverRole,
-            });
-          });
-        }
-      }
-
       // Cập nhật UI để đánh dấu đã đọc
       setMessagesByConversation((prev) => ({
         ...prev,
@@ -1069,29 +1045,6 @@ export const useChatSupport = (
               [newConversationId]: [sentMessage],
             }));
 
-            // Emit socket event sendMessage tới conversation room
-            try {
-              if (chatSocketManagerRef.current) {
-                const senderRole: "user" | "provider" = actor;
-                console.log("senderId to provider: ");
-                const senderId = String(user?.id || "");
-                const receiverRole: "user" | "provider" =
-                  senderRole === "user" ? "provider" : "user";
-                const receiverId = String(newProviderId || "");
-                if (senderId && receiverId) {
-                  chatSocketManagerRef.current.emitSendMessage({
-                    conversationId: newConversationId,
-                    messageId: res.data.id,
-                    senderId,
-                    senderRole,
-                    receiverId,
-                    receiverRole,
-                    text: res.data.message_text,
-                    image_url: res.data.image_url || undefined,
-                  });
-                }
-              }
-            } catch (_) {}
           }
         } else {
           setMessagesByConversation((prev) => ({
@@ -1125,31 +1078,6 @@ export const useChatSupport = (
             return [moved, ...updated.filter((c) => c.id !== conversationId)];
           });
 
-          // Emit socket event sendMessage cho hội thoại đã tồn tại
-          try {
-            if (chatSocketManagerRef.current && selectedConversation) {
-              const senderRole: "user" | "provider" = actor;
-              const senderId = String(user?.account_id || "");
-              const receiverRole: "user" | "provider" =
-                senderRole === "user" ? "provider" : "user";
-              const receiverId =
-                senderRole === "user"
-                  ? String(selectedConversation.provider_id)
-                  : String(selectedConversation.user_id);
-              if (senderId && receiverId) {
-                chatSocketManagerRef.current.emitSendMessage({
-                  conversationId,
-                  messageId: res.data.id,
-                  senderId,
-                  senderRole,
-                  receiverId,
-                  receiverRole,
-                  text: res.data.message_text,
-                  image_url: res.data.image_url || undefined,
-                });
-              }
-            }
-          } catch (_) {}
         }
 
         // Exit search mode after sending

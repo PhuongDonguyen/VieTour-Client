@@ -1,8 +1,9 @@
-import { createContext, useState } from "react";
+import { createContext, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import * as accountApi from '../apis/account.api';
+import { ChatSocketManager } from "@/services/chatSocket.service";
 
 
 interface AuthContextType {
@@ -11,6 +12,9 @@ interface AuthContextType {
   login: (user: any) => void;
   logout: () => Promise<void>;
   loading: boolean;
+  chatSocketManagerRef: React.RefObject<ChatSocketManager | null>;
+  unreadCount: number;
+  setUnreadCount: (count: number) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -18,14 +22,18 @@ export const AuthContext = createContext<AuthContextType>({
   // setUser: () => { },
   login: () => { },
   logout: async () => { },
-  loading: true
+  loading: true,
+  chatSocketManagerRef: { current: null },
+  unreadCount: 0,
+  setUnreadCount: () => { }
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { getItem, setItem, removeItem } = useLocalStorage();
-
+  const [unreadCount, setUnreadCount] = useState(0);
+  const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
   useEffect(() => {
     setLoading(true);
     console.log("Run AuthProvider useEffect");
@@ -36,7 +44,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  
+  useEffect(() => {
+    chatSocketManagerRef.current = new ChatSocketManager();
+    return () => {
+      try {
+        chatSocketManagerRef.current?.disconnect();
+      } finally {
+        chatSocketManagerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!chatSocketManagerRef.current) return;
+    console.log("user: ", user);
+    console.log("Connect socket: ", user.id, (user as any)?.role || "provider");
+    chatSocketManagerRef.current.connect(
+      user.id as any,
+      (user as any)?.role || "provider",
+      user?.account_id
+    );
+  }, [user]);
 
   // Listen for messages from popup windows
   // useEffect(() => {
@@ -64,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   console.log({ contextUser: user });
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, chatSocketManagerRef, unreadCount, setUnreadCount }}>
       {children}
     </AuthContext.Provider>
   );
