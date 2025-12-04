@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean;
   chatSocketManagerRef: React.RefObject<ChatSocketManager | null>;
   unreadCount: number;
-  setUnreadCount: (count: number) => void;
+  setUnreadCount: (count: number | ((prev: number) => number)) => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -32,8 +32,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { getItem, setItem, removeItem } = useLocalStorage();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCountState] = useState(0);
   const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
+
+  // Wrapper để hỗ trợ cả direct value và functional update
+  const setUnreadCount = (count: number | ((prev: number) => number)) => {
+    if (typeof count === 'function') {
+      setUnreadCountState(count);
+    } else {
+      setUnreadCountState(count);
+    }
+  };
   useEffect(() => {
     setLoading(true);
     console.log("Run AuthProvider useEffect");
@@ -66,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user?.account_id
     );
   }, [user]);
+
 
   // Listen for messages from popup windows
   // useEffect(() => {

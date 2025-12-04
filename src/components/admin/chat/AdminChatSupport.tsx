@@ -35,7 +35,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ChatSocketManager } from "@/services/chatSocket.service";
 
 const AdminChatSupport: React.FC = () => {
-  const { user, chatSocketManagerRef } = useAuth();
+  const { user, chatSocketManagerRef, unreadCount, setUnreadCount } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsPage, setConversationsPage] = useState(1);
   const [conversationsHasMore, setConversationsHasMore] = useState(true);
@@ -163,18 +163,25 @@ const AdminChatSupport: React.FC = () => {
         }
 
         // Nếu đang mở đúng hội thoại thì hiển thị ngay và đánh dấu đã đọc
-        setSelectedConversation((prev) => {
-          if (prev && prev.id === convId) {
-            setMessages((currentMessages) => [...currentMessages, newMessage]);
-            // Đánh dấu tin nhắn vừa nhận là đã đọc ngay lập tức
-            markMessagesAsRead(
-              [newMessage],
-              convId,
-              selectedConversation || undefined
-            );
-          }
-          return prev;
-        });
+        const isCurrentlyViewing = selectedConversation?.id === convId;
+        
+        if (isCurrentlyViewing) {
+          // Nếu đang xem conversation này, giảm unreadCount lại vì đã đọc rồi
+          setUnreadCount((prevCount) => Math.max(0, prevCount - 1));
+          
+          setSelectedConversation((prev) => {
+            if (prev && prev.id === convId) {
+              setMessages((currentMessages) => [...currentMessages, newMessage]);
+              // Đánh dấu tin nhắn vừa nhận là đã đọc ngay lập tức
+              markMessagesAsRead(
+                [newMessage],
+                convId,
+                selectedConversation || undefined
+              );
+            }
+            return prev;
+          });
+        }
 
         // Cập nhật metadata conversation với message mới
         setConversations((prev) => {
