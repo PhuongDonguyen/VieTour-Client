@@ -175,18 +175,18 @@ export const useChatSupport = (
   }, []);
 
   // When user is available, connect and join their rooms by user_id
-  useEffect(() => {
-    if (!user) return;
-    if (!chatSocketManagerRef.current) return;
-    chatSocketManagerRef.current.connect(user.id as any, actor, user?.account_id);
-    return () => {
-      // Leave current conversation room before disconnect
-      if (selectedConversationId && chatSocketManagerRef.current) {
-        chatSocketManagerRef.current.leaveConversation(selectedConversationId);
-      }
-      chatSocketManagerRef.current?.disconnect();
-    };
-  }, [user, actor, selectedConversationId]);
+  // useEffect(() => {
+  //   if (!user) return;
+  //   if (!chatSocketManagerRef.current) return;
+  //   chatSocketManagerRef.current.connect(user.id as any, actor, user?.account_id);
+  //   return () => {
+  //     // Leave current conversation room before disconnect
+  //     if (selectedConversationId && chatSocketManagerRef.current) {
+  //       chatSocketManagerRef.current.leaveConversation(selectedConversationId);
+  //     }
+  //     chatSocketManagerRef.current?.disconnect();
+  //   };
+  // }, [user, actor, selectedConversationId]);
 
   // (moved below loadMessages)
 

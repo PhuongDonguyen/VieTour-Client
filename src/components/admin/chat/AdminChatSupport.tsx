@@ -423,7 +423,7 @@ const AdminChatSupport: React.FC = () => {
       if (unreadMessages.length === 0) return;
       const messageIds = unreadMessages.map((msg) => msg.id);
       const markedCount = unreadMessages.length; // Số lượng tin nhắn đã đánh dấu
-
+      setUnreadCount((prev) => Math.max(0, prev - markedCount));
       // Gọi API để đánh dấu đã đọc
       await markMessageAsReadService(messageIds);
 

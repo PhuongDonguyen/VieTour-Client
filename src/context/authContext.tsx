@@ -35,7 +35,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [unreadCount, setUnreadCountState] = useState(0);
   const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
 
-  // Wrapper để hỗ trợ cả direct value và functional update
   const setUnreadCount = (count: number | ((prev: number) => number)) => {
     if (typeof count === 'function') {
       setUnreadCountState(count);
@@ -67,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user) return;
     if (!chatSocketManagerRef.current) return;
+    chatSocketManagerRef.current.reset();
     console.log("user: ", user);
     console.log("Connect socket: ", user.id, (user as any)?.role || "provider");
     chatSocketManagerRef.current.connect(

@@ -167,13 +167,13 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
             </div>
             <div className="flex items-center space-x-4">
                 {/* Message Icon */}
-                <Button
+                {/* <Button
                     variant="ghost"
                     size="icon"
                     className="relative"
                 >
                     <ChatIcon count={unreadCount} />
-                </Button>
+                </Button> */}
                 {/* User menu */}
                 <div className="relative" ref={menuRef}>
                     <Button
