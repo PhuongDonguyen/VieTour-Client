@@ -91,28 +91,28 @@ const AdminChatSupport: React.FC = () => {
 
   // Khởi tạo socket manager và join phòng cá nhân khi có user
   // const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
-  useEffect(() => {
-    chatSocketManagerRef.current = new ChatSocketManager();
-    return () => {
-      try {
-        chatSocketManagerRef.current?.disconnect();
-      } finally {
-        chatSocketManagerRef.current = null;
-      }
-    };
-  }, []);
+  // useEffect(() => {
+  //   chatSocketManagerRef.current = new ChatSocketManager();
+  //   return () => {
+  //     try {
+  //       chatSocketManagerRef.current?.disconnect();
+  //     } finally {
+  //       chatSocketManagerRef.current = null;
+  //     }
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    if (!user) return;
-    if (!chatSocketManagerRef.current) return;
-    console.log("user: ", user);
-    console.log("Connect socket: ", user.id, (user as any)?.role || "provider");
-    chatSocketManagerRef.current.connect(
-      user.id as any,
-      (user as any)?.role || "provider",
-      user?.account_id
-    );
-  }, [user]);
+  // useEffect(() => {
+  //   if (!user) return;
+  //   if (!chatSocketManagerRef.current) return;
+  //   console.log("user: ", user);
+  //   console.log("Connect socket: ", user.id, (user as any)?.role || "provider");
+  //   chatSocketManagerRef.current.connect(
+  //     user.id as any,
+  //     (user as any)?.role || "provider",
+  //     user?.account_id
+  //   );
+  // }, [user]);
 
   // Lắng nghe tin nhắn đến qua socket và đồng bộ UI
   useEffect(() => {
@@ -236,6 +236,7 @@ const AdminChatSupport: React.FC = () => {
       online: boolean;
       lastOfflineAt?: string | null;
     }) => {
+      console.log("Received presence status: ", payload);
       setConversations((prev) =>
         prev.map((c) => {
           if (

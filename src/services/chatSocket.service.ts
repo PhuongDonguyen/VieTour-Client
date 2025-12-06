@@ -199,6 +199,7 @@ export class ChatSocketManager {
   subscribePresence(
     partners: { userId: string | number; role: "user" | "provider" }[]
   ) {
+  
     const s = this.getSocket();
     if (!s.connected) return;
     if (!Array.isArray(partners)) return;
@@ -213,6 +214,7 @@ export class ChatSocketManager {
       )
       .map((p) => ({ userId: String(p.userId), role: p.role }));
     if (normalized.length === 0) return;
+    console.log("subscribePresence normalized: ", normalized);
     s.emit("presence:subscribe", normalized);
   }
 

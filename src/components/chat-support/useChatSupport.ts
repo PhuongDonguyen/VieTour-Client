@@ -123,7 +123,7 @@ export const useChatSupport = (
   actor: ChatActor,
   getPeerDisplay?: (conv: Conversation) => PeerDisplay
 ) => {
-  const { user } = useAuth();
+  const { user, chatSocketManagerRef } = useAuth();
   const [conversations, setConversations] = useState<UIConversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<
     number | null
@@ -166,13 +166,13 @@ export const useChatSupport = (
       : null;
 
   // Declare a socket manager instance (not used for realtime in this hook)
-  const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
-  useEffect(() => {
-    chatSocketManagerRef.current = new ChatSocketManager();
-    return () => {
-      chatSocketManagerRef.current = null;
-    };
-  }, []);
+  // const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
+  // useEffect(() => {
+  //   chatSocketManagerRef.current = new ChatSocketManager();
+  //   return () => {
+  //     chatSocketManagerRef.current = null;
+  //   };
+  // }, []);
 
   // When user is available, connect and join their rooms by user_id
   // useEffect(() => {
@@ -195,8 +195,8 @@ export const useChatSupport = (
       const senderAccountId = Number(apiMessage.sender_id);
       const providerAccount =
         providerAccountId != null ? Number(providerAccountId) : null;
-      console.log("senderAccountId: ", senderAccountId);
-      console.log("providerAccount: ", providerAccount);
+      // console.log("senderAccountId: ", senderAccountId);
+      // console.log("providerAccount: ", providerAccount);
       const isProviderMessage =
         providerAccount != null && senderAccountId === providerAccount;
       const sender: "user" | "provider" = isProviderMessage
@@ -462,6 +462,7 @@ export const useChatSupport = (
         }
 
         setConversations(mappedConversations);
+        console.log("mappedConversations: ", mappedConversations);
         chatSocketManagerRef.current?.subscribePresence(
           mappedConversations.map((conv) => ({
             userId: conv.provider_id,
