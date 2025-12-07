@@ -123,7 +123,7 @@ export const useChatSupport = (
   actor: ChatActor,
   getPeerDisplay?: (conv: Conversation) => PeerDisplay
 ) => {
-  const { user, chatSocketManagerRef } = useAuth();
+  const { user, chatSocketManagerRef, socketConnectionId } = useAuth();
   const [conversations, setConversations] = useState<UIConversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<
     number | null
@@ -131,6 +131,9 @@ export const useChatSupport = (
   const [messagesByConversation, setMessagesByConversation] = useState<
     Record<number, UIMessage[]>
   >({});
+  // Lưu tạm tin nhắn chưa đọc khi conversation không được selected
+  const [pendingUnreadMessagesByConversation, setPendingUnreadMessagesByConversation] =
+    useState<Record<number, UIMessage[]>>({});
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   // Search (server-side) flow
@@ -147,6 +150,7 @@ export const useChatSupport = (
   const [loadingMore, setLoadingMore] = useState<Record<number, boolean>>({});
   const [isSending, setIsSending] = useState(false);
   const typingTimeoutRef = useRef<any>(null);
+  const pendingUnreadMessagesRef = useRef<Record<number, UIMessage[]>>({});
   const [isTypingByConversation, setIsTypingByConversation] = useState<
     Record<number, boolean>
   >({});
@@ -754,21 +758,21 @@ export const useChatSupport = (
           status: "sent",
           image_url: data.image_url || "",
         };
-        // Chỉ thêm message vào cache nếu conversation đã có tin nhắn
-        // Dùng giá trị prev mới nhất để tránh stale-closure
-        setMessagesByConversation((prev) => {
-          const existingMessages = prev[convId];
-          if (existingMessages && existingMessages.length > 0) {
-            return {
-              ...prev,
-              [convId]: [...existingMessages, newMessage],
-            };
-          }
-          return prev;
-        });
 
-        // Nếu đang mở conversation này, đánh dấu tin nhắn đã đọc ngay lập tức
+        // Nếu đang mở conversation này, thêm vào messages và đánh dấu đã đọc
         if (selectedConversationId === convId && user) {
+          // Chỉ thêm message vào cache nếu conversation đã có tin nhắn
+          setMessagesByConversation((prev) => {
+            const existingMessages = prev[convId];
+            if (existingMessages && existingMessages.length > 0) {
+              return {
+                ...prev,
+                [convId]: [...existingMessages, newMessage],
+              };
+            }
+            return prev;
+          });
+
           // Tìm conversation để lấy provider_id
           const currentConversation = conversations.find(
             (c) => c.id === convId
@@ -793,6 +797,17 @@ export const useChatSupport = (
               ),
             }));
           }
+        } else {
+          // Nếu conversation không được selected, lưu tạm vào pending
+          setPendingUnreadMessagesByConversation((prev) => {
+            const updated = {
+              ...prev,
+              [convId]: [...(prev[convId] || []), newMessage],
+            };
+            // Đồng bộ với ref
+            pendingUnreadMessagesRef.current = updated;
+            return updated;
+          });
         }
 
         // Kiểm tra xem conversation đã có trong danh sách chưa
@@ -832,7 +847,7 @@ export const useChatSupport = (
     return () => {
       chatSocketManagerRef.current?.offReceiveMessage(handler);
     };
-  }, [conversations, selectedConversationId, loadConversationById]);
+  }, [conversations, selectedConversationId, loadConversationById, socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái đang nhập từ đối phương
   useEffect(() => {
@@ -854,7 +869,7 @@ export const useChatSupport = (
     chatSocketManagerRef.current.onUserTyping(handleTyping);
     return () =>
       chatSocketManagerRef.current?.offUserTyping(handleTyping as any);
-  }, []);
+  }, [socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái tin nhắn đã đọc
   useEffect(() => {
@@ -895,7 +910,7 @@ export const useChatSupport = (
     return () => {
       chatSocketManagerRef.current?.offMessageStatus(handleMessageStatus);
     };
-  }, [actor]);
+  }, [actor, socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái presence (online/offline) và cập nhật partner_presence
   useEffect(() => {
@@ -932,7 +947,7 @@ export const useChatSupport = (
     return () => {
       chatSocketManagerRef.current?.offPresenceStatusChanged(handlePresence);
     };
-  }, []);
+  }, [socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   const handleConversationSelect = useCallback(
     async (conversationId: number) => {
@@ -959,6 +974,40 @@ export const useChatSupport = (
           conv.provider_id,
           conv.provider_account_id
         );
+      }
+
+      // Kiểm tra và xử lý tin nhắn pending (chưa đọc) khi chọn conversation
+      // Đọc từ ref để đảm bảo lấy được giá trị mới nhất
+      const pendingMessages = pendingUnreadMessagesRef.current[conversationId] || [];
+      
+      if (pendingMessages.length > 0) {
+        // Merge pending messages vào messagesByConversation
+        setMessagesByConversation((prevMessages) => {
+          const existingMessages = prevMessages[conversationId] || [];
+          return {
+            ...prevMessages,
+            [conversationId]: [...existingMessages, ...pendingMessages],
+          };
+        });
+
+        // Đánh dấu đã đọc những tin nhắn pending
+        await markMessagesAsRead(
+          pendingMessages,
+          conversationId,
+          conv.provider_id,
+          conv
+        );
+
+        // Xóa pending messages sau khi đã xử lý
+        setPendingUnreadMessagesByConversation((prevPending) => {
+          const updated = {
+            ...prevPending,
+            [conversationId]: [],
+          };
+          // Đồng bộ với ref
+          pendingUnreadMessagesRef.current = updated;
+          return updated;
+        });
       }
 
       // Auto scroll to bottom after selecting conversation
@@ -1008,6 +1057,9 @@ export const useChatSupport = (
           ...prev,
           [conversationId]: [...(prev[conversationId] || []), tempMessage],
         }));
+
+        // Clear input immediately when sending
+        setMessageInput("");
 
         const payload: SendMessagePayload = {
           message_text: text,
@@ -1086,8 +1138,6 @@ export const useChatSupport = (
         setFilteredConversations([]);
         setIsFiltering(false);
         setSearchQuery("");
-
-        setMessageInput("");
       } catch (error) {
         console.error("Error sending message:", error);
 

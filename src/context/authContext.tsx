@@ -15,6 +15,7 @@ interface AuthContextType {
   chatSocketManagerRef: React.RefObject<ChatSocketManager | null>;
   unreadCount: number;
   setUnreadCount: (count: number | ((prev: number) => number)) => void;
+  socketConnectionId: string | null; // ID để track khi socket reconnect
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -25,7 +26,8 @@ export const AuthContext = createContext<AuthContextType>({
   loading: true,
   chatSocketManagerRef: { current: null },
   unreadCount: 0,
-  setUnreadCount: () => { }
+  setUnreadCount: () => { },
+  socketConnectionId: null
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -33,6 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const { getItem, setItem, removeItem } = useLocalStorage();
   const [unreadCount, setUnreadCountState] = useState(0);
+  const [socketConnectionId, setSocketConnectionId] = useState<string | null>(null);
   const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
 
   const setUnreadCount = (count: number | ((prev: number) => number)) => {
@@ -66,14 +69,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user) return;
     if (!chatSocketManagerRef.current) return;
+    
     chatSocketManagerRef.current.reset();
     console.log("user: ", user);
     console.log("Connect socket: ", user.id, (user as any)?.role || "provider");
+    
+    // Lắng nghe event connect để update connectionId
+    const socket = chatSocketManagerRef.current.getSocket();
+    const handleConnect = () => {
+      const socketId = socket.id || `conn_${Date.now()}`;
+      setSocketConnectionId(socketId);
+      console.log("Socket connected, connectionId:", socketId);
+    };
+    
+    socket.on("connect", handleConnect);
+    
     chatSocketManagerRef.current.connect(
       user.id as any,
       (user as any)?.role || "provider",
       user?.account_id
     );
+    
+    return () => {
+      socket.off("connect", handleConnect);
+    };
   }, [user]);
 
 
@@ -103,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   console.log({ contextUser: user });
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, chatSocketManagerRef, unreadCount, setUnreadCount }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, chatSocketManagerRef, unreadCount, setUnreadCount, socketConnectionId }}>
       {children}
     </AuthContext.Provider>
   );

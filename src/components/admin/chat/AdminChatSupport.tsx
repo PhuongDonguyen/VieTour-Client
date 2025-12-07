@@ -35,7 +35,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ChatSocketManager } from "@/services/chatSocket.service";
 
 const AdminChatSupport: React.FC = () => {
-  const { user, chatSocketManagerRef, unreadCount, setUnreadCount } = useAuth();
+  const { user, chatSocketManagerRef, unreadCount, setUnreadCount, socketConnectionId } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsPage, setConversationsPage] = useState(1);
   const [conversationsHasMore, setConversationsHasMore] = useState(true);
@@ -225,7 +225,7 @@ const AdminChatSupport: React.FC = () => {
     return () => {
       chatSocketManagerRef.current?.offReceiveMessage(handler);
     };
-  }, [selectedConversation]);
+  }, [selectedConversation, socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái presence (online/offline) và ghi vào conversation.partner_presence
   useEffect(() => {
@@ -272,10 +272,11 @@ const AdminChatSupport: React.FC = () => {
       });
     };
     chatSocketManagerRef.current.onPresenceStatusChanged(handlePresence);
+    console.log("đã lắng nghe status presence");
     return () => {
       chatSocketManagerRef.current?.offPresenceStatusChanged(handlePresence);
     };
-  }, []);
+  }, [socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái đang nhập (typing)
   useEffect(() => {
@@ -319,7 +320,7 @@ const AdminChatSupport: React.FC = () => {
     return () => {
       chatSocketManagerRef.current?.offUserTyping(handleTyping as any);
     };
-  }, [selectedConversation]);
+  }, [selectedConversation, socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái tin nhắn đã đọc
   useEffect(() => {
@@ -677,6 +678,11 @@ const AdminChatSupport: React.FC = () => {
     try {
       setSendingMessage(true);
 
+      // Lưu giá trị trước khi clear để dùng cho payload
+      const messageText = newMessage.trim();
+      const imageFile = selectedImage;
+      const imagePreview = imagePreviewUrl;
+
       // 1) Tạo tin nhắn tạm (optimistic UI)
       const tempId = `temp-${Date.now()}`;
       const optimisticMsg: UIMsg = {
@@ -684,8 +690,8 @@ const AdminChatSupport: React.FC = () => {
         id: -Date.now(),
         conversation_id: selectedConversation.id,
         sender_id: selectedConversation.provider_id as unknown as number,
-        message_text: newMessage.trim(),
-        image_url: imagePreviewUrl || null,
+        message_text: messageText,
+        image_url: imagePreview || null,
         is_read: false,
         created_at: new Date().toISOString(),
         _tempId: tempId,
@@ -708,11 +714,16 @@ const AdminChatSupport: React.FC = () => {
         );
         return updated;
       });
+      // Clear input immediately when sending
       setNewMessage("");
+      if (imageFile) {
+        setSelectedImage(null);
+        setImagePreviewUrl("");
+      }
 
       const payload: SendMessagePayload = {} as any;
-      if (newMessage.trim()) payload.message_text = newMessage.trim();
-      if (selectedImage) payload.image = selectedImage as any;
+      if (messageText) payload.message_text = messageText;
+      if (imageFile) payload.image = imageFile as any;
       const conversationId = selectedConversation.id;
       console.log("Conversation ID: ", conversationId);
       payload.conversation_id = conversationId;
@@ -791,11 +802,6 @@ const AdminChatSupport: React.FC = () => {
       });
     } finally {
       setSendingMessage(false);
-      // Clear input image sau khi gửi thành công
-      if (selectedImage) {
-        setSelectedImage(null);
-        setImagePreviewUrl("");
-      }
     }
   };
 

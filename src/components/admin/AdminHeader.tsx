@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/authContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, User, ChevronDown, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,8 +22,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
     title = "Dashboard",
     className = ""
 }) => {
-    const { user, logout, unreadCount, setUnreadCount, chatSocketManagerRef } = useContext(AuthContext);
+    const { user, logout, unreadCount, setUnreadCount, chatSocketManagerRef, socketConnectionId } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
+    const isInChat = location.pathname === '/admin/chat';
     const [showUserMenu, setShowUserMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const prevUnreadCountRef = useRef<number>(0);
@@ -155,7 +157,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
         return () => {
             chatSocketManagerRef.current?.offReceiveMessage(handler);
         };
-    }, [user, chatSocketManagerRef, setUnreadCount]);
+    }, [user, chatSocketManagerRef, setUnreadCount, socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
     return (
         <header className={cn("h-16 bg-background border-b flex items-center px-6 justify-between", className)}>
@@ -195,7 +197,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                         <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     </Button>
 
-                    <MessageToastContainer toasts={toasts} removeToast={removeToast} />
+                    {!isInChat && (
+                        <MessageToastContainer toasts={toasts} removeToast={removeToast} />
+                    )}
 
 
 
