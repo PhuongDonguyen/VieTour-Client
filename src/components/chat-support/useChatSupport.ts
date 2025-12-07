@@ -123,7 +123,7 @@ export const useChatSupport = (
   actor: ChatActor,
   getPeerDisplay?: (conv: Conversation) => PeerDisplay
 ) => {
-  const { user } = useAuth();
+  const { user, chatSocketManagerRef, socketConnectionId } = useAuth();
   const [conversations, setConversations] = useState<UIConversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<
     number | null
@@ -131,6 +131,9 @@ export const useChatSupport = (
   const [messagesByConversation, setMessagesByConversation] = useState<
     Record<number, UIMessage[]>
   >({});
+  // Lưu tạm tin nhắn chưa đọc khi conversation không được selected
+  const [pendingUnreadMessagesByConversation, setPendingUnreadMessagesByConversation] =
+    useState<Record<number, UIMessage[]>>({});
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   // Search (server-side) flow
@@ -147,6 +150,7 @@ export const useChatSupport = (
   const [loadingMore, setLoadingMore] = useState<Record<number, boolean>>({});
   const [isSending, setIsSending] = useState(false);
   const typingTimeoutRef = useRef<any>(null);
+  const pendingUnreadMessagesRef = useRef<Record<number, UIMessage[]>>({});
   const [isTypingByConversation, setIsTypingByConversation] = useState<
     Record<number, boolean>
   >({});
@@ -166,27 +170,27 @@ export const useChatSupport = (
       : null;
 
   // Declare a socket manager instance (not used for realtime in this hook)
-  const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
-  useEffect(() => {
-    chatSocketManagerRef.current = new ChatSocketManager();
-    return () => {
-      chatSocketManagerRef.current = null;
-    };
-  }, []);
+  // const chatSocketManagerRef = useRef<ChatSocketManager | null>(null);
+  // useEffect(() => {
+  //   chatSocketManagerRef.current = new ChatSocketManager();
+  //   return () => {
+  //     chatSocketManagerRef.current = null;
+  //   };
+  // }, []);
 
   // When user is available, connect and join their rooms by user_id
-  useEffect(() => {
-    if (!user) return;
-    if (!chatSocketManagerRef.current) return;
-    chatSocketManagerRef.current.connect(user.id as any, actor, user?.account_id);
-    return () => {
-      // Leave current conversation room before disconnect
-      if (selectedConversationId && chatSocketManagerRef.current) {
-        chatSocketManagerRef.current.leaveConversation(selectedConversationId);
-      }
-      chatSocketManagerRef.current?.disconnect();
-    };
-  }, [user, actor, selectedConversationId]);
+  // useEffect(() => {
+  //   if (!user) return;
+  //   if (!chatSocketManagerRef.current) return;
+  //   chatSocketManagerRef.current.connect(user.id as any, actor, user?.account_id);
+  //   return () => {
+  //     // Leave current conversation room before disconnect
+  //     if (selectedConversationId && chatSocketManagerRef.current) {
+  //       chatSocketManagerRef.current.leaveConversation(selectedConversationId);
+  //     }
+  //     chatSocketManagerRef.current?.disconnect();
+  //   };
+  // }, [user, actor, selectedConversationId]);
 
   // (moved below loadMessages)
 
@@ -195,8 +199,8 @@ export const useChatSupport = (
       const senderAccountId = Number(apiMessage.sender_id);
       const providerAccount =
         providerAccountId != null ? Number(providerAccountId) : null;
-      console.log("senderAccountId: ", senderAccountId);
-      console.log("providerAccount: ", providerAccount);
+      // console.log("senderAccountId: ", senderAccountId);
+      // console.log("providerAccount: ", providerAccount);
       const isProviderMessage =
         providerAccount != null && senderAccountId === providerAccount;
       const sender: "user" | "provider" = isProviderMessage
@@ -240,30 +244,6 @@ export const useChatSupport = (
       const resData = response.data;
       console.log("response: ", response);
       console.log("unreadMessages: ", unreadMessages);
-
-      // Emit socket cho từng tin nhắn
-      if (chatSocketManagerRef.current) {
-        // Sử dụng conversation được truyền vào hoặc selectedConversation
-        // const currentConversation = conversation || selectedConversation;
-        console.log("user: ", user);
-        const receiverId = resData.conversation.provider_id;
-        const receiverRole = actor === "user" ? "provider" : "user";
-        console.log("receiverId: ", receiverId);
-        console.log("receiverRole: ", receiverRole);
-
-        if (receiverId) {
-          unreadMessages.forEach((msg) => {
-            console.log("msg: ", msg, "conversationId: ", conversationId, "actor: ", actor, "receiverId: ", receiverId, "receiverRole: ", receiverRole);
-            chatSocketManagerRef.current?.emitMessageRead({
-              conversation_id: conversationId,
-              message_id: Number(msg.id),
-              readerRole: actor,
-              receiverId,
-              receiverRole,
-            });
-          });
-        }
-      }
 
       // Cập nhật UI để đánh dấu đã đọc
       setMessagesByConversation((prev) => ({
@@ -486,6 +466,7 @@ export const useChatSupport = (
         }
 
         setConversations(mappedConversations);
+        console.log("mappedConversations: ", mappedConversations);
         chatSocketManagerRef.current?.subscribePresence(
           mappedConversations.map((conv) => ({
             userId: conv.provider_id,
@@ -777,21 +758,21 @@ export const useChatSupport = (
           status: "sent",
           image_url: data.image_url || "",
         };
-        // Chỉ thêm message vào cache nếu conversation đã có tin nhắn
-        // Dùng giá trị prev mới nhất để tránh stale-closure
-        setMessagesByConversation((prev) => {
-          const existingMessages = prev[convId];
-          if (existingMessages && existingMessages.length > 0) {
-            return {
-              ...prev,
-              [convId]: [...existingMessages, newMessage],
-            };
-          }
-          return prev;
-        });
 
-        // Nếu đang mở conversation này, đánh dấu tin nhắn đã đọc ngay lập tức
+        // Nếu đang mở conversation này, thêm vào messages và đánh dấu đã đọc
         if (selectedConversationId === convId && user) {
+          // Chỉ thêm message vào cache nếu conversation đã có tin nhắn
+          setMessagesByConversation((prev) => {
+            const existingMessages = prev[convId];
+            if (existingMessages && existingMessages.length > 0) {
+              return {
+                ...prev,
+                [convId]: [...existingMessages, newMessage],
+              };
+            }
+            return prev;
+          });
+
           // Tìm conversation để lấy provider_id
           const currentConversation = conversations.find(
             (c) => c.id === convId
@@ -816,6 +797,17 @@ export const useChatSupport = (
               ),
             }));
           }
+        } else {
+          // Nếu conversation không được selected, lưu tạm vào pending
+          setPendingUnreadMessagesByConversation((prev) => {
+            const updated = {
+              ...prev,
+              [convId]: [...(prev[convId] || []), newMessage],
+            };
+            // Đồng bộ với ref
+            pendingUnreadMessagesRef.current = updated;
+            return updated;
+          });
         }
 
         // Kiểm tra xem conversation đã có trong danh sách chưa
@@ -855,7 +847,7 @@ export const useChatSupport = (
     return () => {
       chatSocketManagerRef.current?.offReceiveMessage(handler);
     };
-  }, [conversations, selectedConversationId, loadConversationById]);
+  }, [conversations, selectedConversationId, loadConversationById, socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái đang nhập từ đối phương
   useEffect(() => {
@@ -877,7 +869,7 @@ export const useChatSupport = (
     chatSocketManagerRef.current.onUserTyping(handleTyping);
     return () =>
       chatSocketManagerRef.current?.offUserTyping(handleTyping as any);
-  }, []);
+  }, [socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái tin nhắn đã đọc
   useEffect(() => {
@@ -918,7 +910,7 @@ export const useChatSupport = (
     return () => {
       chatSocketManagerRef.current?.offMessageStatus(handleMessageStatus);
     };
-  }, [actor]);
+  }, [actor, socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   // Lắng nghe trạng thái presence (online/offline) và cập nhật partner_presence
   useEffect(() => {
@@ -955,7 +947,7 @@ export const useChatSupport = (
     return () => {
       chatSocketManagerRef.current?.offPresenceStatusChanged(handlePresence);
     };
-  }, []);
+  }, [socketConnectionId]); // socketConnectionId thay đổi khi socket reconnect
 
   const handleConversationSelect = useCallback(
     async (conversationId: number) => {
@@ -982,6 +974,40 @@ export const useChatSupport = (
           conv.provider_id,
           conv.provider_account_id
         );
+      }
+
+      // Kiểm tra và xử lý tin nhắn pending (chưa đọc) khi chọn conversation
+      // Đọc từ ref để đảm bảo lấy được giá trị mới nhất
+      const pendingMessages = pendingUnreadMessagesRef.current[conversationId] || [];
+      
+      if (pendingMessages.length > 0) {
+        // Merge pending messages vào messagesByConversation
+        setMessagesByConversation((prevMessages) => {
+          const existingMessages = prevMessages[conversationId] || [];
+          return {
+            ...prevMessages,
+            [conversationId]: [...existingMessages, ...pendingMessages],
+          };
+        });
+
+        // Đánh dấu đã đọc những tin nhắn pending
+        await markMessagesAsRead(
+          pendingMessages,
+          conversationId,
+          conv.provider_id,
+          conv
+        );
+
+        // Xóa pending messages sau khi đã xử lý
+        setPendingUnreadMessagesByConversation((prevPending) => {
+          const updated = {
+            ...prevPending,
+            [conversationId]: [],
+          };
+          // Đồng bộ với ref
+          pendingUnreadMessagesRef.current = updated;
+          return updated;
+        });
       }
 
       // Auto scroll to bottom after selecting conversation
@@ -1032,6 +1058,9 @@ export const useChatSupport = (
           [conversationId]: [...(prev[conversationId] || []), tempMessage],
         }));
 
+        // Clear input immediately when sending
+        setMessageInput("");
+
         const payload: SendMessagePayload = {
           message_text: text,
         };
@@ -1069,29 +1098,6 @@ export const useChatSupport = (
               [newConversationId]: [sentMessage],
             }));
 
-            // Emit socket event sendMessage tới conversation room
-            try {
-              if (chatSocketManagerRef.current) {
-                const senderRole: "user" | "provider" = actor;
-                console.log("senderId to provider: ");
-                const senderId = String(user?.id || "");
-                const receiverRole: "user" | "provider" =
-                  senderRole === "user" ? "provider" : "user";
-                const receiverId = String(newProviderId || "");
-                if (senderId && receiverId) {
-                  chatSocketManagerRef.current.emitSendMessage({
-                    conversationId: newConversationId,
-                    messageId: res.data.id,
-                    senderId,
-                    senderRole,
-                    receiverId,
-                    receiverRole,
-                    text: res.data.message_text,
-                    image_url: res.data.image_url || undefined,
-                  });
-                }
-              }
-            } catch (_) {}
           }
         } else {
           setMessagesByConversation((prev) => ({
@@ -1125,31 +1131,6 @@ export const useChatSupport = (
             return [moved, ...updated.filter((c) => c.id !== conversationId)];
           });
 
-          // Emit socket event sendMessage cho hội thoại đã tồn tại
-          try {
-            if (chatSocketManagerRef.current && selectedConversation) {
-              const senderRole: "user" | "provider" = actor;
-              const senderId = String(user?.account_id || "");
-              const receiverRole: "user" | "provider" =
-                senderRole === "user" ? "provider" : "user";
-              const receiverId =
-                senderRole === "user"
-                  ? String(selectedConversation.provider_id)
-                  : String(selectedConversation.user_id);
-              if (senderId && receiverId) {
-                chatSocketManagerRef.current.emitSendMessage({
-                  conversationId,
-                  messageId: res.data.id,
-                  senderId,
-                  senderRole,
-                  receiverId,
-                  receiverRole,
-                  text: res.data.message_text,
-                  image_url: res.data.image_url || undefined,
-                });
-              }
-            }
-          } catch (_) {}
         }
 
         // Exit search mode after sending
@@ -1157,8 +1138,6 @@ export const useChatSupport = (
         setFilteredConversations([]);
         setIsFiltering(false);
         setSearchQuery("");
-
-        setMessageInput("");
       } catch (error) {
         console.error("Error sending message:", error);
 

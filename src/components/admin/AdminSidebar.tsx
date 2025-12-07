@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { ChatIcon } from "./chat/ChatIcon";
 
 interface AdminSidebarProps {
   className?: string;
@@ -46,7 +47,7 @@ interface NavItem {
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const { user } = useAuth();
+  const { user, unreadCount } = useAuth();
   const location = useLocation();
 
   const toggleExpanded = (itemLabel: string) => {
@@ -198,11 +199,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       {
         label: "Hỗ trợ khách hàng",
         href: "/admin/chat",
-        icon: <MessageCircle className="w-4 h-4" />,
+        icon: <ChatIcon count={unreadCount as number} />,
         allowedRoles: ["provider"], // Only providers can see their chat
       },
     ],
-    []
+    [unreadCount] // Thêm unreadCount vào dependency array để cập nhật khi unreadCount thay đổi
   );
 
   // Auto-expand parent items when their sub-items are active

@@ -46,6 +46,15 @@ export interface ConversationsResponse {
   };
 }
 
+export interface UnreadCountResponse {
+  success: boolean;
+  data: {
+    total_unread: number;
+    user_id: number;
+    role: string;
+  };
+}
+
 export const getConversations = async (
   page: number = 1,
   limit: number = 5
@@ -151,3 +160,6 @@ export const filterConversations = async (
     throw error;
   }
 };
+
+export const getUnreadCount = () => 
+  axiosInstance.get("/api/conversations/unread-count");
