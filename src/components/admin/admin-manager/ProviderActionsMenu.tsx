@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Lock, Eye } from 'lucide-react';
+import { MoreVertical, Ban, ShieldCheck, Eye } from 'lucide-react';
 import { type Provider } from '@/services/adminManager.service';
 
 interface ProviderActionsMenuProps {
   provider: Provider;
-  onLockProvider: (provider: Provider) => void;
+  onToggleBan: (provider: Provider) => void;
   onViewTours: (provider: Provider) => void;
 }
 
-const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onLockProvider, onViewTours }) => {
+const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onToggleBan, onViewTours }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -65,8 +65,8 @@ const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onL
     };
   }, [isOpen]);
 
-  const handleLockClick = () => {
-    onLockProvider(provider);
+  const handleToggleBanClick = () => {
+    onToggleBan(provider);
     setIsOpen(false);
   };
 
@@ -103,11 +103,15 @@ const ProviderActionsMenu: React.FC<ProviderActionsMenuProps> = ({ provider, onL
               Xem danh sách tour
             </button>
             <button
-              onClick={handleLockClick}
+              onClick={handleToggleBanClick}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
             >
-              <Lock className="h-4 w-4" />
-              Khóa tài khoản
+              {provider.is_banned ? (
+                <ShieldCheck className="h-4 w-4" />
+              ) : (
+                <Ban className="h-4 w-4" />
+              )}
+              {provider.is_banned ? 'Gỡ cấm tài khoản' : 'Cấm tài khoản'}
             </button>
           </div>
         </div>,
