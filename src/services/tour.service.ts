@@ -28,6 +28,7 @@ import {
   getToursBanned,
   type TourRecommendResponse,
   getTouridsByProviderId,
+  saveHistoryView,
 } from "../apis/tour.api";
 
 export const fetchTours = async (
@@ -324,4 +325,14 @@ export const fetchTouridsByProviderId = async () => {
   const res = await getTouridsByProviderId();
   if (res.data && res.data.success) return res.data;
   throw new Error("Không tìm thấy tour ids");
+};
+
+export const saveHistoryViewService = async (tourId: number) => {
+  try {
+    const res = await saveHistoryView(tourId);
+    return res.data;
+  } catch (error) {
+    console.error("Error saving history view:", error);
+    throw error;
+  }
 };

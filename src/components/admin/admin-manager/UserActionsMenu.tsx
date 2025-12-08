@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Lock } from 'lucide-react';
+import { MoreVertical, Ban, ShieldCheck } from 'lucide-react';
 import { type User } from '@/services/adminManager.service';
 
 interface UserActionsMenuProps {
   user: User;
-  onLockUser: (user: User) => void;
+  onToggleBan: (user: User) => void;
 }
 
-const UserActionsMenu: React.FC<UserActionsMenuProps> = ({ user, onLockUser }) => {
+const UserActionsMenu: React.FC<UserActionsMenuProps> = ({ user, onToggleBan }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -64,8 +64,8 @@ const UserActionsMenu: React.FC<UserActionsMenuProps> = ({ user, onLockUser }) =
     };
   }, [isOpen]);
 
-  const handleLockClick = () => {
-    onLockUser(user);
+  const handleToggleBanClick = () => {
+    onToggleBan(user);
     setIsOpen(false);
   };
 
@@ -90,11 +90,15 @@ const UserActionsMenu: React.FC<UserActionsMenuProps> = ({ user, onLockUser }) =
         >
           <div className="py-1">
             <button
-              onClick={handleLockClick}
+              onClick={handleToggleBanClick}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
             >
-              <Lock className="w-4 h-4" />
-              Khóa tài khoản
+              {user.is_banned ? (
+                <ShieldCheck className="w-4 h-4" />
+              ) : (
+                <Ban className="w-4 h-4" />
+              )}
+              {user.is_banned ? 'Gỡ cấm tài khoản' : 'Cấm tài khoản'}
             </button>
           </div>
         </div>,

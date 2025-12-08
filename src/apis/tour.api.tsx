@@ -293,7 +293,11 @@ export const bannedTour = (tourId: number) =>
 export const unbannedTour = (tourId: number) =>
   axiosInstance.patch(`/api/tours/${tourId}/unban`);
 
-export const getToursBanned = (page?: number, limit?: number) =>
-  axiosInstance.get(`/api/tours/banned?limit=${limit}&page=${page}`);
+export const getToursBanned = (page?: number, limit?: number, providerId?: number) =>
+  axiosInstance.get(`/api/tours/banned?limit=${limit}&page=${page}&provider_id=${providerId}`);
 export const getTouridsByProviderId = () =>
   axiosInstance.get(`/api/tours/tour-provider`);
+
+export const saveHistoryView = (tourId: number) =>
+  axiosInstance.patch(`/api/tours/${tourId}/save-view-history`);
+

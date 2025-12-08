@@ -79,6 +79,8 @@ const ProviderTours: React.FC = () => {
   );
   const [providers, setProviders] = useState<any[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>("all");
+  const [selectedActiveStatus, setSelectedActiveStatus] =
+    useState<string>("all");
   const [filteredTours, setFilteredTours] = useState<Tour[]>([]);
   const [loadingTourId, setLoadingTourId] = useState<number | null>(null);
   const [categoryMap, setCategoryMap] = useState<{ [key: number]: string }>({});
@@ -184,7 +186,7 @@ const ProviderTours: React.FC = () => {
       setLoading(true);
       try {
         let res;
-        
+
         // Nếu đang xem tour chưa duyệt, sử dụng function riêng
         if (showUnapprovedOnly) {
           res = await fetchToursUnapproved(currentPage, 10);
@@ -206,6 +208,10 @@ const ProviderTours: React.FC = () => {
             tour_category_id:
               selectedCategoryId !== "all"
                 ? Number(selectedCategoryId)
+                : undefined,
+            is_active:
+              selectedActiveStatus !== "all"
+                ? selectedActiveStatus === "active"
                 : undefined,
           };
 
@@ -261,6 +267,7 @@ const ProviderTours: React.FC = () => {
     searchTerm,
     selectedCategoryId,
     selectedProviderId,
+    selectedActiveStatus,
     showUnapprovedOnly,
     showBannedOnly,
     user?.role,
@@ -409,6 +416,11 @@ const ProviderTours: React.FC = () => {
     setCurrentPage(1); // Reset to first page when changing provider
   };
 
+  const handleActiveStatusChange = (value: string) => {
+    setSelectedActiveStatus(value);
+    setCurrentPage(1); // Reset to first page when changing active status
+  };
+
   // Handle delete tour
   const handleDeleteTour = async (id: number) => {
     if (isAdmin) {
@@ -440,6 +452,10 @@ const ProviderTours: React.FC = () => {
             tour_category_id:
               selectedCategoryId !== "all"
                 ? Number(selectedCategoryId)
+                : undefined,
+            is_active:
+              selectedActiveStatus !== "all"
+                ? selectedActiveStatus === "active"
                 : undefined,
           };
 
@@ -528,7 +544,7 @@ const ProviderTours: React.FC = () => {
   // Handle approve tour (only for admin)
   const handleApproveTour = async () => {
     if (!tourToApprove) return;
-    
+
     try {
       setLoadingTourId(tourToApprove.id);
       await approveTourService(tourToApprove.id);
@@ -551,6 +567,10 @@ const ProviderTours: React.FC = () => {
           tour_category_id:
             selectedCategoryId !== "all"
               ? Number(selectedCategoryId)
+              : undefined,
+          is_active:
+            selectedActiveStatus !== "all"
+              ? selectedActiveStatus === "active"
               : undefined,
         };
 
@@ -599,8 +619,10 @@ const ProviderTours: React.FC = () => {
         limit: 10,
         search: searchTerm || undefined,
         tour_category_id:
-          selectedCategoryId !== "all"
-            ? Number(selectedCategoryId)
+          selectedCategoryId !== "all" ? Number(selectedCategoryId) : undefined,
+        is_active:
+          selectedActiveStatus !== "all"
+            ? selectedActiveStatus === "active"
             : undefined,
       };
 
@@ -688,7 +710,9 @@ const ProviderTours: React.FC = () => {
               <>
                 Tour chưa được duyệt ({totalItems} tours)
                 {isAdmin && (
-                  <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+                  <span className="text-orange-600 ml-2">
+                    (Chỉ xem - Admin)
+                  </span>
                 )}
                 {user?.role === "provider" && (
                   <span className="text-orange-600 ml-2">(Đang chờ duyệt)</span>
@@ -708,7 +732,9 @@ const ProviderTours: React.FC = () => {
               <>
                 Quản lý tất cả tours của bạn ({totalItems} tours)
                 {isAdmin && (
-                  <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
+                  <span className="text-orange-600 ml-2">
+                    (Chỉ xem - Admin)
+                  </span>
                 )}
               </>
             )}
@@ -768,11 +794,11 @@ const ProviderTours: React.FC = () => {
                 placeholder="Tìm kiếm theo tên tour..."
                 value={searchInput}
                 onChange={(e) => handleSearchInput(e.target.value)}
-                className="pl-10 max-w-sm"
+                className="pl-10"
               />
             </div>
             {isAdmin && (
-              <div className="w-56">
+              <div className="w-44">
                 <Select
                   value={selectedProviderId}
                   onValueChange={handleProviderChange}
@@ -797,7 +823,7 @@ const ProviderTours: React.FC = () => {
                 </Select>
               </div>
             )}
-            <div className="w-56">
+            <div className="w-44">
               <Select
                 value={selectedCategoryId}
                 onValueChange={handleCategoryChange}
@@ -812,6 +838,21 @@ const ProviderTours: React.FC = () => {
                       {cat.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-44">
+              <Select
+                value={selectedActiveStatus}
+                onValueChange={handleActiveStatusChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Trạng thái hoạt động" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="active">Hoạt động</SelectItem>
+                  <SelectItem value="inactive">Không hoạt động</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -831,7 +872,9 @@ const ProviderTours: React.FC = () => {
                   }`}
                 >
                   <AlertCircle className="w-4 h-4" />
-                  {showUnapprovedOnly ? "Đang xem tour chưa duyệt" : "Xem tour chưa duyệt"}
+                  {showUnapprovedOnly
+                    ? "Đang xem tour chưa duyệt"
+                    : "Xem tour chưa duyệt"}
                 </Button>
                 <Button
                   variant={showBannedOnly ? "default" : "outline"}
@@ -963,7 +1006,7 @@ const ProviderTours: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          {tour.is_banned && (
+                          {tour.is_banned && !showBannedOnly && (
                             <Badge className="bg-red-600 text-white">
                               Bị cấm
                             </Badge>
@@ -971,7 +1014,9 @@ const ProviderTours: React.FC = () => {
                           <Badge
                             variant={tour.is_active ? "default" : "secondary"}
                             className={
-                              tour.is_active ? "bg-green-500" : "bg-gray-500"
+                              tour.is_active
+                                ? "bg-green-500 hover:bg-green-500 text-white"
+                                : "bg-gray-500 hover:bg-gray-500 text-white"
                             }
                           >
                             {tour.is_active ? "Hoạt động" : "Tạm dừng"}
