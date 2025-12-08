@@ -157,6 +157,13 @@ const ListTrip: React.FC = () => {
         return str;
       };
 
+      // Prefix with ' to keep leading zeros in Excel/CSV viewers
+      const formatPhoneForExcel = (phone?: string | null) => {
+        if (phone === null || phone === undefined) return "";
+        const str = String(phone);
+        return `'${str}`;
+      };
+
       const formatDate = (dateString: string) => {
         try {
           return new Date(dateString).toLocaleDateString("vi-VN", {
@@ -208,7 +215,7 @@ const ListTrip: React.FC = () => {
           rows.push([
             booking.id,
             escapeValue(booking.client_name),
-            escapeValue(booking.client_phone),
+            escapeValue(formatPhoneForExcel(booking.client_phone)),
             escapeValue(booking.payment?.payment_method),
             escapeValue(booking.status),
             booking.total ?? 0,
@@ -226,7 +233,7 @@ const ListTrip: React.FC = () => {
             rows.push([
               booking.id,
               escapeValue(booking.client_name),
-              escapeValue(booking.client_phone),
+              escapeValue(formatPhoneForExcel(booking.client_phone)),
               escapeValue(booking.payment?.payment_method),
               escapeValue(booking.status),
               booking.total ?? 0,

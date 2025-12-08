@@ -18,6 +18,7 @@ import {
   type ScheduleBookingsResponse,
   type ScheduleBooking,
   type ScheduleBookingDetail,
+  RemainingScheduleCount,
 } from "@/apis/tourSchedule.api";
 import axiosInstance from "@/apis/axiosInstance";
 
@@ -94,10 +95,11 @@ export const deleteTourScheduleService = async (
 
 // New service function for getting remaining schedules count
 export const fetchRemainingSchedulesCount =
-  async (): Promise<RemainingSchedulesResponse> => {
+  async (): Promise<RemainingScheduleCount[]> => {
     try {
       const res = await getRemainingSchedulesCount();
-      return res;
+      console.log("fetchRemainingSchedulesCount - res:", res);
+      return res.data;
     } catch (error) {
       console.error("Error fetching remaining schedules count:", error);
       throw error;

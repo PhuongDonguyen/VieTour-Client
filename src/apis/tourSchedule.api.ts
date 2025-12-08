@@ -169,8 +169,12 @@ export const deleteTourSchedule = (id: number) =>
 
 // New API function for getting remaining schedules count
 export const getRemainingSchedulesCount =
-  (): Promise<RemainingSchedulesResponse> =>
-    axiosInstance.get("/api/tour-schedules/remaining-count");
+  async (): Promise<RemainingSchedulesResponse> => {
+    const { data } = await axiosInstance.get(
+      "/api/tour-schedules/remaining-count"
+    );
+    return data;
+  };
 
 // Get schedules with tour info and pagination
 export const getPaginatedTourSchedules = (

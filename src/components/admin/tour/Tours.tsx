@@ -334,7 +334,7 @@ const ProviderTours: React.FC = () => {
     try {
       setRefreshingSchedules(true);
       const response = await fetchRemainingSchedulesCount();
-      setRemainingSchedules(response.data || []);
+      setRemainingSchedules(response || []);
     } catch (error) {
       console.error("Error fetching remaining schedules count:", error);
       setRemainingSchedules([]);
@@ -354,6 +354,7 @@ const ProviderTours: React.FC = () => {
 
   // Helper function to get remaining schedules count for a tour
   const getRemainingSchedulesForTour = (tourId: number): number => {
+    console.log("getRemainingSchedulesForTour - remainingSchedules:", remainingSchedules);
     const scheduleData = remainingSchedules.find((s) => s.tour_id === tourId);
     return scheduleData?.remaining_schedules || 0;
   };
