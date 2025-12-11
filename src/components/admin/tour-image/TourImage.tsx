@@ -158,7 +158,7 @@ const TourImagesManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y- p-6">
       {mode === "list" && (
         <>
           {/* Header */}
@@ -196,7 +196,7 @@ const TourImagesManagement: React.FC = () => {
           </div>
 
           {/* Filter by status only */}
-          <Card>
+          <Card className="my-6">
             <CardHeader>
               <CardTitle>Bộ Lọc Trạng Thái</CardTitle>
             </CardHeader>

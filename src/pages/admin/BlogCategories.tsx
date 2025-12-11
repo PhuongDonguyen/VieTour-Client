@@ -184,7 +184,7 @@ const BlogCategories: React.FC = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
             {error && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
                     <p className="text-red-800">{error}</p>

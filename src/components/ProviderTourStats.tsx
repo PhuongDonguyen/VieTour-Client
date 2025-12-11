@@ -138,12 +138,100 @@ export const ProviderTourStats: React.FC<ProviderTourStatsProps> = ({ providerId
   const renderChart = () => {
     if (!grouped || grouped.length === 0) return <div className="text-center text-muted-foreground py-8">Không có dữ liệu để hiển thị biểu đồ</div>;
     if (statType === 'tour') {
+      // Lọc bỏ những tour có doanh thu bằng 0
+      const filteredData = grouped.filter((item: any) => Number(item.total_revenue) > 0);
+      if (filteredData.length === 0) return <div className="text-center text-muted-foreground py-8">Không có dữ liệu để hiển thị biểu đồ</div>;
+      
+      // Tính số ký tự tối đa mỗi dòng dựa trên số lượng tour
+      // Giả sử container width tối thiểu 400px, trừ margin (60+30=90) = 310px
+      // Mỗi ký tự khoảng 8-10px, nên số ký tự = (310 / số tour) / 8
+      const tourCount = filteredData.length;
+      const estimatedChartWidth = 310; // 400 - 60 (left) - 30 (right)
+      const charWidth = 8; // Ước lượng chiều rộng mỗi ký tự
+      const maxCharsPerLine = Math.max(15, Math.floor((estimatedChartWidth / tourCount) / charWidth));
+      
+      // Hàm chia text thành nhiều dòng
+      const splitTextIntoLines = (text: string): string[] => {
+        if (!text || text.trim().length === 0) return [text];
+        if (text.length <= maxCharsPerLine) return [text];
+        const words = text.split(' ').filter(w => w.length > 0);
+        if (words.length === 0) return [text];
+        
+        const lines: string[] = [];
+        let currentLine = '';
+        words.forEach(word => {
+          const testLine = currentLine ? currentLine + ' ' + word : word;
+          if (testLine.length <= maxCharsPerLine) {
+            currentLine = testLine;
+          } else {
+            if (currentLine) {
+              lines.push(currentLine);
+            }
+            // Nếu từ đơn lẻ dài hơn maxCharsPerLine, vẫn phải thêm vào
+            currentLine = word.length > maxCharsPerLine ? word.substring(0, maxCharsPerLine) : word;
+          }
+        });
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        // Đảm bảo luôn có ít nhất 1 dòng
+        return lines.length > 0 ? lines : [text];
+      };
+      
+      // Custom tick component để render text xuống dòng
+      const CustomTick = ({ x, y, payload }: any) => {
+        if (!payload || !payload.value) return null;
+        const title = payload.value.toString().trim();
+        if (!title) return null;
+        
+        const lines = splitTextIntoLines(title);
+        const lineHeight = 14;
+        
+        // Đảm bảo luôn có ít nhất 1 dòng để hiển thị
+        const displayLines = lines.length > 0 ? lines : [title];
+        
+        return (
+          <g transform={`translate(${x},${y})`}>
+            {displayLines.map((line, index) => (
+              <text
+                key={index}
+                x={0}
+                y={0}
+                dy={index * lineHeight + 14}
+                textAnchor="middle"
+                fill="#666"
+                fontSize={12}
+              >
+                {line}
+              </text>
+            ))}
+          </g>
+        );
+      };
+      
       return (
-        <ResponsiveContainer width="100%" height={350} minWidth={400}>
-          <BarChart data={grouped} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={480} minWidth={400}>
+          <BarChart data={filteredData} margin={{ top: 0, right: 30, left: 60, bottom: 100 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="tour_title" tickFormatter={v => v?.toString().trim()} />
-            <YAxis tickFormatter={v => Number(v).toLocaleString('vi-VN')} width={80} />
+            <XAxis 
+              dataKey="tour_title" 
+              height={100}
+              interval={0}
+              tick={<CustomTick />}
+            />
+            <YAxis
+              yAxisId="left"
+              tickFormatter={v => Number(v).toLocaleString('vi-VN')}
+              width={80}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={v => Math.round(Number(v)).toLocaleString('vi-VN')}
+              allowDecimals={false}
+              domain={[0, (dataMax: number) => Math.ceil(dataMax) + 1]}
+              width={80}
+            />
             <Tooltip 
               formatter={(value: any, name: string) => {
                 if (name === 'Doanh thu') {
@@ -159,26 +247,38 @@ export const ProviderTourStats: React.FC<ProviderTourStatsProps> = ({ providerId
               }}
             />
             <Legend />
-            <Bar dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
-            <Bar dataKey="total_bookings" name="Số lượt đặt" fill="#82ca9d" />
+            <Bar yAxisId="left" dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
+            <Bar yAxisId="right" dataKey="total_bookings" name="Số lượt đặt" fill="#22c55e" />
           </BarChart>
         </ResponsiveContainer>
       );
     }
     if (statType === 'category') {
       return (
-        <ResponsiveContainer width="100%" height={350} minWidth={400}>
+        <ResponsiveContainer width="100%" height={480} minWidth={400}>
           <BarChart data={grouped} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="category_name" tickFormatter={v => v?.toString().trim()} />
-            <YAxis tickFormatter={v => Number(v).toLocaleString('vi-VN')} width={80} />
+            <YAxis
+              yAxisId="left"
+              tickFormatter={v => Number(v).toLocaleString('vi-VN')}
+              width={80}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={v => Math.round(Number(v)).toLocaleString('vi-VN')}
+              allowDecimals={false}
+              domain={[0, (dataMax: number) => Math.ceil(dataMax) + 1]}
+              width={80}
+            />
             <Tooltip 
               formatter={(value: any, name: string) => {
                 if (name === 'Doanh thu') {
                   return [Number(value).toLocaleString('vi-VN') + ' ₫', name];
                 }
                 if (name === 'Số lượt đặt') {
-                  return [Number(value).toLocaleString('vi-VN') + ' lượt', name];
+                  return [Math.round(Number(value)).toLocaleString('vi-VN') + ' lượt', name];
                 }
                 if (name === 'Số tour') {
                   return [Number(value).toLocaleString('vi-VN') + ' tour', name];
@@ -187,59 +287,83 @@ export const ProviderTourStats: React.FC<ProviderTourStatsProps> = ({ providerId
               }}
             />
             <Legend />
-            <Bar dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
-            <Bar dataKey="total_bookings" name="Số lượt đặt" fill="#82ca9d" />
-            <Bar dataKey="tour_count" name="Số tour" fill="#ffc658" />
+            <Bar yAxisId="left" dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
+            <Bar yAxisId="right" dataKey="total_bookings" name="Số lượt đặt" fill="#22c55e" />
+            <Bar yAxisId="right" dataKey="tour_count" name="Số tour" fill="#ffc658" />
           </BarChart>
         </ResponsiveContainer>
       );
     }
     if (statType === 'weekday') {
       return (
-        <ResponsiveContainer width="100%" height={350} minWidth={400}>
+        <ResponsiveContainer width="100%" height={480} minWidth={400}>
           <BarChart data={grouped} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="day_name" tickFormatter={v => v?.toString().trim()} />
-            <YAxis tickFormatter={v => Number(v).toLocaleString('vi-VN')} width={80} />
+            <YAxis
+              yAxisId="left"
+              tickFormatter={v => Number(v).toLocaleString('vi-VN')}
+              width={80}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={v => Math.round(Number(v)).toLocaleString('vi-VN')}
+              allowDecimals={false}
+              domain={[0, (dataMax: number) => Math.ceil(dataMax) + 1]}
+              width={80}
+            />
             <Tooltip 
               formatter={(value: any, name: string) => {
                 if (name === 'Doanh thu') {
                   return [Number(value).toLocaleString('vi-VN') + ' ₫', name];
                 }
                 if (name === 'Số lượt đặt') {
-                  return [Number(value).toLocaleString('vi-VN') + ' lượt', name];
+                  return [Math.round(Number(value)).toLocaleString('vi-VN') + ' lượt', name];
                 }
                 return [value, name];
               }}
             />
             <Legend />
-            <Bar dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
-            <Bar dataKey="total_bookings" name="Số lượt đặt" fill="#82ca9d" />
+            <Bar yAxisId="left" dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
+            <Bar yAxisId="right" dataKey="total_bookings" name="Số lượt đặt" fill="#22c55e" />
           </BarChart>
         </ResponsiveContainer>
       );
     }
     if (statType === 'daily') {
       return (
-        <ResponsiveContainer width="100%" height={350} minWidth={400}>
+        <ResponsiveContainer width="100%" height={480} minWidth={400}>
           <BarChart data={grouped} margin={{ top: 20, right: 30, left: 60, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="booking_date" tickFormatter={v => v?.toString().trim()} />
-            <YAxis tickFormatter={v => Number(v).toLocaleString('vi-VN')} width={80} />
+            <YAxis
+              yAxisId="left"
+              tickFormatter={v => Number(v).toLocaleString('vi-VN')}
+              width={80}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={v => Math.round(Number(v)).toLocaleString('vi-VN')}
+              allowDecimals={false}
+              domain={[0, (dataMax: number) => Math.ceil(dataMax) + 1]}
+              width={80}
+            />
             <Tooltip 
               formatter={(value: any, name: string) => {
                 if (name === 'Doanh thu') {
                   return [Number(value).toLocaleString('vi-VN') + ' ₫', name];
                 }
                 if (name === 'Số lượt đặt') {
-                  return [Number(value).toLocaleString('vi-VN') + ' lượt', name];
+                  return [Math.round(Number(value)).toLocaleString('vi-VN') + ' lượt', name];
                 }
                 return [value, name];
               }}
             />
             <Legend />
-            <Bar dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
-            <Bar dataKey="total_bookings" name="Số lượt đặt" fill="#82ca9d" />
+            <Bar yAxisId="left" dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
+            <Bar yAxisId="right" dataKey="total_bookings" name="Số lượt đặt" fill="#22c55e" />
           </BarChart>
         </ResponsiveContainer>
       );
@@ -256,7 +380,7 @@ export const ProviderTourStats: React.FC<ProviderTourStatsProps> = ({ providerId
   ];
 
   return (
-    <Card className="mt-8 w-full max-w-full overflow-visible">
+    <Card className="mx-6 overflow-visible -mt-6 mb-6">
       <CardHeader>
         <CardTitle className="text-xl">Thống kê doanh thu</CardTitle>
         <CardDescription>
@@ -338,7 +462,10 @@ export const ProviderTourStats: React.FC<ProviderTourStatsProps> = ({ providerId
                 </tr>
               </thead>
               <tbody>
-                {grouped.map((row: any, idx: number) => (
+                {(statType === 'tour' 
+                  ? grouped.filter((row: any) => Number(row.total_revenue) > 0)
+                  : grouped
+                ).map((row: any, idx: number) => (
                   <tr key={idx}>
                     {statType === 'tour' && <td className="border px-2 py-1">{row.tour_title}</td>}
                     {statType === 'tour' && <td className="border px-2 py-1">{row.tour_rating}</td>}

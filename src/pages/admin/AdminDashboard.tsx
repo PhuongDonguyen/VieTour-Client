@@ -34,8 +34,16 @@ const AdminDashboard: React.FC = () => {
   const [topTours, setTopTours] = useState<TopTourStats[]>([]);
   const [topProviders, setTopProviders] = useState<TopProviderStats[]>([]);
   const [loading, setLoading] = useState(false);
-  const [toursFilters, setToursFilters] = useState({ limit: 5 });
-  const [providersFilters, setProvidersFilters] = useState({ limit: 5 });
+  const [toursFilters, setToursFilters] = useState({
+    limit: 5,
+    start_date: "",
+    end_date: "",
+  });
+  const [providersFilters, setProvidersFilters] = useState({
+    limit: 5,
+    start_date: "",
+    end_date: "",
+  });
   const [showToursFilters, setShowToursFilters] = useState(false);
   const [showProvidersFilters, setShowProvidersFilters] = useState(false);
 
@@ -48,6 +56,8 @@ const AdminDashboard: React.FC = () => {
       ]);
       setTopTours(toursResponse.data);
       setTopProviders(providersResponse.data);
+      console.log(toursResponse.data);
+      console.log(providersResponse.data);
     } catch (error) {
       console.error("Error fetching stats:", error);
       toast.error("Không thể tải thống kê");
@@ -107,11 +117,11 @@ const AdminDashboard: React.FC = () => {
   };
 
   const resetToursFilters = () => {
-    setToursFilters({ limit: 5 });
+    setToursFilters({ limit: 5, start_date: "", end_date: "" });
   };
 
   const resetProvidersFilters = () => {
-    setProvidersFilters({ limit: 5 });
+    setProvidersFilters({ limit: 5, start_date: "", end_date: "" });
   };
 
   const formatCurrency = (amount: number) => {
@@ -143,16 +153,20 @@ const AdminDashboard: React.FC = () => {
     fullName: tour.tour_title,
   }));
 
-  const providersChartData = topProviders.map((provider, index) => ({
-    name:
+  const providersChartData = topProviders.map((provider) => {
+    const shortName =
       provider.company_name.length > 15
         ? provider.company_name.substring(0, 15) + "..."
-        : provider.company_name,
-    revenue: provider.total_revenue,
-    providerRevenue: provider.provider_revenue,
-    adminRevenue: provider.admin_revenue,
-    fullName: provider.company_name,
-  }));
+        : provider.company_name;
+    return {
+      nameKey: `${provider.provider_id || provider.company_name}`,
+      shortName,
+      revenue: provider.total_revenue,
+      providerRevenue: provider.provider_revenue,
+      adminRevenue: provider.admin_revenue,
+      fullName: provider.company_name,
+    };
+  });
 
   return (
     <>
@@ -173,7 +187,7 @@ const AdminDashboard: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                Tour hàng đầu theo đặt chỗ
+                Top tour theo lượt đặt
               </CardTitle>
               <CardDescription>
                 Top 5 tour có nhiều đặt chỗ nhất
@@ -271,9 +285,18 @@ const AdminDashboard: React.FC = () => {
                       <BarChart data={toursChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
-                        <YAxis tickFormatter={formatYAxis} />
+                        <YAxis
+                          tickFormatter={(v) =>
+                            Math.round(Number(v)).toLocaleString("vi-VN")
+                          }
+                          allowDecimals={false}
+                          domain={[0, (dataMax: number) => Math.ceil(dataMax) + 1]}
+                        />
                         <Tooltip
-                          formatter={(value, name) => [value, "Số đặt chỗ"]}
+                          formatter={(value, name) => [
+                            Math.round(Number(value)).toLocaleString("vi-VN"),
+                            "Số đặt chỗ",
+                          ]}
                           labelFormatter={(label, payload) => {
                             if (payload && payload[0]) {
                               return payload[0].payload.fullName;
@@ -342,7 +365,7 @@ const AdminDashboard: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building className="w-5 h-5" />
-                Nhà cung cấp hàng đầu theo doanh thu
+                Top nhà cung cấp theo doanh thu
               </CardTitle>
               <CardDescription>
                 Top 5 nhà cung cấp có doanh thu cao nhất
@@ -447,9 +470,16 @@ const AdminDashboard: React.FC = () => {
                   {/* Chart */}
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={providersChartData}>
+                        <ComposedChart data={providersChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
+                        <XAxis
+                          dataKey="nameKey"
+                          tickFormatter={(_, index) =>
+                            providersChartData[index]?.shortName ||
+                            providersChartData[index]?.nameKey ||
+                            ""
+                          }
+                        />
                         <YAxis tickFormatter={formatYAxis} />
                         <Tooltip
                           formatter={(value, name) => [
@@ -458,22 +488,22 @@ const AdminDashboard: React.FC = () => {
                               ? "Provider Revenue"
                               : "Admin Revenue",
                           ]}
-                          labelFormatter={(label, payload) => {
+                          labelFormatter={(_, payload) => {
                             if (payload && payload[0]) {
                               return payload[0].payload.fullName;
                             }
-                            return label;
+                            return "";
                           }}
                         />
                         <Bar
                           dataKey="providerRevenue"
+                          name="Provider Revenue"
                           fill="#10b981"
-                          stackId="a"
                         />
                         <Bar
                           dataKey="adminRevenue"
+                          name="Admin Revenue"
                           fill="#ef4444"
-                          stackId="a"
                         />
                       </ComposedChart>
                     </ResponsiveContainer>

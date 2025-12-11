@@ -67,13 +67,9 @@ import {
   Cell,
 } from "recharts";
 
-interface ProviderRevenueStatsProps {
-  providerId: number;
-}
 
-export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
-  providerId,
-}) => {
+
+export const ProviderRevenueStats: React.FC = () => {
   const [data, setData] = useState<ProviderRevenueData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,9 +94,7 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
     setError(null);
 
     try {
-      console.log(providerId + " " + startDate + " --- " + endDate);
       const response = await getProviderRevenueByDateRange(
-        providerId,
         format(startDate, "yyyy-MM-dd"),
         format(endDate, "yyyy-MM-dd")
       );
@@ -119,7 +113,6 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
     setMonthlyError(null);
     try {
       const response = await getProviderMonthlyRevenue(
-        providerId,
         selectedYear
       );
       setMonthlyData(response.data.data);
@@ -132,11 +125,11 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
 
   useEffect(() => {
     fetchData();
-  }, [providerId, startDate, endDate]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchMonthlyData();
-  }, [providerId, selectedYear]);
+  }, [selectedYear]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -343,27 +336,27 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
         />
 
         <StatCard
-          title="Tổng đặt tour"
-          value={formatNumber(data.total_bookings)}
+          title="Số lượt đặt tour"
+          value={formatNumber(data.total_bookings) + ' lượt'}
           icon={Users}
           color="blue"
-          subtitle="Số lượng đặt tour"
+          subtitle="Tổng số lượt đặt tour của khách hàng"
         />
 
         <StatCard
-          title="Giá trị trung bình"
-          value={formatCurrency(data.average_booking_value)}
+          title="Số chuyến đi"
+          value={formatNumber(data.total_schedules) + ' chuyến'}
           icon={TrendingUp}
           color="purple"
-          subtitle="Giá trị đặt tour trung bình"
+          subtitle="Tổng số chuyến đi"
         />
 
         <StatCard
-          title="Tổng số tour"
-          value={formatNumber(data.total_tours)}
+          title="Tổng số người tham gia"
+          value={formatNumber(data.total_participants)}
           icon={BarChart3}
           color="orange"
-          subtitle={`${data.active_tours} đang hoạt động`}
+          subtitle="Tổng số người tham gia"
         />
       </div>
 
@@ -447,7 +440,7 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
       </Card> */}
 
       {/* Summary */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      {/* <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardHeader>
           <CardTitle className="text-lg">Tóm tắt</CardTitle>
         </CardHeader>
@@ -463,7 +456,7 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
               <Badge variant="outline" className="mx-1">
                 {formatNumber(data.total_bookings)}
               </Badge>{" "}
-              đặt tour với tổng doanh thu{" "}
+              lượt đặt tour với tổng doanh thu{" "}
               <Badge variant="default" className="mx-1">
                 {formatCurrency(data.total_revenue)}
               </Badge>
@@ -507,7 +500,7 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
             </p>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
@@ -549,7 +542,17 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month_name" tickFormatter={(m) => m.trim()} />
                 <YAxis
+                  yAxisId="left"
                   tickFormatter={(v) => Number(v).toLocaleString("vi-VN")}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickFormatter={(v) =>
+                    Math.round(Number(v)).toLocaleString("vi-VN")
+                  }
+                  allowDecimals={false}
+                  domain={[0, (dataMax: number) => Math.ceil(dataMax) + 1]}
                 />
                 <Tooltip
                   formatter={(value: any, name: string) => {
@@ -560,18 +563,25 @@ export const ProviderRevenueStats: React.FC<ProviderRevenueStatsProps> = ({
                       ];
                     } else {
                       return [
-                        Number(value).toLocaleString("vi-VN") + " lượt",
+                        Math.round(Number(value)).toLocaleString("vi-VN") +
+                          " lượt",
                         name,
                       ];
                     }
                   }}
                 />
                 <Legend />
-                <Bar dataKey="total_revenue" name="Doanh thu" fill="#8884d8" />
                 <Bar
+                  yAxisId="left"
+                  dataKey="total_revenue"
+                  name="Doanh thu"
+                  fill="#8884d8"
+                />
+                <Bar
+                  yAxisId="right"
                   dataKey="total_bookings"
                   name="Số lượt đặt"
-                  fill="#82ca9d"
+                  fill="#22c55e"
                 />
               </BarChart>
             </ResponsiveContainer>
