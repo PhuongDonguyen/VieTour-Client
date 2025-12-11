@@ -23,6 +23,7 @@ import {
 import { fetchTours } from "@/services/tour.service";
 import type { TourDetail } from "@/apis/tourDetail.api";
 import type { Tour } from "@/apis/tour.api";
+import { toast } from "sonner";
 
 interface TourDetailFormData {
   tour_id: string;
@@ -204,10 +205,10 @@ const TourDetailEditor: React.FC = () => {
 
       if (isEditing && id) {
         await updateTourDetailService(parseInt(id), tourDetailData);
-        alert("Cập nhật chi tiết tour thành công!");
+        toast.success("Cập nhật chi tiết tour thành công!", { duration: 4000 });
       } else {
         await createTourDetailService(tourDetailData);
-        alert("Tạo chi tiết tour thành công!");
+        toast.success("Tạo chi tiết tour thành công", { duration: 4000 });
       }
 
       // Navigate back to list with tour_id filter to maintain the selected tour
@@ -217,8 +218,9 @@ const TourDetailEditor: React.FC = () => {
           : "/admin/tours/details"
       );
     } catch (error) {
-      console.error("Error saving tour detail:", error);
-      alert("Có lỗi xảy ra khi lưu chi tiết tour. Vui lòng thử lại.");
+      const errorMsg = error.response.data.message;
+      console.error("Error saving tour detail:", error.response.data.message);
+      toast.error(errorMsg || 'Đã xảy ra lỗi, vui lòng kiểm tra các trường và thử lại');
     } finally {
       setLoading(false);
     }
@@ -247,9 +249,8 @@ const TourDetailEditor: React.FC = () => {
             onClick={() =>
               navigate(
                 tourIdFromUrl || formData.tour_id
-                  ? `/admin/tours/details?tour_id=${
-                      tourIdFromUrl || formData.tour_id
-                    }`
+                  ? `/admin/tours/details?tour_id=${tourIdFromUrl || formData.tour_id
+                  }`
                   : "/admin/tours/details"
               )
             }
