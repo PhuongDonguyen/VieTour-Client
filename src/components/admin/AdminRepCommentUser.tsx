@@ -84,7 +84,7 @@ const AdminRepCommentUser = () => {
           title: tour.title,
           poster_url: tour.poster_url,
           duration: tour.duration,
-          location: tour.location?.trim() || '',
+          location: tour.starting_point?.trim() || '',
           price: tour.tour_prices?.[0]?.adult_price || 0,
           unread: 0 // Sẽ tính từ questions data sau
         }));

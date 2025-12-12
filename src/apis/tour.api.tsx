@@ -54,7 +54,7 @@ export interface Tour {
   destination_intro?: string;
   tour_info?: string;
   live_commentary?: string;
-  location?: string; // Địa điểm tour
+  starting_point?: string; // Địa điểm tour
   booked_count?: number;
   tour_category?: {
     id: number;

@@ -994,9 +994,9 @@ const ProviderTours: React.FC = () => {
                           <MapPin className="w-4 h-4 text-muted-foreground" />
                           <span
                             className="truncate max-w-[120px]"
-                            title={tour.location || "Chưa cập nhật"}
+                            title={tour.starting_point || "Chưa cập nhật"}
                           >
-                            {tour.location || "Chưa cập nhật"}
+                            {tour.starting_point || "Chưa cập nhật"}
                           </span>
                         </div>
                       </TableCell>

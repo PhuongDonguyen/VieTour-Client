@@ -49,7 +49,7 @@ const MainTours: React.FC = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            location: tour.location || "Chưa cập nhật",
+            location: tour.starting_point || "Chưa cập nhật",
             duration: tour.duration ? `${tour.duration}` : "Chưa cập nhật",
             price: tour.price || 0,
             imageUrl: tour.poster_url,
@@ -93,7 +93,7 @@ const MainTours: React.FC = () => {
           ...toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            location: tour.location || "Chưa cập nhật",
+            location: tour.starting_point || "Chưa cập nhật",
             duration: tour.duration ? `${tour.duration}` : "Chưa cập nhật",
             price: tour.price || 0,
             imageUrl: tour.poster_url,
@@ -129,7 +129,7 @@ const MainTours: React.FC = () => {
               key={tour.id}
               id={tour.id}
               title={tour.title}
-              location={tour.location}
+              location={tour.starting_point}
               duration={tour.duration}
               price={tour.price}
               imageUrl={tour.imageUrl}

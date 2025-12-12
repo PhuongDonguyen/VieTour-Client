@@ -182,7 +182,7 @@ const ListTrip: React.FC = () => {
         ["THÔNG TIN LỊCH TRÌNH"],
         ["ID Lịch trình", schedule.id],
         ["Tên tour", schedule.tour.title],
-        ["Địa điểm", schedule.tour.location?.trim() || "Đang cập nhật"],
+        ["Địa điểm", schedule.tour.starting_point?.trim() || "Đang cập nhật"],
         ["Ngày khởi hành", formatDate(schedule.start_date)],
         ["Số người tham gia", schedule.participant ?? 0],
         ["Trạng thái", getStatusBadge(schedule.status).label],
@@ -351,7 +351,7 @@ const ListTrip: React.FC = () => {
                               <p className="font-semibold">{schedule.tour.title}</p>
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <MapPin className="mr-1 h-3.5 w-3.5" />
-                                {schedule.tour.location?.trim() || "Đang cập nhật"}
+                                {schedule.tour.starting_point?.trim() || "Đang cập nhật"}
                               </div>
                             </div>
                           </TableCell>

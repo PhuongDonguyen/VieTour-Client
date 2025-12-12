@@ -99,9 +99,9 @@ export const FeaturedTours: React.FC = () => {
                 )}
                 
                 {/* Location Badge - Top Left */}
-                {tour.location && (
+                {tour.starting_point && (
                   <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                    📍 {tour.location}
+                    📍 {tour.starting_point}
                   </div>
                 )}
                 
