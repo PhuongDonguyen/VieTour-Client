@@ -143,24 +143,72 @@ const AdminDashboard: React.FC = () => {
     return value.toString();
   };
 
+  // Split text into lines for chart labels
+  const splitTextIntoLines = (text: string, maxWidth: number = 90): string[] => {
+    if (!text) return [""];
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let currentLine = "";
+
+    words.forEach((word) => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      // Estimate width: ~7px per character for font size 11
+      const estimatedWidth = testLine.length * 7;
+
+      if (estimatedWidth <= maxWidth && currentLine) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        currentLine = word;
+      }
+    });
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines.length > 0 ? lines : [text];
+  };
+
+  // Custom Tick Component for multi-line labels
+  const CustomTick = ({ x, y, payload }: any) => {
+    const title = payload?.value?.toString().trim() || "";
+    const lines = splitTextIntoLines(title, 90);
+    const lineHeight = 13;
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        {lines.map((line, index) => (
+          <text
+            key={index}
+            x={0}
+            y={0}
+            dy={index * lineHeight + 14}
+            textAnchor="middle"
+            fill="#4b5563"
+            fontSize={11}
+            fontWeight={400}
+          >
+            {line}
+          </text>
+        ))}
+      </g>
+    );
+  };
+
   // Prepare chart data
   const toursChartData = topTours.map((tour, index) => ({
-    name:
-      tour.tour_title.length > 15
-        ? tour.tour_title.substring(0, 15) + "..."
-        : tour.tour_title,
+    name: tour.tour_title, // Use full name, will wrap if needed
     bookings: tour.booking_count,
     fullName: tour.tour_title,
   }));
 
   const providersChartData = topProviders.map((provider) => {
-    const shortName =
-      provider.company_name.length > 15
-        ? provider.company_name.substring(0, 15) + "..."
-        : provider.company_name;
     return {
       nameKey: `${provider.provider_id || provider.company_name}`,
-      shortName,
+      name: provider.company_name, // Use full name, will wrap if needed
       revenue: provider.total_revenue,
       providerRevenue: provider.provider_revenue,
       adminRevenue: provider.admin_revenue,
@@ -280,11 +328,20 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {/* Chart */}
-                  <div className="h-64">
+                  <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={toursChartData}>
+                      <BarChart
+                        data={toursChartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
+                        <XAxis
+                          dataKey="name"
+                          height={80}
+                          interval={0}
+                          tick={<CustomTick />}
+                          stroke="#6b7280"
+                        />
                         <YAxis
                           tickFormatter={(v) =>
                             Math.round(Number(v)).toLocaleString("vi-VN")
@@ -468,17 +525,19 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {/* Chart */}
-                  <div className="h-64">
+                  <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={providersChartData}>
+                        <ComposedChart
+                          data={providersChartData}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                        >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
-                          dataKey="nameKey"
-                          tickFormatter={(_, index) =>
-                            providersChartData[index]?.shortName ||
-                            providersChartData[index]?.nameKey ||
-                            ""
-                          }
+                          dataKey="name"
+                          height={80}
+                          interval={0}
+                          tick={<CustomTick />}
+                          stroke="#6b7280"
                         />
                         <YAxis tickFormatter={formatYAxis} />
                         <Tooltip
@@ -486,7 +545,9 @@ const AdminDashboard: React.FC = () => {
                             formatCurrency(Number(value)),
                             name === "providerRevenue"
                               ? "Provider Revenue"
-                              : "Admin Revenue",
+                              : name === "adminRevenue"
+                              ? "Admin Revenue"
+                              : name,
                           ]}
                           labelFormatter={(_, payload) => {
                             if (payload && payload[0]) {
@@ -539,9 +600,9 @@ const AdminDashboard: React.FC = () => {
                             {formatCurrency(provider.total_revenue)}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            TB:{" "}
+                            Thực nhận:{" "}
                             {formatCurrency(
-                              provider.average_revenue_per_booking
+                              provider.provider_revenue
                             )}
                           </div>
                         </div>
