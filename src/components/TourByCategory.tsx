@@ -62,7 +62,7 @@ export const TourByCategory = () => {
       const newTours = toursRes.data.map((tour: any) => ({
         id: tour.id,
         title: tour.title,
-        location: tour.location || "Chưa cập nhật",
+        location: tour.starting_point || "Chưa cập nhật",
         duration: tour.duration ? `${tour.duration}` : "Chưa cập nhật",
         price: tour.price || 0,
         imageUrl:
@@ -139,7 +139,7 @@ export const TourByCategory = () => {
                 key={tour.id}
                 id={tour.id}
                 title={tour.title}
-                location={tour.location}
+                location={tour.starting_point}
                 duration={tour.duration}
                 price={tour.price}
                 imageUrl={tour.imageUrl}

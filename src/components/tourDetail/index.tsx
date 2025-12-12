@@ -343,7 +343,7 @@ const TourDetail: React.FC = () => {
               price={displayPrice}
               tourSlug={tour.slug}
               loading={loading}
-              location={tour.location}
+              location={tour.starting_point}
               duration={tour.duration}
               companyName={providerProfile?.company_name}
               totalStar={tour.total_star}

@@ -49,7 +49,7 @@ interface TourFormData {
   duration: string;
   tour_category_id: string;
   live_commentary: string;
-  location: string;
+  starting_point: string;
   is_active: boolean;
   image: File | null;
 }
@@ -79,7 +79,7 @@ const TourEditor: React.FC = () => {
     duration: "",
     tour_category_id: "",
     live_commentary: "",
-    location: "",
+    starting_point: "",
     is_active: true,
     image: null,
   });
@@ -195,15 +195,15 @@ const TourEditor: React.FC = () => {
             duration: tour.duration?.toString() || "",
             tour_category_id: tour.tour_category_id?.toString() || "",
             live_commentary: tour.live_commentary || "",
-            location: tour.location || "",
+            starting_point: tour.starting_point || "",
             is_active: tour.is_active ?? true,
             image: null,
           });
 
           // Parse location if it exists
-          if (tour.location) {
+          if (tour.starting_point) {
             // Try to find matching province from existing location
-            const province = provinces.find((p) => p.name === tour.location);
+            const province = provinces.find((p) => p.name === tour.starting_point);
             if (province) {
               setSelectedProvince(province.code);
             }
@@ -291,11 +291,11 @@ const TourEditor: React.FC = () => {
       let locationString = "";
       if (selectedProvince) {
         locationString = getProvinceName(selectedProvince);
-      } else if (formData.location) {
+      } else if (formData.starting_point) {
         // Fallback to existing location if dropdown not selected
-        locationString = formData.location;
+        locationString = formData.starting_point;
       }
-      formDataToSend.append("location", locationString);
+      formDataToSend.append("starting_point", locationString);
 
       formDataToSend.append("is_active", formData.is_active.toString());
 

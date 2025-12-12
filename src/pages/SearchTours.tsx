@@ -555,7 +555,7 @@ const SearchTours: React.FC = () => {
                       <SearchTourCard
                         id={tour.id}
                         title={tour.title}
-                        location={tour.location}
+                        location={tour.starting_point}
                         duration={tour.duration}
                         price={tour.price}
                         imageUrl={tour.poster_url}
@@ -584,7 +584,7 @@ const SearchTours: React.FC = () => {
                               <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                                 <div className="flex items-center gap-1">
                                   <MapPin className="w-4 h-4" />
-                                  {tour.location}
+                                  {tour.starting_point}
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Calendar className="w-4 h-4" />
