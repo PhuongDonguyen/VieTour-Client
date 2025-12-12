@@ -77,6 +77,7 @@ const CancelBooking: React.FC = () => {
         const booking = await fetchBookingById(Number(bookingId));
         setBookingData(booking.data);
         const ratesRes = await refundRateService.getRefundRates();
+        console.log("ratesRes", ratesRes.data.data);
         setRefundRates(ratesRes.data.data);
       } catch (err) {
         console.error(err);

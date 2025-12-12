@@ -65,6 +65,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
 
     useEffect(() => {
         const loadUnreadCount = async () => {
+            if (user?.role === "admin") return;
             try {
                 const response = await fetchUnreadCount();
                 const count = response.data.total_unread;

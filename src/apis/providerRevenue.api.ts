@@ -6,7 +6,9 @@ export interface ProviderRevenueData {
   success_bookings: number;
   fail_bookings: number;
   pending_bookings: number;
+  refunded_bookings: number;
   average_booking_value: number;
+  total_refund_amount: number;
   total_tours: number;
   active_tours: number;
   success_rate: string;

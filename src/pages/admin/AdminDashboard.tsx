@@ -56,8 +56,8 @@ const AdminDashboard: React.FC = () => {
       ]);
       setTopTours(toursResponse.data);
       setTopProviders(providersResponse.data);
-      console.log(toursResponse.data);
-      console.log(providersResponse.data);
+      // console.log(toursResponse.data);
+      // console.log(providersResponse.data);
     } catch (error) {
       console.error("Error fetching stats:", error);
       toast.error("Không thể tải thống kê");

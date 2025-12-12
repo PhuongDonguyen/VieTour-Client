@@ -250,6 +250,11 @@ export const ProviderRevenueStats: React.FC = () => {
     return null;
   }
 
+  const refundRate =
+    Number(data.total_bookings) > 0
+      ? ((data.refunded_bookings / data.total_bookings) * 100).toFixed(1) + "%"
+      : "0%";
+
   return (
     <div className="space-y-6 p-6">
       {/* Header with Date Range Selector */}
@@ -321,20 +326,33 @@ export const ProviderRevenueStats: React.FC = () => {
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatCard
-          title="Tổng doanh thu"
+          title="Tổng tiền nhận từ khách hàng"
           value={formatCurrency(data.total_revenue)}
           icon={DollarSign}
           color="green"
-          subtitle="Tổng thu nhập trong khoảng thời gian"
+          subtitle="Tổng tiền nhận từ khách hàng"
         />
         <StatCard
-          title="Doanh thu thực nhận (95%)"
-          value={formatCurrency(Math.round(Number(data.total_revenue) * 0.95))}
+          title="Số tiền hoàn lại khách hàng"
+          value={formatCurrency(data.total_refund_amount) }
+          icon={DollarSign}
+          color="green"
+          subtitle="Số tiền hoàn lại khách hàng theo yêu cầu hoàn tiền"
+        />
+        <StatCard
+          title="Tổng doanh thu"
+          value={formatCurrency(Math.round(Number(data.total_revenue - data.total_refund_amount)))}
           icon={DollarSign}
           color="green"
           subtitle="Sau phí nền tảng"
         />
-
+        <StatCard
+          title="Tổng danh thu thực nhận"
+          value={formatCurrency(Math.round(Number(data.total_revenue - data.total_refund_amount)* 0.95))}
+          icon={DollarSign}
+          color="green"
+          subtitle="Tổng doanh thu thực nhận sau phí nền tảng(95% doanh thu)"
+        />
         <StatCard
           title="Số lượt đặt tour"
           value={formatNumber(data.total_bookings) + ' lượt'}
@@ -343,25 +361,17 @@ export const ProviderRevenueStats: React.FC = () => {
           subtitle="Tổng số lượt đặt tour của khách hàng"
         />
 
-        <StatCard
-          title="Số chuyến đi"
-          value={formatNumber(data.total_schedules) + ' chuyến'}
-          icon={TrendingUp}
-          color="purple"
-          subtitle="Tổng số chuyến đi"
-        />
-
-        <StatCard
+        {/* <StatCard
           title="Tổng số người tham gia"
           value={formatNumber(data.total_participants)}
           icon={BarChart3}
           color="orange"
           subtitle="Tổng số người tham gia"
-        />
+        /> */}
       </div>
 
       {/* Booking Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <BookingStatusCard
           title="Đặt tour thành công"
           count={data.success_bookings}
@@ -384,6 +394,13 @@ export const ProviderRevenueStats: React.FC = () => {
           rate={data.pending_rate}
           icon={Clock}
           color="yellow"
+        />
+        <BookingStatusCard
+          title="Đặt tour đã hoàn tiền"
+          count={data.refunded_bookings}
+          rate={refundRate}
+          icon={CheckCircle}
+          color="blue"
         />
       </div>
 
