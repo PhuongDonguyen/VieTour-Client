@@ -195,7 +195,7 @@ const TourEditor: React.FC = () => {
             duration: tour.duration?.toString() || "",
             tour_category_id: tour.tour_category_id?.toString() || "",
             live_commentary: tour.live_commentary || "",
-            location: tour.location || "",
+            starting_point: tour.starting_point || "",
             is_active: tour.is_active ?? true,
             image: null,
           });

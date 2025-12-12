@@ -436,7 +436,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                 <span className="text-sm text-muted-foreground">Địa điểm:</span>
                 <span className="font-medium flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
-                  {tour.location || "Chưa cập nhật"}
+                  {tour.starting_point || "Chưa cập nhật"}
                 </span>
               </div>
               <div className="flex justify-between">
