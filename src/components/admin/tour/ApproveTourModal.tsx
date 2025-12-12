@@ -53,7 +53,7 @@ const ApproveTourModal: React.FC<ApproveTourModalProps> = ({
                   {tour.title}
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
-                  Địa điểm: {tour.location || "Chưa cập nhật"}
+                  Địa điểm: {tour.starting_point || "Chưa cập nhật"}
                 </p>
                 <p className="text-sm text-gray-600">
                   Danh mục: {getCategoryName(tour)}

@@ -282,7 +282,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
                   </p>
                   <p className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
-                    {tour.location || "Chưa cập nhật"}
+                    {tour.starting_point || "Chưa cập nhật"}
                   </p>
                 </div>
                 <div>

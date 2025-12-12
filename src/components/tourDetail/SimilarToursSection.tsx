@@ -99,7 +99,7 @@ const SimilarToursSection: React.FC<Props> = ({ tourTitle, currentTourId }) => {
                                         </div>
                                         <div className="flex items-center">
                                             <MapPin className="w-4 h-4 mr-1" />
-                                            <span className="max-w-20 truncate">{tour.location}</span>
+                                            <span className="max-w-20 truncate">{tour.starting_point}</span>
                                         </div>
                                     </div>
                                 </div>

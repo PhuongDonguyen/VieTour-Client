@@ -56,7 +56,7 @@ const BanTourModal: React.FC<BanTourModalProps> = ({
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p>
                   <span className="font-medium">Địa điểm:</span>{" "}
-                  {tour.location || "Chưa cập nhật"}
+                  {tour.starting_point || "Chưa cập nhật"}
                 </p>
                 <p>
                   <span className="font-medium">Danh mục:</span>{" "}
