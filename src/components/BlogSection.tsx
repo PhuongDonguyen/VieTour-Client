@@ -4,6 +4,7 @@ import { Autoplay } from "swiper/modules";
 import { getAllCategories } from "../services/blogCategory.service";
 import { fetchBlogs } from "../services/blog.service";
 import { SkeletonBlogSection } from "./Skeleton";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 
 const BlogSection: React.FC = () => {
   const [blogCategories, setBlogCategories] = useState<any[]>([]);
@@ -45,7 +46,8 @@ const BlogSection: React.FC = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 py-10">
       <div className="text-center mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-blue-900">BLOG</h2>
+        <h2 className="text-3xl font-bold text-[#015294] mb-4">BLOG</h2>
+        <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
       </div>
 
       {/* Blog Categories */}
@@ -61,10 +63,10 @@ const BlogSection: React.FC = () => {
             >
               <div
                 className="relative rounded-lg overflow-hidden shadow-lg h-80 md:h-90 flex flex-col justify-end transition-transform duration-300 group-hover:scale-[1.02] group-focus:scale-[1.02]"
-                style={{ 
-                  backgroundImage: `url(${cat.thumbnail})`, 
-                  backgroundSize: 'cover', 
-                  backgroundPosition: 'center' 
+                style={{
+                  backgroundImage: `url(${cat.thumbnail})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
                 }}
               >
                 {/* Dark overlay for better text readability */}
@@ -109,30 +111,33 @@ const BlogSection: React.FC = () => {
                 aria-label={blog.title}
                 style={{ textDecoration: 'none' }}
               >
-                <div className="bg-white rounded-lg overflow-hidden transition-shadow duration-300 h-full flex flex-col group-hover:shadow-xl group-focus:shadow-xl">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 h-full flex flex-col group-hover:shadow-2xl group-hover:-translate-y-1 group-focus:shadow-2xl group-focus:-translate-y-1">
                   {/* Blog image with overlay */}
-                  <div className="relative">
-                    <img 
-                      src={blog.thumbnail} 
-                      alt={blog.title} 
-                      className="w-full h-48 object-cover"
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={transformCloudinaryUrl(blog.thumbnail, ImageSize.THUMBNAIL, ImageQuality.HIGH, 'f_auto')}
+                      alt={blog.title}
+                      className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                     />
-                    {/* Subtle overlay for blog images */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+                    {/* Enhanced gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
                   </div>
-                  <div className="p-4 flex-grow">
-                    <h4 className="font-bold text-base mb-2 text-blue-900 line-clamp-2">
+                  <div className="p-5 flex-grow flex flex-col">
+                    <h4 className="font-bold text-lg mb-3 text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {blog.title}
                     </h4>
-                    <p className="text-sm text-gray-700 mb-3 line-clamp-3">
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-3 leading-relaxed">
                       {blog.excerpt}
                     </p>
-                  </div>
-                  <div className="px-4 pb-4">
-                    <span className="text-sm text-blue-600 font-medium group-hover:text-blue-800 group-focus:text-blue-800 transition">
-                      Đọc tiếp →
-                    </span>
+                    <div className="mt-auto pt-2">
+                      <span className="inline-flex items-center text-sm text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
+                        Đọc tiếp
+                        <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </a>
