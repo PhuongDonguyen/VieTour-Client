@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { ProviderRevenueStatsWrapper } from "../../components/ProviderRevenueStatsWrapper";
-import RevenueChart from "../../components/admin/RevenueChart";
+import RevenueChartOld from "../../components/admin/RevenueChart";
 import {
   Card,
   CardContent,
@@ -26,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { AuthContext } from "@/context/authContext";
+import RevenueAdmin from "@/components/admin/stat/RevenueAdmin";
+import RevenueChart from "@/components/admin/stat/RevenueChart";
 
 const AdminDashboard: React.FC = () => {
   const { user } = useContext(AuthContext);
@@ -221,11 +223,27 @@ const AdminDashboard: React.FC = () => {
       {isProvider && <ProviderRevenueStatsWrapper />}
 
       {/* Revenue Chart */}
-      {isAdmin && (
+      {/* {isAdmin && (
         <div className="pt-6 px-6">
-          <RevenueChart className="mb-6" />
+          <RevenueChartOld className="mb-6" />
         </div>
-      )}
+      )} */}
+
+      {
+        isAdmin && (
+          <div className="pt-6 px-6">
+            <RevenueAdmin />
+          </div>
+        )
+      }
+
+      {
+        isAdmin && (
+          <div className="pt-6 px-6">
+            <RevenueChart />
+          </div>
+        )
+      }
 
       {/* Statistics Grid - Top Tours & Providers */}
       {isAdmin && (

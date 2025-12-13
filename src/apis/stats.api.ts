@@ -46,6 +46,26 @@ export const getLast12MonthsRevenue =
     return response.data;
   };
 
+// Get revenue summary (total, success, refunded revenue and bookings)
+export const getRevenueSummary = async (
+  params?: StatsQueryParams
+): Promise<RevenueSummaryResponse> => {
+  const response = await axiosInstance.get("/api/stats/booking-revenue", {
+    params,
+  });
+  return response.data;
+};
+
+// Get booking revenue timeseries
+export const getBookingRevenueTimeseries = async (
+  params?: TimeseriesQueryParams
+): Promise<TimeseriesResponse> => {
+  const response = await axiosInstance.get("/api/stats/booking-revenue/timeseries", {
+    params,
+  });
+  return response.data;
+};
+
 export interface TopTourStats {
   tour_id: number;
   tour_title: string;
@@ -96,6 +116,41 @@ export interface StatsQueryParams {
   startDate?: string;
   endDate?: string;
   limit?: number;
+}
+
+export interface RevenueSummaryData {
+  total_revenue: number;
+  revenue_success: number;
+  revenue_refunded: number;
+  success_bookings: number;
+  refunded_bookings: number;
+}
+
+export interface RevenueSummaryResponse {
+  success: boolean;
+  data: RevenueSummaryData;
+}
+
+export interface TimeseriesDataPoint {
+  period_type: "month" | "day" | "year";
+  period_value: string; // "2025-01", "2025-08-15", "2025"
+  total_revenue: number;
+  revenue_success: number;
+  revenue_refunded: number;
+  success_bookings: number;
+  refunded_bookings: number;
+}
+
+export interface TimeseriesResponse {
+  success: boolean;
+  data: TimeseriesDataPoint[];
+}
+
+export interface TimeseriesQueryParams {
+  year?: number;
+  month?: number;
+  startYear?: number;
+  endYear?: number;
 }
 
 // Helper function to safely convert any numeric value to number
