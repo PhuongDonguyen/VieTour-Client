@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { fetchTours } from "../services/tour.service";
 import SearchTourCard from "./SearchTourCard";
 import { SkeletonMainTours } from "./Skeleton";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 
 type TourCardData = {
   id: number;
   title: string;
-  location: string;
+  startingPoint: string;
   duration: string;
   price: number;
   imageUrl: string;
@@ -49,10 +50,10 @@ const MainTours: React.FC = () => {
           toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            location: tour.starting_point || "Chưa cập nhật",
+            startingPoint: tour.starting_point || "Chưa cập nhật",
             duration: tour.duration ? `${tour.duration}` : "Chưa cập nhật",
             price: tour.price || 0,
-            imageUrl: tour.poster_url,
+            imageUrl: transformCloudinaryUrl(tour.poster_url, ImageSize.THUMBNAIL, ImageQuality.HIGH, 'f_auto'),
             rating: tour.total_star / Math.max(tour.review_count, 1) || 0,
             reviewCount: tour.review_count || 0,
             slug: tour.slug,
@@ -93,7 +94,7 @@ const MainTours: React.FC = () => {
           ...toursData.map((tour: any) => ({
             id: tour.id,
             title: tour.title,
-            location: tour.starting_point || "Chưa cập nhật",
+            startingPoint: tour.starting_point || "Chưa cập nhật",
             duration: tour.duration ? `${tour.duration}` : "Chưa cập nhật",
             price: tour.price || 0,
             imageUrl: tour.poster_url,
@@ -129,7 +130,7 @@ const MainTours: React.FC = () => {
               key={tour.id}
               id={tour.id}
               title={tour.title}
-              location={tour.starting_point}
+              startingPoint={tour.startingPoint}
               duration={tour.duration}
               price={tour.price}
               imageUrl={tour.imageUrl}
@@ -143,7 +144,7 @@ const MainTours: React.FC = () => {
         </div>
 
         {existTourMore && (
-          <div className="text-center mt-8">
+          <div className="text-center mt-9">
             {loadingMore ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -154,7 +155,7 @@ const MainTours: React.FC = () => {
                 onClick={handleMoreTours}
                 className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
               >
-                Xem thêm tour khác
+                Xem thêm
               </button>
             )}
           </div>

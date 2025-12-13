@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { fetchActiveTourCategories } from '../services/tourCategory.service';
 import { SkeletonTourCategories } from './Skeleton';
 import "swiper/css";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 
 export const TourListCarousel: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -26,7 +27,7 @@ export const TourListCarousel: React.FC = () => {
   if (loading) {
     return <SkeletonTourCategories />;
   }
-  
+
   if (error) {
     return <div className="w-full py-8 text-center text-red-500">{error}</div>;
   }
@@ -34,10 +35,11 @@ export const TourListCarousel: React.FC = () => {
   return (
     <div className="w-full py-16 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#015294] mb-8 text-center">
-          DANH MỤC TOUR
-        </h2>
-        
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-[#015294] mb-4">DANH MỤC TOUR</h2>
+          <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+        </div>
+
         <div className="relative">
           <Swiper
             modules={[Autoplay]}
@@ -61,7 +63,7 @@ export const TourListCarousel: React.FC = () => {
                   <div className="relative h-48 overflow-hidden rounded-lg bg-gray-100">
                     {cat.image_url ? (
                       <img
-                        src={cat.image_url}
+                        src={transformCloudinaryUrl(cat.image_url, ImageSize.THUMBNAIL, ImageQuality.HIGH, 'f_auto')}
                         alt={cat.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
@@ -73,9 +75,9 @@ export const TourListCarousel: React.FC = () => {
                         </span>
                       </div>
                     )}
-                    
+
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
-                    
+
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       <h3 className="text-white font-semibold text-center text-lg mb-1 line-clamp-2">
                         {cat.name}
