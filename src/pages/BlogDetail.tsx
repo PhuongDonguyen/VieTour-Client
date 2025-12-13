@@ -46,6 +46,7 @@ const BlogDetail: React.FC = () => {
       setLoading(true);
       try {
         const response = await fetchBlogs({ slug: slug });
+        console.log("response: ", response);  
         // Since we're fetching by slug, we expect only one blog
         const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
@@ -255,7 +256,7 @@ const BlogDetail: React.FC = () => {
                   }`}
                 >
                   <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-red-600" : ""}`} />
-                  {isLiked ? 1 : 0}
+                  {blog.like_count}
                 </button>
                 <button
                   onClick={() => setIsBookmarked(!isBookmarked)}
