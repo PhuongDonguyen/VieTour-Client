@@ -7,14 +7,14 @@ interface SkeletonProps {
   rounded?: string;
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({ 
-  className = "", 
-  width = "w-full", 
-  height = "h-4", 
-  rounded = "rounded" 
+export const Skeleton: React.FC<SkeletonProps> = ({
+  className = "",
+  width = "w-full",
+  height = "h-4",
+  rounded = "rounded"
 }) => {
   return (
-    <div 
+    <div
       className={`${width} ${height} ${rounded} bg-gray-200 animate-pulse ${className}`}
     />
   );
@@ -24,10 +24,10 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 export const SkeletonText = ({ lines = 1, className = "" }: { lines?: number; className?: string }) => (
   <div className={`space-y-2 ${className}`}>
     {Array.from({ length: lines }).map((_, i) => (
-      <Skeleton 
-        key={i} 
-        height="h-4" 
-        width={i === lines - 1 ? "w-3/4" : "w-full"} 
+      <Skeleton
+        key={i}
+        height="h-4"
+        width={i === lines - 1 ? "w-3/4" : "w-full"}
         className="rounded"
       />
     ))}
@@ -148,7 +148,10 @@ export const SkeletonSearchSection = () => (
 export const SkeletonFeaturedTours = () => (
   <div className="py-16 bg-white">
     <div className="max-w-7xl mx-auto px-4">
-      <SkeletonTitle className="mb-12" />
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-[#015294] mb-4">TOUR NỔI BẬT TRONG THÁNG</h2>
+        <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 3 }).map((_, i) => (
           <SkeletonTourCard key={i} />
@@ -161,7 +164,10 @@ export const SkeletonFeaturedTours = () => (
 export const SkeletonMainTours = () => (
   <div className="py-16 bg-white">
     <div className="max-w-7xl mx-auto px-4">
-      <SkeletonTitle className="mb-8" />
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-[#015294] mb-4">TOUR CHÍNH</h2>
+        <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {Array.from({ length: 6 }).map((_, i) => (
           <SkeletonTourCard key={i} />
@@ -190,7 +196,10 @@ export const SkeletonRecommendTours = () => (
 export const SkeletonTourCategories = () => (
   <div className="py-16 bg-gray-50">
     <div className="max-w-7xl mx-auto px-4">
-      <SkeletonTitle className="mb-8" />
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-[#015294] mb-4">DANH MỤC TOUR</h2>
+        <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+      </div>
       <div className="flex space-x-4 overflow-hidden">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} height="h-48" width="w-64" className="rounded-2xl flex-shrink-0" />
@@ -203,7 +212,10 @@ export const SkeletonTourCategories = () => (
 export const SkeletonBlogSection = () => (
   <div className="py-16 bg-white">
     <div className="max-w-7xl mx-auto px-4">
-      <SkeletonTitle className="mb-8" />
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-[#015294] mb-4">BLOG</h2>
+        <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         {Array.from({ length: 2 }).map((_, i) => (
           <SkeletonCategoryCard key={i} />

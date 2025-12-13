@@ -6,6 +6,7 @@ import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import { getCarouselData } from "../../apis/carousel.api";
 import { useScrollAnimation } from "../../hooks/useScrollAnimation";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../../utils/imageUtils";
 
 export const HeroSection = () => {
   const [slides, setSlides] = useState<any[]>([]);
@@ -27,7 +28,7 @@ export const HeroSection = () => {
             const priceObj = tour.tour_prices && tour.tour_prices[0];
             return {
               id: tour.id,
-              image: tour.poster_url,
+              image: transformCloudinaryUrl(tour.poster_url, ImageSize.HERO, ImageQuality.HIGH, 'f_auto'),
               title: tour.title,
               price: priceObj
                 ? `${priceObj.adult_price.toLocaleString()} VND`
@@ -50,11 +51,10 @@ export const HeroSection = () => {
   }, []);
 
   return (
-    <div 
+    <div
       ref={elementRef}
-      className={`relative h-screen overflow-hidden transition-all duration-1000 ease-out ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-      }`}
+      className={`relative h-screen overflow-hidden transition-all duration-1000 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+        }`}
     >
       {isLoading ? (
         // Loading placeholder
@@ -95,25 +95,16 @@ export const HeroSection = () => {
                 >
                   <div className="absolute inset-0 bg-black/40"></div>
                   <div className="absolute inset-0 flex items-center">
-                    <div className={`text-left text-white max-w-5xl px-40 ml-8 transition-all duration-700 delay-300 ${
-                      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                    }`}>
+                    <div className={`text-left text-white max-w-5xl px-40 ml-8 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                      }`}>
                       <h1 className="text-2xl md:text-4xl font-semibold mb-6 leading-tight">
                         {slide.title}
                       </h1>
                       <div className="flex items-center space-x-4 mb-8">
-                        {/* <div className="flex items-center space-x-2">
-                          <MapPin className="w-5 h-5 text-orange-500" />
-                          <span>Miền Tây Nam Bộ</span>
-                        </div> */}
                         <div className="flex items-center space-x-2">
                           <Calendar className="w-5 h-5 text-orange-500" />
                           <span>{slide.duration}</span>
                         </div>
-                        {/* <div className="flex items-center space-x-2">
-                          <Users className="w-5 h-5 text-orange-500" />
-                          <span>Theo đoàn</span>
-                        </div> */}
                       </div>
                       <div className="text-2xl md:text-2xl font-bold text-orange-400 mb-8">
                         {slide.price}
@@ -131,9 +122,8 @@ export const HeroSection = () => {
                 >
                   <div className="absolute inset-0 bg-black/40"></div>
                   <div className="absolute inset-0 flex items-center">
-                    <div className={`text-left text-white max-w-4xl px-40 ml-8 transition-all duration-700 delay-300 ${
-                      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                    }`}>
+                    <div className={`text-left text-white max-w-4xl px-40 ml-8 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                      }`}>
                       <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
                         {slide.title}
                       </h1>
