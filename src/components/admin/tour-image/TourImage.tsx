@@ -158,7 +158,7 @@ const TourImagesManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y- p-6">
       {mode === "list" && (
         <>
           {/* Header */}
@@ -172,9 +172,9 @@ const TourImagesManagement: React.FC = () => {
                 Trở về Tour
               </Button>
               <div>
-                <h1 className="text-3xl font-bold">Quản Lý Hình Ảnh Tours</h1>
+                <h1 className="text-3xl font-bold">Quản Lý Hình Ảnh Tour</h1>
                 <p className="text-muted-foreground">
-                  Quản lý thư viện hình ảnh và ảnh nổi bật của các tours (
+                  Quản lý thư viện hình ảnh và ảnh nổi bật của các tour (
                   {totalItems} hình ảnh)
                   {isAdmin && (
                     <span className="text-orange-600 ml-2">
@@ -196,7 +196,7 @@ const TourImagesManagement: React.FC = () => {
           </div>
 
           {/* Filter by status only */}
-          <Card>
+          <Card className="my-6">
             <CardHeader>
               <CardTitle>Bộ Lọc Trạng Thái</CardTitle>
             </CardHeader>

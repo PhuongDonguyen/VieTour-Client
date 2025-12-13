@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!user) return;
-    if (!chatSocketManagerRef.current) return;
+    if (!chatSocketManagerRef.current || user.role === "admin") return;
     
     chatSocketManagerRef.current.reset();
     console.log("user: ", user);

@@ -138,7 +138,7 @@ const RegisterPartnerViewContent: React.FC<RegisterPartnerViewContentProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       {showHeader && (
         <div className="flex items-center mb-4">

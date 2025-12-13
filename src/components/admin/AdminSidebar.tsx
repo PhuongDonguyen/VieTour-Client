@@ -165,12 +165,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
           },
         ],
       },
-      {
-        label: "Settings",
-        href: "/admin/settings",
-        icon: <Settings className="w-4 h-4" />,
-        allowedRoles: ["admin"], // Only admins can access settings
-      },
+      // {
+      //   label: "Settings",
+      //   href: "/admin/settings",
+      //   icon: <Settings className="w-4 h-4" />,
+      //   allowedRoles: ["admin"], // Only admins can access settings
+      // },
       // Provider-only sections
       {
         label: "Đơn đặt",

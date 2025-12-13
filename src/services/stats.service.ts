@@ -2,7 +2,12 @@ import {
   getCustomDateRangeRevenue, 
   getCurrentYearRevenue, 
   getLast12MonthsRevenue,
+  getRevenueSummary,
+  getBookingRevenueTimeseries,
   type RevenueStatsResponse,
+  type RevenueSummaryResponse,
+  type TimeseriesResponse,
+  type TimeseriesQueryParams,
   statsApi,
   TopTourStats,
   TopProviderStats,
@@ -13,6 +18,8 @@ export interface StatsService {
   getCustomDateRangeRevenue: (startDate: string, endDate: string) => Promise<RevenueStatsResponse>;
   getCurrentYearRevenue: () => Promise<RevenueStatsResponse>;
   getLast12MonthsRevenue: () => Promise<RevenueStatsResponse>;
+  getRevenueSummary: (params?: StatsQueryParams) => Promise<RevenueSummaryResponse>;
+  getBookingRevenueTimeseries: (params?: TimeseriesQueryParams) => Promise<TimeseriesResponse>;
   getTopToursByBookings: (params?: StatsQueryParams) => Promise<TopTourStats[]>;
   getTopProvidersByRevenue: (params?: StatsQueryParams) => Promise<TopProviderStats[]>;
   formatCurrency: (amount: number) => string;
@@ -52,6 +59,26 @@ class StatsServiceImpl implements StatsService {
     }
   }
 
+  // Get revenue summary (total, success, refunded revenue and bookings)
+  async getRevenueSummary(params?: StatsQueryParams): Promise<RevenueSummaryResponse> {
+    try {
+      return await getRevenueSummary(params);
+    } catch (error) {
+      console.error('Error fetching revenue summary:', error);
+      throw error;
+    }
+  }
+
+  // Get booking revenue timeseries
+  async getBookingRevenueTimeseries(params?: TimeseriesQueryParams): Promise<TimeseriesResponse> {
+    try {
+      return await getBookingRevenueTimeseries(params);
+    } catch (error) {
+      console.error('Error fetching booking revenue timeseries:', error);
+      throw error;
+    }
+  }
+
   async getTopToursByBookings(
     params?: StatsQueryParams
   ): Promise<TopTourStats[]> {
@@ -75,6 +102,7 @@ class StatsServiceImpl implements StatsService {
       throw error;
     }
   }
+  
 
   // Format currency
   formatCurrency(amount: number): string {

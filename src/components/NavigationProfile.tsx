@@ -78,12 +78,12 @@ export const NavigationUser: FC<NavigationUserProps> = ({
       icon: Bell,
       description: "Quản lý thông báo và cập nhật",
     },
-    {
-      id: "settings",
-      label: "Cài đặt",
-      icon: Settings,
-      description: "Tùy chỉnh cài đặt tài khoản",
-    },
+    // {
+    //   id: "settings",
+    //   label: "Cài đặt",
+    //   icon: Settings,
+    //   description: "Tùy chỉnh cài đặt tài khoản",
+    // },
     {
       id: "provider-cancellation-requests",
       label: "Yêu cầu hoàn tiền",

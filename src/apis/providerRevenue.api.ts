@@ -6,7 +6,9 @@ export interface ProviderRevenueData {
   success_bookings: number;
   fail_bookings: number;
   pending_bookings: number;
+  refunded_bookings: number;
   average_booking_value: number;
+  total_refund_amount: number;
   total_tours: number;
   active_tours: number;
   success_rate: string;
@@ -14,6 +16,8 @@ export interface ProviderRevenueData {
   pending_rate: string;
   inactive_tours: number;
   tour_activity_rate: string;
+  total_schedules: number;
+  total_participants: number;
 }
 
 // export interface ProviderRevenueResponse {
@@ -25,12 +29,11 @@ export const getProviderRevenue = (providerId: number) =>
   axiosInstance.get(`/api/stats/provider-revenue-stats/provider/${providerId}`);
 
 export const getProviderRevenueByDateRange = (
-  providerId: number,
   startDate: string,
   endDate: string
 ) =>
   axiosInstance.get(
-    `/api/stats/provider-revenue-stats/provider/${providerId}`,
+    `/api/stats/provider-revenue-stats/provider`,
     {
       params: { start_date: startDate, end_date: endDate },
     }
@@ -47,9 +50,9 @@ export interface ProviderMonthlyRevenue {
   average_booking_value: string;
 }
 
-export const getProviderMonthlyRevenue = (providerId: number, year: number) =>
+export const getProviderMonthlyRevenue = (year: number) =>
   axiosInstance.get<{ success: boolean; data: ProviderMonthlyRevenue[] }>(
-    `/api/stats/provider-revenue-stats/provider/${providerId}/monthly`,
+    `/api/stats/provider-revenue-stats/provider/monthly`,
     { params: { year } }
   );
 

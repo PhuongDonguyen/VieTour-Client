@@ -142,11 +142,18 @@ const RegisterPartner: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Quản lý yêu cầu đối tác</h1>
+        <p className="text-muted-foreground mt-2">
+          Quản lý và phê duyệt các yêu cầu đăng ký trở thành đối tác
+        </p>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <span>Quản lý yêu cầu đối tác</span>
+            <span>Danh sách yêu cầu</span>
             <div className="flex gap-2">
               <Button
                 variant={statusFilter === "all" ? "default" : "outline"}

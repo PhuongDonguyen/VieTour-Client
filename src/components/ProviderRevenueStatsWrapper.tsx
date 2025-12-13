@@ -10,7 +10,7 @@ export const ProviderRevenueStatsWrapper: React.FC = () => {
   
   return (
     <>
-      <ProviderRevenueStats providerId={providerId} />
+      <ProviderRevenueStats />
       <ProviderTourStats providerId={providerId} />
     </>
   );

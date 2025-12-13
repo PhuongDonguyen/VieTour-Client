@@ -167,7 +167,7 @@ const TourViewContent: React.FC<TourViewContentProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       {showHeader && (
         <div className="flex items-center justify-between">
