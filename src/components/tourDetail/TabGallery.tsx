@@ -78,7 +78,7 @@ const TabGallery: React.FC<TabGalleryProps> = ({ images }) => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4">
+    <div className="w-full max-w-7xl mx-auto p-6 md:p-8">
       <h2 className="text-2xl font-bold text-blue-700 mb-6">Hình ảnh tour</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {images.map((img, idx) => (

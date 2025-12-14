@@ -5,6 +5,7 @@ import {
   getRecentlyViewedTours,
   type RecentlyViewedTour,
 } from "../services/recentlyViewedTours.service";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 
 interface RecentlyViewedToursProps {
   /** Maximum number of tours to display */
@@ -94,7 +95,7 @@ const RecentlyViewedTours: React.FC<RecentlyViewedToursProps> = ({
             >
               <div className="relative">
                 <img
-                  src={tour.poster_url || "/VieTour-Logo.png"}
+                  src={transformCloudinaryUrl(tour.poster_url, ImageSize.CARD, ImageQuality.HIGH) || "/VieTour-Logo.png"}
                   alt={tour.name}
                   className="w-full h-40 object-cover"
                   onError={(e) => {
