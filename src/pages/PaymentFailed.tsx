@@ -12,6 +12,11 @@ interface PaymentFailureDetails {
     errorCode?: string;
 }
 
+// Message mapping for error translations
+const ERROR_MESSAGE_MAP: Record<string, string> = {
+    'Transaction denied by user.': 'Giao dịch đã bị hủy bởi người dùng.',
+};
+
 export default function PaymentFailed() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -24,8 +29,12 @@ export default function PaymentFailed() {
         const errorCode = searchParams.get('errorCode');
 
         if (message) {
+            const decodedMessage = decodeURIComponent(message);
+            // Translate message using the map, fallback to original if not found
+            const translatedMessage = ERROR_MESSAGE_MAP[decodedMessage] || decodedMessage;
+
             setFailureDetails({
-                message: decodeURIComponent(message),
+                message: translatedMessage,
                 errorCode: errorCode || undefined
             });
 

@@ -146,14 +146,13 @@ const AccountPage: React.FC = () => {
       label: "Tour đã đặt",
       icon: Calendar,
       description: "Lịch sử tour đã đặt",
-      badge: "3",
     },
     {
       id: "cancellation-requests",
       label: "Yêu cầu hủy tour",
       icon: XCircle,
       description: "Theo dõi yêu cầu hủy",
-      badge: "1",
+      // badge: "1",
     },
     {
       id: "notifications",

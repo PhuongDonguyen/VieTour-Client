@@ -200,7 +200,7 @@ export default function PaymentSuccess() {
             size="lg"
           >
             <User className="w-4 h-4 mr-2" />
-            Xem đặt tour của tôi
+            Xem các tour đã đặt
           </Button>
           <Button
             onClick={handleGoHome}
