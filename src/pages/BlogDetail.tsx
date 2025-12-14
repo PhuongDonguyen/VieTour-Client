@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchBlogs } from "../services/blog.service";
+import { fetchBlogs, fetchUserBlogs } from "../services/blog.service";
 import { getBlogCategoryById, BlogCategory } from "../apis/blogCategory.api";
+import { toggleBlogLike } from "../apis/blogLike.api";
 import RecentlyViewedTours from "../components/RecentlyViewedTours";
 
 import { 
@@ -20,17 +21,21 @@ import {
   ChevronRight
 } from "lucide-react";
 import Skeleton from 'react-loading-skeleton';
+import { useAuth } from "../hooks/useAuth";
 
 const BlogDetail: React.FC = () => {
+  const {user} = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<any>(null);
   const [category, setCategory] = useState<BlogCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,11 +50,20 @@ const BlogDetail: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetchBlogs({ slug: slug });
+        // Use fetchUserBlogs if user exists and role is "user", otherwise use fetchBlogs
+        const shouldUseUserBlogs = user && user.role === "user";
+        const response = shouldUseUserBlogs 
+          ? await fetchUserBlogs({ slug: slug })
+          : await fetchBlogs({ slug: slug });
         console.log("response: ", response);  
         // Since we're fetching by slug, we expect only one blog
         const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
+        setIsLiked(blogData?.isLiked || false);
+        // Initialize like count from blog data
+        if (blogData) {
+          setLikeCount(blogData.like_count || 0);
+        }
         
         // Fetch category information if blog has category_id
         if (blogData && blogData.category_id) {
@@ -70,7 +84,7 @@ const BlogDetail: React.FC = () => {
       }
     };
     fetchData();
-  }, [slug]);
+  }, [slug, user]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -89,6 +103,36 @@ const BlogDetail: React.FC = () => {
     const minutes = Math.ceil(words / 200);
     
     return `${Math.max(1, minutes)} min read`;
+  };
+
+  const handleToggleLike = async () => {
+    if (!blog || !blog.id || isLiking) return;
+
+    const previousIsLiked = isLiked;
+    const previousLikeCount = likeCount;
+
+    // Optimistic update
+    setIsLiked(!isLiked);
+    setLikeCount(previousIsLiked ? previousLikeCount - 1 : previousLikeCount + 1);
+    setIsLiking(true);
+
+    try {
+      await toggleBlogLike(blog.id);
+      // If API returns updated like count, you can update it here
+      // const response = await toggleBlogLike(blog.id);
+      // if (response?.data?.like_count !== undefined) {
+      //   setLikeCount(response.data.like_count);
+      //   setIsLiked(response.data.is_liked);
+      // }
+    } catch (error) {
+      // Revert optimistic update on error
+      setIsLiked(previousIsLiked);
+      setLikeCount(previousLikeCount);
+      console.error("Error toggling blog like:", error);
+      // You can add a toast notification here if needed
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   if (loading) {
@@ -250,13 +294,14 @@ const BlogDetail: React.FC = () => {
               {/* Social Actions */}
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setIsLiked(!isLiked)}
+                  onClick={handleToggleLike}
+                  disabled={isLiking}
                   className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${
                     isLiked ? "text-red-600 border-red-200" : "text-gray-600 border-gray-300 hover:border-gray-400"
-                  }`}
+                  } ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-red-600" : ""}`} />
-                  {blog.like_count}
+                  {likeCount}
                 </button>
                 <button
                   onClick={() => setIsBookmarked(!isBookmarked)}

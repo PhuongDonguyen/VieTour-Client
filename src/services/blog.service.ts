@@ -39,6 +39,17 @@ export const fetchBlogById = async (id: number): Promise<BlogPost> => {
   }
 };
 
+// Fetch blogs for current user with like status
+export const fetchUserBlogs = async (params?: BlogQueryParams): Promise<BlogResponse> => {
+  try {
+    const blogData = await blogApi.getUserBlogs(params);
+    return blogData;
+  } catch (error) {
+    console.error('Error fetching user blogs:', error);
+    throw error;
+  }
+};
+
 // Create a new blog post
 export const createBlog = async (blogData: FormData): Promise<BlogPost> => {
   try {
