@@ -60,7 +60,7 @@ export const NavigationUser: FC<NavigationUserProps> = ({
     },
     {
       id: "my-bookings",
-      label: "Đặt tour của tôi",
+      label: "Xem tour đã đặt",
       icon: Calendar,
       description: "Xem lịch sử và quản lý đặt tour",
       badge: "3",
