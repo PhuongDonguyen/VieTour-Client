@@ -150,9 +150,8 @@ export const SearchSection = () => {
         params.set("max_price", priceRange[1].toString());
     }
 
-    window.location.href = `/search${
-      params.toString() ? `?${params.toString()}` : ""
-    }`;
+    window.location.href = `/search${params.toString() ? `?${params.toString()}` : ""
+      }`;
   };
 
   const quickFilters = getQuickFilters();
@@ -179,9 +178,8 @@ export const SearchSection = () => {
   return (
     <div
       ref={elementRef}
-      className={`relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 overflow-hidden transition-all duration-1000 ease-out ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-      }`}
+      className={`relative bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 overflow-hidden transition-all duration-1000 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+        }`}
     >
       {/* Background decorative elements */}
       <div className="absolute inset-0">
@@ -195,11 +193,10 @@ export const SearchSection = () => {
           {/* Hero section */}
           <div className="text-center mb-16">
             <div
-              className={`inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 mb-6 transition-all duration-700 delay-200 ${
-                isVisible
+              className={`inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 mb-6 transition-all duration-700 delay-200 ${isVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-4"
-              }`}
+                }`}
             >
               <Sparkles className="w-4 h-4 text-yellow-500" />
               <span className="text-sm font-medium text-gray-700">
@@ -208,88 +205,84 @@ export const SearchSection = () => {
             </div>
 
             <h1
-              className={`text-3xl md:text-5xl font-bold mb-6 leading-tight transition-all duration-700 delay-300 ${
-                isVisible
+              className={`text-3xl md:text-5xl font-bold mb-6 leading-tight transition-all duration-700 delay-300 ${isVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-4"
-              }`}
+                }`}
             >
               <span className="inline-block text-gray-900">Tìm Kiếm</span>
               <br />
               <span className="inline-block bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
                 Chuyến Du Lịch
-            </span>
+              </span>
               <br />
               <span className="text-gray-900">Hoàn Hảo</span>
-          </h1>
+            </h1>
 
             <p
-              className={`text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed transition-all duration-700 delay-400 ${
-                isVisible
+              className={`text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed transition-all duration-700 delay-400 ${isVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-4"
-              }`}
+                }`}
             >
-            Khám phá vẻ đẹp Việt Nam với những tour được chọn lọc từ các nhà
+              Khám phá vẻ đẹp Việt Nam với những tour được chọn lọc từ các nhà
               cung cấp du lịch uy tín
-          </p>
-        </div>
+            </p>
+          </div>
 
           {/* Search card */}
           <div
-            className={`bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 transition-all duration-700 delay-500 ${
-              isSearchFocused ? "shadow-blue-500/10 scale-[1.02]" : ""
-            } ${
-              isVisible
+            className={`bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 transition-all duration-700 delay-500 ${isSearchFocused ? "shadow-blue-500/10 scale-[1.02]" : ""
+              } ${isVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
-            }`}
+              }`}
           >
             {/* Search inputs */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
-            {/* Location */}
+              {/* Location */}
               <div className="lg:col-span-1">
                 <div className="relative group">
-              <Select value={location} onValueChange={setLocation}>
+                  <Select value={location} onValueChange={setLocation}>
                     <SelectTrigger
                       className="w-full h-16 pl-12 pr-4 text-gray-900 bg-gray-50/50 border-2 border-gray-200/50 rounded-2xl focus:border-blue-500 focus:bg-white transition-all duration-300 outline-none group-hover:border-gray-300"
                       onFocus={() => setIsSearchFocused(true)}
                       onBlur={() => setIsSearchFocused(false)}
                     >
                       <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors pointer-events-none" />
-                  <SelectValue placeholder="Bạn muốn đi đâu?" />
-                </SelectTrigger>
+                      <SelectValue placeholder="Bạn muốn đi đâu?" />
+                    </SelectTrigger>
                     <SelectContent className="max-h-60">
-                  {loadingProvinces ? (
-                    <SelectItem value="loading" disabled>
-                      Đang tải...
-                    </SelectItem>
-                  ) : (
-                    provinces.map((province) => (
-                      <SelectItem key={province.code} value={province.code}>
-                        {province.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                      {loadingProvinces ? (
+                        <SelectItem value="loading" disabled>
+                          Đang tải...
+                        </SelectItem>
+                      ) : (
+                        provinces.map((province) => (
+                          <SelectItem key={province.code} value={province.code}>
+                            {province.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
-            </div>
+              </div>
 
-            {/* Date */}
+              {/* Date */}
               <div className="lg:col-span-1">
                 <div className="relative group">
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
                     className="w-full h-16 pl-12 pr-4 text-gray-900 bg-gray-50/50 border-2 border-gray-200/50 rounded-2xl focus:border-blue-500 focus:bg-white transition-all duration-300 outline-none group-hover:border-gray-300"
-                />
+                  />
                   <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                </div>
               </div>
-            </div>
 
               {/* Price Range */}
               <div className="lg:col-span-1">
@@ -309,38 +302,37 @@ export const SearchSection = () => {
                     </div>
                   </div>
                 </div>
-            </div>
+              </div>
 
-            {/* Search Button */}
+              {/* Search Button */}
               <div className="lg:col-span-1">
                 <button
-              onClick={handleSearch}
+                  onClick={handleSearch}
                   className="w-full h-16 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
-            >
+                >
                   <Search className="w-5 h-5" />
-              Tìm Tour
+                  Tìm Tour
                 </button>
               </div>
-          </div>
+            </div>
 
-          {/* Quick filters */}
+            {/* Quick filters */}
             <div className="space-y-4">
               <h3
-                className={`text-sm font-medium text-gray-500 uppercase tracking-wide transition-all duration-700 delay-600 ${
-                  isVisible
+                className={`text-sm font-medium text-gray-500 uppercase tracking-wide transition-all duration-700 delay-600 ${isVisible
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-4"
-                }`}
+                  }`}
               >
                 Tìm kiếm nhanh
               </h3>
-          <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3">
                 {quickFilters.map((filter, index) => (
-              <button
-                key={filter.label}
-                onClick={() => {
-                  const params = new URLSearchParams();
-                  params.set("tour_category_id", filter.categoryId);
+                  <button
+                    key={filter.label}
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      params.set("tour_category_id", filter.categoryId);
 
                       // Thêm thông tin về tỉnh thành nếu đã chọn
                       if (location && location !== "all") {
@@ -364,24 +356,21 @@ export const SearchSection = () => {
                       }
 
                       // Chuyển hướng đến trang search với params
-                      window.location.href = `/search${
-                        params.toString() ? `?${params.toString()}` : ""
-                      }`;
+                      window.location.href = `/search${params.toString() ? `?${params.toString()}` : ""
+                        }`;
                     }}
-                    className={`group ${filter.lightBg} ${
-                      filter.textColor
-                    } px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg border border-white/50 ${
-                      isVisible
+                    className={`group ${filter.lightBg} ${filter.textColor
+                      } px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg border border-white/50 ${isVisible
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 translate-y-4"
-                    }`}
+                      }`}
                     style={{ transitionDelay: `${700 + index * 100}ms` }}
                   >
                     <span className="text-sm font-semibold">
-                {filter.label}
+                      {filter.label}
                     </span>
-              </button>
-            ))}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

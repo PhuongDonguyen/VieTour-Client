@@ -51,6 +51,7 @@ const TourDetail: React.FC = () => {
   const [showCommentSection, setShowCommentSection] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showFloatingButton, setShowFloatingButton] = useState(false);
+  const [stickyNav, setStickyNav] = useState(false);
   const [similarTours, setSimilarTours] = useState<SimilarTour[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
 
@@ -73,11 +74,24 @@ const TourDetail: React.FC = () => {
     }
   }, [loading, error]);
 
-  // Show floating button on scroll
+  // Show floating button on scroll & sticky nav
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setShowFloatingButton(scrollY > 300);
+      setStickyNav(scrollY > 400);
+
+      // Update active tab based on scroll position
+      const sections = TABS.map(tab => document.getElementById(tab.key));
+      const scrollPosition = scrollY + 200;
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i];
+        if (section && section.offsetTop <= scrollPosition) {
+          setActiveTab(TABS[i].key);
+          break;
+        }
+      }
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -162,35 +176,25 @@ const TourDetail: React.FC = () => {
       .finally(() => setLoadingSimilar(false));
   }, [tour?.title]);
 
-  const handleBookNow = () => {
-    navigate(`/booking/${tour.slug}`);
-  }
-  
   const handleChatWithProvider = () => {
     if (tour?.provider_id) {
       navigate(`/chat?provider=${tour.provider_id}`);
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-        <div className="pt-24 px-4">
-          <div className="max-w-7xl mx-auto">
-            {/* Breadcrumb skeleton */}
-            <div className="h-4 bg-gray-200 rounded animate-pulse mb-6 w-64"></div>
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const offset = 100; // Account for sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
 
-            <div className="h-96 bg-gray-200 rounded-2xl animate-pulse mb-8"></div>
-            <div className="h-12 bg-gray-200 rounded-xl animate-pulse mb-6 w-3/4"></div>
-            <div className="h-8 bg-gray-200 rounded-xl animate-pulse mb-8 w-1/2"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="h-96 bg-gray-200 rounded-2xl animate-pulse"></div>
-              <div className="h-96 bg-gray-200 rounded-2xl animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  };
 
   if (error)
     return (
@@ -303,181 +307,349 @@ const TourDetail: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         <div className="pt-24 px-4">
           {/* Breadcrumb */}
-          <div
-            className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
-          >
-            <nav className="flex items-center space-x-2 text-sm text-gray-600">
-              <Link
-                to="/"
-                className="flex items-center hover:text-orange-600 transition-colors duration-200"
-              >
-                <Home className="w-4 h-4 mr-1" />
-                <span>Trang chủ</span>
-              </Link>
-              {tourCategory && (
-                <>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                  <Link
-                    to={`/tour-category/${tourCategory.slug}`}
-                    className="hover:text-orange-600 transition-colors duration-200"
-                  >
-                    {tourCategory.name}
-                  </Link>
-                </>
-              )}
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900 font-medium truncate max-w-xs">
-                {tour?.title}
-              </span>
-            </nav>
-          </div>
+          {tour ? (
+            <div
+              className={`max-w-7xl mx-auto mb-6 transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
+                }`}
+            >
+              <nav className="flex items-center space-x-2 text-sm text-gray-600">
+                <Link
+                  to="/"
+                  className="flex items-center hover:text-orange-600 transition-colors duration-200"
+                >
+                  <Home className="w-4 h-4 mr-1" />
+                  <span>Trang chủ</span>
+                </Link>
+                {tourCategory && (
+                  <>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <Link
+                      to={`/tour-category/${tourCategory.slug}`}
+                      className="hover:text-orange-600 transition-colors duration-200"
+                    >
+                      {tourCategory.name}
+                    </Link>
+                  </>
+                )}
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-900 font-medium truncate max-w-xs">
+                  {tour.title}
+                </span>
+              </nav>
+            </div>
+          ) : (
+            <div className="max-w-7xl mx-auto mb-6">
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-64"></div>
+            </div>
+          )}
 
           {/* Hero Section */}
-          <div
-            className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
-          >
-            <TourNamePrice
-              title={tour.title}
-              price={displayPrice}
-              tourSlug={tour.slug}
-              loading={loading}
-              location={tour.starting_point}
-              duration={tour.duration}
-              companyName={providerProfile?.company_name}
-              totalStar={tour.total_star}
-              reviewCount={tour.review_count}
-            />
-          </div>
-
-          {/* Navigation Tabs */}
-          <div
-            className={`max-w-7xl mx-auto mb-8 fade-in-up-delay-1 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
-          >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
-              <div className="flex flex-wrap gap-2">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${activeTab === tab.key
-                      ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
-                      : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                      }`}
-                    onClick={() => setActiveTab(tab.key)}
-                  >
-                    <span className="text-lg">{tab.icon}</span>
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </button>
-                ))}
+          {tour ? (
+            <div
+              className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
+                }`}
+            >
+              <TourNamePrice
+                title={tour.title}
+                price={displayPrice}
+                tourSlug={tour.slug}
+                loading={false}
+                location={tour.starting_point}
+                duration={tour.duration}
+                companyName={providerProfile?.company_name}
+                totalStar={tour.total_star}
+                reviewCount={tour.review_count}
+              />
+            </div>
+          ) : (
+            <div className="max-w-7xl mx-auto mb-8">
+              <div className="space-y-4">
+                <div className="h-12 bg-gray-200 rounded-xl animate-pulse w-3/4"></div>
+                <div className="h-8 bg-gray-200 rounded-xl animate-pulse w-1/2"></div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Content Section */}
-          <div
-            className={`max-w-7xl mx-auto fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
-              }`}
-          >
-            {activeTab === "program" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
-                  <div className="p-6 lg:p-8 bg-gray-50">
-                    <TourImage
-                      images={
-                        images.length > 0
-                          ? images.filter((img) => img.is_featured)
-                          : [
-                            {
-                              id: 0,
-                              image_url: tour.poster_url,
-                              alt_text: tour.title,
-                            },
-                          ]
-                      }
-                      altDefault={tour.title}
-                    />
-                  </div>
-                  <div className="p-6 lg:p-8">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                        <svg
-                          className="w-5 h-5 text-orange-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        Lịch trình tour
-                      </h2>
-                    </div>
-                    <div className="hide-scrollbar overflow-y-auto max-h-[500px]">
-                      <TourDetailContent days={days} />
-                    </div>
+          {/* Navigation Tabs - Sticky on scroll */}
+          {tour ? (
+            <div
+              className={`${stickyNav ? 'fixed top-16 left-0 right-0 z-40 shadow-xl' : 'relative'} transition-all duration-300 bg-white ${isVisible ? "opacity-100" : "opacity-0"
+                }`}
+            >
+              <div className="max-w-7xl mx-auto px-4 py-3">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
+                  <div className="flex gap-2 justify-between">
+                    {TABS.map((tab) => (
+                      <button
+                        key={tab.key}
+                        className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-3 rounded-xl font-medium transition-all duration-200 whitespace-nowrap flex-1 text-sm sm:text-base ${activeTab === tab.key
+                          ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
+                          : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
+                          }`}
+                        onClick={() => scrollToSection(tab.key)}
+                      >
+                        <span className="text-base sm:text-lg">{tab.icon}</span>
+                        <span className="hidden lg:inline text-xs xl:text-sm">{tab.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="max-w-7xl mx-auto mb-8">
+              <div className="h-16 bg-gray-200 rounded-2xl animate-pulse"></div>
+            </div>
+          )}
 
-            {activeTab === "price" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <TabPrice tourId={tour.id} />
-              </div>
-            )}
+          {/* Spacer when nav becomes sticky */}
+          {stickyNav && <div className="h-24"></div>}
 
-            {activeTab === "info" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <TabInfo
-                  id={tour.id}
-                  live_commentary={tour.live_commentary}
-                  duration={tour.duration}
-                  transportation={tour.transportation}
-                  accommodation={tour.accommodation}
-                />
-              </div>
-            )}
+          {/* All Content Sections - Displayed together */}
+          {tour ? (
+            <div
+              className={`max-w-7xl mx-auto space-y-8 fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
+                }`}
+            >
+              {/* Program Section */}
+              <section id="program" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
+                    <div className="p-6 lg:p-8 bg-gray-50">
+                      {images.length > 0 || !loading ? (
+                        <TourImage
+                          images={
+                            images.length > 0
+                              ? images.filter((img) => img.is_featured)
+                              : [
+                                {
+                                  id: 0,
+                                  image_url: tour.poster_url,
+                                  alt_text: tour.title,
+                                },
+                              ]
+                          }
+                          altDefault={tour.title}
+                        />
+                      ) : (
+                        <div className="w-full h-96 bg-gray-200 rounded-2xl animate-pulse"></div>
+                      )}
+                    </div>
+                    <div className="p-6 lg:p-8">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5 text-orange-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          Lịch trình tour
+                        </h2>
+                      </div>
+                      <div className="hide-scrollbar overflow-y-auto max-h-[500px]">
+                        {days.length > 0 || !loading ? (
+                          <TourDetailContent days={days} />
+                        ) : (
+                          <div className="space-y-4">
+                            {[...Array(3)].map((_, i) => (
+                              <div key={i} className="space-y-3">
+                                <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                                <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                                <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                                <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-            {activeTab === "overview" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <TabOverview destination_intro={tour.destination_intro} />
-              </div>
-            )}
+              {/* Price Section */}
+              <section id="price" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  {!loading ? (
+                    <div className="p-6 lg:p-8">
+                      <TabPrice tourId={tour.id} />
+                    </div>
+                  ) : (
+                    <div className="p-6 lg:p-8 space-y-4">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                          <span className="text-2xl">💰</span>
+                        </div>
+                        <div className="h-8 bg-gray-200 rounded animate-pulse w-32"></div>
+                      </div>
+                      <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
+                      <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
+                      <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
+                    </div>
+                  )}
+                </div>
+              </section>
 
-            {activeTab === "condition" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <TabCondition tour_info={tour.tour_info} />
-              </div>
-            )}
+              {/* Info Section */}
+              <section id="info" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">ℹ️</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">Thông tin tour</h2>
+                  </div>
+                  {!loading ? (
+                    <TabInfo
+                      id={tour.id}
+                      live_commentary={tour.live_commentary}
+                      duration={tour.duration}
+                      transportation={tour.transportation}
+                      accommodation={tour.accommodation}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <div className="h-5 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                          <div className="h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
 
-            {activeTab === "gallery" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <TabGallery images={images} />
-              </div>
-            )}
+              {/* Overview Section */}
+              <section id="overview" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  {!loading ? (
+                    <TabOverview destination_intro={tour.destination_intro} />
+                  ) : (
+                    <div className="p-6 lg:p-8 space-y-3">
+                      {[...Array(8)].map((_, i) => (
+                        <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${Math.random() * 30 + 70}%` }}></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
 
-            {activeTab === "review" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <TabReview
-                  tourId={tour.id}
-                  totalStar={tour.total_star}
-                  reviewCount={tour.review_count}
-                />
-              </div>
-            )}
+              {/* Condition Section */}
+              <section id="condition" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  {!loading ? (
+                    <TabCondition tour_info={tour.tour_info} />
+                  ) : (
+                    <div className="p-6 lg:p-8 space-y-3">
+                      {[...Array(10)].map((_, i) => (
+                        <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${Math.random() * 30 + 70}%` }}></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
 
-            {activeTab === "faq" && (
+              {/* Gallery Section */}
+              <section id="gallery" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  {images.length > 0 || !loading ? (
+                    <TabGallery images={images} />
+                  ) : (
+                    <div className="p-6 lg:p-8">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {[...Array(8)].map((_, i) => (
+                          <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Review Section */}
+              <section id="review" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  {!loading ? (
+                    <div className="p-6 lg:p-8">
+                      <TabReview
+                        tourId={tour.id}
+                        totalStar={tour.total_star}
+                        reviewCount={tour.review_count}
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-6 lg:p-8 space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-20 h-20 bg-gray-200 rounded-xl animate-pulse"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
+                        </div>
+                      </div>
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="border-t pt-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                              <div className="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
+                            </div>
+                          </div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* FAQ Section */}
+              <section id="faq" className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                  {!loading ? (
+                    <TabFAQ tourId={tour.id} />
+                  ) : (
+                    <div className="p-6 lg:p-8 space-y-4">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-3">
+                          <div className="h-5 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          ) : (
+            <div className="max-w-7xl mx-auto">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <TabFAQ tourId={tour.id} />
+                <div className="space-y-6">
+                  <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="space-y-3">
+                        <div className="h-6 bg-gray-200 rounded animate-pulse w-1/4"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
