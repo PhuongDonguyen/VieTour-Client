@@ -4,11 +4,12 @@ import { getTourCategoriesBySlug } from "../services/tourCategory.service";
 import { fetchTours } from "../services/tour.service";
 import SearchTourCard from "../components/SearchTourCard";
 import { Home, ChevronRight } from "lucide-react";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 
 interface TourCardData {
   id: number;
   title: string;
-  location: string;
+  startingPoint: string;
   duration: string;
   price: number;
   imageUrl: string;
@@ -62,12 +63,10 @@ export const TourByCategory = () => {
       const newTours = toursRes.data.map((tour: any) => ({
         id: tour.id,
         title: tour.title,
-        location: tour.location || "Chưa cập nhật",
+        startingPoint: tour.starting_point || "Chưa cập nhật",
         duration: tour.duration ? `${tour.duration}` : "Chưa cập nhật",
         price: tour.price || 0,
-        imageUrl:
-          tour.poster_url ||
-          "https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80",
+        imageUrl: transformCloudinaryUrl(tour.poster_url, ImageSize.THUMBNAIL, ImageQuality.MEDIUM, 'f_auto'),
         rating: tour.total_star / Math.max(tour.review_count, 1) || 0,
         reviewCount: tour.review_count || 0,
         slug: tour.slug,
@@ -121,9 +120,10 @@ export const TourByCategory = () => {
         <span className="text-gray-900 font-medium">{categoryName}</span>
       </nav>
 
-      <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
-        {categoryName}
-      </h1>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-[#015294] mb-4">{categoryName}</h1>
+        <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+      </div>
 
       {isLoading && !tours.length ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -139,7 +139,7 @@ export const TourByCategory = () => {
                 key={tour.id}
                 id={tour.id}
                 title={tour.title}
-                location={tour.location}
+                startingPoint={tour.startingPoint}
                 duration={tour.duration}
                 price={tour.price}
                 imageUrl={tour.imageUrl}

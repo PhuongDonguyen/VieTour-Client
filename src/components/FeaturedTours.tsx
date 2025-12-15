@@ -4,6 +4,7 @@ import { Autoplay } from "swiper/modules";
 import { fetchTours } from "../services/tour.service";
 import { Link } from "react-router-dom";
 import { SkeletonFeaturedTours } from "./Skeleton";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 import "swiper/css";
 
 export const FeaturedTours: React.FC = () => {
@@ -28,7 +29,7 @@ export const FeaturedTours: React.FC = () => {
             return averageRating >= 4.0;
           })
           .slice(0, 6);
-        
+
         setTours(highRatedTours);
         setLoading(false);
       })
@@ -55,9 +56,10 @@ export const FeaturedTours: React.FC = () => {
       className="w-full py-16 flex flex-col justify-center"
       data-section="featured-tours"
     >
-      <h2 className="text-2xl md:text-3xl font-bold text-[#015294] mb-8 text-center">
-        TOUR NỔI BẬT TRONG THÁNG
-      </h2>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-[#015294] mb-4">TOUR NỔI BẬT TRONG THÁNG</h2>
+        <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full"></div>
+      </div>
       <div className="relative">
         <Swiper
           modules={[Autoplay]}
@@ -81,12 +83,12 @@ export const FeaturedTours: React.FC = () => {
                 className="relative rounded-xl overflow-hidden h-full flex flex-col group cursor-pointer"
               >
                 <img
-                  src={tour.poster_url}
+                  src={transformCloudinaryUrl(tour.poster_url, ImageSize.CARD, ImageQuality.HIGH, 'f_auto')}
                   alt={tour.title}
                   className="w-full h-[420px] md:h-[500px] lg:h-[540px] object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
-                
+
                 {/* Rating Badge - Top Right */}
                 {(!tour.total_star || !tour.review_count || tour.review_count === 0) ? (
                   <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
@@ -97,19 +99,19 @@ export const FeaturedTours: React.FC = () => {
                     ⭐ {(tour.total_star / tour.review_count).toFixed(1)}
                   </div>
                 )}
-                
+
                 {/* Location Badge - Top Left */}
-                {tour.location && (
+                {tour.starting_point && (
                   <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                    📍 {tour.location}
+                    📍 {tour.starting_point}
                   </div>
                 )}
-                
+
                 <div className="absolute bottom-0 left-0 w-full flex flex-col items-center justify-end pb-6 pt-16 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
                   <h3 className="text-lg font-bold text-white mb-2 uppercase text-center drop-shadow line-clamp-2">
                     {tour.title}
                   </h3>
-                  
+
                   {/* Tour Details Grid */}
                   <div className="flex items-center justify-center mb-3 text-white text-sm">
                     <div className="flex items-center gap-1">
@@ -117,14 +119,14 @@ export const FeaturedTours: React.FC = () => {
                       <span>{tour.duration}</span>
                     </div>
                   </div>
-                  
+
                   {/* Price Section */}
                   <div className="text-center mb-3">
                     <div className="text-2xl font-bold text-yellow-400 drop-shadow">
                       {tour.price ? `Từ ${tour.price.toLocaleString()}đ` : 'Liên hệ'}
                     </div>
                   </div>
-                  
+
                   {/* CTA Button */}
                   <span className="border border-white text-white bg-black/40 hover:bg-white hover:text-black px-4 py-2 rounded-full font-medium transition-all duration-300">
                     Xem chi tiết

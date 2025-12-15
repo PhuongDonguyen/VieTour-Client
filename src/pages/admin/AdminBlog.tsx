@@ -186,13 +186,13 @@ const AdminBlog: React.FC = () => {
                     <p className="text-muted-foreground">Quản lý bài viết và bài báo của bạn</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button
+                    {/* <Button
                         variant="outline"
                         onClick={() => navigate('/admin/blog-categories')}
                         className="flex items-center gap-2"
                     >
                         Quản lý Danh mục
-                    </Button>
+                    </Button> */}
                     <Button onClick={() => navigate('/admin/blog/new')} className="flex items-center gap-2">
                         <Plus className="w-4 h-4" />
                         Bài viết mới

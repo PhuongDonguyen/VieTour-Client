@@ -29,6 +29,7 @@ export class ChatSocketManager {
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
   private userId: string | number | null = null;
   private userType: UserType | null = null;
+  private accountId: number | null = null;
 
   constructor() {
     console.log("ChatSocketManager instance created");
@@ -78,12 +79,13 @@ export class ChatSocketManager {
     return this.socket?.connected || false;
   }
 
-  connect(userId?: string | number, userType?: UserType) {
+  connect(userId?: string | number, userType?: UserType, accountId?: number) {
     const s = this.getSocket();
     if (!s.connected && !this.isConnecting) {
       this.isConnecting = true;
       this.userId = userId || null;
       this.userType = userType || null;
+      this.accountId = accountId ?? null;
       s.connect();
     }
     if (userId != null) {
@@ -111,6 +113,7 @@ export class ChatSocketManager {
     this.connectionAttempts = 0;
     this.userId = null;
     this.userType = null;
+    this.accountId = null;
     console.log("ChatSocketManager reset completed");
   }
 
@@ -127,6 +130,7 @@ export class ChatSocketManager {
       connectionAttempts: this.connectionAttempts,
       userId: this.userId,
       userType: this.userType,
+      accountId: this.accountId,
       apiBaseUrl: API_BASE_URL,
     };
   }
@@ -195,6 +199,7 @@ export class ChatSocketManager {
   subscribePresence(
     partners: { userId: string | number; role: "user" | "provider" }[]
   ) {
+  
     const s = this.getSocket();
     if (!s.connected) return;
     if (!Array.isArray(partners)) return;
@@ -209,6 +214,7 @@ export class ChatSocketManager {
       )
       .map((p) => ({ userId: String(p.userId), role: p.role }));
     if (normalized.length === 0) return;
+    console.log("subscribePresence normalized: ", normalized);
     s.emit("presence:subscribe", normalized);
   }
 
@@ -236,6 +242,7 @@ export class ChatSocketManager {
       readerRole?: "user" | "provider";
       receiverId?: string | number;
       receiverRole?: "user" | "provider";
+      senderId?: string | number;
     }
   ) {
     const s = this.getSocket();
@@ -252,6 +259,7 @@ export class ChatSocketManager {
       readerRole,
       receiverId: String(payload.receiverId || ""),
       receiverRole,
+      senderId: String(this.accountId || ""),
     });
   }
 
@@ -316,6 +324,7 @@ export class ChatSocketManager {
       messageId: string;
       readerId: string;
       readerRole: "user" | "provider";
+      senderId?: string | number;
     }) => void
   ) {
     const s = this.getSocket();

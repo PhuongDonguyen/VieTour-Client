@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { ChatIcon } from "./chat/ChatIcon";
 
 interface AdminSidebarProps {
   className?: string;
@@ -46,7 +47,7 @@ interface NavItem {
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const { user } = useAuth();
+  const { user, unreadCount } = useAuth();
   const location = useLocation();
 
   const toggleExpanded = (itemLabel: string) => {
@@ -96,6 +97,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         href: "/admin/tours",
         icon: <MapPin className="w-4 h-4" />,
         allowedRoles: ["admin", "provider"],
+      },
+      {
+        label: "Danh sách lịch trình",
+        href: "/admin/list-trip",
+        icon: <Calendar className="w-4 h-4" />,
+        allowedRoles: ["admin"],
       },
       {
         label: "Danh mục tour",
@@ -158,18 +165,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
           },
         ],
       },
-      {
-        label: "Settings",
-        href: "/admin/settings",
-        icon: <Settings className="w-4 h-4" />,
-        allowedRoles: ["admin"], // Only admins can access settings
-      },
+      // {
+      //   label: "Settings",
+      //   href: "/admin/settings",
+      //   icon: <Settings className="w-4 h-4" />,
+      //   allowedRoles: ["admin"], // Only admins can access settings
+      // },
       // Provider-only sections
       {
         label: "Đơn đặt",
         href: "/admin/provider-bookings",
         icon: <Calendar className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their bookings
+      },
+      {
+        label: "Lịch trình của tôi",
+        href: "/admin/provider/list-trip",
+        icon: <MapPin className="w-4 h-4" />,
+        allowedRoles: ["provider"],
       },
       {
         label: "Earnings",
@@ -183,14 +196,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       //   icon: <Building className="w-4 h-4" />,
       //   allowedRoles: ["provider"], // Only providers can manage their profile
       // },
+      // {
+      //   label: "Trả lời câu hỏi",
+      //   href: "/admin/questions",
+      //   icon: <FileText className="w-4 h-4" />,
+      //   allowedRoles: ["provider"], // Only providers can see their questions
+      // },
       {
         label: "Trả lời câu hỏi",
-        href: "/admin/questions",
-        icon: <FileText className="w-4 h-4" />,
-        allowedRoles: ["provider"], // Only providers can see their questions
-      },
-      {
-        label: "Trả lời câu hỏi 2",
         href: "/admin/questions2",
         icon: <FileText className="w-4 h-4" />,
         allowedRoles: ["provider"], // Only providers can see their questions
@@ -198,11 +211,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
       {
         label: "Hỗ trợ khách hàng",
         href: "/admin/chat",
-        icon: <MessageCircle className="w-4 h-4" />,
+        icon: <ChatIcon count={unreadCount as number} />,
         allowedRoles: ["provider"], // Only providers can see their chat
       },
     ],
-    []
+    [unreadCount] // Thêm unreadCount vào dependency array để cập nhật khi unreadCount thay đổi
   );
 
   // Auto-expand parent items when their sub-items are active

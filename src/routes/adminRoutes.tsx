@@ -1,7 +1,7 @@
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminLogin from "../pages/AdminLogin";
 import AdminLayout from "../components/admin/AdminLayout";
-import AdminChatSupport from "../components/admin/AdminChatSupport";
+import AdminChatSupport from "../components/admin/chat/AdminChatSupport";
 import ProviderTours from "../components/admin/tour/Tours";
 import TourEditor from "../components/admin/tour/TourEditor";
 import TourView from "../pages/admin/TourView";
@@ -22,6 +22,8 @@ import BlogEditor from "../pages/admin/BlogEditor";
 import BlogCategories from "../pages/admin/BlogCategories";
 import CancellationRequests from "../pages/admin/AdminCancellationRequests";
 import AdminBookings from "../pages/admin/AdminBookings";
+import ListTripPage from "@/pages/admin/ListTripPage";
+import ScheduleBookingsPage from "@/pages/admin/ScheduleBookingsPage";
 
 import {
   RequireAdminAccess,
@@ -32,7 +34,6 @@ import TourImageViewContent from "../components/admin/tour-image/TourImageViewCo
 import TourImageEditor from "../components/admin/tour-image/TourImageEditor";
 import TourImageView from "../pages/admin/TourImageView";
 import AdminSupport from "@/pages/admin/AdminSupport";
-import ChatPage from "@/pages/ChatPage";
 import { ProviderRevenueStats } from "@/components/ProviderRevenueStats";
 import { ProviderRevenueStatsWrapper } from "@/components/ProviderRevenueStatsWrapper";
 import GeneralQuestionsListPage from "@/pages/admin/GeneralQuestionsListPage";
@@ -220,6 +221,46 @@ export const adminRoutes = [
           <TourSchedulesListPage />
         </AdminLayout>
       </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/tours/schedules/:scheduleId/bookings",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Booking của lịch trình">
+          <ScheduleBookingsPage />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/list-trip",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Danh sách lịch trình">
+          <ListTripPage />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/provider/list-trip",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Danh sách lịch trình">
+          <ListTripPage />
+        </AdminLayout>
+      </RequireProviderOnly>
+    ),
+  },
+  {
+    path: "/admin/provider/tours/schedules/:scheduleId/bookings",
+    element: (
+      <RequireProviderOnly>
+        <AdminLayout title="Booking của lịch trình">
+          <ScheduleBookingsPage />
+        </AdminLayout>
+      </RequireProviderOnly>
     ),
   },
   {
@@ -470,7 +511,7 @@ export const adminRoutes = [
     path: "/admin/provider-bookings",
     element: (
       <RequireProviderOnly>
-        <AdminLayout title="Đặt tour của tôi">
+        <AdminLayout title="Quản lý đặt tour">
           {/* <div className="p-6"> */}
             <AdminBookings />
           {/* </div> */}

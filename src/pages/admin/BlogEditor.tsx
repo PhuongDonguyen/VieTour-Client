@@ -338,14 +338,14 @@ const BlogEditor: React.FC = () => {
                             <div>
                                 <div className="flex items-center justify-between">
                                     <Label htmlFor="category_id">Danh mục</Label>
-                                    <Button
+                                    {/* <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => navigate('/admin/blog-categories')}
                                         type="button"
                                     >
                                         Quản lý Danh mục
-                                    </Button>
+                                    </Button> */}
                                 </div>
                                 <select
                                     {...register('category_id')}

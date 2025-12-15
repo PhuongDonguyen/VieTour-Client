@@ -84,7 +84,7 @@ const AdminRepCommentUser = () => {
           title: tour.title,
           poster_url: tour.poster_url,
           duration: tour.duration,
-          location: tour.location?.trim() || '',
+          location: tour.starting_point?.trim() || '',
           price: tour.tour_prices?.[0]?.adult_price || 0,
           unread: 0 // Sẽ tính từ questions data sau
         }));
@@ -145,7 +145,7 @@ const AdminRepCommentUser = () => {
         title: tour.title,
         poster_url: tour.poster_url,
         duration: tour.duration,
-        location: tour.location?.trim() || '',
+        location: tour.starting_point?.trim() || '',
         price: tour.tour_prices?.[0]?.adult_price || 0,
         unread: 0,
       }));
@@ -390,7 +390,7 @@ const AdminRepCommentUser = () => {
                 title: tourData.title,
                 poster_url: tourData.poster_url,
                 duration: typeof tourData.duration === 'number' ? `${tourData.duration} ngày` : (tourData.duration || ''),
-                location: tourData.location?.trim() || '',
+                location: tourData.starting_point?.trim() || '',
                 price: tourData.tour_prices?.[0]?.adult_price || tourData.price || 0,
                 unread: 0,
               };

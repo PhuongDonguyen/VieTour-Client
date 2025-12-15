@@ -106,7 +106,7 @@ const TourDetails: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
@@ -118,9 +118,9 @@ const TourDetails: React.FC = () => {
             Trở về Tour
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Quản Lý Chi Tiết Tours</h1>
+            <h1 className="text-3xl font-bold">Quản Lý Chi Tiết Tour</h1>
             <p className="text-muted-foreground">
-              Quản lý lịch trình chi tiết của các tours ({totalItems} chi tiết)
+              Quản lý lịch trình chi tiết của các tour ({totalItems} chi tiết)
               {isAdmin && (
                 <span className="text-orange-600 ml-2">(Chỉ xem - Admin)</span>
               )}
@@ -141,7 +141,7 @@ const TourDetails: React.FC = () => {
       {/* Tour Details Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Danh Sách Chi Tiết Tours</CardTitle>
+          <CardTitle>Danh Sách Chi Tiết Tour</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (

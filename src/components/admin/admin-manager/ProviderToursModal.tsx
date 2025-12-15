@@ -115,7 +115,7 @@ const ProviderToursModal: React.FC<ProviderToursModalProps> = ({
                     </div>
                     <h3 className="text-base font-semibold text-gray-900">{tour.title}</h3>
                     <p className="text-sm text-gray-600">
-                      Địa điểm: <span className="font-medium">{normalizedLocation(tour.location)}</span>
+                      Địa điểm: <span className="font-medium">{normalizedLocation(tour.starting_point)}</span>
                     </p>
                   </div>
                 </div>

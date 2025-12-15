@@ -60,7 +60,7 @@ export const NavigationUser: FC<NavigationUserProps> = ({
     },
     {
       id: "my-bookings",
-      label: "Đặt tour của tôi",
+      label: "Xem tour đã đặt",
       icon: Calendar,
       description: "Xem lịch sử và quản lý đặt tour",
       badge: "3",
@@ -78,12 +78,12 @@ export const NavigationUser: FC<NavigationUserProps> = ({
       icon: Bell,
       description: "Quản lý thông báo và cập nhật",
     },
-    {
-      id: "settings",
-      label: "Cài đặt",
-      icon: Settings,
-      description: "Tùy chỉnh cài đặt tài khoản",
-    },
+    // {
+    //   id: "settings",
+    //   label: "Cài đặt",
+    //   icon: Settings,
+    //   description: "Tùy chỉnh cài đặt tài khoản",
+    // },
     {
       id: "provider-cancellation-requests",
       label: "Yêu cầu hoàn tiền",

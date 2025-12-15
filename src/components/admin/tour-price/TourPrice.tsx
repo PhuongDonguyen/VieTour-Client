@@ -176,7 +176,7 @@ const TourPricesManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
@@ -190,7 +190,7 @@ const TourPricesManagement: React.FC = () => {
             </Button>
           )}
           <div>
-            <h1 className="text-3xl font-bold">Quản Lý Giá Tours</h1>
+            <h1 className="text-3xl font-bold">Quản Lý Giá Tour</h1>
             <p className="text-muted-foreground">
               Quản lý bảng giá cho các tours ({totalItems} bảng giá)
               {isAdmin && (
@@ -219,7 +219,7 @@ const TourPricesManagement: React.FC = () => {
       {/* Tour Prices Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Danh Sách Giá Tours</CardTitle>
+          <CardTitle>Danh Sách Giá Tour</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (

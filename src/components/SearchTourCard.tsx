@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 interface SearchTourCardProps {
   id: number;
   title: string;
-  location: string;
+  startingPoint: string;
   duration: string;
   price: number;
   imageUrl: string;
@@ -19,7 +19,7 @@ interface SearchTourCardProps {
 export const SearchTourCard: React.FC<SearchTourCardProps> = ({
   id,
   title,
-  location,
+  startingPoint,
   duration,
   price,
   imageUrl,
@@ -42,7 +42,7 @@ export const SearchTourCard: React.FC<SearchTourCardProps> = ({
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer group h-full flex flex-col"
+      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden cursor-pointer group h-full flex flex-col"
       onClick={handleClick}
     >
       {/* Image */}
@@ -65,11 +65,11 @@ export const SearchTourCard: React.FC<SearchTourCardProps> = ({
           {title}
         </h3>
 
-        {/* Location & Rating */}
+        {/* Starting Point & Rating */}
         <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
           <div className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
-            <span className="truncate">{location}</span>
+            <span className="truncate">Khởi hành: {startingPoint}</span>
           </div>
           {reviewCount > 0 && (
             <div className="flex items-center gap-1">

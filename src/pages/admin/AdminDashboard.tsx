@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { ProviderRevenueStatsWrapper } from "../../components/ProviderRevenueStatsWrapper";
-import RevenueChart from "../../components/admin/RevenueChart";
+import RevenueChartOld from "../../components/admin/RevenueChart";
 import {
   Card,
   CardContent,
@@ -26,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { AuthContext } from "@/context/authContext";
+import RevenueAdmin from "@/components/admin/stat/RevenueAdmin";
+import RevenueChart from "@/components/admin/stat/RevenueChart";
 
 const AdminDashboard: React.FC = () => {
   const { user } = useContext(AuthContext);
@@ -34,8 +36,16 @@ const AdminDashboard: React.FC = () => {
   const [topTours, setTopTours] = useState<TopTourStats[]>([]);
   const [topProviders, setTopProviders] = useState<TopProviderStats[]>([]);
   const [loading, setLoading] = useState(false);
-  const [toursFilters, setToursFilters] = useState({ limit: 5 });
-  const [providersFilters, setProvidersFilters] = useState({ limit: 5 });
+  const [toursFilters, setToursFilters] = useState({
+    limit: 5,
+    start_date: "",
+    end_date: "",
+  });
+  const [providersFilters, setProvidersFilters] = useState({
+    limit: 5,
+    start_date: "",
+    end_date: "",
+  });
   const [showToursFilters, setShowToursFilters] = useState(false);
   const [showProvidersFilters, setShowProvidersFilters] = useState(false);
 
@@ -48,6 +58,8 @@ const AdminDashboard: React.FC = () => {
       ]);
       setTopTours(toursResponse.data);
       setTopProviders(providersResponse.data);
+      // console.log(toursResponse.data);
+      // console.log(providersResponse.data);
     } catch (error) {
       console.error("Error fetching stats:", error);
       toast.error("Không thể tải thống kê");
@@ -107,11 +119,11 @@ const AdminDashboard: React.FC = () => {
   };
 
   const resetToursFilters = () => {
-    setToursFilters({ limit: 5 });
+    setToursFilters({ limit: 5, start_date: "", end_date: "" });
   };
 
   const resetProvidersFilters = () => {
-    setProvidersFilters({ limit: 5 });
+    setProvidersFilters({ limit: 5, start_date: "", end_date: "" });
   };
 
   const formatCurrency = (amount: number) => {
@@ -133,37 +145,105 @@ const AdminDashboard: React.FC = () => {
     return value.toString();
   };
 
+  // Split text into lines for chart labels
+  const splitTextIntoLines = (text: string, maxWidth: number = 90): string[] => {
+    if (!text) return [""];
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let currentLine = "";
+
+    words.forEach((word) => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      // Estimate width: ~7px per character for font size 11
+      const estimatedWidth = testLine.length * 7;
+
+      if (estimatedWidth <= maxWidth && currentLine) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        currentLine = word;
+      }
+    });
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines.length > 0 ? lines : [text];
+  };
+
+  // Custom Tick Component for multi-line labels
+  const CustomTick = ({ x, y, payload }: any) => {
+    const title = payload?.value?.toString().trim() || "";
+    const lines = splitTextIntoLines(title, 90);
+    const lineHeight = 13;
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        {lines.map((line, index) => (
+          <text
+            key={index}
+            x={0}
+            y={0}
+            dy={index * lineHeight + 14}
+            textAnchor="middle"
+            fill="#4b5563"
+            fontSize={11}
+            fontWeight={400}
+          >
+            {line}
+          </text>
+        ))}
+      </g>
+    );
+  };
+
   // Prepare chart data
   const toursChartData = topTours.map((tour, index) => ({
-    name:
-      tour.tour_title.length > 15
-        ? tour.tour_title.substring(0, 15) + "..."
-        : tour.tour_title,
+    name: tour.tour_title, // Use full name, will wrap if needed
     bookings: tour.booking_count,
     fullName: tour.tour_title,
   }));
 
-  const providersChartData = topProviders.map((provider, index) => ({
-    name:
-      provider.company_name.length > 15
-        ? provider.company_name.substring(0, 15) + "..."
-        : provider.company_name,
-    revenue: provider.total_revenue,
-    providerRevenue: provider.provider_revenue,
-    adminRevenue: provider.admin_revenue,
-    fullName: provider.company_name,
-  }));
+  const providersChartData = topProviders.map((provider) => {
+    return {
+      nameKey: `${provider.provider_id || provider.company_name}`,
+      name: provider.company_name, // Use full name, will wrap if needed
+      revenue: provider.total_revenue,
+      providerRevenue: provider.provider_revenue,
+      adminRevenue: provider.admin_revenue,
+      fullName: provider.company_name,
+    };
+  });
 
   return (
     <>
       {isProvider && <ProviderRevenueStatsWrapper />}
 
       {/* Revenue Chart */}
-      {isAdmin && (
+      {/* {isAdmin && (
         <div className="pt-6 px-6">
-          <RevenueChart className="mb-6" />
+          <RevenueChartOld className="mb-6" />
         </div>
-      )}
+      )} */}
+
+      {
+        isAdmin && (
+          <div className="pt-6 px-6">
+            <RevenueAdmin />
+          </div>
+        )
+      }
+
+      {
+        isAdmin && (
+          <div className="pt-6 px-6">
+            <RevenueChart />
+          </div>
+        )
+      }
 
       {/* Statistics Grid - Top Tours & Providers */}
       {isAdmin && (
@@ -173,7 +253,7 @@ const AdminDashboard: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                Tour hàng đầu theo đặt chỗ
+                Top tour theo lượt đặt
               </CardTitle>
               <CardDescription>
                 Top 5 tour có nhiều đặt chỗ nhất
@@ -266,14 +346,32 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {/* Chart */}
-                  <div className="h-64">
+                  <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={toursChartData}>
+                      <BarChart
+                        data={toursChartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={formatYAxis} />
+                        <XAxis
+                          dataKey="name"
+                          height={80}
+                          interval={0}
+                          tick={<CustomTick />}
+                          stroke="#6b7280"
+                        />
+                        <YAxis
+                          tickFormatter={(v) =>
+                            Math.round(Number(v)).toLocaleString("vi-VN")
+                          }
+                          allowDecimals={false}
+                          domain={[0, (dataMax: number) => Math.ceil(dataMax) + 1]}
+                        />
                         <Tooltip
-                          formatter={(value, name) => [value, "Số đặt chỗ"]}
+                          formatter={(value, name) => [
+                            Math.round(Number(value)).toLocaleString("vi-VN"),
+                            "Số đặt chỗ",
+                          ]}
                           labelFormatter={(label, payload) => {
                             if (payload && payload[0]) {
                               return payload[0].payload.fullName;
@@ -342,7 +440,7 @@ const AdminDashboard: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building className="w-5 h-5" />
-                Nhà cung cấp hàng đầu theo doanh thu
+                Top nhà cung cấp theo doanh thu
               </CardTitle>
               <CardDescription>
                 Top 5 nhà cung cấp có doanh thu cao nhất
@@ -445,35 +543,46 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {/* Chart */}
-                  <div className="h-64">
+                  <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={providersChartData}>
+                        <ComposedChart
+                          data={providersChartData}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                        >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
+                        <XAxis
+                          dataKey="name"
+                          height={80}
+                          interval={0}
+                          tick={<CustomTick />}
+                          stroke="#6b7280"
+                        />
                         <YAxis tickFormatter={formatYAxis} />
                         <Tooltip
                           formatter={(value, name) => [
                             formatCurrency(Number(value)),
                             name === "providerRevenue"
                               ? "Provider Revenue"
-                              : "Admin Revenue",
+                              : name === "adminRevenue"
+                              ? "Admin Revenue"
+                              : name,
                           ]}
-                          labelFormatter={(label, payload) => {
+                          labelFormatter={(_, payload) => {
                             if (payload && payload[0]) {
                               return payload[0].payload.fullName;
                             }
-                            return label;
+                            return "";
                           }}
                         />
                         <Bar
                           dataKey="providerRevenue"
+                          name="Provider Revenue"
                           fill="#10b981"
-                          stackId="a"
                         />
                         <Bar
                           dataKey="adminRevenue"
+                          name="Admin Revenue"
                           fill="#ef4444"
-                          stackId="a"
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -509,9 +618,9 @@ const AdminDashboard: React.FC = () => {
                             {formatCurrency(provider.total_revenue)}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            TB:{" "}
+                            Thực nhận:{" "}
                             {formatCurrency(
-                              provider.average_revenue_per_booking
+                              provider.provider_revenue
                             )}
                           </div>
                         </div>

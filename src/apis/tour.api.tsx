@@ -54,7 +54,7 @@ export interface Tour {
   destination_intro?: string;
   tour_info?: string;
   live_commentary?: string;
-  location?: string; // Địa điểm tour
+  starting_point?: string; // Địa điểm tour
   booked_count?: number;
   tour_category?: {
     id: number;
@@ -136,6 +136,14 @@ export interface SearchSimilarToursRequest {
 export interface SearchSimilarToursResponse {
   success: boolean;
   tours: SimilarTour[];
+}
+
+// Recommendation response based on view history
+export interface TourRecommendResponse {
+  success: boolean;
+  data: SimilarTour[];
+  count: number;
+  message: string;
 }
 
 /**
@@ -229,6 +237,15 @@ export const searchSimilarTours = async (
   return response.data;
 };
 
+/**
+ * Get recommended tours based on user's view history
+ * GET /api/tours/recommend
+ */
+export const tourRecommend = async (): Promise<TourRecommendResponse> => {
+  const response = await axiosInstance.get("/api/tours/recommended");
+  return response.data;
+};
+
 // Legacy functions for backward compatibility
 export const getTourBySlug = (slug: string) =>
   axiosInstance.get(`/api/tours?slug=${slug}`);
@@ -251,11 +268,15 @@ export const getToursByCatId = (catId: number) =>
 export const getToursByIsActive = (active: boolean) =>
   axiosInstance.get(`/api/tours?is_active=${active}`);
 
-export const getAllToursByProviderId = (providerId: number | null, page?: number, limit?: number) => {
+export const getAllToursByProviderId = (
+  providerId: number | null,
+  page?: number,
+  limit?: number
+) => {
   const params = new URLSearchParams();
-  params.append('provider_id', providerId?.toString() || '');
-  if (page) params.append('page', page.toString());
-  if (limit) params.append('limit', limit.toString());
+  params.append("provider_id", providerId?.toString() || "");
+  if (page) params.append("page", page.toString());
+  if (limit) params.append("limit", limit.toString());
 
   return axiosInstance.get(`/api/tours?${params.toString()}`);
 };
@@ -272,7 +293,11 @@ export const bannedTour = (tourId: number) =>
 export const unbannedTour = (tourId: number) =>
   axiosInstance.patch(`/api/tours/${tourId}/unban`);
 
-export const getToursBanned = (page?: number, limit?: number) =>
-  axiosInstance.get(`/api/tours/banned?limit=${limit}&page=${page}`);
+export const getToursBanned = (page?: number, limit?: number, providerId?: number) =>
+  axiosInstance.get(`/api/tours/banned?limit=${limit}&page=${page}&provider_id=${providerId}`);
 export const getTouridsByProviderId = () =>
   axiosInstance.get(`/api/tours/tour-provider`);
+
+export const saveHistoryView = (tourId: number) =>
+  axiosInstance.patch(`/api/tours/${tourId}/save-view-history`);
+

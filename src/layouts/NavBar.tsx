@@ -262,7 +262,7 @@ export const NavBar = ({ textDark = false }) => {
                               : "text-white hover:bg-white/20 hover:text-orange-300"
                           }`}
                         >
-                          Đặt tour của tôi
+                          Tour đã đặt
                         </Link>
                         <Link
                           to="/user/password"
@@ -466,7 +466,7 @@ export const NavBar = ({ textDark = false }) => {
                           to="/user/my-bookings"
                           className="block py-1 text-gray-600 hover:text-orange-500"
                         >
-                          Đặt tour của tôi
+                          Tour đã đặt
                         </Link>
                         <Link
                           to="/user/password"

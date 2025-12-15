@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { incrementTourViewCountWithSession } from "../services/tour.service";
+import { incrementTourViewCountWithSession, saveHistoryViewService } from "../services/tour.service";
+import { useAuth } from "./useAuth";
 
 /**
  * Custom hook for tracking tour views with session-based strategy
@@ -18,6 +19,8 @@ export const useTourViewTracking = (
   isLoading: boolean,
   hasError: boolean
 ) => {
+  const {user} = useAuth();
+
   useEffect(() => {
     // Only increment view count if:
     // 1. We have a valid tour ID
@@ -28,7 +31,11 @@ export const useTourViewTracking = (
         console.warn("Failed to increment view count:", error);
       });
     }
+    if (user && tourId) {
+      saveHistoryViewService(tourId);
+    }
   }, [tourId, isLoading, hasError]);
+  
 };
 
 export default useTourViewTracking;

@@ -7,6 +7,8 @@ import {
   type MarkReadResponse,
   type GetConversationResponse,
   filterConversations,
+  UnreadCountResponse,
+  getUnreadCount,
 } from "../apis/conversation.api";
 
 export const fetchConversations = async (
@@ -63,5 +65,17 @@ export const filterFetchConversations = async (
     throw new Error(
       error.response?.data?.message || "Failed to filter conversations"
     );
+  }
+};
+
+
+
+export const fetchUnreadCount = async (): Promise<UnreadCountResponse> => {
+  try {
+    const response = await getUnreadCount();
+    return response.data;
+  } catch (error: any) {
+    console.error("Error in fetchUnreadCount:", error);
+    throw new Error(error.response?.data?.message || "Failed to fetch unread count");
   }
 };
