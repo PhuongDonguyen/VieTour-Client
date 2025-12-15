@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../../utils/imageUtils";
 
 type TourImageProps = {
   images: { id: number; image_url: string; alt_text?: string }[];
@@ -15,7 +16,7 @@ const TourImage: React.FC<TourImageProps> = ({ images, altDefault }) => {
       {/* Main image */}
       <div className="relative group">
         <img
-          src={images[selectedImage]?.image_url}
+          src={transformCloudinaryUrl(images[selectedImage]?.image_url, ImageSize.CARD, ImageQuality.HIGH)}
           alt={images[selectedImage]?.alt_text || altDefault || ""}
           className="w-full h-80 md:h-96 object-cover rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-[1.02]"
         />

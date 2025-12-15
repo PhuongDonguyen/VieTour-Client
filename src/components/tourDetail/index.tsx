@@ -83,13 +83,17 @@ const TourDetail: React.FC = () => {
 
       // Update active tab based on scroll position
       const sections = TABS.map(tab => document.getElementById(tab.key));
-      const scrollPosition = scrollY + 200;
+      const scrollPosition = scrollY + 250; // Offset for sticky nav
 
       for (let i = sections.length - 1; i >= 0; i--) {
         const section = sections[i];
-        if (section && section.offsetTop <= scrollPosition) {
-          setActiveTab(TABS[i].key);
-          break;
+        if (section) {
+          const rect = section.getBoundingClientRect();
+          const absoluteTop = rect.top + window.pageYOffset;
+          if (absoluteTop <= scrollPosition) {
+            setActiveTab(TABS[i].key);
+            break;
+          }
         }
       }
     };
@@ -185,7 +189,7 @@ const TourDetail: React.FC = () => {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      const offset = 100; // Account for sticky header
+      const offset = 180; // Account for sticky nav (16px top + nav height + padding)
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
 
@@ -344,7 +348,7 @@ const TourDetail: React.FC = () => {
           )}
 
           {/* Hero Section */}
-          {tour ? (
+          {tour && !loading ? (
             <div
               className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"
                 }`}
@@ -363,9 +367,32 @@ const TourDetail: React.FC = () => {
             </div>
           ) : (
             <div className="max-w-7xl mx-auto mb-8">
-              <div className="space-y-4">
-                <div className="h-12 bg-gray-200 rounded-xl animate-pulse w-3/4"></div>
-                <div className="h-8 bg-gray-200 rounded-xl animate-pulse w-1/2"></div>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
+                <div className="space-y-6">
+                  {/* Title skeleton */}
+                  <div className="space-y-3">
+                    <div className="h-10 bg-gray-200 rounded-xl animate-pulse w-3/4"></div>
+                    <div className="h-10 bg-gray-200 rounded-xl animate-pulse w-2/3"></div>
+                  </div>
+
+                  {/* Rating and info skeleton */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-6 w-28 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+
+                  {/* Price and company skeleton */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t">
+                    <div className="space-y-2">
+                      <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-8 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
+                    </div>
+                    <div className="h-12 w-32 bg-orange-200 rounded-xl animate-pulse"></div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -406,248 +433,238 @@ const TourDetail: React.FC = () => {
           {stickyNav && <div className="h-24"></div>}
 
           {/* All Content Sections - Displayed together */}
-          {tour ? (
+          {tour && !loading ? (
             <div
-              className={`max-w-7xl mx-auto space-y-8 fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
+              className={`max-w-7xl mx-auto fade-in-up-delay-2 ${isVisible ? "opacity-100" : "opacity-0"
                 }`}
             >
-              {/* Program Section */}
-              <section id="program" className="scroll-mt-32">
+              {/* Main Content Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                {/* Program Section */}
+                <section id="program" className="scroll-mt-32">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
+                    <div className="p-6 lg:p-8 bg-gray-50">
+                      <TourImage
+                        images={
+                          images.length > 0
+                            ? images.filter((img) => img.is_featured)
+                            : [
+                              {
+                                id: 0,
+                                image_url: tour.poster_url,
+                                alt_text: tour.title,
+                              },
+                            ]
+                        }
+                        altDefault={tour.title}
+                      />
+                    </div>
+                    <div className="p-6 lg:p-8">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                        Lịch trình tour
+                      </h2>
+                      <div className="hide-scrollbar overflow-y-auto max-h-[500px]">
+                        <TourDetailContent days={days} />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Price Section */}
+                <section id="price" className="scroll-mt-32 p-6 lg:p-8">
+                  <TabPrice tourId={tour.id} />
+                </section>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Info Section */}
+                <section id="info" className="scroll-mt-32 p-6 lg:p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Thông tin tour</h2>
+                  <TabInfo
+                    id={tour.id}
+                    live_commentary={tour.live_commentary}
+                    duration={tour.duration}
+                    transportation={tour.transportation}
+                    accommodation={tour.accommodation}
+                  />
+                </section>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Overview Section */}
+                <section id="overview" className="scroll-mt-32">
+                  <TabOverview destination_intro={tour.destination_intro} />
+                </section>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Condition Section */}
+                <section id="condition" className="scroll-mt-32">
+                  <TabCondition tour_info={tour.tour_info} />
+                </section>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Gallery Section */}
+                <section id="gallery" className="scroll-mt-32">
+                  <TabGallery images={images} />
+                </section>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Review Section */}
+                <section id="review" className="scroll-mt-32 p-6 lg:p-8">
+                  <TabReview
+                    tourId={tour.id}
+                    totalStar={tour.total_star}
+                    reviewCount={tour.review_count}
+                  />
+                </section>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* FAQ Section */}
+                <section id="faq" className="scroll-mt-32">
+                  <TabFAQ tourId={tour.id} />
+                </section>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-7xl mx-auto space-y-8">
+              {/* Program Section Skeleton */}
+              <section className="scroll-mt-32">
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[600px]">
                     <div className="p-6 lg:p-8 bg-gray-50">
-                      {images.length > 0 || !loading ? (
-                        <TourImage
-                          images={
-                            images.length > 0
-                              ? images.filter((img) => img.is_featured)
-                              : [
-                                {
-                                  id: 0,
-                                  image_url: tour.poster_url,
-                                  alt_text: tour.title,
-                                },
-                              ]
-                          }
-                          altDefault={tour.title}
-                        />
-                      ) : (
-                        <div className="w-full h-96 bg-gray-200 rounded-2xl animate-pulse"></div>
-                      )}
+                      <div className="w-full h-96 bg-gray-200 rounded-2xl animate-pulse"></div>
                     </div>
                     <div className="p-6 lg:p-8">
                       <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <svg
-                            className="w-5 h-5 text-orange-600"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          Lịch trình tour
-                        </h2>
+                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="h-8 bg-gray-200 rounded animate-pulse w-40"></div>
                       </div>
-                      <div className="hide-scrollbar overflow-y-auto max-h-[500px]">
-                        {days.length > 0 || !loading ? (
-                          <TourDetailContent days={days} />
-                        ) : (
-                          <div className="space-y-4">
-                            {[...Array(3)].map((_, i) => (
-                              <div key={i} className="space-y-3">
-                                <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3"></div>
-                                <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
-                                <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                                <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
-                              </div>
-                            ))}
+                      <div className="space-y-4">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="space-y-3">
+                            <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Price Section */}
-              <section id="price" className="scroll-mt-32">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  {!loading ? (
-                    <div className="p-6 lg:p-8">
-                      <TabPrice tourId={tour.id} />
-                    </div>
-                  ) : (
-                    <div className="p-6 lg:p-8 space-y-4">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <span className="text-2xl">💰</span>
-                        </div>
-                        <div className="h-8 bg-gray-200 rounded animate-pulse w-32"></div>
-                      </div>
-                      <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
-                      <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
-                      <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* Info Section */}
-              <section id="info" className="scroll-mt-32">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                      <span className="text-2xl">ℹ️</span>
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900">Thông tin tour</h2>
-                  </div>
-                  {!loading ? (
-                    <TabInfo
-                      id={tour.id}
-                      live_commentary={tour.live_commentary}
-                      duration={tour.duration}
-                      transportation={tour.transportation}
-                      accommodation={tour.accommodation}
-                    />
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {[...Array(6)].map((_, i) => (
-                        <div key={i} className="space-y-2">
-                          <div className="h-5 bg-gray-200 rounded animate-pulse w-1/3"></div>
-                          <div className="h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* Overview Section */}
-              <section id="overview" className="scroll-mt-32">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  {!loading ? (
-                    <TabOverview destination_intro={tour.destination_intro} />
-                  ) : (
-                    <div className="p-6 lg:p-8 space-y-3">
-                      {[...Array(8)].map((_, i) => (
-                        <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${Math.random() * 30 + 70}%` }}></div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* Condition Section */}
-              <section id="condition" className="scroll-mt-32">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  {!loading ? (
-                    <TabCondition tour_info={tour.tour_info} />
-                  ) : (
-                    <div className="p-6 lg:p-8 space-y-3">
-                      {[...Array(10)].map((_, i) => (
-                        <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${Math.random() * 30 + 70}%` }}></div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* Gallery Section */}
-              <section id="gallery" className="scroll-mt-32">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  {images.length > 0 || !loading ? (
-                    <TabGallery images={images} />
-                  ) : (
-                    <div className="p-6 lg:p-8">
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {[...Array(8)].map((_, i) => (
-                          <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
                         ))}
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </section>
 
-              {/* Review Section */}
-              <section id="review" className="scroll-mt-32">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  {!loading ? (
-                    <div className="p-6 lg:p-8">
-                      <TabReview
-                        tourId={tour.id}
-                        totalStar={tour.total_star}
-                        reviewCount={tour.review_count}
-                      />
-                    </div>
-                  ) : (
-                    <div className="p-6 lg:p-8 space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-20 h-20 bg-gray-200 rounded-xl animate-pulse"></div>
-                        <div className="flex-1 space-y-2">
-                          <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
-                        </div>
-                      </div>
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="border-t pt-4 space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
-                            <div className="flex-1 space-y-2">
-                              <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
-                              <div className="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
-                            </div>
-                          </div>
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              {/* Price Section Skeleton */}
+              <section className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8 space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div className="h-8 bg-gray-200 rounded animate-pulse w-32"></div>
+                  </div>
+                  <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
+                  <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
+                  <div className="h-16 bg-gray-200 rounded-xl animate-pulse"></div>
                 </div>
               </section>
 
-              {/* FAQ Section */}
-              <section id="faq" className="scroll-mt-32">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                  {!loading ? (
-                    <TabFAQ tourId={tour.id} />
-                  ) : (
-                    <div className="p-6 lg:p-8 space-y-4">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-3">
-                          <div className="h-5 bg-gray-200 rounded animate-pulse w-3/4"></div>
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
-            </div>
-          ) : (
-            <div className="max-w-7xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
-                <div className="space-y-6">
-                  <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3"></div>
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="space-y-3">
-                        <div className="h-6 bg-gray-200 rounded animate-pulse w-1/4"></div>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+              {/* Info Section Skeleton */}
+              <section className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div className="h-8 bg-gray-200 rounded animate-pulse w-40"></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="h-5 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                        <div className="h-8 bg-gray-200 rounded-lg animate-pulse"></div>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
+              </section>
+
+              {/* Overview Section Skeleton */}
+              <section className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8 space-y-3">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${Math.random() * 30 + 70}%` }}></div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Condition Section Skeleton */}
+              <section className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8 space-y-3">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${Math.random() * 30 + 70}%` }}></div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Gallery Section Skeleton */}
+              <section className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {[...Array(8)].map((_, i) => (
+                      <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Review Section Skeleton */}
+              <section className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8 space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 bg-gray-200 rounded-xl animate-pulse"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-48"></div>
+                    </div>
+                  </div>
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="border-t pt-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                          <div className="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
+                        </div>
+                      </div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* FAQ Section Skeleton */}
+              <section className="scroll-mt-32">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 lg:p-8 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-3">
+                      <div className="h-5 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
           )}
         </div>
