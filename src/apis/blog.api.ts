@@ -17,7 +17,7 @@ export interface BlogPost {
   view_count?: number;
   like_count?: number;
   comment_count?: number;
-  isLiked?: boolean;
+  is_liked?: boolean;
 }
 
 export interface CreateBlogRequest {

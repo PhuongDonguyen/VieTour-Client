@@ -52,14 +52,16 @@ const BlogDetail: React.FC = () => {
       try {
         // Use fetchUserBlogs if user exists and role is "user", otherwise use fetchBlogs
         const shouldUseUserBlogs = user && user.role === "user";
-        const response = shouldUseUserBlogs 
-          ? await fetchUserBlogs({ slug: slug })
-          : await fetchBlogs({ slug: slug });
+        // const response = shouldUseUserBlogs 
+        //   ? await fetchUserBlogs({ slug: slug })
+        //   : await fetchBlogs({ slug: slug });
+        const response = await fetchBlogs({slug: slug});
         console.log("response: ", response);  
         // Since we're fetching by slug, we expect only one blog
         const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
-        setIsLiked(blogData?.isLiked || false);
+        console.log("blogData like: ", blogData?.is_liked);
+        setIsLiked(blogData?.is_liked || false);
         // Initialize like count from blog data
         if (blogData) {
           setLikeCount(blogData.like_count || 0);
@@ -85,6 +87,10 @@ const BlogDetail: React.FC = () => {
     };
     fetchData();
   }, [slug, user]);
+
+  useEffect(() => {
+    console.log("isLiked: ", isLiked);
+  }, [isLiked]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
