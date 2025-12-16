@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { fetchTourPricesByTourId } from "../../services/tourPrice.service";
-import { DollarSign } from "lucide-react";
 
 interface TabPriceProps {
   tourId: number;
@@ -42,14 +41,9 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-            <DollarSign className="w-5 h-5 text-orange-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Bảng giá
-          </h2>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          Bảng giá
+        </h2>
         <div className="space-y-4">
           {[1, 2].map((item) => (
             <div key={item} className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 animate-pulse">
@@ -71,14 +65,9 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-            <DollarSign className="w-5 h-5 text-orange-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Bảng giá
-          </h2>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          Bảng giá
+        </h2>
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center">
           <div className="text-red-500 text-lg font-medium mb-4">{error}</div>
           <button
@@ -95,16 +84,10 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
   if (!prices.length) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-            <DollarSign className="w-5 h-5 text-orange-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Bảng giá
-          </h2>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          Bảng giá
+        </h2>
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-12 text-center">
-          <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Chưa có bảng giá
           </h3>
@@ -118,14 +101,9 @@ const TabPrice: React.FC<TabPriceProps> = ({ tourId }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-          <DollarSign className="w-5 h-5 text-orange-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          Bảng giá ({prices.length} gói)
-        </h2>
-      </div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        Bảng giá ({prices.length} gói)
+      </h2>
 
       <div className="space-y-4">
         {prices.map((price, index) => (

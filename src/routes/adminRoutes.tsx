@@ -511,7 +511,7 @@ export const adminRoutes = [
     path: "/admin/provider-bookings",
     element: (
       <RequireProviderOnly>
-        <AdminLayout title="Đặt tour của tôi">
+        <AdminLayout title="Quản lý đặt tour">
           {/* <div className="p-6"> */}
             <AdminBookings />
           {/* </div> */}

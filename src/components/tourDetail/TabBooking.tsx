@@ -287,8 +287,7 @@ export const TabBooking: React.FC<TabBookingProps> = ({
     );
 
     console.log(
-      `isValidBookingDate: ${dateString} -> booking: ${bookingDateOnly.toLocaleDateString()}, min: ${minDateOnly.toLocaleDateString()}, valid: ${
-        bookingDateOnly >= minDateOnly
+      `isValidBookingDate: ${dateString} -> booking: ${bookingDateOnly.toLocaleDateString()}, min: ${minDateOnly.toLocaleDateString()}, valid: ${bookingDateOnly >= minDateOnly
       }`
     );
 
@@ -915,13 +914,12 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                         return (
                           <div
                             key={schedule.id}
-                            className={`p-4 border rounded-lg transition-all ${
-                              isDisabled
+                            className={`p-4 border rounded-lg transition-all ${isDisabled
                                 ? "border-gray-300 bg-gray-100 cursor-not-allowed opacity-60"
                                 : isSelected
-                                ? "border-orange-500 bg-orange-50 cursor-pointer"
-                                : "border-gray-200 hover:border-orange-300 cursor-pointer"
-                            }`}
+                                  ? "border-orange-500 bg-orange-50 cursor-pointer"
+                                  : "border-gray-200 hover:border-orange-300 cursor-pointer"
+                              }`}
                             onClick={() => {
                               if (!isDisabled) {
                                 handleScheduleSelect(schedule.id);
@@ -931,31 +929,28 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                             <div className="flex items-center justify-between">
                               <div>
                                 <p
-                                  className={`font-medium ${
-                                    isDisabled
+                                  className={`font-medium ${isDisabled
                                       ? "text-gray-500"
                                       : "text-gray-800"
-                                  }`}
+                                    }`}
                                 >
                                   Lịch trình VT{schedule.id}
                                 </p>
                                 <p
-                                  className={`text-sm ${
-                                    isDisabled
+                                  className={`text-sm ${isDisabled
                                       ? "text-gray-400"
                                       : "text-gray-600"
-                                  }`}
+                                    }`}
                                 >
                                   Ngày: {schedule.start_date}
                                 </p>
                               </div>
                               <div className="text-right">
                                 <p
-                                  className={`text-sm font-medium ${
-                                    isDisabled
+                                  className={`text-sm font-medium ${isDisabled
                                       ? "text-red-600"
                                       : "text-gray-800"
-                                  }`}
+                                    }`}
                                 >
                                   {isDisabled
                                     ? "Hết vé"
@@ -1121,21 +1116,21 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                     {/* Tính tổng cho loại giá này */}
                     {(formData.selectedPrices[index]?.adults > 0 ||
                       formData.selectedPrices[index]?.children > 0) && (
-                      <div className="mt-3 p-2 bg-white rounded border">
-                        <div className="text-sm">
-                          Tổng cho {option.note}:{" "}
-                          <span className="font-semibold text-orange-600">
-                            {(
-                              (formData.selectedPrices[index]?.adults || 0) *
+                        <div className="mt-3 p-2 bg-white rounded border">
+                          <div className="text-sm">
+                            Tổng cho {option.note}:{" "}
+                            <span className="font-semibold text-orange-600">
+                              {(
+                                (formData.selectedPrices[index]?.adults || 0) *
                                 option.adult_price +
-                              (formData.selectedPrices[index]?.children || 0) *
+                                (formData.selectedPrices[index]?.children || 0) *
                                 option.kid_price
-                            ).toLocaleString()}{" "}
-                            VND
-                          </span>
+                              ).toLocaleString()}{" "}
+                              VND
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 ))
               )}
@@ -1180,9 +1175,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                   onChange={(e) =>
                     handleInputChange("customerName", e.target.value)
                   }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                    errors.customerName ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${errors.customerName ? "border-red-500" : "border-gray-300"
+                    }`}
                   placeholder="Họ và tên sẽ được tự động điền từ profile của bạn"
                 />
                 {errors.customerName && (
@@ -1200,9 +1194,8 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                    errors.phone ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${errors.phone ? "border-red-500" : "border-gray-300"
+                    }`}
                   placeholder="Số điện thoại sẽ được tự động điền từ profile của bạn"
                 />
                 {errors.phone && (
@@ -1361,11 +1354,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                   {paymentMethods.map((method) => (
                     <label
                       key={method.id}
-                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
-                        selectedPaymentMethod === method.id
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${selectedPaymentMethod === method.id
                           ? "border-orange-500 bg-orange-50"
                           : "border-gray-200"
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -1390,11 +1382,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
                         </div>
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-4 h-4 rounded-full border-2 ${
-                              selectedPaymentMethod === method.id
+                            className={`w-4 h-4 rounded-full border-2 ${selectedPaymentMethod === method.id
                                 ? "border-orange-500 bg-orange-500"
                                 : "border-gray-300"
-                            }`}
+                              }`}
                           >
                             {selectedPaymentMethod === method.id && (
                               <div className="w-full h-full rounded-full bg-white scale-50"></div>
@@ -1472,19 +1463,17 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               ).map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      step <= currentStep
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step <= currentStep
                         ? "bg-orange-500 text-white"
                         : "bg-gray-200 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {step}
                   </div>
                   {step < BOOKING_CONSTANTS.TOTAL_STEPS && (
                     <div
-                      className={`w-12 h-1 mx-1 ${
-                        step < currentStep ? "bg-orange-500" : "bg-gray-200"
-                      }`}
+                      className={`w-12 h-1 mx-1 ${step < currentStep ? "bg-orange-500" : "bg-gray-200"
+                        }`}
                     />
                   )}
                 </div>
@@ -1508,11 +1497,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               <button
                 onClick={handlePrevious}
                 disabled={currentStep === 1}
-                className={`px-6 py-2 rounded-md font-medium ${
-                  currentStep === 1
+                className={`px-6 py-2 rounded-md font-medium ${currentStep === 1
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                }`}
+                  }`}
               >
                 Quay lại
               </button>
@@ -1529,11 +1517,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                  isSubmitting
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${isSubmitting
                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                     : "bg-green-600 text-white hover:bg-green-700"
-                }`}
+                  }`}
               >
                 {isSubmitting ? "Đang xử lý..." : " Đặt tour"}
               </button>
@@ -1628,16 +1615,44 @@ export const TabBooking: React.FC<TabBookingProps> = ({
             </div>
 
             {isLoadingPolicy ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                <span className="ml-2 text-gray-600">
-                  Đang tải chính sách...
-                </span>
+              <div className="space-y-6 mb-6 max-h-[50vh] overflow-y-auto">
+                {/* Skeleton for policy sections */}
+                {[1, 2, 3, 4].map((section) => (
+                  <div key={section} className="space-y-3">
+                    {/* Section title skeleton */}
+                    <div className="h-6 bg-gray-200 rounded animate-pulse w-2/3"></div>
+
+                    {/* Paragraph skeleton */}
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                    </div>
+
+                    {/* List items skeleton */}
+                    <div className="space-y-2 ml-4">
+                      {[1, 2, 3, 4].map((item) => (
+                        <div key={item} className="flex items-start space-x-2">
+                          <div className="w-2 h-2 bg-gray-200 rounded-full mt-2 animate-pulse"></div>
+                          <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-6 max-h-[50vh] overflow-y-auto">
+              <div className="mb-6 max-h-[50vh] overflow-y-auto">
                 {bookingPolicy ? (
-                  <div dangerouslySetInnerHTML={{ __html: bookingPolicy }} />
+                  <div
+                    className="prose prose-lg max-w-none text-gray-700 leading-relaxed
+                      prose-headings:text-gray-900 prose-headings:font-bold prose-headings:mb-3 prose-headings:mt-6
+                      prose-h4:text-lg prose-h4:text-orange-600
+                      prose-p:mb-4 prose-p:text-gray-700
+                      prose-ul:list-disc prose-ul:ml-6 prose-ul:mb-4
+                      prose-li:mb-2 prose-li:text-gray-700
+                      prose-strong:text-gray-900 prose-strong:font-semibold"
+                    dangerouslySetInnerHTML={{ __html: bookingPolicy }}
+                  />
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     Không có thông tin chính sách đặt tour.
@@ -1670,11 +1685,10 @@ export const TabBooking: React.FC<TabBookingProps> = ({
               <button
                 onClick={handleConfirmBooking}
                 disabled={isSubmitting || !policyAgreed}
-                className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                  isSubmitting || !policyAgreed
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${isSubmitting || !policyAgreed
                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                     : "bg-green-600 text-white hover:bg-green-700"
-                }`}
+                  }`}
               >
                 {isSubmitting ? "Đang xử lý..." : "Xác nhận đặt tour"}
               </button>
