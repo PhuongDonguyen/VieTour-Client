@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { fetchBlogs, fetchUserBlogs } from "../services/blog.service";
 import { getBlogCategoryById, BlogCategory } from "../apis/blogCategory.api";
 import { toggleBlogLike } from "../apis/blogLike.api";
+import { toggleBlogBookmark as toggleBlogBookmarkService } from "../services/bookmark.service";
 import RecentlyViewedTours from "../components/RecentlyViewedTours";
 import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import { useAuth } from "../hooks/useAuth";
+import { toast } from "sonner";
 
 const BlogDetail: React.FC = () => {
   const { user } = useAuth();
@@ -38,6 +40,8 @@ const BlogDetail: React.FC = () => {
   const [newComment, setNewComment] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,6 +50,13 @@ const BlogDetail: React.FC = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Capture current URL for sharing; guard for non-browser environments
+    if (typeof window !== "undefined") {
+      setShareUrl(window.location.href);
+    }
+  }, [slug]);
 
   useEffect(() => {
     console.log({ slug });
@@ -57,13 +68,14 @@ const BlogDetail: React.FC = () => {
         // const response = shouldUseUserBlogs
         //   ? await fetchUserBlogs({ slug: slug })
         //   : await fetchBlogs({ slug: slug });
-        const response = await fetchBlogs({ slug: slug });
-        console.log("response: ", response);
+        const response = await fetchBlogs({slug: slug, status: "published"});
+        console.log("response: ", response);  
         // Since we're fetching by slug, we expect only one blog
         const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
         console.log("blogData like: ", blogData?.is_liked);
         setIsLiked(blogData?.is_liked || false);
+        setIsBookmarked(blogData?.is_bookmarked || false);
         // Initialize like count from blog data
         if (blogData) {
           setLikeCount(blogData.like_count || 0);
@@ -120,7 +132,37 @@ const BlogDetail: React.FC = () => {
     return `${Math.max(1, minutes)} min read`;
   };
 
+  const handleToggleBookmark = async () => {
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để lưu bài viết.");
+      return;
+    }
+
+    if (!blog || !blog.id || isBookmarking) return;
+
+    const previousIsBookmarked = isBookmarked;
+
+    // Optimistic update
+    setIsBookmarked(!isBookmarked);
+    setIsBookmarking(true);
+
+    try {
+      await toggleBlogBookmarkService(blog.id);
+    } catch (error) {
+      // Revert optimistic update on error
+      setIsBookmarked(previousIsBookmarked);
+      console.error("Error toggling blog bookmark:", error);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
   const handleToggleLike = async () => {
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để thích bài viết.");
+      return;
+    }
+
     if (!blog || !blog.id || isLiking) return;
 
     const previousIsLiked = isLiked;
@@ -150,8 +192,49 @@ const BlogDetail: React.FC = () => {
     }
   };
 
+  const handleShare = async (platform: "facebook" | "twitter" | "link") => {
+    if (!shareUrl) return;
 
-  if (!blog && loading) {
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedTitle = encodeURIComponent(blog?.title || "");
+
+    try {
+      if (platform === "facebook") {
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      } else if (platform === "twitter") {
+        window.open(
+          `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      } else if (platform === "link") {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Đã sao chép liên kết!");
+        } else {
+          // Fallback for older browsers
+          const textArea = document.createElement("textarea");
+          textArea.value = shareUrl;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textArea);
+          toast.success("Đã sao chép liên kết!");
+        }
+      }
+    } catch (error) {
+      console.error("Error sharing blog:", error);
+      toast.error("Không thể chia sẻ, vui lòng thử lại.");
+    } finally {
+      setShowShareMenu(false);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 monserrat">
         <div className="mt-20 max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -306,26 +389,31 @@ const BlogDetail: React.FC = () => {
                   <div className="flex items-center space-x-4">
                     <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                       <span className="text-gray-600 font-semibold">
-                        {blog.author?.[0] || 'A'}
+                        {blog.author?.[0] || "A"}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-semibold">{blog.author || 'Anonymous'}</h3>
+                      <h3 className="font-semibold">
+                        {blog.author || "Anonymous"}
+                      </h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
-                          {blog.created_at && new Date(blog.created_at).toLocaleDateString()}
+                          {blog.created_at &&
+                            new Date(blog.created_at).toLocaleDateString()}
                         </div>
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-1" />
                           {(() => {
                             // Simple reading time calculation for browser
-                            const content = blog.content || '';
+                            const content = blog.content || "";
                             // Remove HTML tags for accurate word count
-                            const textContent = content.replace(/<[^>]*>/g, '');
+                            const textContent = content.replace(/<[^>]*>/g, "");
                             const words = textContent.trim().split(/\s+/).length;
                             const wordsPerMinute = 200;
-                            const minutes = Math.ceil(words / wordsPerMinute);
+                            const minutes = Math.ceil(
+                              words / wordsPerMinute
+                            );
                             return `${Math.max(1, minutes)} min read`;
                           })()}
                         </div>
@@ -352,12 +440,13 @@ const BlogDetail: React.FC = () => {
                       {likeCount}
                     </button>
                     <button
-                      onClick={() => setIsBookmarked(!isBookmarked)}
+                      onClick={handleToggleBookmark}
+                      disabled={isBookmarking}
                       className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${
                         isBookmarked
                           ? "text-blue-600 border-blue-200"
                           : "text-gray-600 border-gray-300 hover:border-gray-400"
-                      }`}
+                      } ${isBookmarking ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       <Bookmark
                         className={`h-4 w-4 mr-2 ${
@@ -377,13 +466,22 @@ const BlogDetail: React.FC = () => {
                       {showShareMenu && (
                         <div className="absolute right-0 top-full mt-2 bg-white border rounded-lg shadow-lg p-2 z-10">
                           <div className="flex space-x-2">
-                            <button className="p-2 hover:bg-gray-100 rounded">
+                            <button
+                              className="p-2 hover:bg-gray-100 rounded"
+                              onClick={() => handleShare("facebook")}
+                            >
                               <Facebook className="h-4 w-4 text-blue-600" />
                             </button>
-                            <button className="p-2 hover:bg-gray-100 rounded">
+                            <button
+                              className="p-2 hover:bg-gray-100 rounded"
+                              onClick={() => handleShare("twitter")}
+                            >
                               <Twitter className="h-4 w-4 text-blue-400" />
                             </button>
-                            <button className="p-2 hover:bg-gray-100 rounded">
+                            <button
+                              className="p-2 hover:bg-gray-100 rounded"
+                              onClick={() => handleShare("link")}
+                            >
                               <LinkIcon className="h-4 w-4 text-gray-600" />
                             </button>
                           </div>

@@ -43,6 +43,7 @@ const AdminBlog: React.FC = () => {
         const loadCategories = async () => {
             try {
                 const categoryList = await getAllCategories();
+                console.log("categoryList: ", categoryList);
                 setCategories(categoryList);
             } catch (error) {
                 console.error('Lỗi khi tải danh mục:', error);
@@ -72,7 +73,7 @@ const AdminBlog: React.FC = () => {
                 const params: any = {
                     author_id: user.account_id,
                     page,
-                    limit: 1
+                    limit: 10
                 };
 
                 // Add category filter if not "all"
