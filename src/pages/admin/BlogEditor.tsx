@@ -66,6 +66,7 @@ const BlogEditor: React.FC = () => {
     const [thumbnailPreview, setThumbnailPreview] = React.useState<string>('');
     const [originalBlogData, setOriginalBlogData] = React.useState<BlogFormData | null>(null);
     const [hasChanges, setHasChanges] = React.useState(false);
+    const [isLoadingBlog, setIsLoadingBlog] = React.useState(false);
 
     const title = watch('title');
     const formValues = watch();
@@ -114,6 +115,11 @@ const BlogEditor: React.FC = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
+                // Set loading state if editing
+                if (isEditing) {
+                    setIsLoadingBlog(true);
+                }
+                
                 // Always load categories first
                 const categoryList = await getAllCategories();
                 setCategories(categoryList);
@@ -145,6 +151,8 @@ const BlogEditor: React.FC = () => {
                     alert('Lỗi khi tải dữ liệu blog. Vui lòng thử lại.');
                     navigate('/admin/blog');
                 }
+            } finally {
+                setIsLoadingBlog(false);
             }
         };
 
@@ -208,6 +216,32 @@ const BlogEditor: React.FC = () => {
         window.open('/blog/preview', '_blank');
     };
 
+    // Show loading state when editing and data is being loaded
+    if (isEditing && isLoadingBlog) {
+        return (
+            <div className="space-y-6 p-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <Button variant="ghost" onClick={() => navigate('/admin/blog')}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Quay lại Blog
+                        </Button>
+                        <div>
+                            <h1 className="text-3xl font-bold">Chỉnh sửa Bài viết</h1>
+                            <p className="text-muted-foreground">Cập nhật bài viết của bạn</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="flex flex-col items-center space-y-4">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        <p className="text-muted-foreground">Đang tải dữ liệu...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 p-6">
             {/* Header */}
@@ -232,7 +266,7 @@ const BlogEditor: React.FC = () => {
                         disabled={isSubmitting || (isEditing && !hasChanges)}
                     >
                         <Save className="w-4 h-4 mr-2" />
-                        Xuất bản
+                        {isEditing ? 'Cập nhật' : 'Xuất bản'}
                     </Button>
                 </div>
             </div>
@@ -330,7 +364,6 @@ const BlogEditor: React.FC = () => {
                                 >
                                     <option value="draft">Bản nháp</option>
                                     <option value="published">Đã xuất bản</option>
-                                    <option value="archived">Đã lưu trữ</option>
                                 </select>
                                 {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
                             </div>

@@ -17,6 +17,8 @@ export interface BlogPost {
   view_count?: number;
   like_count?: number;
   comment_count?: number;
+  is_liked?: boolean;
+  is_bookmarked?: boolean;
 }
 
 export interface CreateBlogRequest {
@@ -115,5 +117,10 @@ export const updateBlog = async (id: number, blogData: FormData): Promise<BlogDe
  */
 export const deleteBlog = async (id: number): Promise<{ message: string }> => {
   const response = await axiosInstance.delete(`/api/blogs/${id}`);
+  return response.data;
+};
+
+export const getUserBlogs = async (params?: BlogQueryParams): Promise<BlogResponse> => {
+  const response = await axiosInstance.get('/api/blogs/with-like-status', { params });
   return response.data;
 };

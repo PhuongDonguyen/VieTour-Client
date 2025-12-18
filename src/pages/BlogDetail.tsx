@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchBlogs } from "../services/blog.service";
+import { fetchBlogs, fetchUserBlogs } from "../services/blog.service";
 import { getBlogCategoryById, BlogCategory } from "../apis/blogCategory.api";
+import { toggleBlogLike } from "../apis/blogLike.api";
+import { toggleBlogBookmark as toggleBlogBookmarkService } from "../services/bookmark.service";
 import RecentlyViewedTours from "../components/RecentlyViewedTours";
 import { ImageSize, ImageQuality, transformCloudinaryUrl } from "../utils/imageUtils";
 
@@ -20,19 +22,26 @@ import {
   Home,
   ChevronRight
 } from "lucide-react";
-import Skeleton from 'react-loading-skeleton';
+import Skeleton from "react-loading-skeleton";
+import { useAuth } from "../hooks/useAuth";
+import { toast } from "sonner";
 
 const BlogDetail: React.FC = () => {
+  const { user } = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<any>(null);
   const [category, setCategory] = useState<BlogCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingCategory, setLoadingCategory] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,14 +52,36 @@ const BlogDetail: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Capture current URL for sharing; guard for non-browser environments
+    if (typeof window !== "undefined") {
+      setShareUrl(window.location.href);
+    }
+  }, [slug]);
+
+  useEffect(() => {
     console.log({ slug });
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetchBlogs({ slug: slug });
+        // Use fetchUserBlogs if user exists and role is "user", otherwise use fetchBlogs
+        const shouldUseUserBlogs = user && user.role === "user";
+        // const response = shouldUseUserBlogs
+        //   ? await fetchUserBlogs({ slug: slug })
+        //   : await fetchBlogs({ slug: slug });
+        const response = await fetchBlogs({slug: slug, status: "published"});
+        console.log("response: ", response);  
         // Since we're fetching by slug, we expect only one blog
         const blogData = response.data && response.data.length > 0 ? response.data[0] : null;
         setBlog(blogData);
+        console.log("blogData like: ", blogData?.is_liked);
+        setIsLiked(blogData?.is_liked || false);
+        setIsBookmarked(blogData?.is_bookmarked || false);
+        // Initialize like count from blog data
+        if (blogData) {
+          setLikeCount(blogData.like_count || 0);
+        }
+        
+        // Fetch category information if blog has category_id
         setLoading(false);
 
         // Fetch category information if blog has category_id (separate loading)
@@ -74,7 +105,11 @@ const BlogDetail: React.FC = () => {
       }
     };
     fetchData();
-  }, [slug]);
+  }, [slug, user]);
+
+  useEffect(() => {
+    console.log("isLiked: ", isLiked);
+  }, [isLiked]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -87,7 +122,9 @@ const BlogDetail: React.FC = () => {
     const plainText = content.replace(/<[^>]*>/g, '');
 
     // Count words (split by spaces)
-    const words = plainText.trim().split(/\s+/).length;
+      const words = plainText
+        .trim()
+        .split(/\s+/).length;
 
     // Average reading speed: 200 words per minute
     const minutes = Math.ceil(words / 200);
@@ -95,10 +132,112 @@ const BlogDetail: React.FC = () => {
     return `${Math.max(1, minutes)} min read`;
   };
 
-  if (!blog && loading) {
+  const handleToggleBookmark = async () => {
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để lưu bài viết.");
+      return;
+    }
+
+    if (!blog || !blog.id || isBookmarking) return;
+
+    const previousIsBookmarked = isBookmarked;
+
+    // Optimistic update
+    setIsBookmarked(!isBookmarked);
+    setIsBookmarking(true);
+
+    try {
+      await toggleBlogBookmarkService(blog.id);
+    } catch (error) {
+      // Revert optimistic update on error
+      setIsBookmarked(previousIsBookmarked);
+      console.error("Error toggling blog bookmark:", error);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
+  const handleToggleLike = async () => {
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để thích bài viết.");
+      return;
+    }
+
+    if (!blog || !blog.id || isLiking) return;
+
+    const previousIsLiked = isLiked;
+    const previousLikeCount = likeCount;
+
+    // Optimistic update
+    setIsLiked(!isLiked);
+    setLikeCount(previousIsLiked ? previousLikeCount - 1 : previousLikeCount + 1);
+    setIsLiking(true);
+
+    try {
+      await toggleBlogLike(blog.id);
+      // If API returns updated like count, you can update it here
+      // const response = await toggleBlogLike(blog.id);
+      // if (response?.data?.like_count !== undefined) {
+      //   setLikeCount(response.data.like_count);
+      //   setIsLiked(response.data.is_liked);
+      // }
+    } catch (error) {
+      // Revert optimistic update on error
+      setIsLiked(previousIsLiked);
+      setLikeCount(previousLikeCount);
+      console.error("Error toggling blog like:", error);
+      // You can add a toast notification here if needed
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleShare = async (platform: "facebook" | "twitter" | "link") => {
+    if (!shareUrl) return;
+
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedTitle = encodeURIComponent(blog?.title || "");
+
+    try {
+      if (platform === "facebook") {
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      } else if (platform === "twitter") {
+        window.open(
+          `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      } else if (platform === "link") {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Đã sao chép liên kết!");
+        } else {
+          // Fallback for older browsers
+          const textArea = document.createElement("textarea");
+          textArea.value = shareUrl;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textArea);
+          toast.success("Đã sao chép liên kết!");
+        }
+      }
+    } catch (error) {
+      console.error("Error sharing blog:", error);
+      toast.error("Không thể chia sẻ, vui lòng thử lại.");
+    } finally {
+      setShowShareMenu(false);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 monserrat">
-        <div className="mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mt-20 max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
           {/* Breadcrumb skeleton */}
           <Skeleton height={20} width={200} style={{ marginBottom: 24 }} />
 
@@ -124,7 +263,11 @@ const BlogDetail: React.FC = () => {
                   </div>
 
                   {/* Content skeleton */}
-                  <Skeleton count={8} height={20} style={{ marginBottom: 8 }} />
+                  <Skeleton
+                    count={8}
+                    height={20}
+                    style={{ marginBottom: 8 }}
+                  />
                 </div>
               </div>
             </div>
@@ -142,10 +285,18 @@ const BlogDetail: React.FC = () => {
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="p-4">
                       <div className="flex items-start space-x-3">
-                        <Skeleton height={56} width={56} className="rounded-lg" />
+                        <Skeleton
+                          height={56}
+                          width={56}
+                          className="rounded-lg"
+                        />
                         <div className="flex-1">
                           <Skeleton height={16} className="mb-2" />
-                          <Skeleton height={14} width="60%" className="mb-1" />
+                          <Skeleton
+                            height={14}
+                            width="60%"
+                            className="mb-1"
+                          />
                           <div className="flex justify-between">
                             <Skeleton height={12} width={80} />
                             <Skeleton height={12} width={60} />
@@ -163,7 +314,12 @@ const BlogDetail: React.FC = () => {
     );
   }
 
-  if (!blog && !loading) return <div className="text-center py-20 text-red-500">Không tìm thấy blog.</div>;
+  if (!blog && !loading)
+    return (
+      <div className="text-center py-20 text-red-500">
+        Không tìm thấy blog.
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 monserrat">
@@ -233,26 +389,31 @@ const BlogDetail: React.FC = () => {
                   <div className="flex items-center space-x-4">
                     <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                       <span className="text-gray-600 font-semibold">
-                        {blog.author?.[0] || 'A'}
+                        {blog.author?.[0] || "A"}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-semibold">{blog.author || 'Anonymous'}</h3>
+                      <h3 className="font-semibold">
+                        {blog.author || "Anonymous"}
+                      </h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
-                          {blog.created_at && new Date(blog.created_at).toLocaleDateString()}
+                          {blog.created_at &&
+                            new Date(blog.created_at).toLocaleDateString()}
                         </div>
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-1" />
                           {(() => {
                             // Simple reading time calculation for browser
-                            const content = blog.content || '';
+                            const content = blog.content || "";
                             // Remove HTML tags for accurate word count
-                            const textContent = content.replace(/<[^>]*>/g, '');
+                            const textContent = content.replace(/<[^>]*>/g, "");
                             const words = textContent.trim().split(/\s+/).length;
                             const wordsPerMinute = 200;
-                            const minutes = Math.ceil(words / wordsPerMinute);
+                            const minutes = Math.ceil(
+                              words / wordsPerMinute
+                            );
                             return `${Math.max(1, minutes)} min read`;
                           })()}
                         </div>
@@ -263,19 +424,35 @@ const BlogDetail: React.FC = () => {
                   {/* Social Actions */}
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => setIsLiked(!isLiked)}
-                      className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${isLiked ? "text-red-600 border-red-200" : "text-gray-600 border-gray-300 hover:border-gray-400"
-                        }`}
+                      onClick={handleToggleLike}
+                      disabled={isLiking}
+                      className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${
+                        isLiked
+                          ? "text-red-600 border-red-200"
+                          : "text-gray-600 border-gray-300 hover:border-gray-400"
+                      } ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
-                      <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-red-600" : ""}`} />
-                      {isLiked ? 1 : 0}
+                      <Heart
+                        className={`h-4 w-4 mr-2 ${
+                          isLiked ? "fill-red-600" : ""
+                        }`}
+                      />
+                      {likeCount}
                     </button>
                     <button
-                      onClick={() => setIsBookmarked(!isBookmarked)}
-                      className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${isBookmarked ? "text-blue-600 border-blue-200" : "text-gray-600 border-gray-300 hover:border-gray-400"
-                        }`}
+                      onClick={handleToggleBookmark}
+                      disabled={isBookmarking}
+                      className={`flex items-center px-3 py-2 border rounded-md text-sm transition-colors ${
+                        isBookmarked
+                          ? "text-blue-600 border-blue-200"
+                          : "text-gray-600 border-gray-300 hover:border-gray-400"
+                      } ${isBookmarking ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
-                      <Bookmark className={`h-4 w-4 mr-2 ${isBookmarked ? "fill-blue-600" : ""}`} />
+                      <Bookmark
+                        className={`h-4 w-4 mr-2 ${
+                          isBookmarked ? "fill-blue-600" : ""
+                        }`}
+                      />
                       Save
                     </button>
                     <div className="relative">
@@ -289,13 +466,22 @@ const BlogDetail: React.FC = () => {
                       {showShareMenu && (
                         <div className="absolute right-0 top-full mt-2 bg-white border rounded-lg shadow-lg p-2 z-10">
                           <div className="flex space-x-2">
-                            <button className="p-2 hover:bg-gray-100 rounded">
+                            <button
+                              className="p-2 hover:bg-gray-100 rounded"
+                              onClick={() => handleShare("facebook")}
+                            >
                               <Facebook className="h-4 w-4 text-blue-600" />
                             </button>
-                            <button className="p-2 hover:bg-gray-100 rounded">
+                            <button
+                              className="p-2 hover:bg-gray-100 rounded"
+                              onClick={() => handleShare("twitter")}
+                            >
                               <Twitter className="h-4 w-4 text-blue-400" />
                             </button>
-                            <button className="p-2 hover:bg-gray-100 rounded">
+                            <button
+                              className="p-2 hover:bg-gray-100 rounded"
+                              onClick={() => handleShare("link")}
+                            >
                               <LinkIcon className="h-4 w-4 text-gray-600" />
                             </button>
                           </div>
@@ -329,6 +515,7 @@ const BlogDetail: React.FC = () => {
               )}
             </div>
           </div>
+          
         </div>
 
         {/* Comments Section */}

@@ -17,6 +17,7 @@ const BlogSection: React.FC = () => {
       try {
         setLoading(true);
         const catRes = await getAllCategories();
+        console.log("Blog Categories: ", catRes);
         // Limit to maximum 4 categories
         setBlogCategories(catRes.slice(0, 4));
         const blogRes = await fetchBlogs();
