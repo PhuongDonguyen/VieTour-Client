@@ -14,6 +14,7 @@ import {
   SkeletonBlogSection,
   SkeletonRecommendTours
 } from "../components/Skeleton";
+import ProposeTour from "../components/ProposeTour";
 
 export default function Home() {
   return (
@@ -42,7 +43,7 @@ export default function Home() {
       <LazyLoad placeholder={<SkeletonRecommendTours />}>
         <RecommendedTours />
       </LazyLoad>
-
+      <ProposeTour />
       <BlogSection />
     </div>
   );

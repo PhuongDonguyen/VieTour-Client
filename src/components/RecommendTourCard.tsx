@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 interface RecommendTourCardProps {
   id: number;
   title: string;
-  location: string;
+  startingPoint: string;
   duration: string;
   price: number | null;
   imageUrl: string;
@@ -15,7 +15,7 @@ interface RecommendTourCardProps {
 const RecommendTourCard: React.FC<RecommendTourCardProps> = ({
   id,
   title,
-  location,
+  startingPoint,
   duration,
   price,
   imageUrl,
@@ -60,7 +60,7 @@ const RecommendTourCard: React.FC<RecommendTourCardProps> = ({
         {/* Location */}
         <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
           <MapPin className="w-4 h-4" />
-          <span className="truncate">{location}</span>
+          <span className="truncate">{startingPoint}</span>
         </div>
 
         {/* Duration */}
