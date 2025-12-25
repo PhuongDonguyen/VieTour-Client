@@ -29,6 +29,8 @@ import {
   type TourRecommendResponse,
   getTouridsByProviderId,
   saveHistoryView,
+  getCollaborativeTourRecommendations,
+  type CollaborativeTourRecommendResponse,
 } from "../apis/tour.api";
 
 export const fetchTours = async (
@@ -128,6 +130,20 @@ export const toggleTourStatusService = async (
 export const fetchTourRecommend = async (): Promise<TourRecommendResponse> => {
   const res = await tourRecommend();
   return res;
+};
+
+// Fetch collaborative filtering recommendations for a user
+export const fetchCollaborativeTourRecommendations = async (
+  method: string = "hybrid",
+  limit?: number
+): Promise<CollaborativeTourRecommendResponse> => {
+  try {
+    const res = await getCollaborativeTourRecommendations(undefined, method, limit);
+    return res;
+  } catch (error) {
+    console.error("Error fetching collaborative tour recommendations:", error);
+    throw error;
+  }
 };
 
 // Session-based view count increment

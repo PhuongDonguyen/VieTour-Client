@@ -23,6 +23,10 @@ import axiosInstance from "./axiosInstance";
 // - provider_id={id}        - Filter by provider
 // - slug={string}           - Get tour by slug
 //
+// Recommendation Endpoints:
+// - GET /api/tours/recommended                    - Get recommended tours based on view history
+// - GET /api/tours/recommendations/collaborative/{userId}?method={method}&limit={n} - Get collaborative filtering recommendations
+//
 // Legacy Endpoints:
 // - GET /api/tour-details?tour_id={id}   - Get tour details
 // - GET /api/tour-images?tour_id={id}    - Get tour images
@@ -146,6 +150,28 @@ export interface TourRecommendResponse {
   message: string;
 }
 
+// Schedule interface for tour recommendations
+export interface TourSchedule {
+  id: number;
+  start_date: string;
+  participant: number;
+  status: string;
+}
+
+// Extended Tour interface for collaborative recommendations
+export interface CollaborativeTourRecommendation extends Tour {
+  predicted_score?: number;
+  recommendation_method?: string;
+  explanation?: string;
+  schedules?: TourSchedule[];
+}
+
+// Collaborative recommendation response
+export interface CollaborativeTourRecommendResponse {
+  success: boolean;
+  data: CollaborativeTourRecommendation[];
+}
+
 /**
  * Get all tours with optional filters
  */
@@ -243,6 +269,31 @@ export const searchSimilarTours = async (
  */
 export const tourRecommend = async (): Promise<TourRecommendResponse> => {
   const response = await axiosInstance.get("/api/tours/recommended");
+  return response.data;
+};
+
+/**
+ * Get collaborative filtering recommendations for a user
+ * GET /api/tours/recommendations/collaborative/{userId}
+ */
+export const getCollaborativeTourRecommendations = async (
+  userId?: number,
+  method: string = "hybrid",
+  limit?: number
+): Promise<CollaborativeTourRecommendResponse> => {
+  const params: Record<string, string | number> = {
+    method,
+  };
+  if (limit) {
+    params.limit = limit;
+  }
+  const url = userId
+    ? `/api/tours/recommendations/collaborative/${userId}`
+    : "/api/tours/recommendations/collaborative";
+
+  const response = await axiosInstance.get(url, {
+    params,
+  });
   return response.data;
 };
 
