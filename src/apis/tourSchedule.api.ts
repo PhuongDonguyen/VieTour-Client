@@ -144,6 +144,51 @@ export interface ScheduleBookingsResponse {
   pagination?: ScheduleBookingsPagination; // Optional vì khi không có page/limit thì không có pagination
 }
 
+// Tour summary for last 7 days schedules (includes starting_point)
+export interface Last7DaysTourSummary {
+  id: number;
+  title: string;
+  poster_url: string;
+  duration: string;
+  starting_point: string;
+  provider_id: number;
+}
+
+// Schedule with tour for last 7 days
+export interface Last7DaysSchedule {
+  id: number;
+  start_date: string;
+  participant: number;
+  status: "available" | "full" | "cancelled";
+  tour_id: number;
+  tour: Last7DaysTourSummary;
+}
+
+// Response for last 7 days schedules
+export interface Last7DaysSchedulesResponse {
+  success: boolean;
+  data: Last7DaysSchedule[];
+  pagination: TourSchedulePagination;
+}
+
+// Schedule with tour and bookings for cancelled schedules
+export interface CancelledScheduleWithBookings {
+  id: number;
+  start_date: string;
+  participant: number;
+  status: "cancelled";
+  tour_id: number;
+  tour: Last7DaysTourSummary;
+  bookings: ScheduleBooking[];
+}
+
+// Response for cancelled schedules with bookings
+export interface CancelledSchedulesWithBookingsResponse {
+  success: boolean;
+  data: CancelledScheduleWithBookings[];
+  pagination: TourSchedulePagination;
+}
+
 export const getAllTourSchedules = (params?: TourScheduleQueryParams) =>
   axiosInstance.get("/api/tour-schedules", { params });
 
@@ -212,5 +257,68 @@ export const getScheduleBookings = (
       params: Object.keys(params).length > 0 ? params : undefined,
     }
   );
+};
+
+/**
+ * Lấy danh sách các lịch trình tour trong 7 ngày tới
+ * GET /api/tour-schedules/last-7-days?page=1&limit=10
+ * @param page - Số trang (optional)
+ * @param limit - Số lượng items mỗi trang (optional)
+ * @returns Response chứa data là array Last7DaysSchedule[] với thông tin tour kèm theo
+ */
+export const getLast7DaysSchedules = async (
+  page?: number,
+  limit?: number
+): Promise<Last7DaysSchedulesResponse> => {
+  const params: Record<string, number> = {};
+  if (page !== undefined) params.page = page;
+  if (limit !== undefined) params.limit = limit;
+  
+  const response = await axiosInstance.get<Last7DaysSchedulesResponse>(
+    "/api/tour-schedules/last-7-days",
+    {
+      params: Object.keys(params).length > 0 ? params : undefined,
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Cancel một lịch trình tour
+ * PATCH /api/tour-schedules/{id}/cancel
+ * @param id - ID của lịch trình cần cancel
+ * @returns Response chứa thông tin lịch trình đã được cancel
+ */
+export const cancelTourSchedule = async (
+  id: number
+): Promise<TourScheduleUpdateResponse> => {
+  const response = await axiosInstance.put<TourScheduleUpdateResponse>(
+    `/api/tour-schedules/${id}/cancel`
+  );
+  return response.data;
+};
+
+/**
+ * Lấy danh sách các lịch trình tour đã cancelled kèm theo bookings
+ * GET /api/tour-schedules/cancelled-with-bookings?page=1&limit=1
+ * @param page - Số trang (optional)
+ * @param limit - Số lượng items mỗi trang (optional)
+ * @returns Response chứa data là array CancelledScheduleWithBookings[] với thông tin tour và bookings kèm theo
+ */
+export const getCancelledSchedulesWithBookings = async (
+  page?: number,
+  limit?: number
+): Promise<CancelledSchedulesWithBookingsResponse> => {
+  const params: Record<string, number> = {};
+  if (page !== undefined) params.page = page;
+  if (limit !== undefined) params.limit = limit;
+  
+  const response = await axiosInstance.get<CancelledSchedulesWithBookingsResponse>(
+    "/api/tour-schedules/cancelled-with-bookings",
+    {
+      params: Object.keys(params).length > 0 ? params : undefined,
+    }
+  );
+  return response.data;
 };
 

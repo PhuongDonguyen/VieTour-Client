@@ -13,4 +13,6 @@ export const cancellationRequestService = {
   // Provider sử dụng chung API với admin, backend sẽ tự động filter theo role
   getProviderCancellationRequests: (query?: string) =>
     cancellationRequestApi.getAllCancellationRequests(query),
+  refundBookingForInsufficientPassengers:
+    cancellationRequestApi.refundBookingForInsufficientPassengers,
 };

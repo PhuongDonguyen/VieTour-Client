@@ -18,9 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchPaginatedTourSchedules, fetchScheduleBookings } from "@/services/tourSchedule.service";
-import type { TourScheduleWithTour } from "@/apis/tourSchedule.api";
-import { Calendar, Loader2, MapPin, Users, List, Download } from "lucide-react";
+import { fetchPaginatedTourSchedules, fetchScheduleBookings, fetchLast7DaysSchedules, cancelTourScheduleService } from "@/services/tourSchedule.service";
+import type { TourScheduleWithTour, Last7DaysSchedule } from "@/apis/tourSchedule.api";
+import { Calendar, Loader2, MapPin, Users, List, Download, Clock, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -38,11 +38,14 @@ const STATUS_LABELS: Record<Exclude<StatusFilter, "all">, string> = {
   cancelled: "Đã hủy",
 };
 
+type ViewMode = "all" | "last7days";
+
 const ListTrip: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [schedules, setSchedules] = useState<TourScheduleWithTour[]>([]);
+  const [schedules, setSchedules] = useState<(TourScheduleWithTour | Last7DaysSchedule)[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +55,7 @@ const ListTrip: React.FC = () => {
     itemsPerPage: 10,
   });
   const [exportingId, setExportingId] = useState<number | null>(null);
+  const [cancelingId, setCancelingId] = useState<number | null>(null);
 
   const providerId =
     user?.role === "provider"
@@ -62,7 +66,7 @@ const ListTrip: React.FC = () => {
       : undefined;
 
   useEffect(() => {
-    if (user?.role === "provider" && !providerId) {
+    if (user?.role === "provider" && !providerId && viewMode === "all") {
       return;
     }
 
@@ -70,21 +74,36 @@ const ListTrip: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetchPaginatedTourSchedules(
-          {
-            page: currentPage,
-            limit: 10,
-            status: statusFilter !== "all" ? statusFilter : undefined,
-          },
-          providerId
-        );
+        if (viewMode === "last7days") {
+          // Fetch last 7 days schedules
+          const response = await fetchLast7DaysSchedules(currentPage, 10);
+          setSchedules(response.data || []);
+          setPagination({
+            totalItems: response.pagination?.totalItems ?? 0,
+            totalPages: response.pagination?.totalPages ?? 1,
+            itemsPerPage: response.pagination?.itemsPerPage ?? 10,
+          });
+        } else {
+          // Fetch all schedules with filters
+          if (user?.role === "provider" && !providerId) {
+            return;
+          }
+          const response = await fetchPaginatedTourSchedules(
+            {
+              page: currentPage,
+              limit: 10,
+              status: statusFilter !== "all" ? statusFilter : undefined,
+            },
+            providerId
+          );
 
-        setSchedules(response.data || []);
-        setPagination({
-          totalItems: response.pagination?.totalItems ?? 0,
-          totalPages: response.pagination?.totalPages ?? 1,
-          itemsPerPage: response.pagination?.itemsPerPage ?? 10,
-        });
+          setSchedules(response.data || []);
+          setPagination({
+            totalItems: response.pagination?.totalItems ?? 0,
+            totalPages: response.pagination?.totalPages ?? 1,
+            itemsPerPage: response.pagination?.itemsPerPage ?? 10,
+          });
+        }
       } catch (err) {
         console.error("Error fetching tour schedules:", err);
         setError("Không thể tải danh sách lịch trình. Vui lòng thử lại sau.");
@@ -95,11 +114,16 @@ const ListTrip: React.FC = () => {
     };
 
     fetchSchedules();
-  }, [statusFilter, currentPage, providerId, user?.role]);
+  }, [statusFilter, currentPage, providerId, user?.role, viewMode]);
 
   const handleStatusChange = (value: StatusFilter) => {
     setCurrentPage(1);
     setStatusFilter(value);
+  };
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setCurrentPage(1);
+    setViewMode(mode);
   };
 
   const formatDate = (dateString: string) => {
@@ -128,7 +152,24 @@ const ListTrip: React.FC = () => {
     }
   };
 
-  const handleViewBookings = (schedule: TourScheduleWithTour) => {
+  // Helper function to get tour info from both schedule types
+  const getTourInfo = (schedule: TourScheduleWithTour | Last7DaysSchedule) => {
+    if ('tour' in schedule) {
+      const tour = schedule.tour;
+      return {
+        title: tour.title,
+        starting_point: 'starting_point' in tour ? tour.starting_point : tour.location || "Đang cập nhật",
+        duration: tour.duration || "Đang cập nhật",
+      };
+    }
+    return {
+      title: "Đang cập nhật",
+      starting_point: "Đang cập nhật",
+      duration: "Đang cập nhật",
+    };
+  };
+
+  const handleViewBookings = (schedule: TourScheduleWithTour | Last7DaysSchedule) => {
     const path =
       user?.role === "provider"
         ? `/admin/provider/tours/schedules/${schedule.id}/bookings`
@@ -138,7 +179,60 @@ const ListTrip: React.FC = () => {
     });
   };
 
-  const handleExportBookings = async (schedule: TourScheduleWithTour) => {
+  const handleCancelSchedule = async (schedule: TourScheduleWithTour | Last7DaysSchedule) => {
+    if (!confirm(`Bạn có chắc chắn muốn hủy lịch trình này không?`)) {
+      return;
+    }
+
+    setCancelingId(schedule.id);
+    try {
+      await cancelTourScheduleService(schedule.id);
+      toast.success("Hủy lịch trình thành công!");
+      
+      // Refresh danh sách dựa trên viewMode hiện tại
+      setLoading(true);
+      try {
+        if (viewMode === "last7days") {
+          const response = await fetchLast7DaysSchedules(currentPage, 10);
+          setSchedules(response.data || []);
+          setPagination({
+            totalItems: response.pagination?.totalItems ?? 0,
+            totalPages: response.pagination?.totalPages ?? 1,
+            itemsPerPage: response.pagination?.itemsPerPage ?? 10,
+          });
+        } else {
+          if (user?.role === "provider" && !providerId) {
+            return;
+          }
+          const response = await fetchPaginatedTourSchedules(
+            {
+              page: currentPage,
+              limit: 10,
+              status: statusFilter !== "all" ? statusFilter : undefined,
+            },
+            providerId
+          );
+          setSchedules(response.data || []);
+          setPagination({
+            totalItems: response.pagination?.totalItems ?? 0,
+            totalPages: response.pagination?.totalPages ?? 1,
+            itemsPerPage: response.pagination?.itemsPerPage ?? 10,
+          });
+        }
+      } catch (err) {
+        console.error("Error refreshing schedules:", err);
+      } finally {
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Error canceling schedule:", err);
+      toast.error("Không thể hủy lịch trình. Vui lòng thử lại.");
+    } finally {
+      setCancelingId(null);
+    }
+  };
+
+  const handleExportBookings = async (schedule: TourScheduleWithTour | Last7DaysSchedule) => {
     setExportingId(schedule.id);
     try {
       const response = await fetchScheduleBookings(schedule.id);
@@ -178,15 +272,16 @@ const ListTrip: React.FC = () => {
       };
 
       // Thông tin lịch trình
+      const tourInfo = getTourInfo(schedule);
       const scheduleInfo = [
         ["THÔNG TIN LỊCH TRÌNH"],
         ["ID Lịch trình", schedule.id],
-        ["Tên tour", schedule.tour.title],
-        ["Địa điểm", schedule.tour.starting_point?.trim() || "Đang cập nhật"],
+        ["Tên tour", tourInfo.title],
+        ["Địa điểm", tourInfo.starting_point?.trim() || "Đang cập nhật"],
         ["Ngày khởi hành", formatDate(schedule.start_date)],
         ["Số người tham gia", schedule.participant ?? 0],
         ["Trạng thái", getStatusBadge(schedule.status).label],
-        ["Thời lượng", schedule.tour.duration || "Đang cập nhật"],
+        ["Thời lượng", tourInfo.duration],
         [], // Dòng trống
       ];
 
@@ -263,7 +358,7 @@ const ListTrip: React.FC = () => {
 
       const link = document.createElement("a");
       link.href = url;
-      link.download = `lich-trinh-${schedule.id}-${schedule.tour.title.replace(/[^a-z0-9]/gi, "-")}-bookings.csv`;
+      link.download = `lich-trinh-${schedule.id}-${tourInfo.title.replace(/[^a-z0-9]/gi, "-")}-bookings.csv`;
       link.click();
 
       URL.revokeObjectURL(url);
@@ -279,13 +374,36 @@ const ListTrip: React.FC = () => {
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Danh sách lịch trình</h1>
-          <p className="text-muted-foreground">
-            Theo dõi các lịch trình tour sắp diễn ra và trạng thái hiện tại.
-          </p>
+        <div className="flex flex-col gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Danh sách lịch trình</h1>
+            <p className="text-muted-foreground">
+              Theo dõi các lịch trình tour sắp diễn ra và trạng thái hiện tại.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-muted-foreground">Chế độ xem</span>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleViewModeChange("all")}
+              >
+                Tất cả
+              </Button>
+              <Button
+                variant={viewMode === "last7days" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleViewModeChange("last7days")}
+                className="inline-flex items-center gap-2"
+              >
+                <Clock className="h-4 w-4" />
+                7 ngày tới
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
+        {viewMode === "all" && (
           <div className="flex flex-col gap-1">
             <span className="text-sm text-muted-foreground">Trạng thái</span>
             <Select
@@ -303,7 +421,7 @@ const ListTrip: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        )}
       </div>
 
       <Card>
@@ -344,14 +462,15 @@ const ListTrip: React.FC = () => {
                   ) : (
                     schedules.map((schedule) => {
                       const badge = getStatusBadge(schedule.status);
+                      const tourInfo = getTourInfo(schedule);
                       return (
                         <TableRow key={schedule.id} className="hover:bg-muted/40">
                           <TableCell>
                             <div className="space-y-1">
-                              <p className="font-semibold">{schedule.tour.title}</p>
+                              <p className="font-semibold">{tourInfo.title}</p>
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <MapPin className="mr-1 h-3.5 w-3.5" />
-                                {schedule.tour.starting_point?.trim() || "Đang cập nhật"}
+                                {tourInfo.starting_point?.trim() || "Đang cập nhật"}
                               </div>
                             </div>
                           </TableCell>
@@ -393,6 +512,18 @@ const ListTrip: React.FC = () => {
                                 <Download className="h-4 w-4" />
                                 {exportingId === schedule.id ? "Đang xuất..." : "Xuất Excel"}
                               </Button>
+                              {viewMode === "last7days" && schedule.status !== "cancelled" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCancelSchedule(schedule)}
+                                  disabled={cancelingId === schedule.id}
+                                  className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  {cancelingId === schedule.id ? "Đang hủy..." : "Hủy lịch trình"}
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
