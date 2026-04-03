@@ -7,6 +7,9 @@ import {
   getRemainingSchedulesCount,
   getPaginatedTourSchedules,
   getScheduleBookings,
+  getLast7DaysSchedules,
+  cancelTourSchedule,
+  getCancelledSchedulesWithBookings,
   type TourSchedule,
   type TourScheduleQueryParams,
   type TourScheduleResponse,
@@ -18,6 +21,8 @@ import {
   type ScheduleBookingsResponse,
   type ScheduleBooking,
   type ScheduleBookingDetail,
+  type Last7DaysSchedulesResponse,
+  type CancelledSchedulesWithBookingsResponse,
   RemainingScheduleCount,
 } from "@/apis/tourSchedule.api";
 import axiosInstance from "@/apis/axiosInstance";
@@ -126,6 +131,8 @@ export type {
   TourScheduleResponse,
   ScheduleBooking,
   ScheduleBookingDetail,
+  Last7DaysSchedulesResponse,
+  CancelledSchedulesWithBookingsResponse,
 };
 
 export const fetchScheduleBookings = async (
@@ -150,6 +157,61 @@ export const fetchScheduleBookings = async (
     return response;
    } catch (error) {
     console.error("Error fetching schedule bookings:", error);
+    throw error;
+   }
+};
+
+/**
+ * Lấy danh sách các lịch trình tour trong 7 ngày tới
+ * @param page - Số trang (optional)
+ * @param limit - Số lượng items mỗi trang (optional)
+ * @returns Response chứa data là array Last7DaysSchedule[] với thông tin tour kèm theo
+ */
+export const fetchLast7DaysSchedules = async (
+  page?: number,
+  limit?: number
+): Promise<Last7DaysSchedulesResponse> => {
+  try {
+    const res = await getLast7DaysSchedules(page, limit);
+    return res;
+  } catch (error) {
+    console.error("Error fetching last 7 days schedules:", error);
+    throw error;
+  }
+};
+
+/**
+ * Cancel một lịch trình tour
+ * @param id - ID của lịch trình cần cancel
+ * @returns Response chứa thông tin lịch trình đã được cancel
+ */
+export const cancelTourScheduleService = async (
+  id: number
+): Promise<TourScheduleUpdateResponse> => {
+  try {
+    const res = await cancelTourSchedule(id);
+    return res;
+  } catch (error) {
+    console.error(`Error canceling tour schedule with id ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Lấy danh sách các lịch trình tour đã cancelled kèm theo bookings
+ * @param page - Số trang (optional)
+ * @param limit - Số lượng items mỗi trang (optional)
+ * @returns Response chứa data là array CancelledScheduleWithBookings[] với thông tin tour và bookings kèm theo
+ */
+export const fetchCancelledSchedulesWithBookings = async (
+  page?: number,
+  limit?: number
+): Promise<CancelledSchedulesWithBookingsResponse> => {
+  try {
+    const res = await getCancelledSchedulesWithBookings(page, limit);
+    return res;
+  } catch (error) {
+    console.error("Error fetching cancelled schedules with bookings:", error);
     throw error;
    }
 };

@@ -24,6 +24,7 @@ import CancellationRequests from "../pages/admin/AdminCancellationRequests";
 import AdminBookings from "../pages/admin/AdminBookings";
 import ListTripPage from "@/pages/admin/ListTripPage";
 import ScheduleBookingsPage from "@/pages/admin/ScheduleBookingsPage";
+import CancelledSchedulesPage from "@/pages/admin/CancelledSchedulesPage";
 
 import {
   RequireAdminAccess,
@@ -239,6 +240,16 @@ export const adminRoutes = [
       <RequireAdminAccess>
         <AdminLayout title="Danh sách lịch trình">
           <ListTripPage />
+        </AdminLayout>
+      </RequireAdminAccess>
+    ),
+  },
+  {
+    path: "/admin/cancelled-schedules",
+    element: (
+      <RequireAdminAccess>
+        <AdminLayout title="Lịch trình đã hủy">
+          <CancelledSchedulesPage />
         </AdminLayout>
       </RequireAdminAccess>
     ),

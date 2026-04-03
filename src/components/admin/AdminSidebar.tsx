@@ -18,6 +18,7 @@ import {
   BarChart3,
   Handshake,
   MessageCircle,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -121,6 +122,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = "" }) => {
         href: "/admin/cancellation-requests",
         icon: <DollarSign className="w-4 h-4" />,
         allowedRoles: ["admin", "provider"],
+      },
+      {
+        label: "Các tour bị huỷ",
+        href: "/admin/cancelled-schedules",
+        icon: <XCircle className="w-4 h-4" />,
+        allowedRoles: ["admin"],
       },
       {
         label: "Đăng ký đối tác",

@@ -12,21 +12,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fetchScheduleBookings } from "@/services/tourSchedule.service";
-import type { ScheduleBooking, TourScheduleWithTour } from "@/apis/tourSchedule.api";
+import type { ScheduleBooking, TourScheduleWithTour, CancelledScheduleWithBookings } from "@/apis/tourSchedule.api";
 import { ArrowLeft, Calendar, Loader2, Users } from "lucide-react";
 
 const ScheduleBookingsPage: React.FC = () => {
   const { scheduleId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const scheduleFromState = location.state?.schedule as TourScheduleWithTour | undefined;
+  const scheduleFromState = location.state?.schedule as TourScheduleWithTour | CancelledScheduleWithBookings | undefined;
+  const bookingsFromState = location.state?.bookings as ScheduleBooking[] | undefined;
+  const returnPath = location.state?.returnPath as string | undefined;
 
-  const [schedule] = useState<TourScheduleWithTour | undefined>(scheduleFromState);
-  const [bookings, setBookings] = useState<ScheduleBooking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [schedule] = useState<TourScheduleWithTour | CancelledScheduleWithBookings | undefined>(scheduleFromState);
+  const [bookings, setBookings] = useState<ScheduleBooking[]>(bookingsFromState || []);
+  const [loading, setLoading] = useState(!bookingsFromState);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Nếu đã có bookings từ state, không cần fetch lại
+    if (bookingsFromState && bookingsFromState.length >= 0) {
+      setLoading(false);
+      return;
+    }
+
     if (!scheduleId) {
       setError("Không tìm thấy lịch trình.");
       setLoading(false);
@@ -53,7 +61,7 @@ const ScheduleBookingsPage: React.FC = () => {
     };
 
     fetchData();
-  }, [scheduleId]);
+  }, [scheduleId, bookingsFromState]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value || 0);
@@ -86,7 +94,16 @@ const ScheduleBookingsPage: React.FC = () => {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (returnPath) {
+              navigate(returnPath);
+            } else {
+              navigate(-1);
+            }
+          }}
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Quay lại
         </Button>
