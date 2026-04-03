@@ -320,7 +320,16 @@ export default function MyBooking() {
               {/* Content */}
               <div className="ml-40 bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2 md:mb-0">
+                  <h3
+                    className="text-lg font-semibold text-gray-800 mb-2 md:mb-0 max-w-[40ch] overflow-hidden"
+                    title={booking.schedule.tour.title}
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
                     {booking.schedule.tour.title}
                   </h3>
                   <div className="flex items-center space-x-3">
@@ -509,7 +518,16 @@ export default function MyBooking() {
             <div className="p-6">
               {/* Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2 md:mb-0">
+                <h3
+                  className="text-lg font-semibold text-gray-800 mb-2 md:mb-0 max-w-[40ch] overflow-hidden"
+                  title={booking.schedule.tour.title}
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
                   {booking.schedule.tour.title}
                 </h3>
                 <div className="flex items-center space-x-3">
@@ -708,9 +726,7 @@ export default function MyBooking() {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-1">
-          Tour đã đặt
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-1">Tour đã đặt</h2>
         <p className="text-gray-600 text-sm">Xem lịch sử và quản lý đặt tour</p>
       </div>
 

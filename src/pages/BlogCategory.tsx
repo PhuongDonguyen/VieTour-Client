@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { getAllCategories } from "../services/blogCategory.service";
 import { fetchBlogs } from "../services/blog.service";
+import { getUserBookmarkedBlogs } from "../services/bookmark.service";
 import { Loading } from "../components/Loading";
 import { BlogCard } from "../components/BlogCard";
-import { Home, ChevronRight } from "lucide-react";
+import { Home, ChevronRight, Bookmark } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 import {
   Pagination,
   PaginationContent,
@@ -17,28 +19,38 @@ import {
 
 const BlogCategory: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
+    const [searchParams] = useSearchParams();
+    const { user } = useAuth();
     const [category, setCategory] = useState<any>(null);
     const [blogs, setBlogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [pagination, setPagination] = useState<any>(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [showBookmarked, setShowBookmarked] = useState(searchParams.get('bookmarked') === 'true');
 
     const fetchData = async (page: number = 1) => {
-        if (!slug) return;
+        if (!slug && !showBookmarked) return;
         setLoading(true);
         setError(null);
         try {
-            const categories = await getAllCategories({ slug });
-            const cat = categories[0]; // Get the first (and should be only) category with this slug
-            if (!cat) {
-                throw new Error('Không tìm thấy danh mục');
+            if (slug) {
+                const categories = await getAllCategories({ slug });
+                const cat = categories[0]; // Get the first (and should be only) category with this slug
+                if (!cat) {
+                    throw new Error('Không tìm thấy danh mục');
+                }
+                setCategory(cat);
+                const res = await fetchBlogs({ category_id: cat.id, status: 'published', limit: 9, page });
+                console.log(res);
+                setBlogs(res.data || []);
+                setPagination(res.pagination);
+            } else {
+                // If no slug, fetch all published blogs
+                const res = await fetchBlogs({ status: 'published', limit: 9, page });
+                setBlogs(res.data || []);
+                setPagination(res.pagination);
             }
-            setCategory(cat);
-            const res = await fetchBlogs({ category_id: cat.id, status: 'published', limit: 9, page });
-            console.log(res);
-            setBlogs(res.data || []);
-            setPagination(res.pagination);
         } catch (err) {
             setError('Không tìm thấy danh mục hoặc bài viết.');
         } finally {
@@ -46,9 +58,43 @@ const BlogCategory: React.FC = () => {
         }
     };
 
+    const fetchBookmarkedData = async (page: number = 1) => {
+        if (!user) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await getUserBookmarkedBlogs({ limit: 9, page });
+            console.log(res);
+            setBlogs(res.data || []);
+            setPagination(res.pagination);
+        } catch (err: any) {
+            setError(err?.response?.data?.message || 'Không thể tải danh sách bài viết đã lưu.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        fetchData(currentPage);
-    }, [slug, currentPage]);
+        setCurrentPage(1);
+        if (showBookmarked) {
+            if (user) {
+                fetchBookmarkedData(1);
+            } else {
+                setError('Vui lòng đăng nhập để xem bài viết đã lưu.');
+                setLoading(false);
+            }
+        } else {
+            fetchData(1);
+        }
+    }, [slug, showBookmarked, user]);
+
+    useEffect(() => {
+        if (showBookmarked && user) {
+            fetchBookmarkedData(currentPage);
+        } else if (!showBookmarked) {
+            fetchData(currentPage);
+        }
+    }, [currentPage]);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -111,12 +157,29 @@ const BlogCategory: React.FC = () => {
                 </Link>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
                 <span className="text-gray-900 font-medium">
-                    {category?.title}
+                    {showBookmarked ? 'Bài viết đã lưu' : category?.title}
                 </span>
             </nav>
 
+            {/* Toggle bookmarked */}
+            {user && (
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={() => setShowBookmarked(!showBookmarked)}
+                        className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${
+                            showBookmarked
+                                ? 'bg-[#015294] text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                        <Bookmark className="w-4 h-4" />
+                        Đã lưu
+                    </button>
+                </div>
+            )}
+
             <h1 className="text-3xl md:text-4xl font-bold text-[#015294] mb-8 text-center">
-                {category?.title}
+                {showBookmarked ? 'Bài viết đã lưu' : category?.title}
             </h1>
             
             {loading ? (
@@ -199,7 +262,14 @@ const BlogCategory: React.FC = () => {
                 </>
             ) : (
                 <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg">Chưa có bài viết nào cho danh mục này.</p>
+                    {showBookmarked ? (
+                        <>
+                            <Bookmark className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                            <p className="text-gray-500 text-lg">Bạn chưa lưu bài viết nào.</p>
+                        </>
+                    ) : (
+                        <p className="text-gray-500 text-lg">Chưa có bài viết nào cho danh mục này.</p>
+                    )}
                 </div>
             )}
         </div>

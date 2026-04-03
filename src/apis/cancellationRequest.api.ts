@@ -134,3 +134,30 @@ export const updateCancellationRequestStatus = async (
   );
   return response.data;
 };
+
+// Hoàn tiền booking khi hủy tour schedule (insufficient passengers)
+export const refundBookingForInsufficientPassengers = async (data: {
+  booking_id: number;
+  recipient_name: string;
+  bank_name: string;
+  account_number: string;
+  phone_number: string;
+  transaction_image: File;
+}): Promise<CancellationRequestResponse> => {
+  const formData = new FormData();
+  formData.append("booking_id", data.booking_id.toString());
+  formData.append("recipient_name", data.recipient_name);
+  formData.append("bank_name", data.bank_name);
+  formData.append("account_number", data.account_number);
+  formData.append("phone_number", data.phone_number);
+  formData.append("transaction_image", data.transaction_image);
+
+  const response = await axiosInstance.post(
+    "/api/cancellation-requests/insufficient-passengers",
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
+  return response.data;
+};

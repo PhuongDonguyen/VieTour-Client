@@ -277,7 +277,7 @@ const BlogCategories: React.FC = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Tổng Danh mục</CardTitle>
@@ -291,7 +291,7 @@ const BlogCategories: React.FC = () => {
                     </CardContent>
                 </Card>
 
-                <Card>
+                {/* <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Tổng Bài viết</CardTitle>
                         <Hash className="h-4 w-4 text-muted-foreground" />
@@ -302,9 +302,9 @@ const BlogCategories: React.FC = () => {
                             Trên tất cả danh mục
                         </p>
                     </CardContent>
-                </Card>
+                </Card> */}
 
-                <Card>
+                {/* <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">TB Bài viết/Danh mục</CardTitle>
                         <Hash className="h-4 w-4 text-muted-foreground" />
@@ -317,7 +317,7 @@ const BlogCategories: React.FC = () => {
                             Bài viết mỗi danh mục
                         </p>
                     </CardContent>
-                </Card>
+                </Card> */}
             </div>
 
             {/* Search and Filter */}
@@ -344,7 +344,7 @@ const BlogCategories: React.FC = () => {
                             <TableRow>
                                 <TableHead>Danh mục</TableHead>
                                 <TableHead>Mô tả</TableHead>
-                                <TableHead>Bài viết</TableHead>
+                                {/* <TableHead>Bài viết</TableHead> */}
                                 <TableHead>Trạng thái</TableHead>
                                 <TableHead>Ngày tạo</TableHead>
                                 <TableHead className="text-right">Thao tác</TableHead>
@@ -385,11 +385,11 @@ const BlogCategories: React.FC = () => {
                                                 {category.desc || 'Không có mô tả'}
                                             </div>
                                         </TableCell>
-                                        <TableCell>
+                                        {/* <TableCell>
                                             <Badge variant="secondary">
                                                 {category.post_count || 0} bài viết
                                             </Badge>
-                                        </TableCell>
+                                        </TableCell> */}
                                         <TableCell>
                                             <button
                                                 onClick={() => toggleStatus(category.id)}
